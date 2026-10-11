@@ -1,0 +1,133 @@
+## containers/props (0x24B48) base 0xb64f2
+  row -0x1: T:NECKLACE x4, T:RING x4, T:WATCH x4, T:DIME x12, T:1000$ x6, T:SUNGLASS x2
+  row 0x00: - x32
+  row 0x01: W:GUN(0x204,6) x31, W:M-16A1(0x207,48) x1
+  row 0x02: T:PEARL x3, T:NECKLACE x3, T:RING x3, T:WATCH x3, T:DIME x15, T:1000$ x3, T:SUNGLASS x1, T:GROVE x1
+  row 0x03: F:GUM x8, F:CHOCOLATE x8, F:DONUT x8, F:COFFEE x8
+  row 0x04: W:w10(0x203,10) x32
+  row 0x05: W:w12(0x201,10) x16, W:w13(0x201,10) x16
+  row 0x06: W:UZI(0x206,48) x31, W:M-16A1(0x207,48) x1
+  row 0x07: SPECIAL x32
+  row 0x08: W:RIFLE(0x205,6) x16, W:M-16A1(0x207,48) x16
+  row 0x09: F:STEAK x32
+  row 0x0a: F:SUSHI x32
+  row 0x0b: F:BARBECUE x32
+  row 0x0c: F:SALAD x32
+  row 0x0d: F:HOTDOG x32
+  row 0x0e: F:BARBECUE x1, F:STEAK x1, F:LOBSTER x2, F:SUSHI x2, F:BURGER x2, F:HOTDOG x2, F:PIZZA x2, F:SALAD x2, F:CAKE x2, F:PAFFE x2, F:PUDDING x2, F:POTATO x2, F:GUM x2, F:CHOCOLATE x2, F:DONUT x2, F:COFFEE x2, F:CROISSANT x2
+  row 0x0f: F:BURGER x16, F:PIZZA x16
+  row 0x10: F:BARBECUE x1, F:HOTDOG x30, T:DIME x1
+  row 0x11: W:SHOTGUN(0x208,6) x32
+  row 0x12: W:w7(0x203,10) x32
+  row 0x13: F:POTATO x32
+  row 0x14: F:HOTDOG x8, T:DIME x24
+  row 0x15: T:GOLDDUST x28, T:DIME x4
+  row 0x16: F:BURGER x16, F:POTATO x8, F:COFFEE x8
+  row 0x17: SPECIAL x16, T:DIME x16
+  row 0x18: F:LOBSTER x32
+  row 0x19: W:w12(0x201,10) x32
+  row 0x1a: F:CAKE x8, F:PAFFE x8, F:PUDDING x8, F:POTATO x8
+  row 0x1b: W:w13(0x201,10) x32
+  row 0x1c: W:w13(0x201,10) x32
+  row 0x1d: F:PUDDING x32
+  row 0x1e: F:PAFFE x32
+  row 0x1f: T:AMMONITE x30, T:DIME x2
+  row 0x20: F:CAKE x32
+  row 0x21: W:BAZOOKA(0x209,4) x32
+  row 0x22: SPECIAL x1, T:DIME x31
+  row 0x23: W:w13(0x201,10) x31, SPECIAL x1
+  row 0x24: F:COFFEE x32
+  row 0x25: F:STEAK x4, F:CAKE x4, F:CHOCOLATE x24
+  row 0x26: F:PIZZA x28, F:GUM x4
+  row 0x27: SPECIAL x8, T:GOLDDUST x24
+  row 0x28: F:STEAK x2, F:SUSHI x2, F:PIZZA x28
+  row 0x29: T:GOLDDUST x2, T:NECKLACE x2, T:RING x2, T:WATCH x5, T:DIME x6, T:1000$ x5, T:SUNGLASS x5, T:GROVE x5
+  row 0x2a: W:w12(0x201,10) x10, T:DIME x22
+  row 0x2b: W:GUN(0x204,6) x31, W:UZI(0x206,48) x1
+  row 0x2c: W:UZI(0x206,48) x8, T:DIME x24
+  row 0x2d: F:PIZZA x16, F:DONUT x16
+  row 0x2e: F:STEAK x16, F:BURGER x16
+  row 0x2f: W:RIFLE(0x205,6) x5, W:M-16A1(0x207,48) x1, W:w7(0x203,10) x26
+  row 0x30: T:DIAMOND x31, T:DIME x1
+  row 0x31: T:RADIO x32
+  row 0x32: F:SUSHI x30, F:HOTDOG x2
+  row 0x33: F:SUSHI x2, F:HOTDOG x30
+  row 0x34: F:CAKE x28, F:GUM x4
+  row 0x35: F:BURGER x30, F:CAKE x2
+  row 0x36: F:STEAK x32
+  row 0x37: F:STEAK x32
+  row 0x38: F:STEAK x32
+  row 0x39: F:STEAK x32
+  row 0x3a: F:STEAK x32
+  row 0x3b: F:STEAK x32
+  row 0x3c: F:STEAK x32
+  row 0x3d: F:STEAK x32
+  row 0x3e: F:STEAK x32
+  row 0x3f: F:STEAK x32
+  row 0x40: F:STEAK x32
+## enemies on death (0x24B36) base 0xb6d12
+  row 0x00: - x32
+  row 0x01: F:BURGER x8, F:HOTDOG x8, F:PIZZA x8, F:SALAD x8
+  row 0x02: SPECIAL x32
+  row 0x03: - x16, SPECIAL x16
+  row 0x04: - x24, T:PEARL x1, T:NECKLACE x1, T:RING x1, T:WATCH x1, T:DIME x1, T:1000$ x1, T:SUNGLASS x1, T:GROVE x1
+  row 0x05: - x27, F:GUM x1, F:CHOCOLATE x1, F:DONUT x1, F:COFFEE x1, F:CROISSANT x1
+  row 0x06: - x28, F:CAKE x1, F:PAFFE x1, F:PUDDING x1, F:POTATO x1
+  row 0x07: - x31, F:STEAK x1
+  row 0x08: F:GUM x6, F:CHOCOLATE x6, F:DONUT x6, F:COFFEE x7, F:CROISSANT x7
+  row 0x09: - x28, W:RIFLE(0x205,6) x1, SPECIAL x3
+  row 0x0a: - x4, F:BARBECUE x4, F:HOTDOG x24
+  row 0x0b: F:LOBSTER x32
+  row 0x0c: - x4, F:POTATO x7, F:GUM x7, F:CHOCOLATE x7, F:DONUT x7
+  row 0x0d: F:BARBECUE x32
+  row 0x0e: F:HOTDOG x16, F:PIZZA x16
+  row 0x0f: - x1, F:BURGER x3, F:DONUT x28
+  row 0x10: - x8, W:w13(0x201,10) x24
+  row 0x11: - x24, SPECIAL x8
+  row 0x12: W:UZI(0x206,48) x32
+  row 0x13: W:w12(0x201,10) x32
+  row 0x14: - x31, T:DIAMOND x1
+  row 0x15: - x16, W:w12(0x201,10) x16
+  row 0x16: F:POTATO x2, F:GUM x6, F:CHOCOLATE x6, F:DONUT x6, F:COFFEE x6, F:CROISSANT x6
+  row 0x17: - x27, W:RIFLE(0x205,6) x5
+  row 0x18: F:PAFFE x32
+  row 0x19: - x28, SPECIAL x4
+  row 0x1a: W:SHOTGUN(0x208,6) x32
+  row 0x1b: F:BURGER x16, F:POTATO x8, F:COFFEE x8
+  row 0x1c: - x24, W:w12(0x201,10) x8
+  row 0x1d: - x8, W:GUN(0x204,6) x24
+  row 0x1e: - x16, F:GUM x3, F:CHOCOLATE x3, F:DONUT x3, F:COFFEE x4, F:CROISSANT x3
+  row 0x1f: F:BURGER x8, F:POTATO x8, F:DONUT x8, F:COFFEE x8
+  row 0x20: W:GUN(0x204,6) x32
+  row 0x21: - x5, W:RIFLE(0x205,6) x2, W:GUN(0x204,6) x3, W:w2(0x202,6) x3, W:UZI(0x206,48) x2, W:M-16A1(0x207,48) x2, W:SHOTGUN(0x208,6) x1, W:BAZOOKA(0x209,4) x1, W:w7(0x203,10) x4, W:w8(0x202,6) x4, W:w10(0x203,10) x1, W:w11(0x203,10) x1, W:w12(0x201,10) x1, W:w13(0x201,10) x1, SPECIAL x1
+  row 0x22: - x1, T:GOLDDUST x2, T:NECKLACE x2, T:RING x2, T:WATCH x5, T:DIME x5, T:1000$ x5, T:SUNGLASS x5, T:GROVE x5
+  row 0x23: - x1, F:BARBECUE x1, F:DONUT x30
+  row 0x24: W:GUN(0x204,6) x4, W:w2(0x202,6) x4, W:w7(0x203,10) x4, W:w8(0x202,6) x4, T:WATCH x4, T:DIME x4, T:1000$ x4, T:SUNGLASS x4
+  row 0x25: W:w13(0x201,10) x32
+  row 0x26: F:STEAK x16, F:BURGER x16
+  row 0x27: W:UZI(0x206,48) x7, W:SHOTGUN(0x208,6) x24, W:BAZOOKA(0x209,4) x1
+  row 0x28: T:RADIO x32
+  row 0x29: - x2, W:M-16A1(0x207,48) x29, W:BAZOOKA(0x209,4) x1
+  row 0x2a: - x2, W:UZI(0x206,48) x30
+  row 0x2b: - x2, W:SHOTGUN(0x208,6) x30
+  row 0x2c: - x2, W:GUN(0x204,6) x30
+  row 0x2d: - x2, W:RIFLE(0x205,6) x30
+  row 0x2e: - x2, W:M-16A1(0x207,48) x30
+  row 0x2f: F:CAKE x28, F:GUM x4
+  row 0x30: F:STEAK x32
+  row 0x31: F:STEAK x32
+  row 0x32: F:STEAK x32
+  row 0x33: F:STEAK x32
+  row 0x34: F:STEAK x32
+  row 0x35: F:STEAK x32
+  row 0x36: F:STEAK x32
+  row 0x37: F:STEAK x32
+  row 0x38: F:STEAK x32
+  row 0x39: F:STEAK x32
+  row 0x3a: F:STEAK x32
+  row 0x3b: - x20, W:w8(0x202,6) x4, F:CAKE x1, T:t42? x1, T:t108? x1, T:t188? x1, T:t197? x1, T:t200? x1, T:t202? x1, T:t214? x1
+  row 0x3c: - x18, W:RIFLE(0x205,6) x2, W:w8(0x202,6) x4, W:w13(0x201,10) x1, F:BARBECUE x1, T:t162? x1, T:t164? x1, T:t194? x1, T:t203? x1, T:t204? x1, T:t214? x1
+  row 0x3d: - x16, W:RIFLE(0x205,6) x4, W:w2(0x202,6) x1, W:UZI(0x206,48) x1, W:M-16A1(0x207,48) x1, W:w8(0x202,6) x1, W:w9(0x203,6) x3, T:GOLD x1, T:t108? x1, T:t110? x1, T:t211? x1, T:t214? x1
+  row 0x3e: - x16, W:GUN(0x204,6) x4, W:SHOTGUN(0x208,6) x1, W:w9(0x203,6) x4, W:w16? x1, W:w18? x1, F:STEAK x1, T:t50? x1, T:t110? x1, T:t132? x1, T:t176? x1
+  row 0x3f: - x16, W:GUN(0x204,6) x2, W:w2(0x202,6) x2, W:w9(0x203,6) x4, W:w13(0x201,10) x1, F:LOBSTER x2, F:POTATO x1, F:DONUT x1, T:t100? x1, T:t200? x1, T:t212? x1
+  row 0x40: - x16, W:w2(0x202,6) x4, W:w9(0x203,6) x4, F:PAFFE x1, F:COFFEE x1, F:CROISSANT x1, F:food17 x1, T:AMMONITE x1, T:WATCH x1, T:t178? x1, T:t184? x1

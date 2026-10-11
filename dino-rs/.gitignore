@@ -1,0 +1,4 @@
+/target
+# Never commit ROM data or anything extracted from it.
+*.zip
+/cache

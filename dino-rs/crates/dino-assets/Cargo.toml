@@ -1,0 +1,8 @@
+[package]
+name = "dino-assets"
+description = "Shared data model: what the extractor produces and the game consumes."
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]

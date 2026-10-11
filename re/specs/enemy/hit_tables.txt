@@ -1,0 +1,345 @@
+Knockback records 0x2CBB0.. (8 bytes: vx, ax, vy, ay; vx/ax negated when +$24 facing!=0; bounce uses (vy, 2*ay) of the +4 offset)
+  0x2cbb0: vx=   640 ax=    0 vy=  1280 ay=  -64
+  0x2cbb8: vx=   768 ax=    0 vy=  1920 ay=  -64
+  0x2cbc0: vx=  1024 ax=    0 vy=  1280 ay=  -64
+  0x2cbc8: vx=  1024 ax=    0 vy=  1200 ay=  -48
+  0x2cbd0: vx=   640 ax=    0 vy=  1280 ay=  -64
+  0x2cbd8: vx=   512 ax=    0 vy=  1920 ay=  -64
+Throw (type 8) per thrower char +$3 (0x2CB46 + char*8)
+  0x2cb46: vx=   896 ax=    0 vy= -1024 ay=  -56
+  0x2cb4e: vx=  1280 ax=    0 vy=  -768 ay=  -64
+  0x2cb56: vx=   640 ax=    0 vy=  1408 ay=  -96
+Throw char 3 special: 0x2CB5E (+$2C==2), 0x2CB66
+  0x2cb5e: vx=   768 ax=    0 vy= -1024 ay=  -56
+  0x2cb66: vx=  1152 ax=    0 vy= -1024 ay=  -56
+Slide records 0x2CB6E (6 bytes: duration, vx, ax) for types 0xE/0x14, 0x10/0x16, 0x12/0x18
+  0x2cb6e: dur=7 vx=1536 ax=-128
+  0x2cb74: dur=10 vx=1792 ax=-177
+  0x2cb7a: dur=10 vx=2560 ax=-256
+Lie-down time 0x2B614: 16 bytes per +$84/4 (name id), index rand&15; plus signed 0x2B604[rand&15]
+  0x2B604: [-10, -9, -8, -7, -6, -5, -2, 0, 1, 3, 5, 10, 15, 20, 25, 30]
+  0x00 FERRIS     [11, 11, 11, 13, 13, 13, 15, 15, 15, 20, 20, 30, 30, 30, 40, 50]
+  0x01 GNEISS     [11, 11, 11, 13, 13, 13, 15, 15, 15, 20, 20, 30, 30, 30, 40, 50]
+  0x02 POACHER J  [11, 11, 11, 13, 13, 13, 15, 15, 15, 20, 20, 30, 30, 30, 40, 50]
+  0x03 HAMMER T.  [20, 20, 20, 25, 25, 25, 25, 25, 30, 30, 30, 35, 35, 35, 40, 40]
+  0x04 R HOPPER   [20, 20, 20, 25, 25, 25, 25, 25, 30, 30, 30, 35, 35, 35, 40, 40]
+  0x05 SLICE      [0, 0, 0, 0, 0, 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 40]
+  0x06 BLADE      [10, 10, 10, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x07 SHIVAT     [10, 10, 10, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x08 PUNK       [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 30, 30, 40]
+  0x09 THUG       [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 30, 30, 40]
+  0x0a BLK ELMER  [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x0b WRENCH T.  [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x0c VICE T.    [5, 5, 5, 5, 5, 5, 10, 10, 10, 10, 10, 10, 10, 10, 10, 15]
+  0x0d WALTHER    [5, 5, 5, 5, 5, 5, 20, 20, 20, 20, 20, 25, 25, 40, 50, 50]
+  0x0e LASH T.    [5, 5, 5, 5, 5, 5, 10, 10, 10, 10, 10, 15, 15, 15, 15, 15]
+  0x0f BUTCHER    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  0x10 BLUDGE     [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x11 MACK       [40, 40, 50, 50, 55, 55, 60, 60, 65, 65, 70, 70, 75, 75, 80, 80]
+  0x12 SKINNER    [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x13 GUTTER     [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x14 RAZOR      [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x15 MORGAN     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  0x16 MORGUE     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  0x17 KNIFE      [40, 40, 50, 50, 55, 55, 60, 60, 65, 65, 70, 70, 75, 75, 80, 80]
+  0x18 SLISAUR    [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 90]
+  0x19 TYROG      [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x1a DRIVER     [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x1b TYROG      [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x1c BLADE      [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x1d PUNK       [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x1e HAMMER T.  [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x1f BLK ELMER  [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x20 WRENCH T.  [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x21 ZEKE       [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x22 FESSENDEN  [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x23 TYROG 2    [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 25, 25, 25, 25, 30]
+  0x24 WRENCH T.  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  0x25 FESSENDEN  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+  0x26 HOGG       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+Counter delay +$7A 0x2B8C4: index ((level*2)&0x30) + rand&15
+  band 0 [40, 35, 35, 35, 35, 30, 30, 30, 30, 25, 25, 25, 25, 20, 20, 15]
+  band 1 [35, 25, 25, 25, 25, 20, 20, 20, 20, 15, 15, 15, 15, 10, 10, 10]
+  band 2 [30, 20, 20, 20, 20, 20, 20, 20, 15, 15, 15, 10, 10, 10, 10, 8]
+  band 3 [25, 15, 15, 15, 15, 15, 15, 15, 10, 10, 10, 8, 8, 8, 8, 5]
+Dizzy masks: HP band 0x2B158 ['0xffc00000', '0xffff0000', '0xfffff000', '0xfffffffc']
+  alive-count 0x2B168 (min(count,5)) ['0xc0000000', '0xff800000', '0xfff80000', '0xffffc000', '0xffffff00', '0xfffffff8']
+  +$9A row 0 0x2B180+0x0 by aggression $5EC 0..7: ['0xe0000000', '0xfe000000', '0xffc00000', '0xfffc0000', '0xffff8000', '0xffffe000', '0xfffff800', '0xffffffc0']
+  +$9A row 1 0x2B180+0x20 by aggression $5EC 0..7: ['0xffffffff', '0xffffffff', '0xffffffff', '0xffffffff', '0xffffffff', '0xffffffff', '0xffffffff', '0xffffffff']
+  +$9A row 2 0x2B180+0x40 by aggression $5EC 0..7: ['0xfff80000', '0xffff0000', '0xffff8000', '0xffffe000', '0xfffffc00', '0xffffff80', '0xffffffe0', '0xfffffffc']
+  +$9A row 3 0x2B180+0x60 by aggression $5EC 0..7: ['0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0', '0x0']
+  special-class mask 0x2B200 0xfffe0000
+  early dizzy recover by level 0x2B28C ['0x80000000', '0xe0000000', '0xf8000000', '0xfe000000', '0xff800000', '0xffe00000', '0xfff80000', '0xfffe0000', '0xffff8000', '0xffffe000', '0xfffff800', '0x2d7c0202', '0x4', '0x1d7c001c', '0x61d7c', '0x1e0080', '0x70066100', '0x1ca7000', '0x4a6e0014', '0x6a027001', '0x1d400024', '0x4eb90000', '0x97967000', '0x102e0007', '0x303b0006', '0x4efb0002', '0x4004e', '0x102e0080', '0x67085300', '0x1d400080', '0x4e7504ae', '0x18000']
+Resume-AI routine per +$84 (0x2B56C):
+  0x00 FERRIS     0x33f38
+  0x01 GNEISS     0x33f38
+  0x02 POACHER J  0x3e504
+  0x03 HAMMER T.  0x3bc38
+  0x04 R HOPPER   0x0
+  0x05 SLICE      0x4c072
+  0x06 BLADE      0x408e8
+  0x07 SHIVAT     0x0
+  0x08 PUNK       0x45d74
+  0x09 THUG       0x45d74
+  0x0a BLK ELMER  0x3bc38
+  0x0b WRENCH T.  0x3bc38
+  0x0c VICE T.    0x42ae4
+  0x0d WALTHER    0x42ae4
+  0x0e LASH T.    0x35d36
+  0x0f BUTCHER    0x58d40
+  0x10 BLUDGE     0x396c2
+  0x11 MACK       0x0
+  0x12 SKINNER    0x3e504
+  0x13 GUTTER     0x3e504
+  0x14 RAZOR      0x408e8
+  0x15 MORGAN     0x51aca
+  0x16 MORGUE     0x543ac
+  0x17 KNIFE      0x0
+  0x18 SLISAUR    0x5c95e
+  0x19 TYROG      0x36e7c
+  0x1a DRIVER     0x33f38
+  0x1b TYROG      0x5dfde
+  0x1c BLADE      0x5acaa
+  0x1d PUNK       0x5b2c4
+  0x1e HAMMER T.  0x5f84c
+  0x1f BLK ELMER  0x5f84c
+  0x20 WRENCH T.  0x5f84c
+  0x21 ZEKE       0x0
+  0x22 FESSENDEN  0x61a6c
+  0x23 TYROG 2    0x658a2
+  0x24 WRENCH T.  0x5b2c4
+  0x25 FESSENDEN  0x682a2
+  0x26 HOGG       0xf6f7f8f9
+Damage anim tables 0x2E68C per +$84 (ptr -> word offsets, anim index d0):
+  0x00 FERRIS     0x2e7bc
+  0x01 GNEISS     0x2e928
+  0x02 POACHER J  0x2efec
+  0x03 HAMMER T.  0x2f480
+  0x04 R HOPPER   0x0
+  0x05 SLICE      0x302ba
+  0x06 BLADE      0x2f8a6
+  0x07 SHIVAT     0x0
+  0x08 PUNK       0x2ffaa
+  0x09 THUG       0x30132
+  0x0a BLK ELMER  0x2f5e2
+  0x0b WRENCH T.  0x2f744
+  0x0c VICE T.    0x2fbe2
+  0x0d WALTHER    0x2fdc6
+  0x0e LASH T.    0x2ec00
+  0x0f BUTCHER    0x30750
+  0x10 BLUDGE     0x2ee70
+  0x11 MACK       0x0
+  0x12 SKINNER    0x2f176
+  0x13 GUTTER     0x2f2f6
+  0x14 RAZOR      0x2fa44
+  0x15 MORGAN     0x30444
+  0x16 MORGUE     0x30568
+  0x17 KNIFE      0x30696
+  0x18 SLISAUR    0x30860
+  0x19 TYROG      0x2ed42
+  0x1a DRIVER     0x2ea94
+  0x1b TYROG      0x309ea
+  0x1c BLADE      0x2f8a6
+  0x1d PUNK       0x2ffaa
+  0x1e HAMMER T.  0x2f480
+  0x1f BLK ELMER  0x2f5e2
+  0x20 WRENCH T.  0x2f744
+  0x21 ZEKE       0x0
+  0x22 FESSENDEN  0x312f4
+  0x23 TYROG 2    0x2ed42
+  0x24 WRENCH T.  0x30132
+  0x25 FESSENDEN  0x30568
+  0x26 HOGG       0x30b64
+Counter-hit multiplier 0xA320C by ENEMY's current +$58 (word, /32; 0 = none):
+   [0, 0, 0, 48, 0, 0, 48, 0, 0, 0, 0, 0, 64, 0, 0, 0, 64, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 33, 0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2096]
+Per-enemy weak attacks 0xA32FA (+$84 offset: [atk/2, mult, atk/2, mult], mult/32):
+  0x00 FERRIS     [8, 48, 7, 48]
+  0x01 GNEISS     [8, 48, 7, 48]
+  0x02 POACHER J  [8, 48, 5, 48]
+  0x03 HAMMER T.  [8, 48, 7, 48]
+  0x04 R HOPPER   [8, 48, 7, 48]
+  0x05 SLICE      [41, 16, 7, 33]
+  0x06 BLADE      [8, 48, 7, 48]
+  0x07 SHIVAT     [8, 48, 7, 48]
+  0x08 PUNK       [8, 48, 7, 48]
+  0x09 THUG       [8, 48, 7, 48]
+  0x0a BLK ELMER  [8, 48, 7, 48]
+  0x0b WRENCH T.  [8, 48, 7, 48]
+  0x0c VICE T.    [41, 16, 47, 24]
+  0x0d WALTHER    [8, 48, 47, 24]
+  0x0e LASH T.    [8, 48, 5, 64]
+  0x0f BUTCHER    [41, 16, 7, 33]
+  0x10 BLUDGE     [8, 48, 7, 48]
+  0x11 MACK       [8, 48, 7, 48]
+  0x12 SKINNER    [8, 48, 5, 48]
+  0x13 GUTTER     [8, 48, 5, 48]
+  0x14 RAZOR      [8, 48, 7, 48]
+  0x15 MORGAN     [41, 16, 7, 48]
+  0x16 MORGUE     [41, 16, 7, 48]
+  0x17 KNIFE      [8, 48, 7, 48]
+  0x18 SLISAUR    [41, 16, 7, 48]
+  0x19 TYROG      [41, 16, 7, 48]
+  0x1a DRIVER     [8, 48, 7, 48]
+  0x1b TYROG      [8, 48, 7, 48]
+  0x1c BLADE      [8, 48, 7, 48]
+  0x1d PUNK       [8, 48, 7, 48]
+  0x1e HAMMER T.  [8, 48, 7, 48]
+  0x1f BLK ELMER  [8, 48, 7, 48]
+  0x20 WRENCH T.  [8, 48, 7, 48]
+  0x21 ZEKE       [8, 48, 7, 48]
+  0x22 FESSENDEN  [41, 16, 7, 48]
+  0x23 TYROG 2    [8, 48, 7, 48]
+  0x24 WRENCH T.  [8, 48, 7, 48]
+  0x25 FESSENDEN  [8, 48, 7, 48]
+  0x26 HOGG       [41, 64, 0, 64]
+Enemy defence by level 0x2BECE (+$84*8 + level; bytes; dmg*=v then >>10 together with player +$C6)
+  0x00 FERRIS     [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x01 GNEISS     [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x02 POACHER J  [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x03 HAMMER T.  [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x04 R HOPPER   [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x05 SLICE      [32, 31, 30, 29, 29, 28, 28, 27, 27, 26, 26, 26, 25, 25, 25, 25, 25, 25, 25, 24, 24, 24, 24, 23, 23, 23, 23, 22, 22, 22, 22, 21]
+  0x06 BLADE      [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x07 SHIVAT     [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x08 PUNK       [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x09 THUG       [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x0a BLK ELMER  [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x0b WRENCH T.  [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x0c VICE T.    [32, 31, 31, 30, 30, 29, 29, 29, 28, 28, 28, 28, 27, 27, 27, 27, 27, 27, 27, 26, 26, 26, 26, 25, 25, 25, 25, 24, 24, 24, 24, 23]
+  0x0d WALTHER    [32, 32, 31, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 29, 29, 29, 29, 28, 28, 28, 28, 27, 27, 27, 27, 27, 26, 26, 25]
+  0x0e LASH T.    [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x0f BUTCHER    [32, 32, 32, 32, 31, 31, 31, 31, 30, 30, 30, 30, 29, 29, 29, 29, 28, 28, 28, 28, 27, 27, 27, 27, 26, 26, 26, 26, 25, 24, 23, 22]
+  0x10 BLUDGE     [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x11 MACK       [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x12 SKINNER    [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x13 GUTTER     [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x14 RAZOR      [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x15 MORGAN     [32, 32, 32, 32, 31, 31, 31, 31, 30, 30, 30, 30, 29, 29, 29, 29, 28, 28, 28, 28, 27, 27, 27, 27, 26, 26, 26, 26, 25, 24, 23, 22]
+  0x16 MORGUE     [32, 32, 32, 32, 31, 31, 31, 31, 30, 30, 30, 30, 29, 29, 29, 29, 28, 28, 28, 28, 27, 27, 27, 27, 26, 26, 26, 26, 25, 24, 23, 22]
+  0x17 KNIFE      [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x18 SLISAUR    [32, 31, 30, 29, 28, 27, 26, 25, 24, 24, 24, 23, 23, 22, 22, 21, 21, 20, 20, 20, 19, 19, 19, 18, 18, 18, 17, 17, 17, 16, 16, 16]
+  0x19 TYROG      [32, 32, 32, 32, 31, 31, 31, 31, 30, 30, 30, 30, 29, 29, 29, 29, 28, 28, 28, 28, 27, 27, 27, 27, 26, 26, 26, 26, 25, 24, 23, 22]
+  0x1a DRIVER     [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x1b TYROG      [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x1c BLADE      [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x1d PUNK       [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x1e HAMMER T.  [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x1f BLK ELMER  [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x20 WRENCH T.  [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x21 ZEKE       [64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64]
+  0x22 FESSENDEN  [32, 30, 28, 27, 26, 25, 24, 24, 23, 23, 22, 22, 21, 21, 20, 20, 19, 19, 19, 18, 18, 18, 17, 17, 17, 16, 16, 16, 15, 15, 14, 12]
+  0x23 TYROG 2    [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  0x24 WRENCH T.  [48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48]
+  0x25 FESSENDEN  [32, 32, 32, 32, 31, 31, 31, 31, 30, 30, 30, 30, 29, 29, 29, 29, 28, 28, 28, 28, 27, 27, 27, 27, 26, 26, 26, 26, 25, 24, 23, 22]
+  0x26 HOGG       [48, 48, 46, 46, 44, 44, 42, 42, 40, 40, 36, 36, 34, 34, 32, 32, 32, 32, 32, 32, 32, 32, 30, 30, 28, 28, 28, 28, 26, 26, 26, 26]
+HP-bar factor 0x2BC4E (words; index bar*0x40 + rand&0x3E)
+  bar 0 [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  bar 1 [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+  bar 2 [33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33]
+  bar 3 [33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33]
+In-bar HP factor 0x2BB4E (words; band >=75:0, >=50:0x40, >=25:0x80, else 0xC0; + rand&0x3E)
+  band 0 [35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34]
+  band 1 [33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 32, 32, 32, 32, 32, 32, 32, 32, 31, 31, 31, 31, 31, 31, 31, 31]
+  band 2 [30, 30, 30, 30, 30, 30, 30, 30, 29, 29, 29, 29, 29, 29, 29, 29, 28, 28, 28, 28, 28, 28, 28, 28, 27, 27, 27, 27, 27, 27, 27, 27]
+  band 3 [28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 27, 27, 27, 27, 27, 27, 27, 27, 26, 26, 26, 26, 26, 26, 26, 16]
+Player attack tables 0xA26FC (per player char +$3; record = table + (+$58)*4, 8 bytes):
+  char 0: 0xa270c
+    +$58=0x00: dmg=10 poise=1 react=0x0 stop=9 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x02: dmg=15 poise=3 react=0x2 stop=9 snd=0x6 hitscore_off=0x18 spark=0x0 9a=0x0
+    +$58=0x04: dmg=29 poise=11 react=0x6 stop=13 snd=0x9 hitscore_off=0x20 spark=0x18 9a=0x0
+    +$58=0x06: dmg=10 poise=3 react=0x0 stop=8 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x08: dmg=15 poise=5 react=0x2 stop=8 snd=0x9 hitscore_off=0x18 spark=0x0 9a=0x0
+    +$58=0x0a: dmg=22 poise=11 react=0x2 stop=2 snd=0x15 hitscore_off=0x20 spark=0x0 9a=0x0
+    +$58=0x0c: dmg=8 poise=10 react=0x10 stop=6 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x0e: dmg=15 poise=10 react=0x12 stop=6 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x10: dmg=15 poise=6 react=0x2 stop=10 snd=0x3 hitscore_off=0x14 spark=0x18 9a=0x0
+    +$58=0x12: dmg=20 poise=11 react=0x4 stop=7 snd=0x9 hitscore_off=0x20 spark=0x0 9a=0x0
+    +$58=0x14: dmg=12 poise=5 react=0x2 stop=8 snd=0x9 hitscore_off=0x18 spark=0x0 9a=0x0
+    +$58=0x16: dmg=7 poise=6 react=0x12 stop=7 snd=0x3 hitscore_off=0x20 spark=0x0 9a=0x0
+    +$58=0x18: dmg=15 poise=11 react=0x6 stop=8 snd=0x9 hitscore_off=0x30 spark=0x0 9a=0x0
+    +$58=0x1a: dmg=15 poise=11 react=0x4 stop=8 snd=0x9 hitscore_off=0x38 spark=0x0 9a=0x0
+    +$58=0x1c: dmg=20 poise=1 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x1e: dmg=20 poise=4 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x20: dmg=20 poise=3 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x22: dmg=20 poise=4 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x24: dmg=30 poise=1 react=0x6 stop=8 snd=0xc hitscore_off=0x14 spark=0x15 9a=0x0
+    +$58=0x26: dmg=60 poise=1 react=0xc stop=8 snd=0xf hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x28: dmg=20 poise=1 react=0x4 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x2a: dmg=30 poise=11 react=0x6 stop=8 snd=0xc hitscore_off=0x14 spark=0x15 9a=0x0
+    +$58=0x2c: dmg=20 poise=6 react=0x6 stop=5 snd=0xc hitscore_off=0x20 spark=0x15 9a=0x0
+    +$58=0x2e: dmg=20 poise=11 react=0x6 stop=8 snd=0xc hitscore_off=0x20 spark=0x15 9a=0x0
+  char 1: 0xa28ec
+    +$58=0x00: dmg=10 poise=1 react=0x0 stop=9 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x02: dmg=15 poise=3 react=0x2 stop=7 snd=0x6 hitscore_off=0x18 spark=0x0 9a=0x0
+    +$58=0x04: dmg=29 poise=11 react=0x6 stop=13 snd=0x9 hitscore_off=0x20 spark=0x18 9a=0x0
+    +$58=0x06: dmg=10 poise=3 react=0x0 stop=8 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x08: dmg=15 poise=5 react=0x2 stop=8 snd=0x9 hitscore_off=0x18 spark=0x0 9a=0x0
+    +$58=0x0a: dmg=20 poise=11 react=0x2 stop=2 snd=0x18 hitscore_off=0x20 spark=0x0 9a=0x0
+    +$58=0x0c: dmg=8 poise=10 react=0x10 stop=6 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x0e: dmg=15 poise=10 react=0x12 stop=6 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x10: dmg=15 poise=6 react=0x0 stop=10 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x12: dmg=20 poise=1 react=0x4 stop=3 snd=0x9 hitscore_off=0x20 spark=0x0 9a=0x1
+    +$58=0x14: dmg=12 poise=5 react=0x14 stop=6 snd=0x9 hitscore_off=0x18 spark=0x0 9a=0x0
+    +$58=0x16: dmg=7 poise=1 react=0x12 stop=7 snd=0x3 hitscore_off=0x20 spark=0x0 9a=0x0
+    +$58=0x18: dmg=15 poise=11 react=0x6 stop=8 snd=0x9 hitscore_off=0x30 spark=0x0 9a=0x0
+    +$58=0x1a: dmg=15 poise=11 react=0x4 stop=8 snd=0x9 hitscore_off=0x38 spark=0x0 9a=0x0
+    +$58=0x1c: dmg=20 poise=1 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x1e: dmg=20 poise=4 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x20: dmg=20 poise=4 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x22: dmg=20 poise=4 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x24: dmg=30 poise=1 react=0x6 stop=8 snd=0xc hitscore_off=0x14 spark=0x15 9a=0x0
+    +$58=0x26: dmg=60 poise=1 react=0xc stop=8 snd=0xf hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x28: dmg=20 poise=1 react=0x4 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x2a: dmg=30 poise=11 react=0x6 stop=8 snd=0xc hitscore_off=0x14 spark=0x15 9a=0x0
+    +$58=0x2c: dmg=20 poise=6 react=0x6 stop=5 snd=0xc hitscore_off=0x20 spark=0x15 9a=0x0
+    +$58=0x2e: dmg=20 poise=11 react=0x6 stop=8 snd=0xc hitscore_off=0x20 spark=0x15 9a=0x0
+  char 2: 0xa2adc
+    +$58=0x00: dmg=10 poise=1 react=0x0 stop=8 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x02: dmg=15 poise=2 react=0x2 stop=8 snd=0x6 hitscore_off=0x18 spark=0x0 9a=0x0
+    +$58=0x04: dmg=29 poise=11 react=0x6 stop=12 snd=0x9 hitscore_off=0x20 spark=0x18 9a=0x0
+    +$58=0x06: dmg=10 poise=3 react=0x0 stop=8 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x08: dmg=15 poise=5 react=0x2 stop=8 snd=0x9 hitscore_off=0x18 spark=0x0 9a=0x0
+    +$58=0x0a: dmg=24 poise=11 react=0x2 stop=2 snd=0x1b hitscore_off=0x20 spark=0x0 9a=0x0
+    +$58=0x0c: dmg=10 poise=10 react=0x10 stop=6 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x0e: dmg=15 poise=10 react=0x12 stop=6 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x10: dmg=15 poise=11 react=0x4 stop=10 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x12: dmg=20 poise=11 react=0x4 stop=5 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x14: dmg=12 poise=5 react=0x14 stop=6 snd=0x9 hitscore_off=0x18 spark=0x0 9a=0x0
+    +$58=0x16: dmg=10 poise=11 react=0x12 stop=7 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x18: dmg=20 poise=11 react=0x6 stop=8 snd=0x9 hitscore_off=0x30 spark=0x0 9a=0x0
+    +$58=0x1a: dmg=20 poise=11 react=0x4 stop=8 snd=0x9 hitscore_off=0x38 spark=0x0 9a=0x0
+    +$58=0x1c: dmg=20 poise=1 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x1e: dmg=20 poise=4 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x20: dmg=20 poise=4 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x22: dmg=20 poise=4 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x24: dmg=30 poise=1 react=0x6 stop=8 snd=0xc hitscore_off=0x14 spark=0x15 9a=0x0
+    +$58=0x26: dmg=60 poise=1 react=0xc stop=8 snd=0xf hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x28: dmg=20 poise=1 react=0x4 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x2a: dmg=30 poise=11 react=0x6 stop=8 snd=0xc hitscore_off=0x14 spark=0x15 9a=0x0
+    +$58=0x2c: dmg=15 poise=4 react=0x2 stop=5 snd=0xc hitscore_off=0x20 spark=0x15 9a=0x0
+    +$58=0x2e: dmg=20 poise=4 react=0x2 stop=5 snd=0xc hitscore_off=0x20 spark=0x15 9a=0x0
+  char 3: 0xa2cbc
+    +$58=0x00: dmg=12 poise=1 react=0x0 stop=9 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x02: dmg=17 poise=2 react=0x2 stop=9 snd=0x6 hitscore_off=0x18 spark=0x0 9a=0x0
+    +$58=0x04: dmg=32 poise=11 react=0x4 stop=13 snd=0x9 hitscore_off=0x20 spark=0x18 9a=0x0
+    +$58=0x06: dmg=15 poise=2 react=0x0 stop=8 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x08: dmg=20 poise=5 react=0x2 stop=8 snd=0x9 hitscore_off=0x18 spark=0x0 9a=0x0
+    +$58=0x0a: dmg=29 poise=11 react=0x2 stop=2 snd=0x1e hitscore_off=0x20 spark=0x0 9a=0x0
+    +$58=0x0c: dmg=10 poise=10 react=0x10 stop=6 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x0e: dmg=15 poise=10 react=0x12 stop=6 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x10: dmg=20 poise=1 react=0x2 stop=6 snd=0x3 hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x12: dmg=23 poise=1 react=0x4 stop=5 snd=0x9 hitscore_off=0x20 spark=0x0 9a=0x1
+    +$58=0x14: dmg=12 poise=5 react=0xe stop=4 snd=0x9 hitscore_off=0x18 spark=0x0 9a=0x0
+    +$58=0x16: dmg=10 poise=1 react=0x12 stop=10 snd=0x3 hitscore_off=0x20 spark=0x0 9a=0x0
+    +$58=0x18: dmg=20 poise=11 react=0x6 stop=7 snd=0x9 hitscore_off=0x30 spark=0x0 9a=0x0
+    +$58=0x1a: dmg=20 poise=11 react=0x4 stop=7 snd=0x9 hitscore_off=0x38 spark=0x0 9a=0x0
+    +$58=0x1c: dmg=20 poise=1 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x1e: dmg=20 poise=4 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x20: dmg=20 poise=4 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x22: dmg=20 poise=4 react=0x6 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x24: dmg=30 poise=1 react=0x6 stop=8 snd=0xc hitscore_off=0x14 spark=0x15 9a=0x0
+    +$58=0x26: dmg=60 poise=1 react=0xc stop=8 snd=0xf hitscore_off=0x14 spark=0x0 9a=0x0
+    +$58=0x28: dmg=20 poise=1 react=0x4 stop=8 snd=0x9 hitscore_off=0x14 spark=0x0 9a=0x1
+    +$58=0x2a: dmg=30 poise=11 react=0x6 stop=8 snd=0xc hitscore_off=0x14 spark=0x15 9a=0x0
+    +$58=0x2c: dmg=20 poise=6 react=0x6 stop=5 snd=0xc hitscore_off=0x20 spark=0x15 9a=0x0
+    +$58=0x2e: dmg=20 poise=11 react=0x6 stop=8 snd=0xc hitscore_off=0x20 spark=0x15 9a=0x0

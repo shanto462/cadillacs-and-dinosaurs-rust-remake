@@ -1,0 +1,3 @@
+#!/bin/sh
+# print sweep listing lines for address range [lo, hi)
+exec /Volumes/Shanto/Repos/Personal/Github/roms/re/.venv/bin/python -I /Volumes/Shanto/Repos/Personal/Github/roms/re/specs/enemy/sw.py /Volumes/Shanto/Repos/Personal/Github/roms/re/out/sweep.txt "$@"

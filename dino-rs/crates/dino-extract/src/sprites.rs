@@ -1,0 +1,274 @@
+//! Extracts sprite data. Formats: `re/specs/anim/SPEC.md`.
+
+use crate::rom::Rom;
+use dino_assets::*;
+use std::collections::{HashMap, VecDeque};
+
+/// Pointer to the composition pointer table (u32) and its entry count (u16).
+const COMP_TABLE_PTR: u32 = 0x0FFFF4;
+const COMP_COUNT_PTR: u32 = 0x0FFFF8;
+/// Pointer to the layout pointer table (u32).
+const LAYOUT_TABLE_PTR: u32 = 0x0FFFFA;
+/// Per-composition extra bytes (wading clip counts, shadow type).
+const COMP_EXTRA: u32 = 0x11D220;
+/// Player animation sets 0..5: each holds 4 table pointers (one per character).
+const PLAYER_SETS: [u32; 6] = [0x163E, 0x164E, 0x165E, 0x166E, 0x167E, 0x168E];
+const PLAYER_BOX_TABLES: u32 = 0x18CC4;
+const PLAYER_ATTACKS: u32 = 0xA26FC;
+const ATTACKS_PER_CHARACTER: u32 = 60;
+/// Region that holds every hit box table.
+const HITBOX_REGION: (u32, u32) = (0x100000, 0x11D220);
+
+/// 10-byte animation tables used by non-player objects. Each address is a constant in the
+/// object's init code (stored into obj+$40); the comment names that code.
+pub const OBJECT_ANIM_TABLES: &[u32] = &[
+    0x34892, // enemy family init 0x3388A, variant 0 (palette 13)
+    0x34B90, // same family, palette 14
+    0x34E7C, // same family, palette 26
+];
+
+pub fn extract(rom: &Rom) -> SpriteData {
+    let mut data = SpriteData { compositions: compositions(rom), ..Default::default() };
+    let mut walker = FrameWalker { rom, data: &mut data };
+
+    for (set, &ptr) in PLAYER_SETS.iter().enumerate() {
+        for ch in 0..4 {
+            let table = rom.u32(ptr + 4 * ch);
+            walker.data.player_sets[set][ch as usize] = table;
+            walker.table(table, 12);
+        }
+    }
+    for &table in OBJECT_ANIM_TABLES {
+        walker.table(table, 10);
+    }
+
+    for ch in 0..4 {
+        data.player_box_tables[ch] = rom.u32(PLAYER_BOX_TABLES + 4 * ch as u32);
+        let base = rom.u32(PLAYER_ATTACKS + 4 * ch as u32);
+        data.player_attacks[ch] = (0..ATTACKS_PER_CHARACTER)
+            .map(|k| {
+                let a = base + 8 * k;
+                AttackRecord {
+                    damage: rom.u8(a) as i8,
+                    stun: rom.u8(a + 1),
+                    reaction: rom.u8(a + 2),
+                    hit_stop: rom.u8(a + 3),
+                    sound: rom.u8(a + 4),
+                    score: rom.u8(a + 5),
+                    spark: rom.u8(a + 6),
+                    b7: rom.u8(a + 7),
+                }
+            })
+            .collect();
+    }
+    let (start, end) = HITBOX_REGION;
+    data.hitboxes = HitBoxBank { base: start, words: (start..end).step_by(2).map(|a| rom.i16(a)).collect() };
+    data
+}
+
+fn compositions(rom: &Rom) -> Vec<Composition> {
+    let table = rom.u32(COMP_TABLE_PTR);
+    let count = rom.u16(COMP_COUNT_PTR) as u32;
+    let layouts = rom.u32(LAYOUT_TABLE_PTR);
+    (0..count)
+        .map(|i| {
+            let a = rom.u32(table + 4 * i);
+            let n = rom.u16(a + 2) as u32;
+            let hattr = rom.u16(a + 4);
+            let layout = rom.u32(layouts + 4 * rom.u16(a + 6) as u32);
+            let alt = hattr & 0x8000 != 0;
+            let entries = (0..n)
+                .map(|k| {
+                    let (code, attr) =
+                        if alt { (rom.u16(a + 8 + 4 * k), rom.u16(a + 10 + 4 * k)) } else { (rom.u16(a + 8 + 2 * k), hattr) };
+                    SpriteEntry { dx: rom.i16(layout + 4 * k), dy: rom.i16(layout + 4 * k + 2), code, attr }
+                })
+                .collect();
+            Composition { rom_addr: a, alt, entries }
+        })
+        .collect()
+}
+
+struct FrameWalker<'a> {
+    rom: &'a Rom,
+    data: &'a mut SpriteData,
+}
+
+impl FrameWalker<'_> {
+    fn comp_valid(&self, index: u16) -> bool {
+        index % 4 == 0 && ((index / 4) as usize) < self.data.compositions.len()
+    }
+
+    /// Decodes one animation table and every frame reachable from it.
+    fn table(&mut self, table: u32, stride: u8) {
+        if self.data.anim_tables.contains_key(&table) {
+            return;
+        }
+        // The length is not stored: the first animation starts right after the offsets.
+        let offsets: Vec<u16> = {
+            let mut first = u32::MAX;
+            let mut v = Vec::new();
+            let mut i = 0;
+            while 2 * i < first {
+                let off = self.rom.u16(table + 2 * i);
+                if off != 0 {
+                    first = first.min(off as u32);
+                }
+                v.push(off);
+                i += 1;
+            }
+            v
+        };
+        let anims =
+            offsets.iter().map(|&off| if off == 0 { None } else { self.walk(table.wrapping_add(off as i16 as i32 as u32), stride) }).collect();
+        self.data.anim_tables.insert(table, AnimTable { rom_addr: table, stride, anims });
+    }
+
+    /// Decodes the frame at `start` and everything it links to. Returns `None` when the
+    /// record is not valid frame data (an unused id that points at garbage).
+    fn walk(&mut self, start: u32, stride: u8) -> Option<FrameId> {
+        if let Some(&id) = self.data.frame_by_addr.get(&start) {
+            return Some(id);
+        }
+        // Pass 1: discover every record reachable from `start`.
+        let mut order = Vec::new();
+        let mut queue = VecDeque::from([start]);
+        let mut seen: HashMap<u32, ()> = HashMap::new();
+        while let Some(p) = queue.pop_front() {
+            if self.data.frame_by_addr.contains_key(&p) || seen.contains_key(&p) {
+                continue;
+            }
+            if !self.record_valid(p, stride) {
+                if p == start {
+                    return None;
+                }
+                continue;
+            }
+            seen.insert(p, ());
+            order.push(p);
+            queue.push_back(self.next_addr(p, stride));
+        }
+        // Pass 2: assign ids, then decode with resolved links.
+        let first_id = self.data.frames.len() as FrameId;
+        for (k, &p) in order.iter().enumerate() {
+            self.data.frame_by_addr.insert(p, first_id + k as FrameId);
+        }
+        for &p in &order {
+            let frame = self.decode(p, stride);
+            self.data.frames.push(frame);
+        }
+        Some(self.data.frame_by_addr[&start])
+    }
+
+    fn next_addr(&self, p: u32, stride: u8) -> u32 {
+        let q = p + stride as u32;
+        if self.rom.u8(p + 7) & 0x80 != 0 { q.wrapping_add(self.rom.i16(q) as i32 as u32) } else { q }
+    }
+
+    fn record_valid(&self, p: u32, stride: u8) -> bool {
+        if p as usize + stride as usize + 2 > self.rom.program.len() {
+            return false;
+        }
+        let (w0, w1) = (self.rom.u16(p), self.rom.u16(p + 2));
+        if w0 & 0x8000 != 0 {
+            let q = (p + 2).wrapping_add(self.rom.i16(p + 2) as i32 as u32);
+            return (q as usize) + 2 < self.rom.program.len() && self.rom.u16(q) < 64;
+        }
+        self.comp_valid(w0) && (w1 & 0x8000 != 0 || self.comp_valid(w1))
+    }
+
+    fn decode(&self, p: u32, stride: u8) -> Frame {
+        let rom = self.rom;
+        let (w0, w1) = (rom.u16(p), rom.u16(p + 2));
+        let draw = if w0 & 0x8000 != 0 {
+            let mut q = (p + 2).wrapping_add(rom.i16(p + 2) as i32 as u32);
+            let n = rom.u16(q) as u32 + 1;
+            q += 2;
+            FrameDraw::Compound(
+                (0..n)
+                    .map(|k| {
+                        let e = q + 8 * k;
+                        CompoundPart { dx: rom.i16(e), dy: rom.i16(e + 2), comp: rom.u16(e + 4), clip_flag: rom.u16(e + 6) }
+                    })
+                    .collect(),
+            )
+        } else {
+            FrameDraw::Comp { main: w0, overlay: (w1 & 0x8000 == 0).then_some(w1) }
+        };
+        // Composition used for the extra table, by loader: 0x1236 (10-byte) / 0x143E (12-byte).
+        let ci = match stride {
+            12 => {
+                if w1 & 0x8000 == 0 {
+                    w1
+                } else {
+                    w0
+                }
+            }
+            _ => {
+                if w0 & 0x8000 != 0 {
+                    w0 & 0x7FFF
+                } else if w1 & 0x8000 == 0 {
+                    w1
+                } else {
+                    w0
+                }
+            }
+        };
+        let extra = rom.u32(COMP_EXTRA.wrapping_add(ci as i16 as i32 as u32)).to_be_bytes();
+        let b7 = rom.u8(p + 7);
+        Frame {
+            rom_addr: p,
+            stride,
+            w0,
+            w1,
+            draw,
+            param_a: rom.u8(p + 4),
+            param_b: rom.u8(p + 5),
+            kind: rom.u8(p + 6),
+            duration: b7 & 0x7F,
+            last: b7 & 0x80 != 0,
+            body_box: if stride >= 10 { rom.u8(p + 8) } else { 0 },
+            attack_box: if stride >= 10 { rom.u8(p + 9) } else { 0 },
+            attach: if stride == 12 { rom.u16(p + 10) } else { 0 },
+            extra,
+            next: self.data.frame_by_addr.get(&self.next_addr(p, stride)).copied().unwrap_or(u32::MAX),
+        }
+    }
+}
+
+/// OBJ palettes: the ROM palette bank (32 bytes per palette at 0xB7A52) and, per stage and area,
+/// the 32 bank numbers that 0x8E4C copies into OBJ palette slots 0..31 (table 0x8E8E).
+pub fn obj_palettes(rom: &Rom) -> (Vec<[u16; 16]>, HashMap<(u8, u8), [u16; 32]>) {
+    const BANK: u32 = 0x0B7A52;
+    const SETS: u32 = 0x008E8E;
+    let mut sets = HashMap::new();
+    let mut max = 0u16;
+    for stage in 0..8u8 {
+        for area in 0..4u8 {
+            let list = rom.u32(SETS + stage as u32 * 16 + area as u32 * 4);
+            if list == 0 || list as usize + 64 > rom.program.len() {
+                continue;
+            }
+            let limit = ((rom.program.len() as u32 - BANK) / 32) as u16;
+            let mut slots = [0u16; 32];
+            for (i, slot) in slots.iter_mut().enumerate() {
+                *slot = rom.u16(list + 2 * i as u32);
+            }
+            if slots.iter().any(|&n| n >= limit) {
+                continue;
+            }
+            max = max.max(*slots.iter().max().unwrap());
+            sets.insert((stage, area), slots);
+        }
+    }
+    let bank = (0..=max as u32)
+        .map(|n| {
+            let mut pal = [0u16; 16];
+            for (i, w) in pal.iter_mut().enumerate() {
+                *w = rom.u16(BANK + n * 32 + 2 * i as u32);
+            }
+            pal
+        })
+        .collect();
+    (bank, sets)
+}

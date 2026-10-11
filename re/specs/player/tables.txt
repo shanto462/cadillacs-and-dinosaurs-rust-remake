@@ -1,0 +1,456 @@
+
+== select screen stars POWER/SPEED/SKILL @0xB444 (display only)
+  Jack      [4, 3, 3]
+  Hannah    [2, 4, 5]
+  Mustapha  [3, 5, 3]
+  Mess      [5, 2, 4]
+
+== walk/run speed tables: ptr = long[0x5064 + 4*(class + char)], class 0 walk, 4 run(slow frames), 8 run(fast frames), 12 (unused?)
+
+==   (heavy object 0x20A carried: ptr table 0x50A4, all classes -> same 4 tables)
+  0x050e4 class  0 Jack      U(0,236) UR(230,196) R(414,0) DR(230,-196) D(0,-236) DL(-230,-196) L(-414,0) UL(-230,196)
+  0x05104 class  0 Hannah    U(0,248) UR(241,206) R(435,0) DR(241,-206) D(0,-248) DL(-241,-206) L(-435,0) UL(-241,206)
+  0x05124 class  0 Mustapha  U(0,241) UR(234,200) R(422,0) DR(234,-200) D(0,-241) DL(-234,-200) L(-422,0) UL(-234,200)
+  0x05144 class  0 Mess      U(0,234) UR(227,194) R(409,0) DR(227,-194) D(0,-234) DL(-227,-194) L(-409,0) UL(-227,194)
+  0x05164 class  4 Jack      U(0,482) UR(469,401) R(844,0) DR(469,-401) D(0,-482) DL(-469,-401) L(-844,0) UL(-469,401)
+  0x05184 class  4 Hannah    U(0,497) UR(483,413) R(870,0) DR(483,-413) D(0,-497) DL(-483,-413) L(-870,0) UL(-483,413)
+  0x051a4 class  4 Mustapha  U(0,512) UR(498,425) R(896,0) DR(498,-425) D(0,-512) DL(-498,-425) L(-896,0) UL(-498,425)
+  0x051c4 class  4 Mess      U(0,468) UR(455,389) R(819,0) DR(455,-389) D(0,-468) DL(-455,-389) L(-819,0) UL(-455,389)
+  0x051e4 class  8 Jack      U(0,1067) UR(1039,887) R(1868,0) DR(1039,-887) D(0,-1067) DL(-1039,-887) L(-1868,0) UL(-1039,887)
+  0x05204 class  8 Hannah    U(0,1082) UR(1053,899) R(1894,0) DR(1053,-899) D(0,-1082) DL(-1053,-899) L(-1894,0) UL(-1053,899)
+  0x05224 class  8 Mustapha  U(0,1097) UR(1067,911) R(1920,0) DR(1067,-911) D(0,-1097) DL(-1067,-911) L(-1920,0) UL(-1067,911)
+  0x05244 class  8 Mess      U(0,1053) UR(1024,875) R(1843,0) DR(1024,-875) D(0,-1053) DL(-1024,-875) L(-1843,0) UL(-1024,875)
+  0x05264 class 12 Jack      U(0,1214) UR(1181,1008) R(2124,0) DR(1181,-1008) D(0,-1214) DL(-1181,-1008) L(-2124,0) UL(-1181,1008)
+  0x05284 class 12 Hannah    U(0,1228) UR(1195,1021) R(2150,0) DR(1195,-1021) D(0,-1228) DL(-1195,-1021) L(-2150,0) UL(-1195,1021)
+  0x052a4 class 12 Mustapha  U(0,1243) UR(1209,1033) R(2176,0) DR(1209,-1033) D(0,-1243) DL(-1209,-1033) L(-2176,0) UL(-1209,1033)
+  0x052c4 class 12 Mess      U(0,1199) UR(1167,996) R(2099,0) DR(1167,-996) D(0,-1199) DL(-1167,-996) L(-2099,0) UL(-1167,996)
+  0x052e4 heavy  Jack        U(0,222) UR(216,184) R(389,0) DR(216,-184) D(0,-222) DL(-216,-184) L(-389,0) UL(-216,184)
+  0x05304 heavy  Hannah      U(0,234) UR(227,194) R(409,0) DR(227,-194) D(0,-234) DL(-227,-194) L(-409,0) UL(-227,194)
+  0x05324 heavy  Mustapha    U(0,226) UR(220,188) R(396,0) DR(220,-188) D(0,-226) DL(-220,-188) L(-396,0) UL(-220,188)
+  0x05344 heavy  Mess        U(0,219) UR(213,182) R(384,0) DR(213,-182) D(0,-219) DL(-213,-182) L(-384,0) UL(-213,182)
+
+== jump velocity tables (0x5364): ptr = long[0x53A2 + 4*(class+char)]; 9 entries x 6 words (vx,ax,vy,ay,vz,az), entry 0 = no direction
+  class  0 Jack      @0x53e2
+     none vx=     0 ax=     0 vy=  1741 ay=   -74 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=  1664 ay=   -74 vz=   128 az=     0
+     UR   vx=   480 ax=     0 vy=  1536 ay=   -74 vz=    80 az=     0
+     R    vx=   608 ax=     0 vy=  1616 ay=   -74 vz=     0 az=     0
+     DR   vx=   480 ax=     0 vy=  1536 ay=   -74 vz=   -80 az=     0
+     D    vx=     0 ax=     0 vy=  1664 ay=   -74 vz=  -128 az=     0
+     DL   vx=  -480 ax=     0 vy=  1536 ay=   -74 vz=   -80 az=     0
+     L    vx=  -608 ax=     0 vy=  1616 ay=   -74 vz=     0 az=     0
+     UL   vx=  -480 ax=     0 vy=  1536 ay=   -74 vz=    80 az=     0
+  class  0 Hannah    @0x5526
+     none vx=     0 ax=     0 vy=  1740 ay=   -74 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=  1741 ay=   -74 vz=   128 az=     0
+     UR   vx=   480 ax=     0 vy=  1600 ay=   -74 vz=    80 az=     0
+     R    vx=   608 ax=     0 vy=  1741 ay=   -74 vz=     0 az=     0
+     DR   vx=   480 ax=     0 vy=  1600 ay=   -74 vz=   -80 az=     0
+     D    vx=     0 ax=     0 vy=  1741 ay=   -74 vz=  -128 az=     0
+     DL   vx=  -480 ax=     0 vy=  1600 ay=   -74 vz=   -80 az=     0
+     L    vx=  -608 ax=     0 vy=  1741 ay=   -74 vz=     0 az=     0
+     UL   vx=  -480 ax=     0 vy=  1600 ay=   -74 vz=    80 az=     0
+  class  0 Mustapha  @0x566a
+     none vx=     0 ax=     0 vy=  2112 ay=   -88 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=  2048 ay=   -88 vz=   176 az=     0
+     UR   vx=   422 ax=     0 vy=  1824 ay=   -88 vz=    76 az=     0
+     R    vx=   528 ax=     0 vy=  1952 ay=   -88 vz=     0 az=     0
+     DR   vx=   422 ax=     0 vy=  1824 ay=   -88 vz=   -76 az=     0
+     D    vx=     0 ax=     0 vy=  2048 ay=   -88 vz=  -176 az=     0
+     DL   vx=  -422 ax=     0 vy=  1824 ay=   -88 vz=   -76 az=     0
+     L    vx=  -528 ax=     0 vy=  1952 ay=   -88 vz=     0 az=     0
+     UL   vx=  -422 ax=     0 vy=  1824 ay=   -88 vz=    76 az=     0
+  class  0 Mess      @0x57ae
+     none vx=     0 ax=     0 vy=  1672 ay=   -72 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=  1600 ay=   -72 vz=   128 az=     0
+     UR   vx=   448 ax=     0 vy=  1440 ay=   -72 vz=    80 az=     0
+     R    vx=   608 ax=     0 vy=  1552 ay=   -72 vz=     0 az=     0
+     DR   vx=   448 ax=     0 vy=  1440 ay=   -72 vz=   -80 az=     0
+     D    vx=     0 ax=     0 vy=  1600 ay=   -72 vz=  -128 az=     0
+     DL   vx=  -448 ax=     0 vy=  1440 ay=   -72 vz=   -80 az=     0
+     L    vx=  -608 ax=     0 vy=  1552 ay=   -72 vz=     0 az=     0
+     UL   vx=  -448 ax=     0 vy=  1440 ay=   -72 vz=    80 az=     0
+  class  4 Jack      @0x54ba
+     none vx=     0 ax=     0 vy=  1744 ay=   -74 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=  1664 ay=   -74 vz=   128 az=     0
+     UR   vx=   352 ax=    20 vy=  1536 ay=   -74 vz=    96 az=     0
+     R    vx=   640 ax=    24 vy=  1536 ay=   -74 vz=     0 az=     0
+     DR   vx=   352 ax=    20 vy=  1536 ay=   -74 vz=   -96 az=     0
+     D    vx=     0 ax=     0 vy=  1664 ay=   -74 vz=  -128 az=     0
+     DL   vx=  -352 ax=   -20 vy=  1536 ay=   -74 vz=   -96 az=     0
+     L    vx=  -640 ax=   -24 vy=  1536 ay=   -74 vz=     0 az=     0
+     UL   vx=  -352 ax=   -20 vy=  1536 ay=   -74 vz=    96 az=     0
+  class  4 Hannah    @0x55fe
+     none vx=     0 ax=     0 vy=  1488 ay=   -64 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=  1408 ay=   -64 vz=   128 az=     0
+     UR   vx=   352 ax=    20 vy=  1280 ay=   -64 vz=    96 az=     0
+     R    vx=   640 ax=    24 vy=  1280 ay=   -64 vz=     0 az=     0
+     DR   vx=   352 ax=    20 vy=  1280 ay=   -64 vz=   -96 az=     0
+     D    vx=     0 ax=     0 vy=  1408 ay=   -64 vz=  -128 az=     0
+     DL   vx=  -352 ax=   -20 vy=  1280 ay=   -64 vz=   -96 az=     0
+     L    vx=  -640 ax=   -24 vy=  1280 ay=   -64 vz=     0 az=     0
+     UL   vx=  -352 ax=   -20 vy=  1280 ay=   -64 vz=    96 az=     0
+  class  4 Mustapha  @0x5742
+     none vx=     0 ax=     0 vy=  2000 ay=   -80 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=  1920 ay=   -80 vz=   128 az=     0
+     UR   vx=   352 ax=    20 vy=  1792 ay=   -80 vz=    96 az=     0
+     R    vx=   640 ax=    24 vy=  1792 ay=   -80 vz=     0 az=     0
+     DR   vx=   352 ax=    20 vy=  1792 ay=   -80 vz=   -96 az=     0
+     D    vx=     0 ax=     0 vy=  1920 ay=   -80 vz=  -128 az=     0
+     DL   vx=  -352 ax=   -20 vy=  1792 ay=   -80 vz=   -96 az=     0
+     L    vx=  -640 ax=   -24 vy=  1792 ay=   -80 vz=     0 az=     0
+     UL   vx=  -352 ax=   -20 vy=  1792 ay=   -80 vz=    96 az=     0
+  class  4 Mess      @0x5886
+     none vx=     0 ax=     0 vy=  1184 ay=   -48 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=  1104 ay=   -48 vz=   128 az=     0
+     UR   vx=   352 ax=    32 vy=   976 ay=   -48 vz=    96 az=     0
+     R    vx=   640 ax=    40 vy=   976 ay=   -48 vz=     0 az=     0
+     DR   vx=   352 ax=    32 vy=   976 ay=   -48 vz=   -96 az=     0
+     D    vx=     0 ax=     0 vy=  1104 ay=   -48 vz=  -128 az=     0
+     DL   vx=  -352 ax=   -32 vy=   976 ay=   -48 vz=   -96 az=     0
+     L    vx=  -640 ax=   -40 vy=   976 ay=   -48 vz=     0 az=     0
+     UL   vx=  -352 ax=   -32 vy=   976 ay=   -48 vz=    96 az=     0
+  class  8 Jack      @0x544e
+     none vx=     0 ax=     0 vy=  1741 ay=   -74 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=  1664 ay=   -74 vz=   128 az=     0
+     UR   vx=   480 ax=     0 vy=  1536 ay=   -74 vz=    80 az=     0
+     R    vx=   608 ax=     0 vy=  1616 ay=   -74 vz=     0 az=     0
+     DR   vx=   480 ax=     0 vy=  1536 ay=   -74 vz=   -80 az=     0
+     D    vx=     0 ax=     0 vy=  1664 ay=   -74 vz=  -128 az=     0
+     DL   vx=  -480 ax=     0 vy=  1536 ay=   -74 vz=   -80 az=     0
+     L    vx=  -608 ax=     0 vy=  1616 ay=   -74 vz=     0 az=     0
+     UL   vx=  -480 ax=     0 vy=  1536 ay=   -74 vz=    80 az=     0
+  class  8 Hannah    @0x5592
+     none vx=     0 ax=     0 vy=   896 ay=   -74 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=   896 ay=   -74 vz=     0 az=     0
+     UR   vx=  1536 ax=     0 vy=   896 ay=   -74 vz=     0 az=     0
+     R    vx=  1536 ax=     0 vy=   896 ay=   -74 vz=     0 az=     0
+     DR   vx=  1536 ax=     0 vy=   896 ay=   -74 vz=     0 az=     0
+     D    vx=     0 ax=     0 vy=   896 ay=   -74 vz=     0 az=     0
+     DL   vx= -1536 ax=     0 vy=   896 ay=   -74 vz=     0 az=     0
+     L    vx= -1536 ax=     0 vy=   896 ay=   -74 vz=     0 az=     0
+     UL   vx= -1536 ax=     0 vy=   896 ay=   -74 vz=     0 az=     0
+  class  8 Mustapha  @0x56d6
+     none vx=     0 ax=     0 vy=  1280 ay=   -88 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=  1280 ay=   -88 vz=     0 az=     0
+     UR   vx=  1152 ax=     0 vy=  1280 ay=   -88 vz=     0 az=     0
+     R    vx=  1152 ax=     0 vy=  1280 ay=   -88 vz=     0 az=     0
+     DR   vx=  1152 ax=     0 vy=  1280 ay=   -88 vz=     0 az=     0
+     D    vx=     0 ax=     0 vy=  1280 ay=   -88 vz=     0 az=     0
+     DL   vx= -1152 ax=     0 vy=  1280 ay=   -88 vz=     0 az=     0
+     L    vx= -1152 ax=     0 vy=  1280 ay=   -88 vz=     0 az=     0
+     UL   vx= -1152 ax=     0 vy=  1280 ay=   -88 vz=     0 az=     0
+  class  8 Mess      @0x581a
+     none vx=     0 ax=     0 vy=  1672 ay=   -72 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=  1600 ay=   -72 vz=   128 az=     0
+     UR   vx=   448 ax=     0 vy=  1440 ay=   -72 vz=    80 az=     0
+     R    vx=   608 ax=     0 vy=  1552 ay=   -72 vz=     0 az=     0
+     DR   vx=   448 ax=     0 vy=  1440 ay=   -72 vz=   -80 az=     0
+     D    vx=     0 ax=     0 vy=  1600 ay=   -72 vz=  -128 az=     0
+     DL   vx=  -448 ax=     0 vy=  1440 ay=   -72 vz=   -80 az=     0
+     L    vx=  -608 ax=     0 vy=  1552 ay=   -72 vz=     0 az=     0
+     UL   vx=  -448 ax=     0 vy=  1440 ay=   -72 vz=    80 az=     0
+  class 12 Jack      @0x58f2
+     none vx=     0 ax=     0 vy=   944 ay=   -80 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=   896 ay=   -80 vz=    64 az=     0
+     UR   vx=   384 ax=     0 vy=   768 ay=   -80 vz=    48 az=     0
+     R    vx=   432 ax=     0 vy=   816 ay=   -80 vz=     0 az=     0
+     DR   vx=   384 ax=     0 vy=   768 ay=   -80 vz=   -48 az=     0
+     D    vx=     0 ax=     0 vy=   896 ay=   -80 vz=   -64 az=     0
+     DL   vx=  -384 ax=     0 vy=   768 ay=   -80 vz=   -48 az=     0
+     L    vx=  -432 ax=     0 vy=   816 ay=   -80 vz=     0 az=     0
+     UL   vx=  -384 ax=     0 vy=   768 ay=   -80 vz=    48 az=     0
+  class 12 Hannah    @0x595e
+     none vx=     0 ax=     0 vy=   768 ay=   -80 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=   960 ay=   -80 vz=    64 az=     0
+     UR   vx=   384 ax=     0 vy=   768 ay=   -80 vz=    48 az=     0
+     R    vx=   256 ax=     0 vy=   816 ay=   -80 vz=     0 az=     0
+     DR   vx=   384 ax=     0 vy=   768 ay=   -80 vz=   -48 az=     0
+     D    vx=     0 ax=     0 vy=   960 ay=   -80 vz=   -64 az=     0
+     DL   vx=  -384 ax=     0 vy=   768 ay=   -80 vz=   -48 az=     0
+     L    vx=  -256 ax=     0 vy=   816 ay=   -80 vz=     0 az=     0
+     UL   vx=  -384 ax=     0 vy=   768 ay=   -80 vz=    48 az=     0
+  class 12 Mustapha  @0x59ca
+     none vx=     0 ax=     0 vy=   896 ay=   -80 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=   816 ay=   -80 vz=    96 az=     0
+     UR   vx=   320 ax=     0 vy=   944 ay=   -80 vz=    64 az=     0
+     R    vx=   384 ax=     0 vy=   768 ay=   -80 vz=     0 az=     0
+     DR   vx=   320 ax=     0 vy=   944 ay=   -80 vz=   -64 az=     0
+     D    vx=     0 ax=     0 vy=   816 ay=   -80 vz=   -96 az=     0
+     DL   vx=  -320 ax=     0 vy=   944 ay=   -80 vz=   -64 az=     0
+     L    vx=  -384 ax=     0 vy=   768 ay=   -80 vz=     0 az=     0
+     UL   vx=  -320 ax=     0 vy=   944 ay=   -80 vz=    64 az=     0
+  class 12 Mess      @0x5a36
+     none vx=     0 ax=     0 vy=   768 ay=   -80 vz=     0 az=     0
+     U    vx=     0 ax=     0 vy=   768 ay=   -80 vz=    96 az=     0
+     UR   vx=   256 ax=     0 vy=   896 ay=   -80 vz=    32 az=     0
+     R    vx=   256 ax=     0 vy=   768 ay=   -80 vz=     0 az=     0
+     DR   vx=   256 ax=     0 vy=   896 ay=   -80 vz=   -32 az=     0
+     D    vx=     0 ax=     0 vy=   768 ay=   -80 vz=   -96 az=     0
+     DL   vx=  -256 ax=     0 vy=   896 ay=   -80 vz=   -32 az=     0
+     L    vx=  -256 ax=     0 vy=   768 ay=   -80 vz=     0 az=     0
+     UL   vx=  -256 ax=     0 vy=   896 ay=   -80 vz=    32 az=     0
+
+== air control deltas per frame (0x1BE66): (dvx, dvz) per direction
+   U(0,1) UR(1,1) R(2,0) DR(1,-1) D(0,-1) DL(-1,-1) L(-2,0) UL(-1,1)
+
+== jump attack height thresholds (0x1A734) per char: (min height, high/low split)
+  Jack      min=0x10 split=0x4c
+  Hannah    min=0x10 split=0x4b
+  Mustapha  min=0x10 split=0x5d
+  Mess      min=0x10 split=0x48
+
+== high jump attack (state 0x40A) velocities (0x1A994): (vx, vy) per char, ay=-0x20, ax=+-0x20
+  Jack      vx=1280 vy=-512
+  Hannah    vx=1664 vy=-448
+  Mustapha  vx=1280 vy=-512
+  Mess      vx=1152 vy=-448
+
+== dash/other velocity blocks 0x1BF06..0x1BF41 (words)
+   ['0x400', '0xffed', '0x6e0', '0xffa8', '0xff00', '0x0', '0x500', '0xffa8', '0x300', '0x0', '0x380', '0xffb0', '0x800', '0xff40', '0x200', '0x0', '0x800', '0xffa8', '0x600', '0xffe8', '0x330', '0xffd0', '0x600', '0xffe8', '0x3c0', '0xffc8', '0x400', '0x0', '0x280', '0xffd8']
+
+== weapon 0x209 recoil vx per char (0x19CD8)
+   ['0x800', '0xa00', '0xc00', '0x600']
+
+== invulnerability frames $F9 (0x6C3A): index d0+char; d0=0 getup, 4 after throw, 8 after pickup, 12 after special
+  d0= 0 [20, 20, 20, 20]
+  d0= 4 [12, 10, 14, 18]
+  d0= 8 [10, 8, 20, 10]
+  d0=12 [60, 60, 60, 60]
+
+== pushback reactions (0x1D27C): (frames, vx, ax) for reaction 0E/14, 10/16, 12/18
+  frames=15 vx=0x500 ax=-83
+  frames=18 vx=0x800 ax=-113
+  frames=20 vx=0xb00 ax=-150
+
+== knockdown launch vectors (0x1D28E): (vx, ax, vy, ay)
+  type4 alive  @0x1d28e [640, 0, 1280, -64]
+  type4 dead   @0x1d296 [768, 0, 1920, -64]
+  type6 alive  @0x1d29e [1024, 0, 1280, -64]
+  type6 dead   @0x1d2a6 [1024, 0, 1200, -48]
+  burn alive   @0x1d2ae [640, 0, 1280, -64]
+  burn dead    @0x1d2b6 [768, 0, 1920, -64]
+
+== lie-down time $E8 (0x1D1C4) and mash meter $BE (0x1D204): row = (rank & 0x18)>>3, col = rand&15
+  E8 row 0 [5, 5, 5, 5, 5, 5, 15, 15, 15, 15, 15, 15, 15, 15, 30, 30]
+  E8 row 1 [5, 5, 5, 5, 15, 15, 15, 15, 15, 15, 15, 15, 30, 30, 30, 30]
+  E8 row 2 [5, 5, 15, 15, 15, 15, 15, 15, 15, 15, 30, 30, 30, 30, 30, 30]
+  E8 row 3 [5, 15, 15, 15, 15, 15, 15, 15, 30, 30, 30, 30, 30, 30, 30, 30]
+  BE row 0 [15, 15, 15, 15, 15, 15, 20, 20, 20, 20, 20, 20, 20, 20, 25, 25]
+  BE row 1 [15, 15, 15, 15, 20, 20, 20, 20, 20, 20, 20, 20, 25, 25, 25, 25]
+  BE row 2 [15, 15, 20, 20, 20, 20, 20, 20, 20, 20, 25, 25, 25, 25, 25, 25]
+  BE row 3 [15, 20, 20, 20, 20, 20, 20, 20, 25, 25, 25, 25, 25, 25, 25, 25]
+
+== dizzy: stars $BE (0x1CF5C, row=(rank&0x18)>>3, col=rand&15) and max time $80 (0x1CEDC words, row, col=rand&15)
+  BE row 0 [15, 35, 35, 35, 50, 50, 50, 50, 65, 65, 65, 65, 80, 80, 80, 125]
+  BE row 1 [20, 40, 40, 40, 55, 55, 55, 55, 70, 70, 70, 70, 85, 85, 85, 130]
+  BE row 2 [30, 50, 50, 50, 65, 65, 65, 65, 80, 80, 80, 80, 95, 95, 95, 140]
+  BE row 3 [40, 60, 60, 60, 75, 75, 75, 75, 90, 90, 90, 90, 105, 105, 105, 150]
+  80 row 0 [40, 40, 50, 50, 50, 70, 70, 70, 90, 90, 90, 120, 120, 120, 150, 180]
+  80 row 1 [60, 60, 70, 70, 70, 90, 90, 90, 120, 120, 120, 150, 150, 150, 180, 210]
+  80 row 2 [70, 70, 90, 90, 90, 120, 120, 120, 150, 150, 150, 180, 180, 180, 210, 250]
+  80 row 3 [90, 120, 120, 120, 150, 150, 150, 150, 180, 180, 180, 180, 210, 210, 210, 300]
+
+== dizzy chance masks (0x1D166) indexed by min(hits_in_60f,5): bit (rand&15) set => dizzy
+   ['0x0', '0x0', '0x0', '0x0', '0xfff0', '0xffff']
+
+== player attack table: ptr = long[0xA26FC + $20]; entry = ptr + $58*4 (8 bytes)
+  Jack @0xa270c
+    $58=0x00 jab/punch2               dmg= 10 stun=  1 react=0x00 stop= 9 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x02 punch3                   dmg= 15 stun=  3 react=0x02 stop= 9 snd=0x06 fx=0x18 spark=0x00 b7=0x00
+    $58=0x04 finisher                 dmg= 29 stun= 11 react=0x06 stop=13 snd=0x09 fx=0x20 spark=0x18 b7=0x00
+    $58=0x06 grab knee 1              dmg= 10 stun=  3 react=0x00 stop= 8 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x08 grab knee 2+             dmg= 15 stun=  5 react=0x02 stop= 8 snd=0x09 fx=0x18 spark=0x00 b7=0x00
+    $58=0x0a throw                    dmg= 22 stun= 11 react=0x02 stop= 2 snd=0x15 fx=0x20 spark=0x00 b7=0x00
+    $58=0x0c jump attack low          dmg=  8 stun= 10 react=0x10 stop= 6 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x0e jump attack high (dive)  dmg= 15 stun= 10 react=0x12 stop= 6 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x10 running-jump attack      dmg= 15 stun=  6 react=0x02 stop=10 snd=0x03 fx=0x14 spark=0x18 b7=0x00
+    $58=0x12 special                  dmg= 20 stun= 11 react=0x04 stop= 7 snd=0x09 fx=0x20 spark=0x00 b7=0x00
+    $58=0x14 dash attack start        dmg= 12 stun=  5 react=0x02 stop= 8 snd=0x09 fx=0x18 spark=0x00 b7=0x00
+    $58=0x16 weapon run attack        dmg=  7 stun=  6 react=0x12 stop= 7 snd=0x03 fx=0x20 spark=0x00 b7=0x00
+    $58=0x18 escape attack (grabbed)  dmg= 15 stun= 11 react=0x06 stop= 8 snd=0x09 fx=0x30 spark=0x00 b7=0x00
+    $58=0x1a attack in run state 4    dmg= 15 stun= 11 react=0x04 stop= 8 snd=0x09 fx=0x38 spark=0x00 b7=0x00
+    $58=0x5a dash attack hit 2        dmg= 20 stun=  6 react=0x14 stop= 4 snd=0x09 fx=0x18 spark=0x00 b7=0x00
+    $58=0x5c dash attack hit 3+       dmg= 32 stun= 11 react=0x06 stop= 6 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x70 air/command multi-hit    dmg= 10 stun=  1 react=0x06 stop= 6 snd=0x09 fx=0x20 spark=0x00 b7=0x00
+    $58=0x72 command move             dmg= 32 stun=  1 react=0x00 stop= 6 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x74 command move             dmg= 16 stun=  3 react=0x10 stop= 4 snd=0x09 fx=0x18 spark=0x00 b7=0x00
+    $58=0x76 command move / state 0x24 dmg=  4 stun= 11 react=0x04 stop= 6 snd=0x09 fx=0x1c spark=0x00 b7=0x00
+    $58=0x78 (beyond this char's table)
+    $58=0x7a (beyond this char's table)
+  Hannah @0xa28ec
+    $58=0x00 jab/punch2               dmg= 10 stun=  1 react=0x00 stop= 9 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x02 punch3                   dmg= 15 stun=  3 react=0x02 stop= 7 snd=0x06 fx=0x18 spark=0x00 b7=0x00
+    $58=0x04 finisher                 dmg= 29 stun= 11 react=0x06 stop=13 snd=0x09 fx=0x20 spark=0x18 b7=0x00
+    $58=0x06 grab knee 1              dmg= 10 stun=  3 react=0x00 stop= 8 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x08 grab knee 2+             dmg= 15 stun=  5 react=0x02 stop= 8 snd=0x09 fx=0x18 spark=0x00 b7=0x00
+    $58=0x0a throw                    dmg= 20 stun= 11 react=0x02 stop= 2 snd=0x18 fx=0x20 spark=0x00 b7=0x00
+    $58=0x0c jump attack low          dmg=  8 stun= 10 react=0x10 stop= 6 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x0e jump attack high (dive)  dmg= 15 stun= 10 react=0x12 stop= 6 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x10 running-jump attack      dmg= 15 stun=  6 react=0x00 stop=10 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x12 special                  dmg= 20 stun=  1 react=0x04 stop= 3 snd=0x09 fx=0x20 spark=0x00 b7=0x01
+    $58=0x14 dash attack start        dmg= 12 stun=  5 react=0x14 stop= 6 snd=0x09 fx=0x18 spark=0x00 b7=0x00
+    $58=0x16 weapon run attack        dmg=  7 stun=  1 react=0x12 stop= 7 snd=0x03 fx=0x20 spark=0x00 b7=0x00
+    $58=0x18 escape attack (grabbed)  dmg= 15 stun= 11 react=0x06 stop= 8 snd=0x09 fx=0x30 spark=0x00 b7=0x00
+    $58=0x1a attack in run state 4    dmg= 15 stun= 11 react=0x04 stop= 8 snd=0x09 fx=0x38 spark=0x00 b7=0x00
+    $58=0x5a dash attack hit 2        dmg= 20 stun=  6 react=0x14 stop= 4 snd=0x09 fx=0x18 spark=0x00 b7=0x00
+    $58=0x5c dash attack hit 3+       dmg= 32 stun= 11 react=0x06 stop= 4 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x70 air/command multi-hit    dmg= 10 stun=  1 react=0x04 stop= 5 snd=0x06 fx=0x20 spark=0x00 b7=0x00
+    $58=0x72 command move             dmg= 10 stun=  1 react=0x04 stop= 6 snd=0x09 fx=0x20 spark=0x00 b7=0x00
+    $58=0x74 command move             dmg= 26 stun=  1 react=0x00 stop= 4 snd=0x09 fx=0x2c spark=0x00 b7=0x00
+    $58=0x76 command move / state 0x24 dmg= 14 stun=  6 react=0x00 stop= 4 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x78 command move             dmg=  8 stun=  6 react=0x00 stop= 4 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x7a command move             dmg=  4 stun= 11 react=0x04 stop= 8 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+  Mustapha @0xa2adc
+    $58=0x00 jab/punch2               dmg= 10 stun=  1 react=0x00 stop= 8 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x02 punch3                   dmg= 15 stun=  2 react=0x02 stop= 8 snd=0x06 fx=0x18 spark=0x00 b7=0x00
+    $58=0x04 finisher                 dmg= 29 stun= 11 react=0x06 stop=12 snd=0x09 fx=0x20 spark=0x18 b7=0x00
+    $58=0x06 grab knee 1              dmg= 10 stun=  3 react=0x00 stop= 8 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x08 grab knee 2+             dmg= 15 stun=  5 react=0x02 stop= 8 snd=0x09 fx=0x18 spark=0x00 b7=0x00
+    $58=0x0a throw                    dmg= 24 stun= 11 react=0x02 stop= 2 snd=0x1b fx=0x20 spark=0x00 b7=0x00
+    $58=0x0c jump attack low          dmg= 10 stun= 10 react=0x10 stop= 6 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x0e jump attack high (dive)  dmg= 15 stun= 10 react=0x12 stop= 6 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x10 running-jump attack      dmg= 15 stun= 11 react=0x04 stop=10 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x12 special                  dmg= 20 stun= 11 react=0x04 stop= 5 snd=0x09 fx=0x14 spark=0x00 b7=0x01
+    $58=0x14 dash attack start        dmg= 12 stun=  5 react=0x14 stop= 6 snd=0x09 fx=0x18 spark=0x00 b7=0x00
+    $58=0x16 weapon run attack        dmg= 10 stun= 11 react=0x12 stop= 7 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x18 escape attack (grabbed)  dmg= 20 stun= 11 react=0x06 stop= 8 snd=0x09 fx=0x30 spark=0x00 b7=0x00
+    $58=0x1a attack in run state 4    dmg= 20 stun= 11 react=0x04 stop= 8 snd=0x09 fx=0x38 spark=0x00 b7=0x00
+    $58=0x5a dash attack hit 2        dmg= 20 stun=  6 react=0x18 stop= 4 snd=0x09 fx=0x18 spark=0x00 b7=0x00
+    $58=0x5c dash attack hit 3+       dmg= 34 stun= 11 react=0x04 stop= 6 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x70 air/command multi-hit    dmg= 12 stun=  1 react=0x14 stop= 4 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x72 command move             dmg=  6 stun=  3 react=0x14 stop= 4 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x74 command move             dmg=  4 stun=  3 react=0x14 stop= 4 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x76 command move / state 0x24 dmg= 30 stun= 11 react=0x06 stop= 8 snd=0x09 fx=0x2c spark=0x00 b7=0x00
+    $58=0x78 (beyond this char's table)
+    $58=0x7a (beyond this char's table)
+  Mess @0xa2cbc
+    $58=0x00 jab/punch2               dmg= 12 stun=  1 react=0x00 stop= 9 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x02 punch3                   dmg= 17 stun=  2 react=0x02 stop= 9 snd=0x06 fx=0x18 spark=0x00 b7=0x00
+    $58=0x04 finisher                 dmg= 32 stun= 11 react=0x04 stop=13 snd=0x09 fx=0x20 spark=0x18 b7=0x00
+    $58=0x06 grab knee 1              dmg= 15 stun=  2 react=0x00 stop= 8 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x08 grab knee 2+             dmg= 20 stun=  5 react=0x02 stop= 8 snd=0x09 fx=0x18 spark=0x00 b7=0x00
+    $58=0x0a throw                    dmg= 29 stun= 11 react=0x02 stop= 2 snd=0x1e fx=0x20 spark=0x00 b7=0x00
+    $58=0x0c jump attack low          dmg= 10 stun= 10 react=0x10 stop= 6 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x0e jump attack high (dive)  dmg= 15 stun= 10 react=0x12 stop= 6 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x10 running-jump attack      dmg= 20 stun=  1 react=0x02 stop= 6 snd=0x03 fx=0x14 spark=0x00 b7=0x00
+    $58=0x12 special                  dmg= 23 stun=  1 react=0x04 stop= 5 snd=0x09 fx=0x20 spark=0x00 b7=0x01
+    $58=0x14 dash attack start        dmg= 12 stun=  5 react=0x0e stop= 4 snd=0x09 fx=0x18 spark=0x00 b7=0x00
+    $58=0x16 weapon run attack        dmg= 10 stun=  1 react=0x12 stop=10 snd=0x03 fx=0x20 spark=0x00 b7=0x00
+    $58=0x18 escape attack (grabbed)  dmg= 20 stun= 11 react=0x06 stop= 7 snd=0x09 fx=0x30 spark=0x00 b7=0x00
+    $58=0x1a attack in run state 4    dmg= 20 stun= 11 react=0x04 stop= 7 snd=0x09 fx=0x38 spark=0x00 b7=0x00
+    $58=0x5a dash attack hit 2        dmg= 20 stun=  6 react=0x0e stop= 4 snd=0x06 fx=0x18 spark=0x00 b7=0x00
+    $58=0x5c dash attack hit 3+       dmg= 32 stun= 11 react=0x04 stop= 4 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x70 air/command multi-hit    dmg= 13 stun=  1 react=0x04 stop= 6 snd=0x09 fx=0x20 spark=0x00 b7=0x00
+    $58=0x72 command move             dmg= 32 stun=  1 react=0x00 stop= 4 snd=0x09 fx=0x2c spark=0x00 b7=0x00
+    $58=0x74 command move             dmg= 10 stun=  3 react=0x00 stop= 4 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x76 command move / state 0x24 dmg=  6 stun=  4 react=0x00 stop= 4 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x78 command move             dmg=  4 stun= 11 react=0x04 stop= 8 snd=0x09 fx=0x14 spark=0x00 b7=0x00
+    $58=0x7a (beyond this char's table)
+
+== enemy attack table 0xA2EA4: entry = 0xA2EA4 + $58(enemy)*8 (first 64)
+  $58=0x00? idx  0 dmg=  8 stun=  2 react=0x02 stop=18 snd=0x06 fx=0x00 spark=0x19 b7=0x00
+  $58=0x02? idx  1 dmg=  6 stun=  1 react=0x00 stop=16 snd=0x03 fx=0x00 spark=0x19 b7=0x00
+  $58=0x04? idx  2 dmg= 10 stun=  3 react=0x02 stop=20 snd=0x06 fx=0x00 spark=0x19 b7=0x00
+  $58=0x06? idx  3 dmg= 13 stun= 11 react=0x04 stop=17 snd=0x09 fx=0x00 spark=0x19 b7=0x00
+  $58=0x08? idx  4 dmg= 12 stun=  2 react=0x02 stop=18 snd=0x03 fx=0x00 spark=0x19 b7=0x00
+  $58=0x0a? idx  5 dmg= 13 stun=  3 react=0x02 stop=22 snd=0x06 fx=0x00 spark=0x19 b7=0x00
+  $58=0x0c? idx  6 dmg= 15 stun= 11 react=0x06 stop=12 snd=0x09 fx=0x00 spark=0x18 b7=0x00
+  $58=0x0e? idx  7 dmg= 16 stun= 11 react=0x04 stop=12 snd=0x09 fx=0x00 spark=0x18 b7=0x00
+  $58=0x10? idx  8 dmg= 10 stun=  4 react=0x00 stop=16 snd=0x03 fx=0x00 spark=0x19 b7=0x00
+  $58=0x12? idx  9 dmg= 12 stun=  4 react=0x02 stop=16 snd=0x06 fx=0x00 spark=0x19 b7=0x00
+  $58=0x14? idx 10 dmg= 12 stun= 11 react=0x06 stop=20 snd=0x09 fx=0x00 spark=0x19 b7=0x00
+  $58=0x16? idx 11 dmg= 15 stun= 11 react=0x04 stop=15 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x18? idx 12 dmg= 12 stun=  2 react=0x18 stop=10 snd=0x09 fx=0x00 spark=0x00 b7=0x00
+  $58=0x1a? idx 13 dmg=  5 stun=  1 react=0x00 stop=20 snd=0x03 fx=0x00 spark=0x18 b7=0x00
+  $58=0x1c? idx 14 dmg=  6 stun=  2 react=0x02 stop=20 snd=0x06 fx=0x00 spark=0x18 b7=0x00
+  $58=0x1e? idx 15 dmg= 10 stun= 11 react=0x06 stop=16 snd=0x09 fx=0x00 spark=0x19 b7=0x00
+  $58=0x20? idx 16 dmg=  7 stun=  7 react=0x0e stop=16 snd=0x06 fx=0x00 spark=0x19 b7=0x00
+  $58=0x22? idx 17 dmg=  5 stun= 11 react=0x04 stop= 2 snd=0x06 fx=0x00 spark=0x00 b7=0x00
+  $58=0x24? idx 18 dmg=  7 stun=  2 react=0x00 stop=16 snd=0x06 fx=0x00 spark=0x19 b7=0x00
+  $58=0x26? idx 19 dmg= 15 stun=  6 react=0x02 stop=16 snd=0x09 fx=0x00 spark=0x19 b7=0x00
+  $58=0x28? idx 20 dmg=  9 stun=  9 react=0x12 stop=15 snd=0x03 fx=0x00 spark=0x18 b7=0x00
+  $58=0x2a? idx 21 dmg=  9 stun=  4 react=0x00 stop=16 snd=0x06 fx=0x00 spark=0x19 b7=0x00
+  $58=0x2c? idx 22 dmg= 13 stun=  6 react=0x02 stop=18 snd=0x09 fx=0x00 spark=0x19 b7=0x00
+  $58=0x2e? idx 23 dmg= 10 stun=  4 react=0x00 stop=16 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x30? idx 24 dmg= 15 stun= 11 react=0x04 stop= 5 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x32? idx 25 dmg= 12 stun= 11 react=0x04 stop= 5 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x34? idx 26 dmg=  7 stun=  4 react=0x00 stop=16 snd=0x03 fx=0x00 spark=0x18 b7=0x00
+  $58=0x36? idx 27 dmg=  7 stun=  4 react=0x00 stop=16 snd=0x06 fx=0x00 spark=0x19 b7=0x00
+  $58=0x38? idx 28 dmg= 16 stun= 11 react=0x06 stop= 1 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x3a? idx 29 dmg= 10 stun=  1 react=0x12 stop= 7 snd=0x06 fx=0x00 spark=0x00 b7=0x00
+  $58=0x3c? idx 30 dmg= 10 stun= 11 react=0x04 stop=20 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x3e? idx 31 dmg= 16 stun= 11 react=0x06 stop=20 snd=0x09 fx=0x00 spark=0x19 b7=0x00
+  $58=0x40? idx 32 dmg= 12 stun=  4 react=0x00 stop=15 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x42? idx 33 dmg= 16 stun= 11 react=0x04 stop=20 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x44? idx 34 dmg= 10 stun=  2 react=0x10 stop= 5 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x46? idx 35 dmg=  5 stun=  1 react=0x10 stop= 5 snd=0x03 fx=0x00 spark=0x00 b7=0x00
+  $58=0x48? idx 36 dmg= 15 stun= 11 react=0x04 stop=20 snd=0x09 fx=0x00 spark=0x19 b7=0x00
+  $58=0x4a? idx 37 dmg= 12 stun=  4 react=0x18 stop=12 snd=0x06 fx=0x00 spark=0x18 b7=0x00
+  $58=0x4c? idx 38 dmg= 13 stun=  5 react=0x00 stop=12 snd=0x09 fx=0x00 spark=0x18 b7=0x00
+  $58=0x4e? idx 39 dmg= 10 stun=  2 react=0x10 stop= 6 snd=0x03 fx=0x00 spark=0x00 b7=0x00
+  $58=0x50? idx 40 dmg= 15 stun=  2 react=0x00 stop=15 snd=0x03 fx=0x00 spark=0x18 b7=0x00
+  $58=0x52? idx 41 dmg= 15 stun= 11 react=0x00 stop=15 snd=0x03 fx=0x00 spark=0x18 b7=0x00
+  $58=0x54? idx 42 dmg=  5 stun=  1 react=0x0e stop=16 snd=0x03 fx=0x00 spark=0x19 b7=0x00
+  $58=0x56? idx 43 dmg= 12 stun=  8 react=0x02 stop=16 snd=0x06 fx=0x00 spark=0x19 b7=0x00
+  $58=0x58? idx 44 dmg= 15 stun= 11 react=0x06 stop=20 snd=0x09 fx=0x00 spark=0x19 b7=0x00
+  $58=0x5a? idx 45 dmg= 13 stun=  4 react=0x0e stop=16 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x5c? idx 46 dmg= 13 stun= 11 react=0x04 stop= 5 snd=0x09 fx=0x00 spark=0x19 b7=0x00
+  $58=0x5e? idx 47 dmg= 20 stun= 11 react=0x04 stop= 5 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x60? idx 48 dmg= 13 stun= 11 react=0x04 stop=20 snd=0x09 fx=0x00 spark=0x19 b7=0x00
+  $58=0x62? idx 49 dmg= 20 stun= 11 react=0x04 stop=20 snd=0x06 fx=0x00 spark=0x19 b7=0x00
+  $58=0x64? idx 50 dmg= 10 stun= 11 react=0x06 stop=20 snd=0x09 fx=0x00 spark=0x19 b7=0x00
+  $58=0x66? idx 51 dmg=  8 stun=  4 react=0x00 stop= 5 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x68? idx 52 dmg= 15 stun= 11 react=0x04 stop=12 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x6a? idx 53 dmg=  8 stun=  8 react=0x18 stop=14 snd=0x06 fx=0x00 spark=0x18 b7=0x00
+  $58=0x6c? idx 54 dmg= 10 stun=  3 react=0x00 stop=15 snd=0x03 fx=0x00 spark=0x18 b7=0x00
+  $58=0x6e? idx 55 dmg= 16 stun=  9 react=0x12 stop=12 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x70? idx 56 dmg= 14 stun=  9 react=0x00 stop=15 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x72? idx 57 dmg= 10 stun= 11 react=0x04 stop=20 snd=0x09 fx=0x00 spark=0x19 b7=0x00
+  $58=0x74? idx 58 dmg= 10 stun=  4 react=0x00 stop=15 snd=0x21 fx=0x00 spark=0x15 b7=0x00
+  $58=0x76? idx 59 dmg= 18 stun=  1 react=0x00 stop=15 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x78? idx 60 dmg=  7 stun=  6 react=0x14 stop= 6 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x7a? idx 61 dmg= 13 stun= 11 react=0x04 stop=18 snd=0x0c fx=0x00 spark=0x15 b7=0x00
+  $58=0x7c? idx 62 dmg=100 stun= 11 react=0x04 stop=18 snd=0x09 fx=0x00 spark=0x19 b7=0x00
+  $58=0x7e? idx 63 dmg= 12 stun= 11 react=0x04 stop=16 snd=0x09 fx=0x00 spark=0x18 b7=0x00
+
+== player power factor $C6 (0x2C9B6): row by player HP (>=75,>=50,>=25,<25), col rand&31
+   [24, 28, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 36, 42, 48]
+   [28, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 36, 36, 42, 42, 48]
+   [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 36, 36, 36, 42, 42, 48, 48]
+   [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 36, 36, 36, 36, 42, 42, 42, 48, 48, 64]
+
+== player defense per char (0x2C88E, x/32)
+   [32, 34, 35, 30]
+
+== enemy->player: HP band reduction (0x2C896 words), row by player HP (>=76,>=51,>=26,<26), col (rand&0x3e)/2
+   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2]
+   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3]
+   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 4]
+
+== enemy->player: HP scale (0x2C996 words) indexed by (HP>>2)&0x1e
+   [25, 25, 27, 30, 31, 32, 32, 32, 32, 32, 32, 33, 33, 33, 33, 33]
+
+== player->enemy: HP band scale 0x2BB4E words, row by enemy HP%100 band (>=75,>=50,>=25,<25), col (rand&0x3e)/2
+   [35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34]
+   [33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 32, 32, 32, 32, 32, 32, 32, 32, 31, 31, 31, 31, 31, 31, 31, 31]
+   [30, 30, 30, 30, 30, 30, 30, 30, 29, 29, 29, 29, 29, 29, 29, 29, 28, 28, 28, 28, 28, 28, 28, 28, 27, 27, 27, 27, 27, 27, 27, 27]
+   [28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 27, 27, 27, 27, 27, 27, 27, 27, 26, 26, 26, 26, 26, 26, 26, 16]
+
+== player->enemy: 0x2BC4E words (row = number of 100s above 100 in enemy HP), first 4 rows
+   [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+   [32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]
+   [33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33]
+   [33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33]
+
+== hitbox table ptr per char ($44 = long[0x18CC4 + $20])
+   ['0x100000', '0x100c00', '0x101800', '0x102400']
+
+== animation set pointer tables (0x163E.. 6 sets x 4 chars)
+  set 0 @0x163e ['0x9e41c', '0x9f414', '0xa06ac', '0xa16f0']
+  set 1 @0x164e ['0x9edfe', '0x9feca', '0xa115a', '0xa1ffc']
+  set 2 @0x165e ['0x9f094', '0xa0328', '0xa13d8', '0xa232e']
+  set 3 @0x166e ['0x9f252', '0xa04fe', '0xa1596', '0xa24e0']
+  set 4 @0x167e ['0x9f30e', '0xa0596', '0xa1622', '0xa25da']
+  set 5 @0x168e ['0x9eacc', '0x9fb94', '0xa0e8c', '0xa1d32']

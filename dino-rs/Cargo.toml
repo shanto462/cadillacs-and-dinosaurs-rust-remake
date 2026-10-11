@@ -1,0 +1,23 @@
+[workspace]
+resolver = "3"
+members = ["crates/dino-assets", "crates/dino-extract", "crates/dino-game"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[workspace.dependencies]
+dino-assets = { path = "crates/dino-assets" }
+dino-extract = { path = "crates/dino-extract" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+macroquad = "0.4"
+zip = { version = "9", default-features = false, features = ["deflate"] }
+png = "0.18"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3

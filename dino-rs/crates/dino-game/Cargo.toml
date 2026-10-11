@@ -1,0 +1,11 @@
+[package]
+name = "dino-game"
+description = "Native Rust port of the game logic with a GPU renderer."
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+dino-assets.workspace = true
+dino-extract.workspace = true
+macroquad.workspace = true

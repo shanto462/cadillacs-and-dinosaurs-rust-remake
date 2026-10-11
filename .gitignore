@@ -1,0 +1,21 @@
+# Never commit the ROM or anything copied out of it (graphics, code, decompiled code, art).
+*.zip
+re/rom/
+re/out/
+re/ghidra/proj/
+re/ghidra/*.elf
+re/ghidra/decomp.c*
+re/ghidra/log.txt
+*.npy
+*.png
+*.bin
+# Raw disassembly / decompiler dumps of the original program
+re/specs/**/*_dis.txt
+re/specs/enemy/c2.txt
+re/specs/enemy/hit_2a606.txt
+
+# Tooling
+re/.venv/
+__pycache__/
+dino-rs/target/
+.DS_Store

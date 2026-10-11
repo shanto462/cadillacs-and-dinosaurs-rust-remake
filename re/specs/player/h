@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /Volumes/Shanto/Repos/Personal/Github/roms/re/.venv/bin/python -I /Volumes/Shanto/Repos/Personal/Github/roms/re/specs/player/hx.py "$@"
