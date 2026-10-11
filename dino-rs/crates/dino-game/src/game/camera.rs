@@ -730,7 +730,7 @@ impl Game {
         s.cam_x = s.x4c;
         if s.go != 0 {
             s.sub += 2;
-            // 0xA5EA: not ported yet.
+            self.hook_a5ea();
             self.fade.delay = 2;
             self.fade.mask = 0x0F;
             self.start_fade_task(false);
@@ -757,19 +757,19 @@ impl Game {
             self.cam.s2.next_event += 1;
             self.cam.s2.event_idx = self.cam.s2.event_idx.wrapping_add(1);
         }
-        // 0xACD0: not ported yet.
+        self.hook_acd0();
         self.load_all_palettes();
         self.cam.s3.state = 0;
         self.area_setup();
         self.cam.s2.sub += 2;
-        // 0x12BE4: not ported yet.
+        self.hook_12be4();
         self.cam.s2.go = 0;
     }
 
     /// 0x20CC0: fade back in.
     fn area_end_fade_in(&mut self) {
         self.cam.s2.sub += 2;
-        // 0x162AE: not ported yet.
+        self.hook_162ae();
         self.fade.delay = 2;
         self.fade.mask = 0x0F;
         self.start_fade_task(true);
@@ -870,7 +870,10 @@ impl Game {
             self.load_obj_palettes();
             self.fade.mask = 1;
             self.brightness_full_current();
-            // 0xAAE2, 0x1031A, 0xACE0, 0x9236C: not ported yet.
+            self.hook_aae2();
+            self.hook_1031a();
+            self.hook_ace0();
+            self.hook_9236c();
         }
         self.cam.s2.go = 0;
     }

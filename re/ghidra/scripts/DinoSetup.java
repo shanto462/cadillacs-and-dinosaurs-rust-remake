@@ -2,6 +2,8 @@
 import ghidra.app.script.GhidraScript;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.lang.Register;
+import ghidra.program.model.mem.Memory;
+import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.symbol.SourceType;
 import java.math.BigInteger;
 import java.nio.file.*;
@@ -9,6 +11,17 @@ import java.nio.file.*;
 public class DinoSetup extends GhidraScript {
     @Override
     public void run() throws Exception {
+        // RAM and I/O must be writable and not constant: otherwise the decompiler folds RAM reads to 0.
+        Memory mem = currentProgram.getMemory();
+        for (MemoryBlock b : mem.getBlocks()) {
+            long start = b.getStart().getOffset();
+            if (start == 0) continue;                      // program ROM stays read-only
+            if (b.isInitialized()) mem.convertToUninitialized(b);
+            b.setWrite(true);
+            if (start < 0xFF0000L) b.setVolatile(true);    // I/O, video RAM, QSound shared RAM
+        }
+        // `lea $8000.w,a5` and absolute short addressing reach RAM as 0xFFFFxxxx: mirror it there.
+        mem.createByteMappedBlock("RAM_MIRROR", toAddr(0xFFFF0000L), toAddr(0xFF0000L), 0x10000, false);
         Register a5 = currentProgram.getRegister("A5");
         currentProgram.getProgramContext().setValue(a5, toAddr(0), toAddr(0x17FFFF), BigInteger.valueOf(0xFF8000));
         int n = 0;

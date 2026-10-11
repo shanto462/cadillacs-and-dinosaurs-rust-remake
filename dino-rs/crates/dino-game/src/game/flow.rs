@@ -1,5 +1,5 @@
-//! Game flow: attract, title, character select, stage start, continue, game over.
-//! Not ported yet: the game starts straight in a stage (see `start_stage`).
+//! Game flow: attract, title, character select, stage start, stage clear, continue, game over.
+//! Owner: flow / HUD port. Not ported yet: the game starts straight in a stage (`start_stage`).
 
 use super::Game;
 
@@ -23,4 +23,20 @@ impl Game {
     pub fn flow_frame(&mut self) {
         self.game_frame();
     }
+
+    // Stage-level routines the camera calls during area changes (`camera.rs`). Not ported yet.
+
+    /// 0xA5EA, called when an area-end lock is released (before the fade out).
+    pub fn hook_a5ea(&mut self) {}
+    /// 0xACD0, called after the fade out, before the next area is loaded.
+    pub fn hook_acd0(&mut self) {}
+    /// 0x12BE4, called after the next area's map is set up.
+    pub fn hook_12be4(&mut self) {}
+    /// 0x162AE, called before the fade in of the next area.
+    pub fn hook_162ae(&mut self) {}
+    /// 0xAAE2, 0x1031A, 0xACE0, 0x9236C: called by camera mode 8 (sub-area switch).
+    pub fn hook_aae2(&mut self) {}
+    pub fn hook_1031a(&mut self) {}
+    pub fn hook_ace0(&mut self) {}
+    pub fn hook_9236c(&mut self) {}
 }

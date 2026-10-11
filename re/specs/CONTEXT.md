@@ -88,8 +88,10 @@ S=/Volumes/Shanto/Repos/Personal/Github/roms/re
   Decompiled C for all functions: $S/ghidra/decomp.c (headers `// ==== <addr> <name> size=<n>`), index decomp.c.index.tsv.
   Labels: task_create 0x8CE, task_kill 0x92E, task_sleep 0x95A, rng_next 0xA9A, print_string 0xC0A,
   build_sprite_list 0x13FA6 (real entry; 0x13FA8 in the sweep is mid-instruction), draw_object 0x141F8, game_frame 0xAAF6.
-- In-game per-frame order (game_frame 0xAAF6): 0x186CC stage events (camera X vs thresholds, struct $5ec(a5)),
-  0xE90E object/AI updates (calls 0x3242E), 0x10546 camera/scroll, 0x16BEA HUD, 0x13FA6 sprite list, 0x105E8,
-  0x103FE, 0x1037E, 0xFBF4 background streaming (tables 0xFC2E/0xFC4E by stage $4d9 and area $786).
+- In-game per-frame order (game_frame 0xAAF6), corrected: 0x186CC rank/difficulty tick, 0xE90E object updates
+  (census 0x3242E, players 0x18834, pool E items 0x233C6, pool A 0x23420, shake 0x222D6, pool B 0x23604, pool C 0x237B2,
+  held players 0x188DA, ..., camera/background 0x2042E at the end), 0x10546 collision passes, 0x16BEA HUD,
+  0x13FA6 sprite list, 0x105E8 list reset, 0x103FE/0x1037E time limit, 0xFBF4 spawn interpreter (tables 0xFC2E/0xFC4E).
+- Pool E (items, food, weapons, containers) is at $874(a5), 24 x 0xC0. Pool B holds controllers and props.
 - Top level: task slot 0 = system task 0x9D048 (coins/credits/start; on start kills tasks 0x10-0x40 and calls 0x983EE),
   attract/flow task 0xA6CE8 (mode byte state machine via jump tables), slot 0xF0 task 0x9E38C.

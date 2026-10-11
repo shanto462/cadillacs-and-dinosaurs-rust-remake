@@ -4,6 +4,8 @@
 //! The original writes hardware sprite entries (x, y, code, attr) where the first entry has the
 //! highest priority. We keep exactly that list, then hand it to the GPU renderer back to front.
 
+use super::Game;
+use super::Handle;
 use super::body::Body;
 use crate::render::{Gpu, Layer};
 use dino_assets::{Composition, FrameDraw, SpriteData};
@@ -106,4 +108,15 @@ impl SpriteList {
 /// turns "height above the bottom" into a hardware sprite Y.
 pub fn screen_y(d5: i16) -> i16 {
     (((d5 as u16 & 0xFF00) | (!d5 as u16 & 0x00FF)) as i16).wrapping_add(1)
+}
+
+impl Game {
+    /// 0x141F8: draw one object of the sorted draw list (grab pairs are drawn as a pair).
+    pub fn draw_object(&mut self, h: Handle, cam: DrawCamera) {
+        let body = self.body(h).clone();
+        self.sprites.draw_body(&self.assets.sprites, &body, cam, 0);
+    }
+
+    /// 0x14EC0: dynamic shadows for the draw list, after all objects (so below them). Not ported yet.
+    pub fn shadow_pass(&mut self, _list: &[u32], _cam: DrawCamera) {}
 }

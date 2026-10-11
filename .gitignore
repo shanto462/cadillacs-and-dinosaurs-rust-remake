@@ -4,8 +4,8 @@ re/rom/
 re/out/
 re/ghidra/proj/
 re/ghidra/*.elf
-re/ghidra/decomp.c*
-re/ghidra/log.txt
+re/ghidra/decomp*
+re/ghidra/log*.txt
 *.npy
 *.png
 *.bin

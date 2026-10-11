@@ -305,18 +305,11 @@ impl Game {
         self.draw_list.sort_unstable();
         let list = std::mem::take(&mut self.draw_list);
         for &key in &list {
-            let h = key as u16;
-            let flash = self.flash_of(h);
-            let body = self.body(h).clone();
-            self.sprites.draw_body(&self.assets.sprites, &body, cam, flash);
+            self.draw_object(key as u16, cam); // 0x141F8
         }
-        // 0x14EC0 shadow pass: not ported yet.
+        self.shadow_pass(&list, cam); // 0x14EC0
         self.draw_list = list;
         self.draw_list.clear();
     }
 
-    /// Hit flash for the renderer (not part of the original sprite entry).
-    fn flash_of(&self, _h: Handle) -> u8 {
-        0
-    }
 }

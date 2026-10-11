@@ -8,7 +8,7 @@ Everything here is derived from `../dino.zip` (MAME set "dino", World 930201). D
 | `out/dino_68k.bin` | 68000 program image (1.5 MB, big-endian, loaded at address 0). |
 | `out/sweep.txt` | Linear-sweep disassembly of the whole image (Capstone). Data areas show up as noise. |
 | `out/gfx.npy`, `out/sheet16_*.png` | Interleaved 4 MB graphics ROM and decoded 16x16 tile sheets (grey). |
-| `ghidra/` | Ghidra 12.1.4 headless project (`proj/`), import ELF, scripts, and **`decomp.c`**: decompiled C for 3,557 functions (`decomp.c.index.tsv` lists them). |
+| `ghidra/` | Ghidra 12.1.4 headless project (`proj/`), import ELF, scripts, and **`decomp.c`**: decompiled C for about 3,560 functions (`decomp.c.index.tsv` lists them). RAM is writable/uninitialized so RAM reads are not folded; `decomp_v1.c` is the first run without that fix. |
 | `tools/` | Python helpers. `tools/d <hexaddr> <count>` disassembles a range. |
 | `specs/CONTEXT.md` | Shared facts: memory map, task kernel, object pools, sprite format, frame order. |
 | `specs/anim/` | Animation, sprite composition and hitbox formats. |

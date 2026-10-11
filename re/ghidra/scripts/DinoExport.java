@@ -23,6 +23,7 @@ public class DinoExport extends GhidraScript {
 
         DecompInterface di = new DecompInterface();
         DecompileOptions opts = new DecompileOptions();
+        opts.setRespectReadOnly(false);
         di.setOptions(opts);
         di.toggleCCode(true);
         di.toggleSyntaxTree(false);
