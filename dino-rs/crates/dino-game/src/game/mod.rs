@@ -275,7 +275,8 @@ impl Game {
         self.pool_b_update(); // 0x23604 props / controllers
         self.pool_c_update(); // 0x237B2 effects
         self.held_players_update(); // 0x188DA
-        // 0x670C, 0x100DA, 0x1667E: not ported yet.
+        // 0x670C: not ported yet.
+        self.hud_objects_tail(); // 0x100DA score display, 0x1667E low vitality blink
         self.background_update(); // 0x2042E
         // 0x12C90: not ported yet.
     }

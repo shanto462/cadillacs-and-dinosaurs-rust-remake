@@ -310,8 +310,10 @@ impl Game {
                 if collide::boxes_hit(&self.assets.sprites, &eb, eb.attack_box, &pb, pb.body_box).is_none() {
                     continue;
                 }
-                // TODO(player port): the effect on the player (0x11670..0x1177A).
-                // self.player_hit_by_enemy(p, e);
+                // The effect on the player (0x11670..0x1177A) lives in the player port.
+                if let Some(Slot::Player(i)) = slot_of(p) {
+                    self.player_hit_by_enemy(i, e);
+                }
             }
         }
     }

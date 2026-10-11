@@ -38,6 +38,11 @@ Code: `dino-rs/crates/dino-game/src/game/{enemy.rs, enemy_combat.rs, spawn.rs, r
 - `spawn_script_tick` notices an area change itself (TEMP until flow calls `spawn_area_reset_objects`,
   `rank_area_start`, `rank_time_area_start`, `spawn_reset` from `hook_acd0`).
 
+## Verified
+- `cargo build` and `cargo test -p dino-game` pass (14 tests, incl. angle, window, BCD tests).
+- `--input "0-2000:R" --frames 1500` -> `re/out/shots/e_wave1_1500.png`: a FERRIS thug spawned by the
+  stage 1 list and approaching Jack (spawn interpreter + class 2 AI + draw working).
+
 ## Next steps, in order
 1. Build and check: `cargo build`, then `cargo run -p dino-game -- --rom ../dino.zip --chars 0 --screenshot
    ../re/out/shots/e_wave1.png --frames 600` (and 900, 1200); look for thugs entering at camera X 0x388.
