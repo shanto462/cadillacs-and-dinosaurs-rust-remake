@@ -69,6 +69,7 @@ async fn main() {
     let mut gpu = Gpu::new(assets);
 
     let mut viewer = args.viewer.then(|| viewer::Viewer::new(assets, args.view));
+    let mut inputs = input::Inputs::new();
     let mut game = game::Game::new(assets);
     game.start_stage(args.stage, &args.chars);
     let mut tick_no = 0u32;
@@ -93,15 +94,23 @@ async fn main() {
             match &mut viewer {
                 Some(v) => v.update(assets),
                 None => {
-                    let mut pads = input::keyboard();
+                    let mut f = inputs.poll();
                     if let Some(script) = &args.script {
-                        pads[0] |= script.at(tick_no);
+                        let s = script.at(tick_no);
+                        f.players[0] |= s.players[0];
+                        f.system |= s.system;
+                        f.coins |= s.coins;
                     }
-                    game.w.input = pads;
+                    game.w.input = f.players;
+                    game.w.system = f.system;
+                    game.w.coins = f.coins;
                     game.tick();
                     tick_no += 1;
                 }
             }
+        }
+        if is_key_pressed(KeyCode::F1) {
+            game.sprites.debug_boxes = !game.sprites.debug_boxes; // hit box overlay
         }
         match &mut viewer {
             Some(v) => v.draw(assets, &mut gpu),

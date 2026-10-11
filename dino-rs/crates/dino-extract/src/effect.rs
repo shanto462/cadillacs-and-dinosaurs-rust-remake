@@ -1,0 +1,260 @@
+//! Extracts the data used by the draw paths (shadow and splash lists) and by the effect objects
+//! of pool C (effect animation tables, direct frame lists, raw-list frames). Formats:
+//! `re/specs/anim/SPEC.md` 3.1 / 3.4. Every address below is a constant in the 68000 routine named
+//! next to it.
+
+use crate::rom::Rom;
+use dino_assets::effect::{EFX_FRAME, EffectData, RAW_FRAME, RawFrame, RawSprite};
+use dino_assets::{CompoundPart, Frame, FrameDraw, FrameId};
+use std::collections::VecDeque;
+
+/// Effect animation tables (10-byte records), the constant each effect stores in obj+$40.
+const EFFECT_TABLES: &[u32] = &[
+    0x924F6, // hit spark, effect $20 = 4 (0x924BE)
+    0x92AC0, // water splash, effect $20 = 0x10 (0x92A72)
+    0x937AA, // debris, effect $20 = 0x2C (0x93590)
+];
+
+/// Frame lists loaded directly with 0x160A (10-byte records, no table).
+const EFFECT_LISTS: &[u32] = &[
+    0x93096, // burning flames, effect $20 = 0x20, airborne loop, var 0 (0x92FD4)
+    0x930F4, // same, var != 0 (0x92FE0)
+    0x930D4, // flames dying out after landing, var 0 (0x93054)
+    0x9313C, // same, var != 0 (0x93060)
+    0x93872, // debris piece (0x93564)
+    0x9387E, // debris piece (0x9356C)
+];
+
+/// Raw-list animations (8-byte records), loaded with 0x16C6.
+const RAW_LISTS: &[u32] = &[
+    0x96360, // water ripple, effect $20 = 0x68 (0x96330)
+];
+
+/// Shadow sprite list table used by the shadow pass 0x14EC0 (8 longs).
+const SHADOW_TABLE: u32 = 0x14F98;
+/// Splash sprite list table used by 0x14BC6: 8 types x 4 phases (longs).
+const SPLASH_TABLE: u32 = 0x14C9C;
+/// Jitter pairs of the spark spawner 0x92450 (indexed by frame counter & 0xE).
+const SPARK_JITTER: u32 = 0x9248A;
+/// Per-composition extra bytes (same as the sprite extractor).
+const COMP_EXTRA: u32 = 0x11D220;
+const COMP_COUNT_PTR: u32 = 0x0FFFF8;
+
+pub fn extract(rom: &Rom) -> EffectData {
+    let mut d = EffectData::default();
+    let n_comps = rom.u16(COMP_COUNT_PTR) as u32;
+    let mut w = Walker { rom, d: &mut d, n_comps };
+    for &t in EFFECT_TABLES {
+        w.table(t);
+    }
+    for &a in EFFECT_LISTS {
+        w.walk(a);
+    }
+    for &a in RAW_LISTS {
+        w.raw(a);
+    }
+
+    d.shadows = (0..8).map(|i| shadow_list(rom, rom.u32(SHADOW_TABLE + 4 * i))).collect();
+    d.splashes = (0..8)
+        .map(|t| std::array::from_fn(|p| splash_list(rom, rom.u32(SPLASH_TABLE + 16 * t + 4 * p as u32))))
+        .collect();
+    for (k, pair) in d.spark_jitter.iter_mut().enumerate() {
+        *pair = (rom.i16(SPARK_JITTER + 4 * k as u32), rom.i16(SPARK_JITTER + 4 * k as u32 + 2));
+    }
+    d
+}
+
+/// Shadow list (0x14F48): u16 n-1, u16 count, n x (attr, dx, code).
+fn shadow_list(rom: &Rom, a: u32) -> Vec<RawSprite> {
+    let n = rom.u16(a) as u32 + 1;
+    (0..n)
+        .map(|k| {
+            let e = a + 4 + 6 * k;
+            RawSprite { attr: rom.u16(e), dx: rom.i16(e + 2), dy: 0, code: rom.u16(e + 4) }
+        })
+        .collect()
+}
+
+/// Splash list (0x14BDE): u16 n-1, u16 count, n x (attr, dx, dy, code).
+fn splash_list(rom: &Rom, a: u32) -> Vec<RawSprite> {
+    let n = rom.u16(a) as u32 + 1;
+    (0..n)
+        .map(|k| {
+            let e = a + 4 + 8 * k;
+            RawSprite { attr: rom.u16(e), dx: rom.i16(e + 2), dy: rom.i16(e + 4), code: rom.u16(e + 6) }
+        })
+        .collect()
+}
+
+/// Raw sprite list (0x147FE): u16 count, u16 n, n x (dx, dy, attr, code).
+fn raw_list(rom: &Rom, a: u32) -> Vec<RawSprite> {
+    let n = rom.u16(a + 2) as u32;
+    (0..n)
+        .map(|k| {
+            let e = a + 4 + 8 * k;
+            RawSprite { dx: rom.i16(e), dy: rom.i16(e + 2), attr: rom.u16(e + 4), code: rom.u16(e + 6) }
+        })
+        .collect()
+}
+
+struct Walker<'a> {
+    rom: &'a Rom,
+    d: &'a mut EffectData,
+    n_comps: u32,
+}
+
+impl Walker<'_> {
+    fn table(&mut self, table: u32) {
+        let mut first = u32::MAX;
+        let mut offs = Vec::new();
+        let mut i = 0;
+        while 2 * i < first {
+            let off = self.rom.u16(table + 2 * i);
+            if off != 0 {
+                first = first.min(off as u32);
+            }
+            offs.push(off);
+            i += 1;
+        }
+        let anims = offs
+            .iter()
+            .map(|&o| if o == 0 { None } else { Some(self.walk(table.wrapping_add(o as i16 as i32 as u32))) })
+            .collect();
+        self.d.tables.insert(table, anims);
+    }
+
+    fn next_addr(&self, p: u32, stride: u32) -> u32 {
+        let q = p + stride;
+        if self.rom.u8(p + 7) & 0x80 != 0 { q.wrapping_add(self.rom.i16(q) as i32 as u32) } else { q }
+    }
+
+    /// 10-byte records reachable from `start`.
+    fn walk(&mut self, start: u32) -> FrameId {
+        let mut order = Vec::new();
+        let mut q = VecDeque::from([start]);
+        while let Some(p) = q.pop_front() {
+            if self.d.frame_by_addr.contains_key(&p) || order.contains(&p) {
+                continue;
+            }
+            order.push(p);
+            q.push_back(self.next_addr(p, 10));
+        }
+        let base = self.d.frames.len() as FrameId;
+        for (k, &p) in order.iter().enumerate() {
+            self.d.frame_by_addr.insert(p, EFX_FRAME | (base + k as FrameId));
+        }
+        for &p in &order {
+            let f = self.decode(p);
+            self.d.frames.push(f);
+        }
+        self.d.frame_by_addr[&start]
+    }
+
+    fn decode(&self, p: u32) -> Frame {
+        let rom = self.rom;
+        let (w0, w1) = (rom.u16(p), rom.u16(p + 2));
+        assert!(w0 & 0x8000 != 0 || ((w0 / 4) as u32) < self.n_comps, "bad effect frame at {p:#x}");
+        let draw = if w0 & 0x8000 != 0 {
+            let mut q = (p + 2).wrapping_add(rom.i16(p + 2) as i32 as u32);
+            let n = rom.u16(q) as u32 + 1;
+            q += 2;
+            FrameDraw::Compound(
+                (0..n)
+                    .map(|k| {
+                        let e = q + 8 * k;
+                        CompoundPart { dx: rom.i16(e), dy: rom.i16(e + 2), comp: rom.u16(e + 4), clip_flag: rom.u16(e + 6) }
+                    })
+                    .collect(),
+            )
+        } else {
+            FrameDraw::Comp { main: w0, overlay: (w1 & 0x8000 == 0).then_some(w1) }
+        };
+        // 0x1236 rule (10-byte loader); effects load with 0x160A, which does not copy it.
+        let ci = if w0 & 0x8000 != 0 {
+            w0 & 0x7FFF
+        } else if w1 & 0x8000 == 0 {
+            w1
+        } else {
+            w0
+        };
+        let b7 = rom.u8(p + 7);
+        Frame {
+            rom_addr: p,
+            stride: 10,
+            w0,
+            w1,
+            draw,
+            param_a: rom.u8(p + 4),
+            param_b: rom.u8(p + 5),
+            kind: rom.u8(p + 6),
+            duration: b7 & 0x7F,
+            last: b7 & 0x80 != 0,
+            body_box: rom.u8(p + 8),
+            attack_box: rom.u8(p + 9),
+            attach: 0,
+            extra: rom.u32(COMP_EXTRA.wrapping_add(ci as i16 as i32 as u32)).to_be_bytes(),
+            next: self.d.frame_by_addr[&self.next_addr(p, 10)],
+        }
+    }
+
+    /// 8-byte raw-list records reachable from `start`.
+    fn raw(&mut self, start: u32) -> FrameId {
+        let mut order = Vec::new();
+        let mut p = start;
+        while !order.contains(&p) && !self.d.raw_by_addr.contains_key(&p) {
+            order.push(p);
+            p = self.next_addr(p, 8);
+        }
+        let base = self.d.raw_frames.len() as FrameId;
+        for (k, &p) in order.iter().enumerate() {
+            self.d.raw_by_addr.insert(p, RAW_FRAME | (base + k as FrameId));
+        }
+        for &p in &order {
+            let rom = self.rom;
+            let list_addr = rom.u32(p);
+            let b7 = rom.u8(p + 7);
+            let f = RawFrame {
+                rom_addr: p,
+                list_addr,
+                sprites: raw_list(rom, list_addr),
+                param_a: rom.u8(p + 4),
+                param_b: rom.u8(p + 5),
+                kind: rom.u8(p + 6),
+                duration: b7 & 0x7F,
+                last: b7 & 0x80 != 0,
+                next: self.d.raw_by_addr[&self.next_addr(p, 8)],
+            };
+            self.d.raw_frames.push(f);
+        }
+        self.d.raw_by_addr[&start]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    /// Needs the user's ROM set at `../dino.zip` (skipped otherwise).
+    #[test]
+    fn effect_data_shapes() {
+        let path = Path::new("../../../dino.zip");
+        if !path.exists() {
+            return;
+        }
+        let rom = Rom::load(path).unwrap();
+        let d = extract(&rom);
+        // Hit spark table: 27 ids, id 0 = 3 frames 0x15F4 / 0x15F8 / 0x15FC.
+        assert_eq!(d.tables[&0x924F6].len(), 27);
+        let f = d.frame(d.anim(0x924F6, 0));
+        assert_eq!((f.rom_addr, f.w0, f.duration), (0x9252C, 0x15F4, 2));
+        // Ripple: 3 raw frames, first list 0x9637A = one 16x16 tile 0x4534 at (-8, -16).
+        let r = d.raw(d.raw_at(0x96360));
+        assert_eq!((r.list_addr, r.sprites[0].code, r.sprites[0].dx, r.sprites[0].dy), (0x9637A, 0x4534, -8, -16));
+        assert_eq!(d.raw(d.raw(d.raw(r.next).next).next).rom_addr, 0x96360);
+        // Shadow type 0: one 3-wide sprite 0x1FFD at dx -24. Splash type 0 phase 0: 0x500D.
+        assert_eq!((d.shadows[0][0].code, d.shadows[0][0].dx, d.shadows[0][0].attr), (0x1FFD, -24, 0x200));
+        assert_eq!((d.splashes[0][0][0].code, d.splashes[0][0][0].dy), (0x500D, -40));
+        assert_eq!(d.spark_jitter[0], (-2, 0));
+    }
+}

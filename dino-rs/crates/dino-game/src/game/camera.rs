@@ -85,14 +85,17 @@ pub struct Scroll3 {
 pub struct Camera {
     pub s2: Scroll2,
     pub s3: Scroll3,
-    /// Scroll1 camera (G.$6C4 / $6C8): normally X 0, Y 0x100.
+    /// Scroll1 camera (G.$6C4 / $6C8). In game it is (0, 0): 0xAE0 clears it at stage start and
+    /// the HUD lives at scroll1 rows 34+ (0x90A014). 0xAC4E sets Y = 0x100 for a non-game screen.
     pub cam1_x: u16,
     pub cam1_y: u16,
+    /// G.$755C: shake strength requested this frame (consumed by 0x222D6, see `cam_shake`).
+    pub shake_req: u8,
 }
 
 impl Default for Camera {
     fn default() -> Self {
-        Camera { s2: Scroll2::default(), s3: Scroll3::default(), cam1_x: 0, cam1_y: 0x100 }
+        Camera { s2: Scroll2::default(), s3: Scroll3::default(), cam1_x: 0, cam1_y: 0, shake_req: 0 }
     }
 }
 
@@ -1002,7 +1005,7 @@ impl Game {
             s.w18 = 0;
             s.a1e = 0;
             s.sub = 2;
-            // $755C = 2: screen shake strength (0x222D6), not ported yet.
+            self.cam_shake(2); // 0x21128: move.b #2,$755C(a5)
         }
         if self.cam.s2.sub == 2 {
             if (self.cam.s2.w16 as i16) > -0x600 {
@@ -1124,8 +1127,17 @@ impl Game {
         self.stream3();
     }
 
-    /// 0x222D6 screen shake: not ported yet (only stage 6 uses it).
+    /// 0x222D6 screen shake (struct G.$755A).
+    // TODO(port): 0x222D6. Exact logic is in re/specs/stage/HANDOFF.md ("Screen shake"); it offsets
+    // only the displayed scroll2 Y (scroll1 Y in stage 6 area 1), never the camera.
     pub fn screen_shake(&mut self) {}
+
+    /// Request a screen shake (the original writes the strength byte to G.$755C). Other ports
+    /// call this where the original does `move.b #n,$755C(a5)`; a larger strength replaces a
+    /// running shake, a smaller one is ignored (0x22316).
+    pub fn cam_shake(&mut self, strength: u8) {
+        self.cam.shake_req = strength;
+    }
 
     /// Sets the camera's go flag (G.$7A9), used by stage flow code to release a lock.
     pub fn camera_go(&mut self) {

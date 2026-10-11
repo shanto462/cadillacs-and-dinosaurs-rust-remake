@@ -9,3 +9,4 @@ publish.workspace = true
 dino-assets.workspace = true
 dino-extract.workspace = true
 macroquad.workspace = true
+gilrs = "0.11"

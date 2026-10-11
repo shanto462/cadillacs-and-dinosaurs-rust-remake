@@ -142,8 +142,10 @@ pub struct World {
     pub priority_masks: [u16; 4],
     /// G.$16 / $17 / $18 cooked inputs of players 1-3 (active high: 1 R, 2 L, 4 D, 8 U, 0x10 attack, 0x20 jump).
     pub input: [u8; 3],
-    /// G.$1A system inputs (start buttons, coins), active high.
+    /// G.$1A system inputs, active high: bit0..2 start 1..3 (cooked by 0x738).
     pub system: u8,
+    /// G.$20 coin inputs, active high: bit0..2 coin slot 1..3.
+    pub coins: u8,
     /// G.$67BE global attack serial counter.
     pub attack_serial: u8,
     /// G.$5EE level (difficulty row, 0..31) and G.$5F0 rank.

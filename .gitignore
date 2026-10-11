@@ -19,3 +19,5 @@ re/.venv/
 __pycache__/
 dino-rs/target/
 .DS_Store
+re/specs/**/scratch*/
+.claude/*.lock

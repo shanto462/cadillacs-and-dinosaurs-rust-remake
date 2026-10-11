@@ -10,8 +10,12 @@
 
 use std::collections::HashMap;
 
+pub mod effect;
+pub mod enemy;
+pub mod player;
 pub mod sprites;
 pub mod stage;
+pub mod text;
 pub use sprites::*;
 pub use stage::StageData;
 
@@ -44,6 +48,14 @@ pub struct AssetPack {
     pub obj_palette_bank: Vec<[u16; 16]>,
     /// For each (stage, area): the ROM palette number loaded into OBJ palette slot 0..31.
     pub obj_palette_sets: HashMap<(u8, u8), [u16; 32]>,
+    /// Player movement and combat tables (`player.rs`).
+    pub player: player::PlayerData,
+    /// Enemy, stage-script and item tables (`enemy.rs`).
+    pub enemy: enemy::EnemyData,
+    /// Draw-path lists (shadows, splashes) and effect animations (`effect.rs`).
+    pub effects: effect::EffectData,
+    /// HUD and flow strings and tables (`text.rs`).
+    pub text: text::TextData,
 }
 
 impl AssetPack {

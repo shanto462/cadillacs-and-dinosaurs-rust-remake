@@ -51,6 +51,13 @@ enemies 0x23420, shake 0x222D6, props 0x23604, effects 0x237B2, held players 0x1
 0x2042E), `collision` 0x10546 (passes in `combat.rs`), `hud_update` 0x16BEA, `build_sprite_list`
 0x13FA6, `combat_lists_reset` 0x105E8, `time_limit`, `spawn_script_tick` 0xFBF4; then the fade task.
 
+## Naming rule for `impl Game` methods
+
+Every module adds methods to `Game`, so all method names share one name space. Prefix the
+methods you add with your area: `player_`, `enemy_`, `item_`, `prop_`, `spawn_`, `rank_`, `fx_`,
+`draw_`, `hud_`, `flow_`, `snd_` (existing hook names like `pass_10664`, `hook_a5ea` stay).
+Helpers that only need your own object can be methods on your own type or free functions.
+
 ## Shared services
 
 | need | use |
@@ -71,10 +78,12 @@ session. If the build breaks in a file you do not own, wait and retry instead of
 
 | owner | files |
 | --- | --- |
-| main session | `game/mod.rs`, `body.rs`, `camera.rs`, `collide.rs`, `combat.rs`, `palette.rs`, `vram.rs`, `render.rs`, `present.rs`, `main.rs`, `input.rs`, `viewer.rs`, both `lib.rs` files, `sprites.rs`, `stage.rs` |
+| main session | `game/mod.rs`, `body.rs`, `collide.rs`, `combat.rs`, `palette.rs`, `render.rs`, `main.rs`, `input.rs`, `viewer.rs`, both `lib.rs` files, `rom.rs`, `gfx.rs`, `sprites.rs` |
+| stage / camera port | `game/camera.rs`, `game/vram.rs`, `present.rs`, `dino-assets/src/stage.rs`, `dino-extract/src/stage.rs` |
 | player port | `game/player.rs`, `game/player_combat.rs`, `dino-assets/src/player.rs`, `dino-extract/src/player.rs` |
 | draw / effects port | `game/draw.rs`, `game/effect.rs`, `dino-assets/src/effect.rs`, `dino-extract/src/effect.rs` |
 | enemy port | `game/enemy.rs`, `enemy_combat.rs`, `prop.rs`, `item.rs`, `spawn.rs`, `rank.rs`, `dino-assets/src/enemy.rs`, `dino-extract/src/enemy.rs` |
+| sound port | `crates/dino-sound/`, `dino-game/src/audio.rs`, `dino-assets/src/sound.rs`, `dino-extract/src/sound.rs` |
 | flow / HUD port | `game/hud.rs`, `game/flow.rs` (also the `hook_*` stage routines the camera calls), `dino-assets/src/text.rs`, `dino-extract/src/text.rs` |
 
 Allowed small edits in files you do not own (re-read the file right before editing):

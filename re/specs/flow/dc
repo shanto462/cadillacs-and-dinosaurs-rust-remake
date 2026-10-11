@@ -1,0 +1,6 @@
+#!/bin/sh
+# dc <hexaddr>...: print the Ghidra C of the functions at these addresses
+for a in "$@"; do
+  h=$(printf "%08x" 0x$a)
+  awk -v h="// ==== $h " 'index($0,h)==1{p=1;print;next} p&&/^\/\/ ==== /{exit} p{print}' /Volumes/Shanto/Repos/Personal/Github/roms/re/ghidra/decomp.c
+done

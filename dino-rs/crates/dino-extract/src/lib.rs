@@ -3,10 +3,14 @@
 //! It only reads bytes. No original code is executed or emulated: tables found by reverse
 //! engineering the 68000 program are decoded here into plain Rust types.
 
+pub mod effect;
+pub mod enemy;
 pub mod gfx;
+pub mod player;
 pub mod rom;
 pub mod sprites;
 pub mod stage;
+pub mod text;
 
 use dino_assets::{AssetPack, TILES8_COUNT, TILES32_FIRST};
 use rom::Rom;
@@ -23,5 +27,9 @@ pub fn extract(rom_path: &Path) -> Result<AssetPack, String> {
         sprites: sprites::extract(&rom),
         obj_palette_bank,
         obj_palette_sets,
+        player: player::extract(&rom),
+        enemy: enemy::extract(&rom),
+        effects: effect::extract(&rom),
+        text: text::extract(&rom),
     })
 }
