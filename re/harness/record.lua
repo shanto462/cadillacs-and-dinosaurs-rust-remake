@@ -10,6 +10,9 @@
 --   DINO_SYNC    "control" (default): first frame where player 1 can be controlled in a stage;
 --                "control+N": N game frames after that (the frame counter G.$0000 counts them);
 --                "vblank:N": sync at vblank N
+--   DINO_CLOCK   "game" (default): completed game frames at the IRQ tap;
+--                "video": every video frame, including boot and slowdown, at frame_done.
+--                With video, vblank:0 and vblank:1 both start at the first video frame.
 --   DINO_MAX_VBLANKS  give up after this many vblanks without reaching the sync point (default 30000)
 --   DINO_SNAP_EVERY   also save a PNG screenshot every N test frames (0 = never)
 --   DINO_POKE    optional Lua file run once at the sync point, before the snapshot is taken: it edits
@@ -27,6 +30,9 @@
 -- Lag: if a game task (slots 0..14 of the task table at 0xFF0052) is still running at the vblank,
 -- the game frame did not finish (slowdown). That vblank is not recorded and the frame index does
 -- not advance; the next record carries flag bit 0 and the number of lag vblanks.
+-- DINO_CLOCK=video instead samples at frame_done, after the IRQ and frame's CPU work. It keeps
+-- every video frame, even when a task is busy. The first completed video frame is the sync snapshot;
+-- input line k then runs video frame k + 2 when syncing at vblank:1. This matches the probe clock.
 
 local cpu = manager.machine.devices[":maincpu"]
 local space = cpu.spaces["program"]
@@ -45,10 +51,14 @@ local cfg = {
   trace = env("DINO_TRACE", nil),
   state = env("DINO_STATE", nil),
   sync = env("DINO_SYNC", "control"),
+  clock = env("DINO_CLOCK", "game"),
   max_vblanks = tonumber(env("DINO_MAX_VBLANKS", "30000")),
   snap_every = tonumber(env("DINO_SNAP_EVERY", "0")),
   poke = env("DINO_POKE", nil),
 }
+assert(cfg.clock == "game" or cfg.clock == "video", "bad DINO_CLOCK " .. cfg.clock)
+assert(cfg.clock ~= "video" or cfg.sync:match("^vblank:%d+$"),
+  "DINO_CLOCK=video requires DINO_SYNC=vblank:N")
 
 local function log(fmt, ...)
   io.stderr:write("record.lua: " .. string.format(fmt, ...) .. "\n")
@@ -336,13 +346,13 @@ local function on_vblank()
       finish(string.format("no sync point after %d vblanks", vblank))
       return
     end
-    if not lagging() and sync_now(vblank) then
+    if (cfg.clock == "video" or not lagging()) and sync_now(vblank) then
       if cfg.poke then assert(loadfile(cfg.poke))(DINO) end
       local snap = snapshot()
       if cfg.state then write_state(snap) end
       if cfg.trace then
         trace_fh = assert(io.open(cfg.trace, "wb"))
-        write_header(trace_fh, string.format(',"kind":"trace","sync_vblank":%d,"frames":%d,"input":%s', vblank, cfg.frames, json_str(cfg.input or "")))
+        write_header(trace_fh, string.format(',"kind":"trace","clock":%s,"sync_vblank":%d,"frames":%d,"input":%s', json_str(cfg.clock), vblank, cfg.frames, json_str(cfg.input or "")))
         write_record(trace_fh, -1, 0, vblank, 0, nil, snap)
       end
       prev = snap
@@ -358,7 +368,7 @@ local function on_vblank()
     end
     cur = script_at(boot_segs, vblank)
   elseif phase == "test" then
-    if lagging() then
+    if cfg.clock == "game" and lagging() then
       lag = lag + 1
       return
     end
@@ -382,7 +392,7 @@ local function install()
   DINO_TAPS = {
     space:install_write_tap(0xFF0152, 0xFF0153, "dino_vblank", function(offset, data, mask)
       -- st.b -$7EAE(a5) at 0x5C8 writes 0xFF to the high byte; the main loop clears it with 0.
-      if phase ~= "done" and offset == 0xFF0152 and (mask & 0xFF00) ~= 0 and (data & 0xFF00) ~= 0 then
+      if cfg.clock == "game" and phase ~= "done" and offset == 0xFF0152 and (mask & 0xFF00) ~= 0 and (data & 0xFF00) ~= 0 then
         on_vblank()
       end
     end),
@@ -403,4 +413,5 @@ end
 -- The boot script must not need input in the first frame.
 emu.register_frame_done(function()
   if not installed then install() end
+  if cfg.clock == "video" and phase ~= "done" then on_vblank() end
 end)

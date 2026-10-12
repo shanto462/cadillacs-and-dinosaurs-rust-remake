@@ -40,6 +40,71 @@ as a difference in that one frame only.
 
 ## Reference scenarios
 
+### Power-on references
+
+Use `DINO_CLOCK=video` with an empty boot script and `DINO_SYNC=vblank:1`. This records every
+video frame, including the black boot frames and busy frames. No player-control sync is needed.
+The snapshot is after video frame 1; trace frame -1 holds it, and trace frame k is video frame
+k + 2. `vblank:0` also selects frame 1. The default `game` clock still uses the IRQ tap and skips
+busy frames for the existing gameplay tests. The video clock samples at the end of each video
+frame, as the design probes do, rather than before the IRQ flush.
+
+All commands below are headless. `record.sh` sets both SDL drivers to `dummy`, disables video
+and audio output, and clears the EEPROM before each run. Two MAME runs make all three references:
+
+```sh
+DINO_CLOCK=video DINO_BOOT=re/harness/scripts/attract.txt DINO_SYNC=vblank:1 \
+  re/harness/record.sh re/harness/scripts/attract.txt attract2 26500
+python3 re/harness/trace_prefix.py re/out/traces/attract2.mame.trc \
+  re/out/traces/attract.mame.trc --frames 13400
+cp re/out/traces/attract2.state re/out/traces/attract.state
+
+DINO_CLOCK=video DINO_BOOT=re/harness/scripts/attract.txt DINO_SYNC=vblank:1 \
+  re/harness/record.sh re/harness/scripts/coinstart.txt coinstart_full 3000
+python3 re/harness/trace_prefix.py re/out/traces/coinstart_full.mame.trc \
+  re/out/traces/coinstart.mame.trc --control-frames 600
+cp re/out/traces/coinstart_full.state re/out/traces/coinstart.state
+```
+
+`attract.txt` has no inputs. `coinstart.txt` uses the `boot_jack.txt` video timings: coin at 600,
+start at 700, confirm Jack at 900. Its test indexes are shifted by 2 because of the frame-1
+snapshot. The prefix tool stops after 600 game-counter increments from Jack's first controllable
+frame in Episode 1. It preserves the sync record and updates the frame count in the header.
+
+Verified references (each trace also has one frame -1 record):
+
+| name | recorded frames | trace bytes | snapshot bytes |
+| --- | ---: | ---: | ---: |
+| `attract` | 13,400 video frames | 26,025,859 | 278,959 |
+| `attract2` | 26,500 video frames | 50,154,999 | 278,959 |
+| `coinstart` | 2,322 video frames, including 600 game frames after control | 3,973,923 | 278,959 |
+
+Jack first has control at video frame 1723; `coinstart` ends at 2323. These lengths follow the
+requested budgets. Boot adds time before the 13,104-frame attract cycle: state 0 returns at
+13411, and the second return is about 26516, just beyond these cuts. `attract2` includes demos
+1 to 4 (Episodes 2, 3, 8 and 5), and the RNG reset to 0x1C3 at each demo setup.
+
+M1 coverage: the full 64 KB RAM includes mode at `0xFF84D0`, attract state at `0xFF0FD0`, task
+states, counters, camera shadows, RNG, and sound ring and indexes. The 192 KB `gfx` region
+includes all scroll1/2/3 tilemaps, palettes, row-scroll data and both sprite buffers. `cpsa`
+and `cpsb` include live scroll registers, layer bases, layer order and priority masks. No tilemap
+layer or scroll register is missing. The current diff does not compare the CPS register regions;
+M1 will need that comparison as well as the new front-end RAM fields on the port side.
+
+Missing from the recorder for a stricter display/sound comparison:
+
+- Explicit sound enqueue events and sound commands actually sent or muted. The raw ring permits
+  ordinary request reconstruction, but a RAM clear during demo setup can lose or confuse events
+  between samples. Add per-frame `snd` events with code, d1 and d2 at the enqueue routine, plus
+  flush events with the sent/muted result. Keep the raw ring too.
+- The video device's latched sprite buffer and decoded palette, and the timing of register/VRAM
+  writes within a frame. RAM and registers are end-of-frame samples, not the device's rendered
+  output. For exact displayed-frame checks, add a rendered-frame hash or optional frame images;
+  expose the latched video state or timestamp write taps if diagnosing raster timing is needed.
+
+Those extensions are not added here. References stay under ignored `re/out/traces/`; they are
+not in `regress.sh` because the port cannot run the attract loop yet.
+
 Player 1 = Jack in stage 1. Record once, then run the port in the three modes. `NAME` is the name of
 the trace set; `FRAMES` the number of test frames.
 

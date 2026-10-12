@@ -1,0 +1,1 @@
+# No input. Use this for both the boot and test scripts of power-on attract references.

@@ -1,0 +1,5 @@
+# Video clock: snapshot after power-on frame 1, test frame 0 runs video frame 2.
+# Match boot_jack.txt: coin at 600, start at 700, confirm Jack at 900.
+598-605:C
+698-703:S
+898-903:A

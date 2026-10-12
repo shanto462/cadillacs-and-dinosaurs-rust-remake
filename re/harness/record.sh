@@ -5,6 +5,7 @@
 # NAME defaults to the script file name without .txt, FRAMES to 600.
 # Optional environment: DINO_BOOT (boot script, default scripts/boot_jack.txt), DINO_SYNC
 # (control, control+N or vblank:N), DINO_SNAP_EVERY (PNG every N frames into re/out/mame/snap/dino/).
+# DINO_CLOCK=video records every video frame from boot (default game skips slowdown).
 # MAME's own files (cfg, nvram, screenshots, record.log) go to re/out/mame/. See README.md.
 set -e
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
