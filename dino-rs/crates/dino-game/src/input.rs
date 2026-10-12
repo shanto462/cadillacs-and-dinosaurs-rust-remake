@@ -4,14 +4,13 @@
 //! * System (G.$1A, cooked by the vblank input code 0x738): bit0..2 start 1..3.
 //! * Coins (G.$20): bit0..2 coin slot 1..3.
 //!
-//! Keyboard (MAME-style defaults):
-//! * Player 1: arrows, attack Z or Left Ctrl, jump X or Left Alt.
-//! * Player 2: R F D G (up down left right), attack A, jump S.
-//! * Player 3: I K J L, attack N, jump M.
+//! Keyboard (player 1 only; Ctrl and Alt are not used, they clash with system shortcuts):
+//! * Move: arrows or W A S D.
+//! * Attack: J or Z. Jump: K or X.
 //! * Start 1/2/3: keys 1/2/3 (Enter also starts player 1). Coin 1/2/3: keys 5/6/7.
 //! * F1: hit box overlay (debug).
 //!
-//! Gamepads: the first three pads drive players 1-3. D-pad or left stick moves, South (A / Cross)
+//! Players 2 and 3 use gamepads. Gamepads: the first three pads drive players 1-3. D-pad or left stick moves, South (A / Cross)
 //! attacks, East (B / Circle) jumps, Start = start, Select / Back = coin.
 //!
 //! Script (`--input`): `start-end:KEYS,...` per frame, KEYS from U D L R A J, plus S (start)
@@ -112,9 +111,22 @@ impl Inputs {
         use KeyCode::*;
         let mut f = Frame {
             players: [
-                keys(&[(Right, RIGHT), (Left, LEFT), (Down, DOWN), (Up, UP), (Z, ATTACK), (LeftControl, ATTACK), (X, JUMP), (LeftAlt, JUMP)]),
-                keys(&[(G, RIGHT), (D, LEFT), (F, DOWN), (R, UP), (A, ATTACK), (S, JUMP)]),
-                keys(&[(L, RIGHT), (J, LEFT), (K, DOWN), (I, UP), (N, ATTACK), (M, JUMP)]),
+                keys(&[
+                    (Right, RIGHT),
+                    (Left, LEFT),
+                    (Down, DOWN),
+                    (Up, UP),
+                    (D, RIGHT),
+                    (A, LEFT),
+                    (S, DOWN),
+                    (W, UP),
+                    (J, ATTACK),
+                    (Z, ATTACK),
+                    (K, JUMP),
+                    (X, JUMP),
+                ]),
+                0,
+                0,
             ],
             system: keys(&[(Key1, 1), (Enter, 1), (Key2, 2), (Key3, 4)]),
             coins: keys(&[(Key5, 1), (Key6, 2), (Key7, 4)]),

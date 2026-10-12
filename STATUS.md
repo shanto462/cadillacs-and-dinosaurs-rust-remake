@@ -62,4 +62,4 @@ Agents must not spawn their own sub-agents.
 ## How to run
 
 From `dino-rs/`: `cargo run -p dino-game -- --rom ../dino.zip [--stage N] [--chars 0,2]`.
-Keys: arrows + Z/X for player 1, 1 = start, 5 = coin, F1 = hit boxes. Viewer: `--viewer`.
+Keys (player 1): arrows or WASD to move, J or Z attack, K or X jump, Enter or 1 = start, 5 = coin, F1 = hit boxes; players 2 and 3 use gamepads. Viewer: `--viewer`.
