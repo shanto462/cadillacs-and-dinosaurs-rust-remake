@@ -31,6 +31,7 @@ loading assets from the user's own `dino.zip`. Rules and file ownership: `dino-r
 
 Working mode: one agent at a time on this tree (parallel agents broke each other's builds).
 Each agent finishes, the build is green, the milestone is committed, then the next one starts.
+Agents must not spawn their own sub-agents.
 
 ## How to run
 
