@@ -169,7 +169,7 @@ STUB (empty named function), MISSING (no code), UNKNOWN (original not understood
 | F04 | In the car section the time over ends the drive and adds 3:00 | rank.rs, 0x103FE | DONE | |
 | F05 | Camera lock, waves, GO release; 2 minute rule | en 8 | DONE | |
 | F06 | Area changes: fade, no fade, automatic walk (0x1D95E), stage exit walk (0x1DAC4) | en 8.2 | STUB | TEMP shortcut |
-| F07 | Opening scenes: Episode 1 walk in and fight, Episodes 2 and 3 car arrival | M | MISSING | |
+| F07 | Opening scenes: Episode 1 walk in and fight, Episodes 2 and 3 car arrival | M, U (2026-10-12) | MISSING | **User (seen in the port after M0):** Episode 2 is broken: in the original the hero arrives in Jack's car, jumps off, and then the episode begins; the port starts with the hero already standing. Needs the scripted control (D4c T-C1, script interpreter 0x1DB5E), the car object (pool A class 16, also the Episode 3 truck), and the opening timeline (control at 573 game frames, T15). Milestone M2 / M3 |
 | F08 | Map panel, episode card with typed title | M | MISSING | |
 | F09 | Story panels before Episodes 2 to 8 (mode 8) | M | MISSING | |
 | F10 | Clear tally: vitality, enemies, final blow +20000, best player +10000, TOTAL counts down into the score | fl 4, M | STUB | |
