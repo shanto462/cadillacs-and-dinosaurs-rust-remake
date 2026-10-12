@@ -1,0 +1,551 @@
+//! Power on to the title: the boot task 0xA69A, the boot text screens 0x9DCF6 / 0x9DD80, the head of
+//! the attract task 0x97C20 / 0x97D84, the title screen 0x9A3CE with its INSERT COIN blink task
+//! 0x98874, the press start screen 0x983EE / 0x978EE, the green background colour 0x980B0 and the
+//! Capcom sign 0x110C. Owner: flow / HUD port (M1-03). Spec: `D4d-front-end-and-story.md` s2, s3.3,
+//! s3.9, s13 A1, A2, A4.
+//!
+//! The slot 0x10 task of the original (boot task, then the attract task that never returns) is one
+//! [`Scene`] whose state is the position in the script (`st`); the title (600 passes of its frame
+//! loop) is a part of the same task. Slot 0x20 holds the blink task or the press start task (two
+//! scenes, one of them alive). Everything runs from `Game::flow_attract_task`, in slot order.
+//!
+//! # Timing
+//!
+//! A sleep of n frames runs again n frames later (`scene.rs`). The original's long actions (a clear
+//! of all layers 0xAE0 takes about 1.3 video frames of CPU time, the EEPROM read about 26) are written
+//! as sleeps of the measured length, so every visible change falls on the video frame of the
+//! MAME recording (`re/out/traces/attract.mame.trc`, record k = video frame k + 2, the port's tick k).
+//! Two places run past the end of a video frame and are written to match what the recording shows:
+//! the first title pass follows the setup in the same frame, and the fourth title block is half
+//! drawn at the end of the setup frame (see `title_setup`).
+
+use crate::game::flow::scene::Scene;
+use crate::game::vram::PaletteRam;
+use crate::game::{Game, POOL_A, POOL_B, Pool};
+
+/// Script positions of the slot 0x10 task.
+mod st {
+    /// Reset code 0x41A / 0xAA944: 41 video frames.
+    pub const RESET: u16 = 0;
+    /// The reset code's text palette (frame 2).
+    pub const RESET_PALETTE: u16 = 14;
+    /// Sound code 0xFF0B of the reset code (frame 41).
+    pub const SOUND: u16 = 1;
+    /// 0xA69A: hi-score table, EEPROM read.
+    pub const ENTRY: u16 = 2;
+    /// 0xA69A after the EEPROM read: sound reset, clear, DIP bytes, tasks (frame 68).
+    pub const CLEAR: u16 = 3;
+    /// The rest of the clear 0xAE0 (frame 69).
+    pub const CLEAR_END: u16 = 13;
+    /// 0xA69A: the three player inits, then 0x9DCF6 text 1 (frame 70).
+    pub const TEXT1: u16 = 4;
+    /// 0x9DD80 after text 1, then text 2.
+    pub const TEXT1_WAIT: u16 = 5;
+    /// 0x9DD80 after text 2, the end of the boot screens (frame 312).
+    pub const TEXT2_WAIT: u16 = 6;
+    /// 0x97C20: after the first two frames, palettes and cameras.
+    pub const ATTRACT: u16 = 7;
+    /// 0x97C46: the pass of the attract task (layer control 0x18D6), the state routine.
+    pub const PASS: u16 = 8;
+    /// 0x97D84 after the clear: brightness, then the title setup 0x9A3CE.
+    pub const TITLE_START: u16 = 9;
+    /// 0x9A3CE after its clear: palettes, blink task, layer control 0x1396, the blocks.
+    pub const TITLE_SETUP: u16 = 10;
+    /// 0x9A3CE after the blocks: the logo objects and the first pass of the frame loop.
+    pub const TITLE_LOGO: u16 = 11;
+    /// 0x9A514: the frame loop (one pass per frame).
+    pub const TITLE_LOOP: u16 = 12;
+}
+
+/// Frames the title shows (the counter G.-$7022 runs to 600, 0x9A536).
+const TITLE_FRAMES: u16 = 0x258;
+
+impl Game {
+    // ------------------------------------------------------------------ power on
+
+    /// Power on: the state the reset code (0x41A, 0xAA944) leaves in the video memory by video
+    /// frame 27, the boot task created in slot 0x10 and the other tasks not yet created.
+    /// (Frames 0 to 24 of the original are the reset code clearing and testing the video RAM: the
+    /// first records differ from the port in a few cells until then.)
+    pub fn flow_boot_start(&mut self) {
+        self.flow.front = Default::default();
+        // the reset code: RAM cleared (the splash timer and phase are 0 until 0x49A8), G.$26 = 0xE
+        self.sprites.splash_timer = 0;
+        self.sprites.splash_phase = 0;
+        self.w.video_ctrl = 0x0E; // 0x460
+        // scroll1 blank with attribute 0, scroll2 blank except cell 0 (a 0x20 / 0 left by the test),
+        // scroll3 blank.
+        self.vram.scroll1.iter_mut().for_each(|c| (c.code, c.attr) = (0x20, 0));
+        self.vram.clear2();
+        self.vram.scroll2[0] = dino_assets::stage::Cell { code: 0x20, attr: 0 };
+        self.vram.clear3();
+        self.flow.front.task = Scene::start(st::RESET);
+    }
+
+    /// The boot task 0xA69A and the attract task 0x97C20 (slot 0x10).
+    pub fn flow_boot_task(&mut self) {
+        if !self.flow.front.task.tick() {
+            return;
+        }
+        loop {
+            match self.flow.front.task.state {
+                st::RESET => {
+                    // 0x41A .. 0x4FE: RAM clear, video registers (G.$26 = 0xE, G.$28 = 0x12D6),
+                    // 0xAE0, 0xAA944, then the boot task is created.
+                    self.flow.front.task.wait(2, st::RESET_PALETTE);
+                    return;
+                }
+                st::RESET_PALETTE => {
+                    // scroll1 palette 0 is the white to grey text palette at full brightness
+                    let t = &self.assets.frontend.text;
+                    let mut words = [0xF000u16; 16];
+                    for (i, w) in words.iter_mut().take(7).enumerate() {
+                        *w = t.u16(0x9DDB8, 2 * i as u32); // the first palette of the boot text table
+                    }
+                    self.pal.copy(PaletteRam::SCROLL1, &words);
+                    self.flow.front.task.wait(39, st::SOUND);
+                    return;
+                }
+                st::SOUND => {
+                    self.sound(0xFF0B); // the reset code resets the sound CPU
+                    self.flow.front.task.wait(1, st::ENTRY);
+                    return;
+                }
+                st::ENTRY => {
+                    // 0xA69A: hi-score table (0x1504E), the row scroll fill 0xA7B8, the attract
+                    // state byte and the game over flag (0xA7FA), the EEPROM read 0xAC794
+                    // (about 26 frames; the settings are already in `Flow::dip`, `flow_apply_config`).
+                    self.hud_hiscore_init();
+                    self.flow.front.attract_state = 0; // clr.w -$7030(a5)
+                    self.flow.front.game_over_flag = 0; // clr.b -$702E(a5)
+                    self.flow.front.task.wait(26, st::CLEAR);
+                    return;
+                }
+                st::CLEAR => {
+                    // 0xA6BC..0xA73C: debug flag (not ported), sound output flag, sound codes
+                    // 0xFF0B and 0xFF00 (0xA5D2), the clear of all layers 0xAE0 (1.3 frames),
+                    // region word G.$32 = 2, DIP decode 0xA804.
+                    self.sound(0xFF0B);
+                    self.sound(0xFF00);
+                    // 0xAE0 takes 1.3 frames: scroll1 is blank (code 0x20, attribute 6) up to cell
+                    // 3884 when the frame ends, the rest of the layers is cleared in the next one
+                    for c in self.vram.scroll1.iter_mut().take(3884) {
+                        (c.code, c.attr) = (0x20, 6);
+                    }
+                    self.flow.front.task.wait(1, st::CLEAR_END);
+                    return;
+                }
+                st::CLEAR_END => {
+                    self.flow_clear_screen();
+                    self.flow.region = super::Region(2);
+                    self.flow.in_game = 0;
+                    self.flow.started = 0;
+                    self.flow.b4cf = (self.flow.dip.dip_a & 0x10 != 0) as u8;
+                    if self.flow.dip.dip_c & 0x40 == 0 {
+                        self.flow.b4d7 = 1;
+                    }
+                    // 0x9CFC6 (coin modes) and the creation of the system task and the skip wait
+                    // task: M1-04. The rest runs in frame 70 (the clear ends frame 69).
+                    self.flow.front.task.wait(1, st::TEXT1);
+                    return;
+                }
+                st::TEXT1 => {
+                    // 0x4D46 / 0x4D5E / 0x4D76: the three player objects (HP 100, facing 1, power
+                    // factor with one rand() each, extra lives from the settings).
+                    for i in 0..3 {
+                        self.flow_boot_player(i);
+                    }
+                    // 0x9DCF6: fade counter = 15, brightness 0 (0x8938), the sleep 0xA76 of the
+                    // original falls inside the video frame here (the recording shows the palette
+                    // and the text in the same frame), the boot palette, text 1.
+                    self.fade.mask = 0x0F;
+                    self.brightness_low();
+                    self.boot_palette();
+                    self.boot_text(0x9DDB2); // text 1: name, date code, region
+                    self.flow.front.task.state = st::TEXT1_WAIT;
+                    self.flow.front.task.sub = 0;
+                }
+                st::TEXT1_WAIT => {
+                    if !self.boot_wait() {
+                        return;
+                    }
+                    self.flow_clear_scroll1(); // 0xB52
+                    self.boot_text(0x9DDAC); // text 2: the legal warning
+                    self.flow.front.task.state = st::TEXT2_WAIT;
+                }
+                st::TEXT2_WAIT => {
+                    if !self.boot_wait() {
+                        return;
+                    }
+                    self.flow_clear_scroll1(); // jmp 0xB52, then the boot task goes on:
+                    self.flow_scene_palettes(0); // 0xA780: palette set 0 (0x89E6)
+                    self.brightness_full(); // 0x892C
+                    // 0xA78E: DIP C bit 7 clear would start the test mode (not ported), else
+                    // jmp 0x97C20: sleep 2 (0xA7A)
+                    self.flow.front.task.wait(2, st::ATTRACT);
+                    return;
+                }
+                st::ATTRACT => {
+                    // 0x97C26: G.$4CC = 0, palette set 0 and full brightness, the scroll1 and
+                    // scroll2 cameras to 0 (G.$6C4, G.$744), sleep 1 (0xA76)
+                    self.flow.in_game = 0;
+                    self.flow_scene_palettes(0);
+                    self.brightness_full();
+                    self.cam.cam1_x = 0;
+                    self.cam.s2.cam_x = 0;
+                    self.flow.front.task.wait(1, st::PASS);
+                    return;
+                }
+                st::PASS => {
+                    // 0x97C46: layer control 0x18D6, then 0x97C94: after a game over the ranking is
+                    // shown once (0x983D8, M1-07; not ported, the flag is just cleared)
+                    self.w.layer_ctrl = 0x18D6;
+                    self.flow.front.game_over_flag = 0;
+                    // the routine of the attract state (table 0x97C88). TODO(M1-04): states 2, 4, 6;
+                    // all states run the title and start over, as state 0 would without the
+                    // profiles (0x9A7E6, M1-05) and the ranking (0x983D8, M1-07).
+                    // 0x97D84: stop sound (0xFF00), palettes, clear all layers (1.3 frames, the
+                    // palettes stay black until 0x892C)
+                    self.sound(0xFF00);
+                    self.flow_scene_palettes(0);
+                    self.flow_clear_screen();
+                    self.flow.front.task.wait(2, st::TITLE_START);
+                    return;
+                }
+                st::TITLE_START => {
+                    self.brightness_full(); // 0x97D98: 0x892C
+                    // 0x9A3CE: the pools and lists are reset, the title counter and the cameras
+                    // to 0, a full clear (1.3 frames)
+                    self.title_reset();
+                    self.flow.front.task.wait(2, st::TITLE_SETUP);
+                    return;
+                }
+                st::TITLE_SETUP => {
+                    self.title_setup();
+                    return;
+                }
+                st::TITLE_LOGO => self.title_logo(),
+                _ => {
+                    if self.title_pass() {
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    /// The part of the player init the boot task does (0x4D46 / 0x4D5E / 0x4D76 with 0x4D8E and
+    /// 0x4DD6): a cleared object with HP 100, facing 1 and +$10A = 0x33, the power factor
+    /// (0x11738: one `rand()`), the index and the extra lives of the settings.
+    fn flow_boot_player(&mut self, i: usize) {
+        let mut p = crate::game::player::Player::default();
+        p.b.hp = 100;
+        p.b.hp_prev = 100;
+        p.b.hp_bar = 100;
+        p.b.facing = 1;
+        p.b10a = 0x33;
+        p.b.who = i as u8;
+        p.b.serial = (i as u8) << 4;
+        self.players[i] = p;
+        self.player_power_factor(i);
+        self.flow_lives_init(i);
+    }
+
+    // ------------------------------------------------------------------ boot screens
+
+    /// 0x9DD0E: the scroll1 palettes 0 to 2 get 8 colours each from the 48 bytes at
+    /// 0x9DDB8 + G.$32 * 0x20 (blue text for the World set).
+    fn boot_palette(&mut self) {
+        let t = &self.assets.frontend.text;
+        let base = 0x9DDB8 + 0x20 * self.flow.region.0 as u32;
+        for k in 0..3u32 {
+            let words: Vec<u16> = (0..8).map(|i| t.u16(base, k * 16 + 2 * i)).collect();
+            self.pal.copy(PaletteRam::SCROLL1 + 16 * k as usize, &words);
+        }
+    }
+
+    /// 0x9DD2C / 0x9DD56: the text of the region (offset table entry G.$32 * 2, entry 0 when the
+    /// region word is above 2) printed by 0xBB6.
+    fn boot_text(&mut self, table: u32) {
+        let t = &self.assets.frontend.text;
+        let r = if self.flow.region.0 > 2 { 0 } else { self.flow.region.0 as u32 };
+        let a = (table as i32 + t.i16(table, 2 * r) as i32) as u32;
+        let s = t.slice_from(a);
+        self.text_bytes(s, true);
+    }
+
+    /// 0x9DD80: sleep 30 frames (not skippable), then up to 91 more frames in steps of 1; an
+    /// attack or jump (mask 0x30) of player 1 or 2 ends it at once. True when the wait is over.
+    fn boot_wait(&mut self) -> bool {
+        loop {
+            match self.flow.front.task.sub {
+                0 => {
+                    self.flow.front.task.sleep(30);
+                    self.flow.front.task.sub = 1;
+                    return false;
+                }
+                1 => {
+                    self.flow.front.task.count = 0x5A; // d5
+                    self.flow.front.task.sub = 2;
+                }
+                2 => {
+                    if (self.w.input[0] | self.w.input[1]) & 0x30 != 0 {
+                        self.flow.front.task.sub = 0;
+                        return true;
+                    }
+                    self.flow.front.task.sleep(1);
+                    self.flow.front.task.sub = 3;
+                    return false;
+                }
+                _ => {
+                    // dbra d5: the loop ends when d5 passes 0
+                    let b = &mut self.flow.front.task;
+                    b.count = b.count.wrapping_sub(1);
+                    if b.count == 0xFFFF {
+                        b.sub = 0;
+                        return true;
+                    }
+                    b.sub = 2;
+                }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ title 0x9A3CE
+
+    /// The calls every picture task makes first: 0x49A8 (draw list), 0x4A18 / 0x4A46 (the lists
+    /// the combat code fills each frame: empty here), 0x4C48 / 0x4C76 (pool A and B), 0x12BE4 (floor
+    /// table of the area), 0xFBE8 (spawn lists).
+    fn title_pools_reset(&mut self) {
+        self.draw_list.clear();
+        self.sprites.splash_timer = 1; // 0x49B4 (the phase -$7124 is not reset)
+        self.enemies = Pool::new(POOL_A);
+        self.props = Pool::new(POOL_B);
+        self.hook_12be4();
+        self.spawn_reset();
+    }
+
+    /// 0x9A3CE up to the first clear: pool resets, G.-$7022 = 0, G.$7E4 and G.$744 = 0, 0xAE0.
+    fn title_reset(&mut self) {
+        self.flow.front.title = 0;
+        self.cam.s3.cam_x = 0; // G.$7E4
+        self.cam.s2.cam_x = 0; // G.$744
+        self.flow_clear_screen(); // 0xAE0 (about 1.3 frames)
+        // (the pool resets come first in the original; they are made after the clear here because
+        // `flow_clear_screen` also steps the splash timer, which 0xAE0 does not)
+        self.title_pools_reset();
+    }
+
+    /// 0x9A40E..0x9A4D8: palette set 0 (black), brightness, the 1 in 128 roll, the blink task, the
+    /// layer control 0x1396 and the four green blocks of the background.
+    ///
+    /// The recording shows the frame ending while the fourth block is being written: the last 27
+    /// cells (the lower right of the block, row 6 from column 5 and all of row 7) are still blank
+    /// (the cells the original writes last); `title_logo` writes them in the next frame.
+    fn title_setup(&mut self) {
+        self.flow_scene_palettes(0); // 0x9A410
+        self.brightness_full(); // 0x9A416
+        // 0x9A41C: one chance in 128 calls 0x6A73A, which scans the vblank code for a patched word
+        // and never finds one on this ROM (carry clear: nothing happens). Only the rand() matters.
+        let _roll = self.rand();
+        // 0x9A448: the INSERT COIN blink task in slot 0x20. The attract task runs past the end of
+        // this video frame, the scan of the task slots starts over, so the blink task first runs
+        // in the next one.
+        let mut blink = Scene::start(0);
+        blink.sleep(2); // the scene is ticked in this frame too: two ticks make it run next frame
+        self.flow.front.blink = blink;
+        self.flow.front.title = 0; // G.-$7022, -$7020, -$701E
+        self.w.layer_ctrl = 0x1396; // 0x9A468
+        for at in [0x90F000, 0x90F020, 0x90F400, 0x90F420] {
+            self.title_block(at, 0x9A5E6, 0x9A6E6); // 0x98B86: 16 x 8 cells
+        }
+        // the frame ends inside the last block
+        let at = 0x90F420u32;
+        for row in 6..8u32 {
+            for col in 0..16u32 {
+                if row == 6 && col < 5 {
+                    continue;
+                }
+                let cell = &mut self.vram.scroll2[Self::title_cell2(at + col * 0x40 + row * 4)];
+                cell.code = 0x5800;
+                cell.attr = 0;
+            }
+        }
+        self.flow.front.task.wait(1, st::TITLE_LOGO);
+    }
+
+    /// One 16 x 8 block of tiles of the title / press start background (0x98B86).
+    fn title_block(&mut self, at: u32, codes: u32, attrs: u32) {
+        let t = &self.assets.frontend.text;
+        let (c, a) = (t.slice_from(codes), t.slice_from(attrs));
+        self.flow_block2(at, c, a, 16, 8);
+    }
+
+    fn title_cell2(a: u32) -> usize {
+        ((a.wrapping_sub(0x90C000) / 4) & 0xFFF) as usize
+    }
+
+    /// 0x980B0: scroll2 palette 0 (all 16 colours) becomes the green of the background, the
+    /// brightness nibble stays.
+    fn title_green(&mut self) {
+        for w in self.pal.bank_mut(2).iter_mut().take(16) {
+            *w = (*w & 0xF000) | 0x392;
+        }
+    }
+
+    /// 0x9A4DE..0x9A514: the green colour, the two logo objects (variants 0 and 1), the rest of the
+    /// blocks; the frame loop starts in the same frame.
+    fn title_logo(&mut self) {
+        // the cells the frame boundary cut off
+        self.title_block(0x90F420, 0x9A5E6, 0x9A6E6);
+        self.title_green(); // 0x9A4DE
+        self.enemy_spawn_logo(0); // 0x9A4E4
+        self.enemy_spawn_logo(1); // 0x9A4FC
+        self.flow.front.task.state = st::TITLE_LOOP;
+    }
+
+    /// One pass of the title frame loop (0x9A51A..0x9A5B4), after its sleep. True when the task
+    /// sleeps (the caller returns), false when the title is over and the script goes on.
+    fn title_pass(&mut self) -> bool {
+        self.screen_shake(); // 0x222D6
+        self.pool_b_update(); // 0x23604
+        self.enemies_update(); // 0x23420
+        self.build_sprite_list(); // 0x13FA6
+        let n = self.flow.front.title.wrapping_add(1);
+        self.flow.front.title = n;
+        if n as i16 >= TITLE_FRAMES as i16 {
+            // 0x9A5B8: back to 0x97D84, which goes on with the profiles (0x9A7E6, M1-05): not
+            // ported, the attract task starts its pass again (see `st::PASS`).
+            self.flow.front.task.state = st::PASS;
+            return false;
+        }
+        if n == 30 {
+            // the two small lines, then the Capcom sign (0x110C at column 0x10, row 0x1A)
+            let s = self.assets.frontend.text.slice_from(0x97F64);
+            self.text_bytes(s, true);
+            self.flow_capcom_sign(0x10, 0x1A);
+        }
+        if n == 0x168 {
+            // the blink task ends, the licence block replaces the screen text
+            self.flow.front.blink.kill();
+            self.flow_clear_scroll1(); // 0xB52
+            let s = self.assets.frontend.text.slice_from(0x97F9E);
+            self.text_bytes(s, true);
+            // two cells at 0x90A6E8 (0x9A582); for the regions other than ETC a third and a
+            // copyright line
+            self.hud_put(0x90A6E8, 0x40, 0);
+            self.hud_put(0x90A6EC, 0x40, 0);
+            if self.flow.region.0 != 2 {
+                self.hud_put(0x90A6F0, 0x40, 0);
+                let s = self.assets.frontend.text.slice_from(0x98094);
+                self.text_bytes(s, true);
+            }
+        }
+        self.flow.front.task.wait(1, st::TITLE_LOOP); // 0x9A514
+        true
+    }
+
+    /// 0x110C: the Capcom sign, 16 columns of 3 cells (tile codes from 0x113C, attribute 0x0A) with
+    /// the top left cell at column `col`, row `row` (the address of 0xA7218: base 0x90A000 plus
+    /// `col * 0x80 + row * 4`, wrapped into 0x4000).
+    pub fn flow_capcom_sign(&mut self, col: u16, row: u16) {
+        let a0 = 0x90A000 + ((((col & 0xFF) << 7) + ((row & 0xFF) << 2)) & 0x3FFF) as u32;
+        for k in 0..16u32 {
+            for j in 0..3u32 {
+                let code = self.assets.frontend.text.u16(0x113C, 2 * (3 * k + j));
+                self.hud_put(a0 + 0x80 * k + 4 * j, code, 0x0A);
+            }
+        }
+    }
+
+    // ------------------------------------------------------------------ slot 0x20 tasks
+
+    /// 0x98874: the INSERT COIN blink task: print for 30 frames, erase for 30 frames, forever
+    /// (FREE PLAY when G.$46B is set, which the coin mode setup 0x9CFC6 takes from the DIP).
+    pub fn flow_blink_task(&mut self) {
+        if !self.flow.front.blink.tick() {
+            return;
+        }
+        let a = if self.flow.dip.free_play() { 0x988B3 } else { 0x988A4 };
+        let s = self.assets.frontend.text.slice_from(a);
+        if self.flow.front.blink.state == 0 {
+            self.text_bytes(s, true); // 0xBB6
+            self.flow.front.blink.wait(30, 1); // 0xA7E
+        } else {
+            self.text_bytes(s, false); // 0xBAE
+            self.flow.front.blink.wait(30, 0);
+        }
+    }
+
+    // ------------------------------------------------------------------ press start
+
+    /// 0x983EE: the press start screen, called by the system task when a credit is there (M1-04
+    /// ends the attract task before it): clear all, palette set 0, the screen task 0x978EE in slot
+    /// 0x20, layer control 0x12D6, clear scroll1, the scroll2 / scroll3 base shadows (not modelled),
+    /// layer control 0x1396, brightness.
+    #[allow(dead_code)] // the system task calls it (M1-04); the press start test of `mame_check.rs` does now
+    pub fn flow_press_start_screen(&mut self) {
+        self.flow_clear_screen(); // 0xAE0
+        self.flow_scene_palettes(0);
+        self.flow.front.blink.kill(); // the new task replaces the one of slot 0x20
+        // The call takes about 3 frames of CPU time (the clears and the palette load): the new task
+        // first runs 3 frames later in the recording (the scene is ticked in this frame too).
+        let mut press = Scene::start(0);
+        press.sleep(4);
+        self.flow.front.press = press;
+        self.w.layer_ctrl = 0x12D6;
+        self.flow_clear_scroll1(); // 0xB52
+        self.w.layer_ctrl = 0x1396;
+        self.brightness_full(); // 0x892C
+    }
+
+    /// 0x978EE: the press start screen task: the same green background as the title (lists 0x97A20
+    /// and 0x97B20), the two fixed logo pieces (variants 2 and 3), then the object loop forever.
+    /// The prompts are printed by the system task.
+    pub fn flow_press_start_task(&mut self) {
+        if !self.flow.front.press.tick() {
+            return;
+        }
+        if self.flow.front.press.state == 0 {
+            self.title_pools_reset();
+            self.cam.s3.cam_x = 0;
+            self.cam.s2.cam_x = 0;
+            self.cam.s2.cam_y = 0;
+            self.flow_scene_palettes(0);
+            self.brightness_full();
+            self.w.layer_ctrl = 0x12D6;
+            for at in [0x90F000, 0x90F020, 0x90F400, 0x90F420] {
+                self.title_block(at, 0x97A20, 0x97B20);
+            }
+            self.title_green();
+            self.enemy_spawn_logo(2); // 0x979CA
+            self.enemy_spawn_logo(3); // 0x979E2
+            self.brightness_full(); // 0x979FA
+            // 0x97A00: the setup takes most of a frame: the first pass of the object loop comes 2
+            // frames after the first run in the recording
+            self.flow.front.press.wait(2, 1);
+            return;
+        }
+        self.screen_shake(); // 0x222D6
+        self.pool_b_update(); // 0x23604
+        self.enemies_update(); // 0x23420
+        self.build_sprite_list(); // 0x13FA6
+        self.flow.front.press.wait(1, 1);
+    }
+
+    // ------------------------------------------------------------------ the task slots
+
+    /// Slot 0x10 (boot task, attract task) and slot 0x20 (blink task or press start task).
+    pub fn flow_attract_task(&mut self) {
+        self.flow_boot_task();
+        self.flow_blink_task();
+        self.flow_press_start_task();
+    }
+
+    /// The attract task starts again at 0x97C20 (after a game over): sleep 2, then the pass.
+    pub fn flow_attract_start(&mut self) {
+        self.flow.in_game = 0;
+        self.flow.front.task = Scene::start(st::ATTRACT);
+        self.flow.front.task.sleep(2);
+    }
+}

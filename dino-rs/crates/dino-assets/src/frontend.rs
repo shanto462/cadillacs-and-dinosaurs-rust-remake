@@ -54,6 +54,7 @@ pub struct FrontendData {
 /// the next label; the game panics with the address when it reads outside a blob, so a table
 /// that is too short is found at once when a scene uses it.
 pub const FRONT_TABLES: &[(u32, u32, &str)] = &[
+    (0x113C, 0x60, "Capcom sign tile codes, 16 columns of 3 cells (0x110C)"),
     (0x83EB, 0x55, "credit line strings (0x9D66A)"),
     (0x84D6, 0x1E6, "HUD prompt glyph blocks: INSERT COIN, JOIN-IN, blanks (0x6E04)"),
     (0x8461A, 0x2F6, "portrait palette words, portrait list pointers, text id pointers (0x84736)"),

@@ -14,6 +14,8 @@
 //! typewriter), `picture` (page loaders, block printers, scene palettes) and `config` (the
 //! settings file). `HANDOFF.md` in `re/specs/flow/` shows how a scene script uses them.
 
+#[path = "flow/boot.rs"]
+pub mod boot;
 #[path = "flow/config.rs"]
 pub mod config;
 #[path = "flow/front.rs"]
@@ -146,15 +148,11 @@ impl Game {
         self.flow.config = config;
     }
 
-    /// Power on: what the boot task 0xA69A does before the attract loop (high score table),
-    /// then the boot screens (`front.rs`, T1.2 continues from there into the attract loop).
-    /// Use this to run the whole game; `start_stage` starts in a stage.
+    /// Power on: the reset state, then the boot task 0xA69A (`boot.rs`): the two boot text screens
+    /// and the attract task with the title. Use this to run the whole game; `start_stage` starts
+    /// in a stage.
     pub fn flow_boot(&mut self) {
-        self.hud_hiscore_init();
-        self.flow.front = front::Front::default();
-        self.flow_clear_screen(); // 0xA730
-        self.flow_attract_start();
-        self.flow_boot_screens_start();
+        self.flow_boot_start();
     }
 
     /// Direct start in a stage (testing; `main` passes --stage and --chars): the game start
@@ -338,7 +336,10 @@ impl Game {
         self.cam.s2.cam_y = 0;
         self.cam.s3.cam_x = 0;
         self.cam.s3.cam_y = 0;
-        self.sprites.clear();
+        // 0xB10: the two sprite buffers. (Not `SpriteList::clear`: that is the start of the sprite
+        // list builder 0x13FA6 and steps the water splash timer, which 0xAE0 does not.)
+        self.sprites.entries.clear();
+        self.sprites.debug_rects.clear();
         self.flow_clear_scroll1();
         self.vram.clear2();
         self.vram.clear3();

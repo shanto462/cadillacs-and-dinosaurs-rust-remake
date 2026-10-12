@@ -46,6 +46,7 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     // Class 14 (BLADE 0x6DA40, RAZOR 0x6DF2A), the parts and thrown knives (classes 60 / 34 / 41, 0x6FB6A) and the hit / grabbed tables.
     0x6DA40, 0x6DF2A, 0x6FB6A, 0x2F8A6, 0x2FA44, 0x30F18, 0x30F64,
     0x4200E, // class 15 flying pieces (0x41F2E)
+    0x71F72, // class 98 title logo (0x6A21E): the "Cadillacs" / "Dinosaurs" letters
     // Pool E (items, phase 1 task 2). Containers 0x28C8A..0x28D1C, one table per variant.
     0x2995E, // container var 0
     0x2998C, // var 2

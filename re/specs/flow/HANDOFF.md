@@ -46,7 +46,7 @@ sections 2 and 3). Everything below is in `dino-rs/crates/dino-game/src/game/flo
 | `text.rs` | string printers and the typewriter | 0xBB6 / 0xBAE, 0xC4C / 0xC44, 0xC9A, 0xCD2 / 0xCE4 / 0xCDA, 0x84F72, 0xE12 / 0xE0A, 0xE68, 0x84736 (+ 0x84E0C), 0x7EC20 / 0x7EC48 (0xC0A is `hud_print`, already in `hud.rs`) |
 | `picture.rs` | page loaders, block printers, scene palette sets | 0x20454, 0x204CA, 0x20592, 0x98B86, 0x98BAE, 0x89E6 |
 | `config.rs` | the settings file (`Config` named options, `Settings` = the three cooked bytes G.$777A..C) | 0xAC794 / 0xAC7BC (cooking), factory image 0xACBF4 |
-| `front.rs` | the boot screens (the first screen of the new code) | 0x9DCF6, 0x9DD80, tail of 0xA69A |
+| `boot.rs` | power on to the title: the boot task, the boot screens, the head of the attract task, the title, the INSERT COIN blink task, the press start screen (M1-03) | 0xA69A, 0x9DCF6, 0x9DD80, 0x97C20, 0x97D84 (head), 0x9A3CE, 0x98874, 0x983EE, 0x978EE, 0x980B0, 0x110C |
 | `mame_check.rs` | tests that compare the above with the MAME recordings (see "Checks") | |
 | `../snd.rs` | the attract sound filter `snd_passes` / `Game::snd_heard` | 0x610..0x69E |
 | `dino-assets/src/frontend.rs`, `dino-extract/src/frontend.rs` | data in the asset pack: scroll1 pages (0x138C48, blocks 0x15CFE8), scroll2 pages (0x145DC8, blocks 0x175378), the 6 scene palette sets (0x8A5E), and `FRONT_TABLES` (the ROM tables of appendix B of D4d as byte blobs) | |
@@ -153,20 +153,58 @@ power-on run with the same tilemap and palette regions as the MAME recordings.
   0x84736, the typewriter, `speed_up`. Check them against a real screen when a scene first uses them
   (the credit text of the press-start screen uses 0xCE4, 0xC4C, 0xBB6 and 0xE68).
 
-## What T1.2 starts from
+## What M1-04 starts from (M1-03 is done: power on to the end of the title is exact)
 
-* The boot task is faked: `front::BOOT_BLACK` = 70 frames of black, then `flow_boot_screens`. Text 1 appears at
-  record 70, text 2 at 191, the clear at 312 with palette set 0 and full brightness, exactly as in MAME. One
-  known difference: at record 69 the original still has the reset palette in scroll1 palette 0 (the first
-  two actions of 0x9DCF6 fall into one video frame there); the port clears it one frame earlier. T1.2 ports 0xA69A
-  (sound codes 0xFF0B at 43 and 70, 0xFF00 at 70 and 317, the debug flag, the tasks) and replaces the wait.
-* After the boot screens the scene ends and the screen stays blank: the next step is the title (0x9A3CE) with
-  the INSERT COIN blink task (0x98874), which should be a second `Scene` created at the title start
-  (`text_bytes` print and erase, 30 frames each).
-* Data for the title is in `frontend.text` already (0x97A20.. 0x9A5E6 lists, 0x97F4B strings, 0x988A4);
-  the title's own scroll2 blocks, INSERT COIN, the two small lines and the licence block match MAME
-  (`mame_check.rs`). The Capcom sign (0x110C at title frame 30: 3 x 16 cells, attribute 0x0A) and the green
-  background extras (0x980B0) are not done.
+`flow/boot.rs` is the whole path from power on to the title, equal to the MAME recording
+`attract.mame.trc` in every record from 25 to 918 (tilemaps, the four palette banks, the sprite list,
+layer control G.$28, title counter G.-$7022, sound codes): `mame_check.rs`
+`power_on_boot_and_title_match_mame`. `cargo test -p dino-game power_on_report -- --ignored --nocapture`
+lists the differing records by kind for any change (`DINO_LAST`, `DINO_FROM`).
+
+* Slot 0x10 is `front.task`, one `Scene` whose state is the script position (`boot.rs`, `mod st`): the
+  reset wait, the boot task 0xA69A (hi-score table at frame 42, the sound codes, the clear at 68, the three
+  player inits with their three `rand()` calls at 70), the boot screens, then the attract task 0x97C20 head
+  (`ATTRACT`, `PASS`) and the title 0x9A3CE (`TITLE_START` .. `TITLE_LOOP`, 600 passes, counter in
+  `front.title` = G.-$7022). `flow_attract_task` runs it, then the blink task (`front.blink`, slot 0x20) and the
+  press start task (`front.press`, slot 0x20). `flow_attract_start()` restarts the attract task (used after a
+  game over).
+* Stubs for M1-04 / M1-05 / M1-07: `st::PASS` runs the title routine of state 0 for every state and, when the
+  title ends (`title_pass` returns false), starts the pass again; `front.attract_state` (G.-$7030) is written
+  at boot and never advanced. Put the real state routines (0x97D84, 0x97CC0, 0x97D02, 0x97C94 with the ranking
+  after a game over) at `st::PASS` and replace the restart after the title by the profile cards.
+* `flow_press_start_screen()` is 0x983EE: the system task calls it (and kills `front.task` first, as the
+  original kills the attract tasks). It replaces the blink task by the press start task 0x978EE (green blocks,
+  the two fixed logo pieces). The call takes about 3 frames of CPU time in the recording: the task first runs
+  3 frames after the call and its first object pass 2 frames after that (both are sleeps in the code).
+  `press_start_screen_matches_mame` calls it at record 607 of `coinstart.mame.trc` (coin at video frame 600)
+  and compares scroll2, scroll3, all palettes, the sprite list and the layer control from record 610 to 697;
+  scroll1 (the prompts of the system task) and records 607 to 609 (the clear and the palette load are one
+  call in the port) are not compared. M1-04 fits the call frame to the coin timing.
+* The title logo is pool A class 98 (`enemy/class98.rs`, `enemy_spawn_logo(variant)`): variants 0 and 1 (title),
+  2 and 3 (press start), 4 and 0x10 / 0x11 are ported too (unit tests in the file). It uses the animation table
+  0x71F72 (added to `OBJECT_ANIM_TABLES`). The title tune 0x88 is queued by variants 0 and 4 at their 10th and
+  18th pass.
+* The Capcom sign 0x110C is `flow_capcom_sign(col, row)` (tile codes 0x113C in `FRONT_TABLES`, 3 x 16 cells,
+  attribute 0x0A); the green of the background is `title_green` (0x980B0).
+* Timing conventions found here (the sample of a MAME record is not the end of a task pass: a task that
+  calls a short sleep right after the sample can run again before the next one, and a busy clear 0xAE0 spans
+  about 1.3 frames): sleeps are written with the measured length (`wait(2, ...)` after each full clear), two
+  places differ from a plain reading of the code and say so in comments (the first title pass follows the
+  setup in the same frame; the fourth title block is half drawn at the end of the setup frame, the last 27
+  cells come one frame later). A scene created while another scene runs in the same frame is ticked in that
+  frame too: give it `sleep(n + 1)` to make it first run n frames later.
+* The skip of the boot screens (attack or jump of player 1 or 2 after 30 frames of a screen) is in
+  `boot_wait`; `boot_screens_skip_like_the_original` compares three recordings made with
+  `re/harness/record.sh` (commands in the test). Video frame f of the probe batches is record f - 2; a press
+  at probe frame f is seen one frame earlier than the script line `f` of the harness.
+* Not done on purpose: records 0 to 24 (the reset code's clear and RAM test of the video memory: the port
+  starts from the state at record 25), the debug flag and test mode switch of 0xA69A, the system task and
+  skip-wait task creation, 0x9CFC6 (M1-04), the anti-tamper roll of the title (only its `rand()` is made).
+* Known leftovers outside this task: `Game::tick` (`mod.rs`) still counts G.$0000 outside the game task; the
+  original keeps 0 there until the game task (0xA914) or a demo runs, so the trace shows `global.frame`
+  differing. `Flow::dip` is set before power on (the original cooks it at frame 68). `diff.py` reads the
+  all-zero sprite buffer of the original (no end marker before the first sprite list) as 256 entries and
+  reports "sprites differ" for records 25 to 319; the Rust comparison treats it as an empty list.
 * The tables in `FRONT_TABLES` have the extents of appendix B of D4d; a table that is too short panics
   with its address when read ("ROM text table byte ... was not extracted"): extend the line in
   `dino-assets/src/frontend.rs`.

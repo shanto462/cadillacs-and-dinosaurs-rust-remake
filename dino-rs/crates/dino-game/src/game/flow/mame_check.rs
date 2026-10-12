@@ -107,6 +107,132 @@ fn rom(g: &Game, addr: u32) -> &'static [u8] {
     g.assets.frontend.text.slice_from(addr)
 }
 
+/// What the comparison with a MAME record looks at, as differences of the port after its tick.
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+struct Differences {
+    /// Cells of scroll1, 2, 3 and palette words that differ.
+    s1: usize,
+    s2: usize,
+    s3: usize,
+    pal: usize,
+    /// The sprite list differs (entry count of MAME, of the port).
+    sprites: Option<(usize, usize)>,
+    /// Layer control G.$28 (MAME, port), the title counter G.-$7022, the sound codes queued.
+    layer: Option<(u16, u16)>,
+    counter: Option<(u16, u16)>,
+    sounds: Option<(Vec<u16>, Vec<u16>)>,
+}
+
+impl Differences {
+    fn none(&self) -> bool {
+        *self == Differences::default()
+    }
+}
+
+fn ram16(ram: &[u8], a: u32) -> u16 {
+    let o = (a - 0xFF0000) as usize;
+    u16::from_be_bytes([ram[o], ram[o + 1]])
+}
+
+/// The sprite list MAME's builder (0x13FA6) wrote: the buffer that G.$69B4 (0xFFE9B4) selects. A
+/// buffer without the end marker is the blank one the clear 0xAE0 leaves: no sprite (the port has
+/// no list then either).
+fn mame_sprites(ram: &[u8], gfx: &[u8]) -> Vec<(u16, u16, u16, u16)> {
+    let base = if ram16(ram, 0xFFE9B4) != 0 { 0x4000 } else { 0 };
+    let mut v = Vec::new();
+    for i in 0..256 {
+        let o = base + 8 * i;
+        let w = |k: usize| u16::from_be_bytes([gfx[o + 2 * k], gfx[o + 2 * k + 1]]);
+        if w(3) == 0xFF00 {
+            return v;
+        }
+        v.push((w(0), w(1), w(2), w(3)));
+    }
+    Vec::new()
+}
+
+/// The sound codes queued between two records: the ring G.$3A (16-byte entries, write index G.$34).
+fn mame_sounds(prev: &[u8], ram: &[u8]) -> Vec<u16> {
+    let (mut a, b) = (ram16(prev, 0xFF8034) & 0x3F0, ram16(ram, 0xFF8034) & 0x3F0);
+    let mut v = Vec::new();
+    while a != b {
+        v.push(ram16(ram, 0xFF803A + a as u32));
+        a = (a + 0x10) & 0x3F0;
+    }
+    v
+}
+
+/// Runs the port from power on (`Game::flow_boot`) with the scripted input and compares it with the
+/// MAME recording after every tick, records `0..=last`. `input(tick)` gives the player 1 and 2
+/// buttons of that tick. Returns the differences of each record.
+fn compare_power_on(
+    a: &'static AssetPack,
+    trace: &str,
+    last: i32,
+    input: impl Fn(i32) -> [u8; 3],
+    mut before: impl FnMut(i32, &mut Game),
+) -> (Game, Vec<Differences>) {
+    let mut rd = TraceReader::open(trace).expect("the recording opens");
+    rd.next(); // record -1, the sync state
+    let mut g = Game::new(a);
+    g.flow_boot();
+    let mut prev_ram = rd.region("ram").unwrap().data.clone();
+    let mut out = Vec::new();
+    for k in 0..=last {
+        g.w.input = input(k);
+        before(k, &mut g);
+        g.tick();
+        assert_eq!(rd.next(), Some(k), "the recording has record {k}");
+        let (gfx, ram) = (&rd.region("gfx").unwrap().data, &rd.region("ram").unwrap().data);
+        let mut d = Differences {
+            s1: diff(&g, gfx, 1).len(),
+            s2: diff(&g, gfx, 2).len(),
+            s3: diff(&g, gfx, 3).len(),
+            pal: palette_diff(&g, gfx, 0xFFFF).len(),
+            ..Default::default()
+        };
+        let (ms, ps): (Vec<_>, Vec<_>) = (
+            mame_sprites(ram, gfx),
+            g.sprites.entries.iter().map(|e| (e.x as u16, e.y as u16, e.code, e.attr)).collect(),
+        );
+        if ms != ps {
+            d.sprites = Some((ms.len(), ps.len()));
+        }
+        let (ml, pl) = (ram16(ram, 0xFF8028), g.w.layer_ctrl);
+        if ml != pl {
+            d.layer = Some((ml, pl));
+        }
+        let (mc, pc) = (ram16(ram, 0xFF0FDE), g.flow.front.title);
+        if mc != pc {
+            d.counter = Some((mc, pc));
+        }
+        let (msn, psn) = (mame_sounds(&prev_ram, ram), g.w.sounds.clone());
+        if msn != psn {
+            d.sounds = Some((msn, psn));
+        }
+        prev_ram.clone_from(ram);
+        out.push(d);
+    }
+    (g, out)
+}
+
+/// The records in `rows` (index = record) that differ in `what`, as ranges "a..=b".
+fn ranges(rows: &[Differences], what: impl Fn(&Differences) -> bool) -> String {
+    let mut out: Vec<String> = Vec::new();
+    let mut k = 0;
+    while k < rows.len() {
+        if what(&rows[k]) {
+            let s = k;
+            while k + 1 < rows.len() && what(&rows[k + 1]) {
+                k += 1;
+            }
+            out.push(if s == k { format!("{s}") } else { format!("{s}..={k}") });
+        }
+        k += 1;
+    }
+    out.join(" ")
+}
+
 /// The boot screens (0x9DCF6) from power on: both texts, the clear and the palette set 0 that the
 /// boot task loads after them, at the records where the original shows them.
 #[test]
@@ -133,8 +259,9 @@ fn boot_screens_match_mame() {
     }
 }
 
-/// The title: the green background blocks (0x98B86 with the lists 0x9A5E6 and 0x9A6E6), INSERT COIN
-/// (0xBB6), the two small lines at title frame 30 and the licence block at frame 360.
+/// The title pieces one by one: the green background blocks (0x98B86 with the lists 0x9A5E6 and
+/// 0x9A6E6), INSERT COIN (0xBB6), the two small lines and the Capcom sign (0x110C) at title frame 30
+/// and the licence block at frame 360 (the whole title run is `power_on_boot_and_title_match_mame`).
 #[test]
 fn title_screen_texts_and_blocks_match_mame() {
     let Some(a) = assets() else { return };
@@ -154,13 +281,10 @@ fn title_screen_texts_and_blocks_match_mame() {
     // the blink task 0x98874 prints INSERT COIN (0xBB6)
     g.text_bytes(rom(&g, 0x988A4), true);
     assert_layer(&g, &images[1], 1, "INSERT COIN, record 320");
-    // title frame 30: 0x97F64
+    // title frame 30: 0x97F64, then the Capcom sign 0x110C (3 x 16 cells, attribute 0x0A)
     g.text_bytes(rom(&g, 0x97F64), true);
-    // The only other thing the original draws at that frame is the Capcom sign, 3 x 16 cells of
-    // attribute 0x0A written by 0x110C (T1.2); everything else is the text.
-    let sign = diff(&g, &images[2], 1);
-    assert_eq!(sign.len(), 48, "title lines, record 349");
-    assert!(sign.iter().all(|&(_, p, m)| p == (0x20, 6) && m.1 == 0x0A));
+    g.flow_capcom_sign(0x10, 0x1A);
+    assert_layer(&g, &images[2], 1, "title lines and Capcom sign, record 349");
     // title frame 360: clear, the licence block 0x97F9E, two cells at 0x90A6E8 (0x9A582); the third
     // copyright line only for regions other than ETC (G.$32 = 2 here)
     g.flow_clear_scroll1();
@@ -266,4 +390,188 @@ fn slide_texts_match_mame() {
     assert_layer(&g, &images[0], 1, "slide 1 first text, record 4701");
     g.text_tall(rom(&g, 0x98D14));
     assert_layer(&g, &images[1], 1, "slide 1 second text, record 4761");
+}
+
+/// Diagnostic report of the power-on comparison: the records that differ, by kind. Run with
+/// `cargo test -p dino-game power_on_report -- --ignored --nocapture`; `DINO_LAST` (default 940) is
+/// the last record, `DINO_FROM` the first one whose differences are listed in full.
+#[test]
+#[ignore]
+fn power_on_report() {
+    let Some(a) = assets() else { return };
+    let last = std::env::var("DINO_LAST").ok().and_then(|v| v.parse().ok()).unwrap_or(940);
+    let (_, rows) = compare_power_on(a, TRACE, last, |_| [0; 3], |_, _| {});
+    println!("s1      {}", ranges(&rows, |d| d.s1 > 0));
+    println!("s2      {}", ranges(&rows, |d| d.s2 > 0));
+    println!("s3      {}", ranges(&rows, |d| d.s3 > 0));
+    println!("palette {}", ranges(&rows, |d| d.pal > 0));
+    println!("sprites {}", ranges(&rows, |d| d.sprites.is_some()));
+    println!("layer   {}", ranges(&rows, |d| d.layer.is_some()));
+    println!("counter {}", ranges(&rows, |d| d.counter.is_some()));
+    println!("sounds  {}", ranges(&rows, |d| d.sounds.is_some()));
+    let from: usize = std::env::var("DINO_FROM").ok().and_then(|v| v.parse().ok()).unwrap_or(25);
+    for (k, d) in rows.iter().enumerate().skip(from) {
+        if !d.none() {
+            println!("record {k}: {d:?}");
+        }
+    }
+}
+
+/// A1 and A4, the whole boot and the title from power on: after every tick of records 25 to 918
+/// the port equals the recording in all three tilemaps, all four palette banks, the sprite list (the
+/// logo objects of pool A class 98), the layer control G.$28, the title counter G.-$7022 and the
+/// sound codes queued (0xFF0B at 41 and 68, 0xFF00 at 68 and 315, the title tune 0x88 at 329).
+/// Records 0 to 24 are the reset code clearing and testing the video RAM (the port starts from the
+/// state it leaves at record 25; the first records differ in a few cells), 919 on the profile
+/// cards (M1-05). The pictures of D4d A1 and A4 (records 100, 250, 330, 340, 420, 560, 700), the
+/// text 1 and 2 frames, the layer change and the title counter are all inside this run.
+#[test]
+fn power_on_boot_and_title_match_mame() {
+    let Some(a) = assets() else { return };
+    let (_, rows) = compare_power_on(a, TRACE, 918, |_| [0; 3], |_, _| {});
+    let bad: Vec<(usize, &Differences)> = rows.iter().enumerate().skip(25).filter(|(_, d)| !d.none()).collect();
+    assert!(bad.is_empty(), "differs at records {} of {}: {:?}", bad.len(), rows.len() - 25, &bad[..bad.len().min(4)]);
+}
+
+/// The numbers of D4d A1 and A4 on the port itself (record k is video frame k + 2): text 1 from
+/// video frame 72 to 192, text 2 from 193, the layer control 0x18D6 at video frame 317 and 0x1396 at
+/// 321, the title counter 1 at video frame 322, INSERT COIN 30 frames on and 30 off, the small
+/// lines at title frame 30, the licence block at title frame 360, the title tune queued at title
+/// frame 10. The equality with the recording is `power_on_boot_and_title_match_mame`.
+#[test]
+fn title_timeline_numbers() {
+    let Some(a) = assets() else { return };
+    let mut g = Game::new(a);
+    g.flow_boot();
+    let at = |g: &Game, a: u32| {
+        let c = g.vram.scroll1[((a - 0x908000) / 4) as usize & 0xFFF];
+        (c.code, c.attr)
+    };
+    let insert_coin = 0x90A960u32; // column 18, row 56
+    let text1 = |g: &Game| g.vram.scroll1.iter().filter(|c| c.code != 0x20).count();
+    let mut seen = std::collections::BTreeMap::new();
+    for k in 0..=700 {
+        g.tick();
+        if k == 69 || k == 70 || k == 190 || k == 191 || k == 311 || k == 312 {
+            seen.insert(k, text1(&g));
+        }
+        if g.w.layer_ctrl == 0x18D6 {
+            seen.entry(1000).or_insert(k as usize);
+        }
+        if g.w.layer_ctrl == 0x1396 {
+            seen.entry(1001).or_insert(k as usize);
+        }
+        if g.flow.front.title == 1 {
+            seen.entry(1002).or_insert(k as usize);
+        }
+        let on = at(&g, insert_coin).0 == 0x49; // the I of INSERT
+        if k == 320 || k == 349 {
+            assert!(on, "INSERT COIN on at {k}");
+        }
+        if k == 350 || k == 379 {
+            assert!(!on, "INSERT COIN off at {k}");
+        }
+        if k == 380 {
+            assert!(on, "INSERT COIN on again at {k}");
+        }
+        if g.w.sounds.contains(&0x88) {
+            seen.entry(1003).or_insert(k as usize);
+        }
+        if k == 348 {
+            assert_eq!(g.vram.scroll1[((0x90A868u32 - 0x908000) / 4) as usize].code, 0x20, "no Capcom sign before title frame 30");
+        }
+        if k == 349 {
+            assert_eq!(at(&g, 0x90A868 + 0x80 * 0).1, 0x0A, "the Capcom sign (attribute 0x0A) at title frame 30");
+        }
+    }
+    assert_eq!(seen[&69], 0, "black before video frame 72");
+    // (text 1 is 28 letters, the warning of text 2 is 288)
+    assert_eq!((seen[&70], seen[&190]), (28, 28), "text 1 from video frame 72 to 192");
+    assert_eq!((seen[&191], seen[&311]), (288, 288), "text 2 from video frame 193 to 313");
+    assert_eq!(seen[&312], 0, "the screen is blank when the boot ends");
+    assert_eq!((seen[&1000], seen[&1001], seen[&1002], seen[&1003]), (315, 319, 320, 329));
+}
+
+/// The press start screen (0x983EE, task 0x978EE): called in the frame the system task (M1-04)
+/// would call it, here frame 607 of the coin start recording (the coin is at video frame 600).
+/// Scroll2 (the green blocks), scroll3, all palettes, the sprite list (the two fixed logo pieces)
+/// and the layer control equal the recording from the first frame of the task (610) to the start of
+/// the fade out (697). Scroll1 holds the prompts of the system task (INSERT COIN / PUSH START
+/// BUTTON and CREDIT, M1-04) and is not compared.
+#[test]
+fn press_start_screen_matches_mame() {
+    let Some(a) = assets() else { return };
+    let (g, rows) = compare_power_on(a, TRACE_COINSTART, 697, |_| [0; 3], |k, g| {
+        if k == 607 {
+            g.flow.front.task.kill(); // the system task ends the attract task
+            g.flow_press_start_screen();
+        }
+    });
+    if std::env::var("DINO_SHOW").is_ok() {
+        for k in 604..=616 {
+            println!("record {k}: {:?}", rows[k]);
+        }
+    }
+    // the screen is really there: the logo pieces are in the sprite list and the blocks are green
+    assert_eq!(g.sprites.entries.len(), 19, "the two fixed logo pieces");
+    assert_eq!(g.vram.scroll2[3072].code, 0x5801);
+    assert_eq!(g.w.layer_ctrl, 0x12D6);
+    let bad: Vec<(usize, &Differences)> = rows.iter().enumerate().skip(610).filter(|(_, d)| d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some()).collect();
+    assert!(bad.is_empty(), "press start screen differs at records {:?}", &bad[..bad.len().min(6)]);
+}
+
+/// The ticks at which the layer control becomes 0x18D6 (the attract task's first pass) and 0x1396
+/// (the title) when the port boots with `input(tick)` held.
+fn layer_change_ticks(a: &'static AssetPack, last: i32, input: impl Fn(i32) -> [u8; 3]) -> (Option<i32>, Option<i32>) {
+    let mut g = Game::new(a);
+    g.flow_boot();
+    let (mut first, mut title) = (None, None);
+    for k in 0..=last {
+        g.w.input = input(k);
+        g.tick();
+        if g.w.layer_ctrl == 0x18D6 && first.is_none() {
+            first = Some(k);
+        }
+        if g.w.layer_ctrl == 0x1396 && title.is_none() {
+            title = Some(k);
+        }
+    }
+    (first, title)
+}
+
+/// A2, the boot screens end early when player 1 or 2 presses attack or jump (mask 0x30) after the
+/// first 30 frames of a screen; player 3 cannot skip. Three recordings from power on with the
+/// harness (`DINO_CLOCK=video DINO_BOOT=re/harness/scripts/attract.txt DINO_SYNC=vblank:1
+/// re/harness/record.sh SCRIPT NAME 340`; scripts with one line, `98-101:A` for NAME `boot_skip_a`,
+/// `228-231:2J` for `boot_skip_b`; the third is the plain recording with the same press of player 3
+/// that changes nothing) are compared after every tick, records 25 to 335: the screens, palettes,
+/// sprite list, layer control and sounds are equal, so the layer control changes at the same
+/// frames (224 and 231, where the plain boot has 315). The skip tests of D4d A2 (video frames 226,
+/// 234 and none) are the same runs with the probe's own input timing (its frame f is the record
+/// f - 2, a press at its frame 230 is seen one frame earlier by a task than the script line `230`).
+#[test]
+fn boot_screens_skip_like_the_original() {
+    let Some(a) = assets() else { return };
+    let cases: [(&str, &str, usize, u8, i32, i32); 3] = [
+        ("../../../re/out/traces/boot_skip_a.mame.trc", "player 1 attack", 0, 0x10, 98, 224),
+        ("../../../re/out/traces/boot_skip_b.mame.trc", "player 2 jump", 1, 0x20, 228, 231),
+        (TRACE, "player 3 attack", 2, 0x10, 98, 315),
+    ];
+    for (trace, what, who, bit, from, layer_at) in cases {
+        if !Path::new(trace).exists() {
+            eprintln!("mame_check: {trace} is missing, {what} skipped");
+            continue;
+        }
+        let press = |k: i32| -> [u8; 3] {
+            let mut v = [0; 3];
+            if (from..from + 4).contains(&k) {
+                v[who] = bit;
+            }
+            v
+        };
+        let (_, rows) = compare_power_on(a, trace, 335, press, |_, _| {});
+        let bad: Vec<(usize, &Differences)> = rows.iter().enumerate().skip(25).filter(|(_, d)| !d.none()).collect();
+        assert!(bad.is_empty(), "{what}: differs at records {:?}", &bad[..bad.len().min(4)]);
+        assert_eq!(layer_change_ticks(a, 335, press), (Some(layer_at), Some(layer_at + 4)), "{what}");
+    }
 }
