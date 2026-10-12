@@ -58,7 +58,7 @@ STUB (empty named function), MISSING (no code), UNKNOWN (original not understood
 | P38 | Scripted control: walk in at the start, automatic walk at area end, stage exit | pl 2 (0x1DA10, 0x1DB0C, 0x1DB5E) | STUB | blocks the intro, transitions |
 | P39 | Per hero voices on hit, attack, special | sound SPEC | MISSING | no sound in the port |
 | P40 | Respawn flash (pool C class 0x38), sparkle (0x5C), 1UP marker (pool B class 0x48) | pl 5.8 | STUB | |
-| P41 | Players can pick which hero they play at the start and at a continue (can change hero) | M | STUB | |
+| P41 | Players can pick which hero they play at the start and at a continue (can change hero) | M | STUB | D4d: list EVERY moment a hero can be changed (start, continue, join in during play, any other?) and whether two players may pick the same hero; the quick select strip during play (10 s) |
 | P42 | Idle behaviour during play: what a hero does when the player does not touch the controls (idle animation or pose, if any), and the idle "GO" hint after 600 f (W23) | user 2026-10-12 | UNKNOWN | D2a: check in MAME with no input for 2000 f per hero; D4c: the hint |
 
 ## B. Enemies (humans and mutants)
