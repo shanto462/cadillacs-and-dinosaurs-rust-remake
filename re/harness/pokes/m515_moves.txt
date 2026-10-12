@@ -1,0 +1,815 @@
+# M5-15 D2a A1 to A14 scenarios for Jack, Mustapha, Hannah, Mess
+
+segment m515_a1_idle_jack
+jump 1 0 897 char=jack
+snapshot
+0-299:
+trace 300
+
+segment m515_a2_walk_jack
+jump 1 0 897 char=jack
+snapshot
+0-9:
+10-49:R
+50-79:
+80-119:L
+120-149:
+150-189:U
+190-219:
+220-259:D
+260-289:
+290-329:UR
+330-359:
+360-399:DR
+400-429:
+430-469:DL
+470-499:
+500-539:UL
+540-579:
+trace 580
+
+segment m515_a3_run_jack
+jump 1 0 897 char=jack
+snapshot
+0-9:
+10-10:R
+13-70:R
+71-71:L
+72-199:
+trace 200
+
+segment m515_a4_dtap_jack
+jump 1 0 897 char=jack
+snapshot
+0-9:
+10-10:L
+12-42:L
+140-140:R
+143-173:R
+270-270:R
+275-305:R
+400-400:R
+407-437:R
+530-530:R
+539-569:R
+660-660:R
+671-701:R
+790-790:L
+802-832:L
+920-920:R
+933-963:R
+1050-1050:L
+1064-1094:L
+1180-1180:R
+1195-1225:R
+trace 1320
+
+segment m515_a5_jump_jack
+jump 1 0 897 char=jack
+snapshot
+0-9:
+10-10:J
+129-130:RJ
+249-250:LJ
+369-370:UJ
+489-490:DJ
+trace 620
+
+segment m515_a6_jattack_jack
+jump 1 0 897 char=jack
+snapshot
+0-9:
+10-10:J
+13-16:A
+120-120:J
+126-129:A
+230-230:J
+239-242:A
+340-340:J
+352-355:A
+450-450:J
+466-469:A
+560-560:J
+580-583:A
+670-670:J
+696-699:A
+780-780:J
+812-815:A
+trace 900
+
+segment m515_a7_rjump_jack
+jump 1 0 897 char=jack
+snapshot
+0-9:
+10-10:R
+13-40:R
+30-30:RJ
+90-140:L
+170-170:R
+173-200:R
+190-190:RJ
+194-194:A
+250-300:L
+330-330:R
+333-360:R
+350-350:RJ
+360-360:A
+410-460:L
+490-490:R
+493-520:R
+510-510:RJ
+528-528:A
+570-620:L
+trace 660
+
+segment m515_a8_chain_jack
+jump 1 0 897 char=jack
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-9:
+10-10:A
+22-22:A
+34-34:A
+46-46:A
+trace 80
+
+segment m515_a9_combo_throw_jack
+jump 1 0 897 char=jack
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-9:
+10-10:A
+22-22:A
+34-34:A
+46-46:UA
+trace 90
+
+segment m515_a10_grab_jack
+jump 1 0 897 char=jack
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-13:R
+20-20:A
+34-34:A
+48-48:RA
+trace 120
+
+segment m515_a11_special_jack
+jump 1 0 897 char=jack
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-9:
+10-10:AJ
+trace 120
+
+segment m515_a12_dash_jack
+jump 1 0 897 char=jack
+snapshot
+0-9:
+10-10:R
+13-35:R
+35-35:A
+trace 150
+
+segment m515_a13_command_jack
+jump 1 0 897 char=jack
+snapshot
+0-9:
+10-11:D
+14-24:U
+18-18:UA
+trace 150
+
+segment m515_a1_idle_mustapha
+jump 1 0 897 char=mustapha
+snapshot
+0-299:
+trace 300
+
+segment m515_a2_walk_mustapha
+jump 1 0 897 char=mustapha
+snapshot
+0-9:
+10-49:R
+50-79:
+80-119:L
+120-149:
+150-189:U
+190-219:
+220-259:D
+260-289:
+290-329:UR
+330-359:
+360-399:DR
+400-429:
+430-469:DL
+470-499:
+500-539:UL
+540-579:
+trace 580
+
+segment m515_a3_run_mustapha
+jump 1 0 897 char=mustapha
+snapshot
+0-9:
+10-10:R
+13-70:R
+71-71:L
+72-199:
+trace 200
+
+segment m515_a4_dtap_mustapha
+jump 1 0 897 char=mustapha
+snapshot
+0-9:
+10-10:L
+12-42:L
+140-140:R
+143-173:R
+270-270:R
+275-305:R
+400-400:R
+407-437:R
+530-530:R
+539-569:R
+660-660:R
+671-701:R
+790-790:L
+802-832:L
+920-920:R
+933-963:R
+1050-1050:L
+1064-1094:L
+1180-1180:R
+1195-1225:R
+trace 1320
+
+segment m515_a5_jump_mustapha
+jump 1 0 897 char=mustapha
+snapshot
+0-9:
+10-10:J
+129-130:RJ
+249-250:LJ
+369-370:UJ
+489-490:DJ
+trace 620
+
+segment m515_a6_jattack_mustapha
+jump 1 0 897 char=mustapha
+snapshot
+0-9:
+10-10:J
+13-16:A
+120-120:J
+126-129:A
+230-230:J
+239-242:A
+340-340:J
+352-355:A
+450-450:J
+466-469:A
+560-560:J
+580-583:A
+670-670:J
+696-699:A
+780-780:J
+812-815:A
+trace 900
+
+segment m515_a7_rjump_mustapha
+jump 1 0 897 char=mustapha
+snapshot
+0-9:
+10-10:R
+13-40:R
+30-30:RJ
+90-140:L
+170-170:R
+173-200:R
+190-190:RJ
+194-194:A
+250-300:L
+330-330:R
+333-360:R
+350-350:RJ
+360-360:A
+410-460:L
+490-490:R
+493-520:R
+510-510:RJ
+528-528:A
+570-620:L
+trace 660
+
+segment m515_a8_chain_mustapha
+jump 1 0 897 char=mustapha
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-9:
+10-10:A
+22-22:A
+34-34:A
+46-46:A
+trace 80
+
+segment m515_a9_combo_throw_mustapha
+jump 1 0 897 char=mustapha
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-9:
+10-10:A
+22-22:A
+34-34:A
+46-46:UA
+trace 90
+
+segment m515_a10_grab_mustapha
+jump 1 0 897 char=mustapha
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-13:R
+20-20:A
+34-34:A
+48-48:RA
+trace 120
+
+segment m515_a11_special_mustapha
+jump 1 0 897 char=mustapha
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-9:
+10-10:AJ
+trace 120
+
+segment m515_a12_dash_mustapha
+jump 1 0 897 char=mustapha
+snapshot
+0-9:
+10-10:R
+13-35:R
+35-35:A
+trace 150
+
+segment m515_a13_command_mustapha
+jump 1 0 897 char=mustapha
+snapshot
+0-9:
+10-11:D
+14-24:U
+18-18:UA
+trace 150
+
+segment m515_a1_idle_hannah
+jump 1 0 897 char=hannah
+snapshot
+0-299:
+trace 300
+
+segment m515_a2_walk_hannah
+jump 1 0 897 char=hannah
+snapshot
+0-9:
+10-49:R
+50-79:
+80-119:L
+120-149:
+150-189:U
+190-219:
+220-259:D
+260-289:
+290-329:UR
+330-359:
+360-399:DR
+400-429:
+430-469:DL
+470-499:
+500-539:UL
+540-579:
+trace 580
+
+segment m515_a3_run_hannah
+jump 1 0 897 char=hannah
+snapshot
+0-9:
+10-10:R
+13-70:R
+71-71:L
+72-199:
+trace 200
+
+segment m515_a4_dtap_hannah
+jump 1 0 897 char=hannah
+snapshot
+0-9:
+10-10:L
+12-42:L
+140-140:R
+143-173:R
+270-270:R
+275-305:R
+400-400:R
+407-437:R
+530-530:R
+539-569:R
+660-660:R
+671-701:R
+790-790:L
+802-832:L
+920-920:R
+933-963:R
+1050-1050:L
+1064-1094:L
+1180-1180:R
+1195-1225:R
+trace 1320
+
+segment m515_a5_jump_hannah
+jump 1 0 897 char=hannah
+snapshot
+0-9:
+10-10:J
+129-130:RJ
+249-250:LJ
+369-370:UJ
+489-490:DJ
+trace 620
+
+segment m515_a6_jattack_hannah
+jump 1 0 897 char=hannah
+snapshot
+0-9:
+10-10:J
+13-16:A
+120-120:J
+126-129:A
+230-230:J
+239-242:A
+340-340:J
+352-355:A
+450-450:J
+466-469:A
+560-560:J
+580-583:A
+670-670:J
+696-699:A
+780-780:J
+812-815:A
+trace 900
+
+segment m515_a7_rjump_hannah
+jump 1 0 897 char=hannah
+snapshot
+0-9:
+10-10:R
+13-40:R
+30-30:RJ
+90-140:L
+170-170:R
+173-200:R
+190-190:RJ
+194-194:A
+250-300:L
+330-330:R
+333-360:R
+350-350:RJ
+360-360:A
+410-460:L
+490-490:R
+493-520:R
+510-510:RJ
+528-528:A
+570-620:L
+trace 660
+
+segment m515_a8_chain_hannah
+jump 1 0 897 char=hannah
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-9:
+10-10:A
+22-22:A
+34-34:A
+46-46:A
+trace 80
+
+segment m515_a9_combo_throw_hannah
+jump 1 0 897 char=hannah
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-9:
+10-10:A
+22-22:A
+34-34:A
+46-46:UA
+trace 90
+
+segment m515_a10_grab_hannah
+jump 1 0 897 char=hannah
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-13:R
+20-20:A
+34-34:A
+48-48:RA
+trace 120
+
+segment m515_a11_special_hannah
+jump 1 0 897 char=hannah
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-9:
+10-10:AJ
+trace 120
+
+segment m515_a12_dash_hannah
+jump 1 0 897 char=hannah
+snapshot
+0-9:
+10-10:R
+13-35:R
+35-35:A
+trace 150
+
+segment m515_a13_command_hannah
+jump 1 0 897 char=hannah
+snapshot
+0-9:
+10-11:D
+14-24:U
+18-18:UA
+trace 150
+
+segment m515_a1_idle_mess
+jump 1 0 897 char=mess
+snapshot
+0-299:
+trace 300
+
+segment m515_a2_walk_mess
+jump 1 0 897 char=mess
+snapshot
+0-9:
+10-49:R
+50-79:
+80-119:L
+120-149:
+150-189:U
+190-219:
+220-259:D
+260-289:
+290-329:UR
+330-359:
+360-399:DR
+400-429:
+430-469:DL
+470-499:
+500-539:UL
+540-579:
+trace 580
+
+segment m515_a3_run_mess
+jump 1 0 897 char=mess
+snapshot
+0-9:
+10-10:R
+13-70:R
+71-71:L
+72-199:
+trace 200
+
+segment m515_a4_dtap_mess
+jump 1 0 897 char=mess
+snapshot
+0-9:
+10-10:L
+12-42:L
+140-140:R
+143-173:R
+270-270:R
+275-305:R
+400-400:R
+407-437:R
+530-530:R
+539-569:R
+660-660:R
+671-701:R
+790-790:L
+802-832:L
+920-920:R
+933-963:R
+1050-1050:L
+1064-1094:L
+1180-1180:R
+1195-1225:R
+trace 1320
+
+segment m515_a5_jump_mess
+jump 1 0 897 char=mess
+snapshot
+0-9:
+10-10:J
+129-130:RJ
+249-250:LJ
+369-370:UJ
+489-490:DJ
+trace 620
+
+segment m515_a6_jattack_mess
+jump 1 0 897 char=mess
+snapshot
+0-9:
+10-10:J
+13-16:A
+120-120:J
+126-129:A
+230-230:J
+239-242:A
+340-340:J
+352-355:A
+450-450:J
+466-469:A
+560-560:J
+580-583:A
+670-670:J
+696-699:A
+780-780:J
+812-815:A
+trace 900
+
+segment m515_a7_rjump_mess
+jump 1 0 897 char=mess
+snapshot
+0-9:
+10-10:R
+13-40:R
+30-30:RJ
+90-140:L
+170-170:R
+173-200:R
+190-190:RJ
+194-194:A
+250-300:L
+330-330:R
+333-360:R
+350-350:RJ
+360-360:A
+410-460:L
+490-490:R
+493-520:R
+510-510:RJ
+528-528:A
+570-620:L
+trace 660
+
+segment m515_a8_chain_mess
+jump 1 0 897 char=mess
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-9:
+10-10:A
+22-22:A
+34-34:A
+46-46:A
+trace 80
+
+segment m515_a9_combo_throw_mess
+jump 1 0 897 char=mess
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-9:
+10-10:A
+22-22:A
+34-34:A
+46-46:UA
+trace 90
+
+segment m515_a10_grab_mess
+jump 1 0 897 char=mess
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-13:R
+20-20:A
+34-34:A
+48-48:RA
+trace 120
+
+segment m515_a11_special_mess
+jump 1 0 897 char=mess
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+0-9:
+10-10:AJ
+trace 120
+
+segment m515_a12_dash_mess
+jump 1 0 897 char=mess
+snapshot
+0-9:
+10-10:R
+13-35:R
+35-35:A
+trace 150
+
+segment m515_a13_command_mess
+jump 1 0 897 char=mess
+snapshot
+0-9:
+10-11:D
+14-24:U
+18-18:UA
+trace 150
+
+segment m515_a14_wj_mustapha
+jump 1 2 char=mustapha
+2 poke 0xFFB27C 2 215
+2 poke 0xFFB284 2 318
+9 snapshot
+0-50:L
+0-0:J
+22-22:J
+trace 110
+
+segment m515_a14_wj_hannah
+jump 1 2 char=hannah
+2 poke 0xFFB27C 2 215
+2 poke 0xFFB284 2 318
+9 snapshot
+0-50:L
+0-0:J
+22-22:J
+trace 110
+
+segment m515_a14_wj_jack
+jump 1 2 char=jack
+2 poke 0xFFB27C 2 215
+2 poke 0xFFB284 2 318
+9 snapshot
+0-50:L
+0-0:J
+22-22:J
+trace 110

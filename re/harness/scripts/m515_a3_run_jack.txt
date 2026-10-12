@@ -1,0 +1,6 @@
+# probe segment m515_a3_run_jack: the key lines after the snapshot (frame 0 = first game frame after it)
+0-9:
+10-10:R
+13-70:R
+71-71:L
+72-199:

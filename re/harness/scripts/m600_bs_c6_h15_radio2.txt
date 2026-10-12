@@ -1,0 +1,4 @@
+# M6-00 BS-C6. Input after the snapshot.
+5-6:A
+0-1900:R
+1956-1957:A

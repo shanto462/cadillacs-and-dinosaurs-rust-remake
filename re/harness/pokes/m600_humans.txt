@@ -1,0 +1,1233 @@
+# M6-00 reference timelines. See the M6-00 section of re/harness/README.md.
+# Setup frame 0 becomes trace frame 0; lag can change video frame timing.
+# No screenshots. MAME-only timed directives are listed in m600_scenarios.tsv.
+
+# H1; recipe d3a/r2.txt / hun-v400
+segment m600_h1_hun_v400
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 24 var=0 w5c=0x7fff x=+0x80
+6 spawn A 79 var=0x0400 x=+0x180 z=0x30
+trace 900
+
+# H2; recipe d3a/r2.txt / hun-none
+segment m600_h2_hun_none
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+6 spawn A 79 var=0x0400 x=+0x180 z=0x30
+trace 300
+
+# H2; recipe d3a/r2.txt / hun-hopper
+segment m600_h2_hun_hopper
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 29 var=0x200 w5c=0x7fff x=+0x80
+6 spawn A 79 var=0x0400 x=+0x180 z=0x30
+trace 600
+
+# H2; recipe d3a/r2.txt / hun-mack
+segment m600_h2_hun_mack
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 38 var=0 w5c=0x7fff x=+0x80
+6 spawn A 79 var=0x0400 x=+0x180 z=0x30
+trace 600
+
+# H3; recipe d3a/r3.txt / nat2-hunt
+segment m600_h3_nat2_hunt
+jump 2 0
+god on
+hp 100
+0 snapshot keep
+0-3600:R
+200 killall
+450 killall
+700 killall
+trace 3600
+
+# H4; recipe d3a/r3.txt / nat5-hunt
+segment m600_h4_nat5_hunt
+jump 5 0
+god on
+hp 100
+0 snapshot keep
+0-3600:R
+250 killall
+600 killall
+trace 3600
+
+# H5; recipe d3a/r5.txt / bsp-ctrl
+segment m600_h5_bsp_ctrl
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+2-60:L
+20 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+trace 120
+
+# H5; recipe d3a/r5.txt / bsp-hopper
+segment m600_h5_bsp_hopper
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+2-60:L
+2 spawn A 29 var=0x200 w5c=0x7fff ax=1115 z=0x32
+3 hold 0xffdc3c 2 1115
+20 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+trace 120
+
+# H5; recipe d3a/r5.txt / bsp-shivat
+segment m600_h5_bsp_shivat
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+2-60:L
+2 spawn A 24 var=0 w5c=0x7fff ax=1115 z=0x32
+20 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+trace 120
+
+# H5; recipe d3a/r5.txt / bsp-ferris
+segment m600_h5_bsp_ferris
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+2-60:L
+2 spawn A 2 var=0x0002 ax=1115 z=0x32
+3 hold 0xffdc3c 2 1115
+20 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+trace 120
+
+# H5; recipe d3a/r5.txt / bsp-mack
+segment m600_h5_bsp_mack
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+2-60:L
+2 spawn A 38 var=0 w5c=0x7fff ax=1115 z=0x32
+3 hold 0xffdc3c 2 1115
+20 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+trace 300
+
+# H5; recipe d3a/r5.txt / bsp-lvl31
+segment m600_h5_bsp_lvl31
+jump 2 0 0x400
+level 31 free
+hp 100
+0 snapshot keep
+100 hp 100
+2-60:L
+20 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+trace 120
+
+# H6; recipe d3a/r4.txt / rf-m0
+segment m600_h6_rf_m0
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+2-60:L
+2 spawn A 13 var=0x0000 ax=1184 z=0x32
+3 hold 0xffdc3c 2 1184
+trace 900
+
+# H6; recipe d3a/r4.txt / rf-m0
+segment m600_h6_rf_m0_l31
+jump 2 0 0x400
+level 31 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+2-60:L
+2 spawn A 13 var=0x0000 ax=1184 z=0x32
+3 hold 0xffdc3c 2 1184
+trace 900
+
+# H7; recipe d3a/r4.txt / rf-m1
+segment m600_h7_rf_m1
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+2-60:L
+11 spawn A 13 var=0x0000 ax=1184 z=0x32
+12 hold 0xffdc3c 2 1184
+trace 900
+
+# H7; recipe d3a/r4.txt / rf-m2
+segment m600_h7_rf_m2
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+2-60:L
+23 spawn A 13 var=0x0000 ax=1184 z=0x32
+24 hold 0xffdc3c 2 1184
+trace 900
+
+# H7; recipe d3a/r4.txt / rf-m3
+segment m600_h7_rf_m3
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+2-60:L
+37 spawn A 13 var=0x0000 ax=1184 z=0x32
+38 hold 0xffdc3c 2 1184
+trace 900
+
+# H7; recipe d3a/r4.txt / rf-m4
+segment m600_h7_rf_m4
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+2-60:L
+51 spawn A 13 var=0x0000 ax=1184 z=0x32
+52 hold 0xffdc3c 2 1184
+trace 900
+
+# H7; recipe d3a/r4.txt / rf-m5
+segment m600_h7_rf_m5
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+2-60:L
+67 spawn A 13 var=0x0000 ax=1184 z=0x32
+68 hold 0xffdc3c 2 1184
+trace 900
+
+# H8; recipe d3a/r2.txt / p13-v0-l0
+segment m600_h8_p13_v0_l0
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+900 hp 100
+1000 hp 100
+1100 hp 100
+1200 hp 100
+1300 hp 100
+1400 hp 100
+5 spawn A 13 var=0x0000 x=+0x100 z=0x30
+trace 1500
+
+# H8; recipe d3a/r2.txt / p13-v0-l31
+segment m600_h8_p13_v0_l31
+jump 2 0 0x400
+level 31 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+900 hp 100
+1000 hp 100
+1100 hp 100
+1200 hp 100
+1300 hp 100
+1400 hp 100
+5 spawn A 13 var=0x0000 x=+0x100 z=0x30
+trace 1500
+
+# H8; recipe d3a/r2.txt / p13-v2-l0
+segment m600_h8_p13_v2_l0
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+900 hp 100
+1000 hp 100
+1100 hp 100
+1200 hp 100
+1300 hp 100
+1400 hp 100
+5 spawn A 13 var=0x0200 x=+0x100 z=0x30
+trace 1500
+
+# H8; recipe d3a/r2.txt / p13-v2-l31
+segment m600_h8_p13_v2_l31
+jump 2 0 0x400
+level 31 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+900 hp 100
+1000 hp 100
+1100 hp 100
+1200 hp 100
+1300 hp 100
+1400 hp 100
+5 spawn A 13 var=0x0200 x=+0x100 z=0x30
+trace 1500
+
+# H8; recipe d3a/r2.txt / p13-v4-l0
+segment m600_h8_p13_v4_l0
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+900 hp 100
+1000 hp 100
+1100 hp 100
+1200 hp 100
+1300 hp 100
+1400 hp 100
+5 spawn A 13 var=0x0400 x=+0x100 z=0x30
+trace 1500
+
+# H8; recipe d3a/r2.txt / p13-v4-l31
+segment m600_h8_p13_v4_l31
+jump 2 0 0x400
+level 31 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+900 hp 100
+1000 hp 100
+1100 hp 100
+1200 hp 100
+1300 hp 100
+1400 hp 100
+5 spawn A 13 var=0x0400 x=+0x100 z=0x30
+trace 1500
+
+# H9; recipe d3a/r2.txt / p13-ent02
+segment m600_h9_p13_ent02
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0002 x=+0x100 z=0x30
+trace 360
+
+# H9; recipe d3a/r2.txt / p13-ent04
+segment m600_h9_p13_ent04
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0004 x=+0x100 z=0x30
+trace 360
+
+# H9; recipe d3a/r2.txt / p13-ent06
+segment m600_h9_p13_ent06
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0006 x=+0x100 z=0x30
+trace 360
+
+# H9; recipe d3a/r2.txt / p13-ent08
+segment m600_h9_p13_ent08
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0008 x=+0x100 z=0x30
+trace 360
+
+# H9; recipe d3a/r2.txt / p13-ent0A
+segment m600_h9_p13_ent0a
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x000a x=+0x100 z=0x30
+trace 360
+
+# H9; recipe d3a/r2.txt / p13-ent0C
+segment m600_h9_p13_ent0c
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x000c x=+0x100 z=0x30
+trace 360
+
+# H9; recipe d3a/r2.txt / p13-ent0E
+segment m600_h9_p13_ent0e
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x000e x=+0x100 z=0x30
+trace 360
+
+# H9; recipe d3a/r2.txt / p13-ent10
+segment m600_h9_p13_ent10
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0010 x=+0x100 z=0x30
+trace 360
+
+# H9; recipe d3a/r2.txt / p13-ent12
+segment m600_h9_p13_ent12
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0012 x=+0x100 z=0x30
+trace 360
+
+# H10; recipe d3a/r2.txt / ks-p13v0
+segment m600_h10_ks_p13v0
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0002 x=+0x100 z=0x36
+7 objset A:13 hp 1
+7 objset A:13 x 1152
+7 objset A:13 z 54
+20-22:A
+40-42:A
+60-62:A
+80-82:A
+trace 400
+
+# H10; recipe d3a/r2.txt / ks-p13v2
+segment m600_h10_ks_p13v2
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0202 x=+0x100 z=0x36
+7 objset A:13 hp 1
+7 objset A:13 x 1152
+7 objset A:13 z 54
+20-22:A
+40-42:A
+60-62:A
+80-82:A
+trace 400
+
+# H10; recipe d3a/r2.txt / ks-p13v4
+segment m600_h10_ks_p13v4
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0402 x=+0x100 z=0x36
+7 objset A:13 hp 1
+7 objset A:13 x 1152
+7 objset A:13 z 54
+20-22:A
+40-42:A
+60-62:A
+80-82:A
+trace 400
+
+# H10; recipe d3a/r2.txt / ks-a64v0
+segment m600_h10_ks_a64v0
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 64 var=0x0000 x=+0x100 z=0x36
+7 objset A:64 hp 1
+7 objset A:64 x 1152
+7 objset A:64 z 54
+20-22:A
+40-42:A
+60-62:A
+80-82:A
+trace 400
+
+# H10; recipe d3a/r2.txt / ks-a64v2
+segment m600_h10_ks_a64v2
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 64 var=0x0200 x=+0x100 z=0x36
+7 objset A:64 hp 1
+7 objset A:64 x 1152
+7 objset A:64 z 54
+20-22:A
+40-42:A
+60-62:A
+80-82:A
+trace 400
+
+# H10; recipe d3a/r2.txt / ks-a63
+segment m600_h10_ks_a63
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 63 var=0x0000 x=+0x100 z=0x36
+7 objset A:63 hp 1
+7 objset A:63 x 1152
+7 objset A:63 z 54
+20-22:A
+40-42:A
+60-62:A
+80-82:A
+trace 400
+
+# H10; recipe d3a/r2.txt / ks-lash
+segment m600_h10_ks_lash
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 3 var=0x0000 x=+0x100 z=0x36
+7 objset A:3 hp 1
+7 objset A:3 x 1152
+7 objset A:3 z 54
+20-22:A
+40-42:A
+60-62:A
+80-82:A
+trace 400
+
+# H10; recipe d3a/r2.txt / ks-wal
+segment m600_h10_ks_wal
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 18 var=0x0200 x=+0x100 z=0x36
+7 objset A:18 hp 1
+7 objset A:18 x 1152
+7 objset A:18 z 54
+20-22:A
+40-42:A
+60-62:A
+80-82:A
+trace 400
+
+# H10; recipe d3a/r2.txt / ks-a70
+segment m600_h10_ks_a70
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 70 var=0x0000 x=+0x100 z=0x36
+7 objset A:70 hp 1
+7 objset A:70 x 1152
+7 objset A:70 z 54
+20-22:A
+40-42:A
+60-62:A
+80-82:A
+trace 400
+
+# H10; recipe d3a/r3.txt / ks-hunt2
+segment m600_h10_ks_hunt2
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 24 var=0 w5c=0x7fff ax=1380
+6 spawn A 79 var=0x0000 ax=1150 z=0x36 drop=0x23
+8 objset A:79 hp 1
+30-32:A
+50-52:A
+70-72:A
+trace 600
+
+# H11; recipe d3a/r3.txt / bar-v0
+segment m600_h11_bar_v0
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 65 var=0x0000 x=+0x170 z=0x36
+trace 500
+
+# H11; recipe d3a/r3.txt / bar-v1
+segment m600_h11_bar_v1
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 65 var=0x0001 x=+0x170 z=0x36
+trace 500
+
+# H11; recipe d3a/r3.txt / bar-v201
+segment m600_h11_bar_v201
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 65 var=0x0201 x=+0x170 z=0x36
+trace 500
+
+# H12; recipe d3a/r3.txt / rock-trace
+segment m600_h12_rock_trace
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 66 var=0x0000 x=+0x140 z=0x80
+trace 700
+
+# H13; recipe d3a/r3.txt / bike-v0
+segment m600_h13_bike_v0
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 70 var=0x0000 x=+0x190 z=0x36
+trace 400
+
+# H13; recipe d3a/r3.txt / bike-v1
+segment m600_h13_bike_v1
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 70 var=0x0100 x=+0x190 z=0x36
+trace 400
+
+# H13; recipe d3a/r3.txt / bike-left
+segment m600_h13_bike_left
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 70 var=0x0000 x=-0x60 z=0x36
+trace 400
+
+# H14; recipe d3a/r2.txt / h-foot-poacher
+segment m600_h14_h_foot_poacher
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 22 var=0 x=+0x80 z=0x36
+5 spawn A 13 var=0x0002 x=+0x80 z=0x36
+5 spawn A 13 var=0x0202 x=+0x90 z=0x40
+trace 900
+
+# H15; recipe d3a/r2.txt / h-barrel-poacher
+segment m600_h15_h_barrel_poacher
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 65 var=0x0001 x=+0x170 z=0x36
+5 spawn A 13 var=0x0002 x=+0xA0 z=0x36
+5 spawn A 13 var=0x0202 x=+0xC0 z=0x42
+trace 600
+
+# H15; recipe d3a/r2.txt / h-barrel-hero
+segment m600_h15_h_barrel_hero
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+5 spawn A 65 var=0x0001 x=+0x170 z=0x36
+trace 600
+
+# H16; recipe d3a/r2.txt / h-barrel-poacher
+segment m600_h16_h_barrel_poacher
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 38 var=0 w5c=0x7fff ax=1115 z=0x32
+5 spawn A 13 var=0x0002 ax=1190 z=0x32
+6 hold 0xFFDC3C 2 1115
+6 hold 0xFFDB5C 2 1190
+trace 900
+
+# H17; recipe d3a/r4.txt / bl-vomit
+segment m600_h17_bl_vomit
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 6 var=0x0000 ax=1300 z=0x30
+6 spawn E 4 var=3 ax=1170 z=0x30
+6 spawn E 0 var=0x0C ax=1200 z=0x38
+6 spawn E 9 var=5 ax=1230 z=0x28
+6 spawn E 4 var=0xB ax=1260 z=0x40
+1050 objset A:6 x 1150
+1050 objset A:6 z 54
+1070-1072:A
+1110-1112:A
+1150-1152:A
+1190-1192:A
+1230-1232:A
+1270-1272:A
+trace 2200
+
+# H18; recipe d3a/r4.txt / bl-death
+segment m600_h18_bl_death
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 6 var=0x0000 ax=1300 z=0x30
+6 spawn E 4 var=3 ax=1170 z=0x30
+6 spawn E 0 var=0x0C ax=1200 z=0x38
+6 spawn E 9 var=5 ax=1230 z=0x28
+6 spawn E 4 var=0xB ax=1260 z=0x40
+1050 objset A:6 x 1150
+1050 objset A:6 z 54
+1060 objset A:6 hp 1
+1070-1072:A
+1100-1102:A
+1130-1132:A
+1160-1162:A
+1190-1192:A
+1220-1222:A
+1250-1252:A
+1280-1282:A
+1310-1312:A
+1340-1342:A
+trace 2400
+
+# H19; recipe d3a/r2.txt / lash-v4-l0
+segment m600_h19_lash_v4_l0
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+900 hp 100
+1000 hp 100
+1100 hp 100
+1200 hp 100
+1300 hp 100
+1400 hp 100
+1500 hp 100
+1600 hp 100
+1700 hp 100
+5 spawn A 3 var=0x0400 x=+0x100 z=0x30
+trace 1800
+
+# H19; recipe d3a/r5.txt / lash-v4-l31
+segment m600_h19_lash_v4_l31
+jump 2 0 0x400
+level 31 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+900 hp 100
+1000 hp 100
+1100 hp 100
+1200 hp 100
+1300 hp 100
+1400 hp 100
+5 spawn A 3 var=0x0400 x=+0x100 z=0x30
+trace 1500
+
+# H20; recipe d3a/r4.txt / a63-knife
+segment m600_h20_a63_knife
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+5 spawn A 63 var=0x0000 x=+0x100 z=0x30
+trace 700
+
+# H21; recipe d3a/r5.txt / a64-e3-hit
+segment m600_h21_a64_e3_hit
+jump 3 0 0xCB0
+hp 100
+0 snapshot keep
+0-900:R
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+trace 900
+
+# H22; recipe d3a/r4.txt / e4-open
+segment m600_h22_e4_open
+jump 4 0 at=start
+0 snapshot keep
+trace 1000
+
+# H23; recipe d3a/r4.txt / car-trace
+segment m600_h23_car_trace
+jump 2 0 at=start
+0 snapshot keep
+trace 700
+
+# H24; recipe d3a/r2.txt / a64v0-l0
+segment m600_h24_a64v0_l0
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+900 hp 100
+1000 hp 100
+1100 hp 100
+1200 hp 100
+1300 hp 100
+1400 hp 100
+5 spawn A 64 var=0x0000 x=+0x100 z=0x30
+trace 1500
+
+# H24; recipe d3a/r2.txt / a64v2-l0
+segment m600_h24_a64v2_l0
+jump 2 0 0x400
+level 0 free
+hp 100
+0 snapshot keep
+100 hp 100
+200 hp 100
+300 hp 100
+400 hp 100
+500 hp 100
+600 hp 100
+700 hp 100
+800 hp 100
+900 hp 100
+1000 hp 100
+1100 hp 100
+1200 hp 100
+1300 hp 100
+1400 hp 100
+5 spawn A 64 var=0x0200 x=+0x100 z=0x30
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-ferris
+segment m600_h25_pk_ferris
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 2 var=0x0000 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-gneiss
+segment m600_h25_pk_gneiss
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 2 var=0x0200 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-driver
+segment m600_h25_pk_driver
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 2 var=0x0400 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-punk
+segment m600_h25_pk_punk
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 20 var=0x0000 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-thug
+segment m600_h25_pk_thug
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 20 var=0x0200 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-hammer
+segment m600_h25_pk_hammer
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 10 var=0x0000 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-elmer
+segment m600_h25_pk_elmer
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 10 var=0x0200 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-wrench
+segment m600_h25_pk_wrench
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 10 var=0x0400 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-poacher
+segment m600_h25_pk_poacher
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0000 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-skinner
+segment m600_h25_pk_skinner
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0200 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-gutter
+segment m600_h25_pk_gutter
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0400 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-blade
+segment m600_h25_pk_blade
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 14 var=0x0000 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-razor
+segment m600_h25_pk_razor
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 14 var=0x0200 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-a63
+segment m600_h25_pk_a63
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 63 var=0x0000 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-a64
+segment m600_h25_pk_a64
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 64 var=0x0000 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H25; recipe d3a/r6.txt / pk-lash
+segment m600_h25_pk_lash
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 3 var=0x0000 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H26; recipe d3a/r6.txt / pk-bludge
+segment m600_h26_pk_bludge
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 6 var=0x0000 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500
+
+# H27; recipe d3a/r6.txt / pk-a64w
+segment m600_h27_pk_a64w
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 64 var=0x0200 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500

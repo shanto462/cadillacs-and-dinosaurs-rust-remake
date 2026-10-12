@@ -1,0 +1,2 @@
+# M6-00 BS-B1. Input after the snapshot.
+0-2200:R

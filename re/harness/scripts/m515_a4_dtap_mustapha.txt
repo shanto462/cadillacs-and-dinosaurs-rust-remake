@@ -1,0 +1,22 @@
+# probe segment m515_a4_dtap_mustapha: the key lines after the snapshot (frame 0 = first game frame after it)
+0-9:
+10-10:L
+12-42:L
+140-140:R
+143-173:R
+270-270:R
+275-305:R
+400-400:R
+407-437:R
+530-530:R
+539-569:R
+660-660:R
+671-701:R
+790-790:L
+802-832:L
+920-920:R
+933-963:R
+1050-1050:L
+1064-1094:L
+1180-1180:R
+1195-1225:R

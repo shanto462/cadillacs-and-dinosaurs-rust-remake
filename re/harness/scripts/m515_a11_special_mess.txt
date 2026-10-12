@@ -1,0 +1,3 @@
+# probe segment m515_a11_special_mess: the key lines after the snapshot (frame 0 = first game frame after it)
+0-9:
+10-10:AJ

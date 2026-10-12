@@ -1,0 +1,4 @@
+# probe segment m515_s9_join_p2: the key lines after the snapshot (frame 0 = first game frame after it)
+10-17:2C
+60-65:2S
+140-145:2A

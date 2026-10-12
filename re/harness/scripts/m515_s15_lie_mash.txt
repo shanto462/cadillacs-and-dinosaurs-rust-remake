@@ -1,0 +1,9 @@
+# probe segment m515_s15_lie_mash: the key lines after the snapshot (frame 0 = first game frame after it)
+50-51:L
+53-54:R
+56-57:L
+59-60:R
+62-63:L
+65-66:R
+68-69:L
+71-72:R

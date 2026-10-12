@@ -1,0 +1,18 @@
+# probe segment m515_a6_jattack_hannah: the key lines after the snapshot (frame 0 = first game frame after it)
+0-9:
+10-10:J
+13-16:A
+120-120:J
+126-129:A
+230-230:J
+239-242:A
+340-340:J
+352-355:A
+450-450:J
+466-469:A
+560-560:J
+580-583:A
+670-670:J
+696-699:A
+780-780:J
+812-815:A

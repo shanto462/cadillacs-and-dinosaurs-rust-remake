@@ -1,0 +1,380 @@
+# M5-15 D2b S1 to S21 scenarios
+
+segment m515_s1_resp_jack
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 lives 2
+10 hp 0
+10 snapshot
+0-549:
+trace 550
+
+segment m515_s1_resp_mustapha
+jump 1 0 897 char=mustapha
+rank 0 ; level 0
+0 lives 2
+10 hp 0
+10 snapshot
+0-549:
+trace 550
+
+segment m515_s1_resp_hannah
+jump 1 0 897 char=hannah
+rank 0 ; level 0
+0 lives 2
+10 hp 0
+10 snapshot
+0-549:
+trace 550
+
+segment m515_s1_resp_mess
+jump 1 0 897 char=mess
+rank 0 ; level 0
+0 lives 2
+10 hp 0
+10 snapshot
+0-549:
+trace 550
+
+segment m515_s3_strike_thugs
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 lives 2
+3 spawn A 2 var=0 ax=1000 z=296 n=14 dx=5
+4 hold 0xFFD99C 2 920
+4 hold 0xFFD9A4 2 296
+4 hold 0xFFD61C 2 948
+4 hold 0xFFD624 2 316
+4 hold 0xFFD53C 2 976
+4 hold 0xFFD544 2 296
+4 hold 0xFFD1BC 2 1004
+4 hold 0xFFD1C4 2 316
+4 hold 0xFFD0DC 2 1032
+4 hold 0xFFD0E4 2 296
+4 hold 0xFFCFFC 2 1060
+4 hold 0xFFD004 2 316
+4 hold 0xFFCF1C 2 1088
+4 hold 0xFFCF24 2 296
+4 hold 0xFFCE3C 2 1116
+4 hold 0xFFCE44 2 316
+4 hold 0xFFCD5C 2 1144
+4 hold 0xFFCD64 2 296
+4 hold 0xFFCC7C 2 1172
+4 hold 0xFFCC84 2 316
+4 hold 0xFFCB9C 2 1200
+4 hold 0xFFCBA4 2 296
+4 hold 0xFFCABC 2 1228
+4 hold 0xFFCAC4 2 316
+4 hold 0xFFC9DC 2 1256
+4 hold 0xFFC9E4 2 296
+4 hold 0xFFC8FC 2 1284
+4 hold 0xFFC904 2 316
+10 hp 0
+10 snapshot keep
+0-449:
+trace 450
+
+segment m515_s4_hp_floor
+jump 1 0 897 char=jack
+rank 0 ; level 0
+god on
+3 spawn A 2 var=0 ax=1089 z=296 n=11 dx=1
+6 objset A#19 hp 1
+6 objset A#15 hp 5
+6 objset A#14 hp 20
+6 objset A#10 hp 29
+6 objset A#9 hp 30
+6 objset A#8 hp 31
+6 objset A#7 hp 35
+6 objset A#6 hp 45
+6 objset A#5 hp 60
+6 objset A#4 hp 99
+6 objset A#3 hp 100
+59 snapshot
+60 spawn E 1 var=2 ax=1089 z=296
+180 spawn E 1 var=2 ax=1089 z=296
+300 spawn E 1 var=2 ax=1089 z=296
+420 spawn E 11 var=0 ax=1089 z=296
+trace 500
+
+segment m515_s5_blast_reach
+jump 1 0 897 char=jack
+rank 0 ; level 0
+god on
+3 spawn A 2 var=0 ax=1089 z=296 n=8 dx=20
+59 snapshot
+60 spawn E 11 var=0 ax=1089 z=296
+trace 120
+
+segment m515_s6_ty_butcher
+jump 1 0 897 char=jack
+rank 0 ; level 0
+god on
+3 spawn A 22 var=0 w5c=0x7fff ax=1089 z=296
+4 hold 0xFFD99C 2 1089
+4 hold 0xFFD9A4 2 296
+59 snapshot keep
+60 spawn E 1 var=2 ax=1089 z=296
+160 spawn E 11 var=0 ax=1089 z=296
+trace 240
+
+segment m515_s6_ty_thug
+jump 1 0 897 char=jack
+rank 0 ; level 0
+god on
+3 spawn A 2 var=0 w5c=0x7fff ax=1089 z=296
+4 hold 0xFFD99C 2 1089
+4 hold 0xFFD9A4 2 296
+59 snapshot keep
+60 spawn E 1 var=2 ax=1089 z=296
+160 spawn E 11 var=0 ax=1089 z=296
+trace 240
+
+segment m515_s7_objs_ex
+jump 1 0 897 char=jack
+rank 0 ; level 0
+god on
+3 spawn E 5 var=0 ax=1020 z=296
+3 spawn E 5 var=2 ax=1040 z=296
+3 spawn E 5 var=4 ax=1060 z=296
+3 spawn E 5 var=6 ax=1080 z=296
+3 spawn E 5 var=8 ax=1100 z=296
+3 spawn E 5 var=0xA ax=1120 z=296
+3 spawn E 5 var=0xC ax=1140 z=296
+3 spawn E 4 var=1 ax=1160 z=296
+3 spawn E 9 var=2 ax=1180 z=296
+3 spawn E 0 var=4 ax=1000 z=296
+59 snapshot
+60 spawn E 1 var=2 ax=1090 z=296
+trace 120
+
+segment m515_s7_objs_tnt
+jump 1 0 897 char=jack
+rank 0 ; level 0
+god on
+3 spawn E 5 var=4 w5c=1 ax=1090 z=296
+59 snapshot
+60 spawn E 1 var=2 ax=1090 z=296
+trace 200
+
+segment m515_s8_resp_2p
+jump 1 0 897 char=jack,hannah
+rank 0 ; level 0
+0 lives 2 P1
+10 hp 0 P1
+10 snapshot
+trace 450
+
+segment m515_s8_resp_3p
+jump 1 0 897 char=jack,hannah,mess
+rank 0 ; level 0
+0 lives 2 P2
+10 hp 0 P2
+10 snapshot
+trace 400
+
+segment m515_s9_join_p2
+jump 1 1 char=jack
+rank 0 ; level 0
+9 snapshot
+10-17:2C
+60-65:2S
+140-145:2A
+trace 260
+
+segment m515_s10_cont
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 lives 0
+10 hp 0
+19 snapshot
+300-307:C
+340-345:S
+460-465:A
+trace 550
+
+segment m515_s12_timeover_inv
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 lives 2
+10 hp 0
+19 snapshot
+330 time 0:02
+trace 500
+
+segment m515_s13_dmg_jack
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 aggr 7
+0 level 0
+3 spawn A 2 var=0 ax=1060 z=296
+9 snapshot
+10 hp 100
+trace 200
+
+segment m515_s13_dmg_mustapha
+jump 1 0 897 char=mustapha
+rank 0 ; level 0
+0 aggr 7
+0 level 0
+3 spawn A 2 var=0 ax=1060 z=296
+9 snapshot
+10 hp 100
+trace 200
+
+segment m515_s13_dmg_hannah
+jump 1 0 897 char=hannah
+rank 0 ; level 0
+0 aggr 7
+0 level 0
+3 spawn A 2 var=0 ax=1060 z=296
+9 snapshot
+10 hp 100
+trace 200
+
+segment m515_s13_dmg_mess
+jump 1 0 897 char=mess
+rank 0 ; level 0
+0 aggr 7
+0 level 0
+3 spawn A 2 var=0 ax=1060 z=296
+9 snapshot
+10 hp 100
+trace 200
+
+segment m515_s14_hurt_seq
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 aggr 7
+0 level 0
+3 spawn A 2 var=0 ax=1060 z=296
+9 snapshot
+trace 300
+
+segment m515_s15_lie_nomash
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 aggr 7
+3 spawn A 2 var=0 ax=1060 z=296
+9 snapshot
+trace 300
+
+segment m515_s15_lie_mash
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 aggr 7
+3 spawn A 2 var=0 ax=1060 z=296
+9 snapshot
+50-51:L
+53-54:R
+56-57:L
+59-60:R
+62-63:L
+65-66:R
+68-69:L
+71-72:R
+trace 300
+
+segment m515_s16_dizzy
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 aggr 7
+3 spawn A 2 var=0 ax=1060 z=296
+0 hold 0xFFB33E 1 5
+9 snapshot keep
+trace 300
+
+segment m515_s17_oneup
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 score 499950
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+10-10:A
+22-22:A
+34-34:A
+trace 120
+
+segment m515_s18_lives_hud
+jump 1 0 897 char=jack
+0 lives 11
+9 snapshot
+trace 60
+
+segment m515_s18_hp_bar
+jump 1 0 897 char=jack
+10 hp 15
+10 snapshot
+trace 60
+
+segment m515_s19_hp_carry
+jump 1 0
+0 hp 30
+0 lives 2
+0 score 1234
+0 poke 0xFF84D1 1 4
+0 poke 0xFF8508 2 0
+0 poke 0xFF84D5 1 1
+0 poke 0xFF84D4 1 1
+9 snapshot
+trace 300
+
+segment m515_s20_score_kill
+jump 1 0 897 char=jack
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+6 objset A:2 hp 5
+8 poke 0xFFB27C 2 993
+8 poke 0xFFB284 2 296
+9 snapshot
+10-10:A
+trace 120
+
+segment m515_s20_score_food
+jump 1 0 897 char=jack
+3 spawn E 4 var=0 ax=1027 z=296
+9 snapshot
+0-30:R
+trace 60
+
+segment m515_s20_score_treas
+jump 1 0 897 char=jack
+3 spawn E 0 var=0 ax=1027 z=296
+9 snapshot
+0-30:R
+trace 60
+
+segment m515_s20_score_container
+jump 1 0 897 char=jack
+3 spawn E 5 var=0 ax=1027 z=296
+9 snapshot
+10-10:A
+trace 60
+
+segment m515_s21_timeover_life
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 lives 2
+0 time 0:02
+9 snapshot
+trace 300
+
+segment m515_s21_timeover_nolife
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 lives 0
+0 time 0:02
+9 snapshot
+trace 300
+
+segment m515_s21_timeover_2p
+jump 1 0 897 char=jack,hannah
+rank 0 ; level 0
+0 lives 2 P1
+0 lives 2 P2
+0 time 0:02
+9 snapshot
+trace 300

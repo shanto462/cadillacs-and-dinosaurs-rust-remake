@@ -1,0 +1,2 @@
+# M6-00 A10. Input after the snapshot.
+20-22:A

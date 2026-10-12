@@ -1,0 +1,7 @@
+# probe segment m515_a5_jump_jack: the key lines after the snapshot (frame 0 = first game frame after it)
+0-9:
+10-10:J
+129-130:RJ
+249-250:LJ
+369-370:UJ
+489-490:DJ

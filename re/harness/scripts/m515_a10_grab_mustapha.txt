@@ -1,0 +1,5 @@
+# probe segment m515_a10_grab_mustapha: the key lines after the snapshot (frame 0 = first game frame after it)
+0-13:R
+20-20:A
+34-34:A
+48-48:RA

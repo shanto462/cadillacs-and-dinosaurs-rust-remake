@@ -1,0 +1,3 @@
+# M6-00 BS-C7. Input after the snapshot.
+5-6:3A
+0-700:R

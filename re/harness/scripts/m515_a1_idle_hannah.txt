@@ -1,0 +1,2 @@
+# probe segment m515_a1_idle_hannah: the key lines after the snapshot (frame 0 = first game frame after it)
+0-299:

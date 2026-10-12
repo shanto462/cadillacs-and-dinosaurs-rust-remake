@@ -1,0 +1,215 @@
+# M6-00 reference timelines. See the M6-00 section of re/harness/README.md.
+# Setup frame 0 becomes trace frame 0; lag can change video frame timing.
+# No screenshots. MAME-only timed directives are listed in m600_scenarios.tsv.
+
+# A9; recipe d3b/b1.txt / m-solo-l0
+segment m600_a9_m_solo_l0
+jump 2 0
+hold 0xFF850E 1 2
+level 0 free
+hp 100
+0 snapshot keep
+2 spawn A 38 var=0 b5b=2 w5c=0x7fff x=+0x100
+trace 1100
+
+# A9; recipe d3b/b1.txt / m-solo-l31
+segment m600_a9_m_solo_l31
+jump 2 0
+hold 0xFF850E 1 2
+level 31 free
+hp 100
+0 snapshot keep
+2 spawn A 38 var=0 b5b=2 w5c=0x7fff x=+0x100
+trace 1100
+
+# A10; recipe d3b/b1.txt / m-kill
+segment m600_a10_m_kill
+jump 2 0
+hold 0xFF850E 1 2
+level 0 free
+hp 100
+0 snapshot keep
+2 spawn A 38 var=0 w5c=0x7fff x=+0x100
+6 objset A:38 x 540
+6 objset A:38 hp 1
+6 objset A:38 +0xA0.w 0
+20-22:A
+trace 700
+
+# A11; recipe d3b/b1.txt / m-vs-thug
+segment m600_a11_m_vs_thug
+jump 2 0
+level 0 free
+hp 100
+god on
+0 snapshot keep
+2 spawn A 38 var=0 w5c=0x7fff x=+0x100
+3 spawn A 2 var=0 x=+0x40 z=0x30
+3 spawn A 2 var=0x2 x=+0x80 z=0x30
+trace 700
+
+# A16; recipe d3b/b3.txt / s3-sleep
+segment m600_a16_s3_sleep
+jump 2 0
+level 0 free
+hp 100
+0 snapshot keep
+2 spawn A 24 var=0 w5c=0x7fff x=+0x80
+trace 900
+
+# A17; recipe d3b/b3.txt / s3-hunter
+segment m600_a17_s3_hunter
+jump 2 0
+level 0 free
+hp 100
+god on
+0 snapshot keep
+2 spawn A 24 var=0 w5c=0x7fff x=+0x80
+3 spawn A 79 var=0x400 x=+0x180 z=0x30
+trace 2000
+
+# A18; recipe d3b/b8.txt / s8-a
+segment m600_a18_s8_a
+jump 2 0
+level 0 free
+hp 100
+god on
+0 snapshot keep
+2 spawn A 24 var=0 w5c=0x7fff x=+0x80
+6 objset A:24 x 515
+6 objset A:24 +0xA8.w 4
+6 objset A:24 +0xA4.b 1
+6 objset A:24 +0xC0.b 1
+6 objset A:24 +0x0.b 1
+6 objset A:24 +0x6.w 0
+6 objset A:24 +0xAA.w 0
+6 objset A:24 +0xAC.b 0
+6 objset A:24 +0x7A.b 250
+20-21:A
+50-51:A
+80-81:A
+110-111:A
+140-141:A
+170-171:A
+200-201:A
+230-231:A
+trace 700
+
+# A18; recipe d3b/b8.txt / s8-kill
+segment m600_a18_s8_kill
+jump 2 0
+level 0 free
+hp 100
+god on
+0 snapshot keep
+2 spawn A 24 var=0 w5c=0x7fff x=+0x80
+6 objset A:24 x 515
+6 objset A:24 +0xA8.w 4
+6 objset A:24 +0xA4.b 1
+6 objset A:24 +0xC0.b 1
+6 objset A:24 +0x0.b 1
+6 objset A:24 +0x6.w 0
+6 objset A:24 +0xAA.w 0
+6 objset A:24 +0xAC.b 0
+6 objset A:24 +0x7A.b 250
+6 objset A:24 hp 1
+20-21:A
+50-51:A
+80-81:A
+110-111:A
+140-141:A
+170-171:A
+200-201:A
+230-231:A
+trace 700
+
+# A19; recipe d3b/b4.txt / s4-atk-8
+segment m600_a19_s4_atk_8
+jump 2 0
+level 0 free
+hp 100
+0 snapshot keep
+2 spawn A 24 var=0 w5c=0x7fff x=+0x80
+6 objset A:24 x 530
+6 objset A:24 +0xA8.w 4
+6 objset A:24 +0xA4.b 1
+6 objset A:24 +0xC0.b 1
+6 objset A:24 +0x6.w 0
+6 objset A:24 +0xAA.w 0
+6 objset A:24 +0xAC.b 0
+8 objset A:24 +0x6.b 6
+8 objset A:24 +0x7.b 8
+trace 330
+
+# A19; recipe d3b/b4.txt / s4-atk-14
+segment m600_a19_s4_atk_14
+jump 2 0
+level 0 free
+hp 100
+0 snapshot keep
+2 spawn A 24 var=0 w5c=0x7fff x=+0x80
+6 objset A:24 x 530
+6 objset A:24 +0xA8.w 4
+6 objset A:24 +0xA4.b 1
+6 objset A:24 +0xC0.b 1
+6 objset A:24 +0x6.w 0
+6 objset A:24 +0xAA.w 0
+6 objset A:24 +0xAC.b 0
+8 objset A:24 +0x6.b 6
+8 objset A:24 +0x7.b 14
+trace 330
+
+# A19; recipe d3b/b6.txt / s6-mash
+segment m600_a19_s6_mash
+jump 2 0
+level 0 free
+hp 100
+0 snapshot keep
+2 spawn A 24 var=0 w5c=0x7fff x=+0x80
+6 objset A:24 x 530
+6 objset A:24 +0xA8.w 4
+6 objset A:24 +0xA4.b 1
+6 objset A:24 +0xC0.b 1
+6 objset A:24 +0x6.w 0
+6 objset A:24 +0xAA.w 0
+6 objset A:24 +0xAC.b 0
+8 objset A:24 +0x6.b 6
+8 objset A:24 +0x7.b 14
+20-21:A
+25-26:A
+30-31:A
+35-36:A
+40-41:A
+45-46:A
+50-51:A
+55-56:A
+trace 330
+
+# A20; recipe d3b/b2.txt / bronto-0
+segment m600_a20_bronto_0
+jump 6 1
+hold 0xFF850E 1 2
+level 0 free
+hp 100
+0 snapshot keep
+2 spawn A 22 var=0 x=+0x80
+trace 900
+
+# A21; recipe d3b/b3.txt / s3-vs-enemy
+segment m600_a21_s3_vs_enemy
+jump 2 0
+level 0 free
+hp 100
+god on
+0 snapshot keep
+2 spawn A 24 var=0 w5c=0x7fff x=+0x80
+4 spawn A 2 var=0 x=+0xC0
+4 spawn A 2 var=2 x=+0xE0
+4 spawn A 2 var=4 x=+0x100
+6 objset A:24 +0xA8.w 4
+6 objset A:24 +0x6.w 0
+6 objset A:24 +0xAA.w 0
+6 objset A:24 +0xAC.b 0
+6 objset A:24 +0xA4.b 1
+6 objset A:24 +0xC0.b 1
+trace 1500

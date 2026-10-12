@@ -1,0 +1,1 @@
+# probe segment m515_s6_ty_butcher: the key lines after the snapshot (frame 0 = first game frame after it)

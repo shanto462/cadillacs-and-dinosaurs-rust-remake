@@ -1,0 +1,5 @@
+# M6-00 H10. Input after the snapshot.
+20-22:A
+40-42:A
+60-62:A
+80-82:A

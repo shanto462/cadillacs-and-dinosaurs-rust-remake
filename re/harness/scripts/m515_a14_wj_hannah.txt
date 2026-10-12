@@ -1,0 +1,4 @@
+# probe segment m515_a14_wj_hannah: the key lines after the snapshot (frame 0 = first game frame after it)
+0-50:L
+0-0:J
+22-22:J

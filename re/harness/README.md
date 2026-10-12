@@ -716,3 +716,156 @@ audio remains outside these recordings' proof.
 
 Open question: G4 still needs a port screenshot run in a macOS session where
 miniquad can initialize its window. The M2-31 recording work is complete.
+
+## Episode 2 and 3 preparation scenarios (M6-00)
+
+The four `pokes/m600_*.txt` files are probe scenario batches for M6-00. Each
+segment and input script has the `m600_` prefix. They can record alongside
+other workers without sharing scenario names or MAME output directories.
+`scripts/m600_scenarios.tsv` lists the case, scenario name, batch, trace
+length, recipe and timed mutation frames. Its rows are inputs and metadata,
+not trace data. The batches are self contained and do not need the old
+research generators under `re/out/d3a`, `d3b` or `d3c`.
+
+| Batch | Cases | Scenarios |
+| --- | --- | --- |
+| `m600_humans.txt` | D3a H1 to H27, including the variants in section 14 | 83 |
+| `m600_dinosaurs.txt` | D3b A9 to A11 and A16 to A21 | 13 |
+| `m600_bosses.txt` | D3c BS-B1/B2, BS-H1, BS-C1 to C8, BS-V1 to V3, BS-E1 | 35 |
+| `m600_replay.txt` | Companions for hunter, poacher, Lash, Blade, carriers, hazards, Mack, Shivat, Butcher, Hogg and car | 18 |
+
+The first three batches preserve the probe controls of the design recipes.
+Their snapshots use `keep`. God mode, rank holds and pins can continue;
+spawns, HP resets, forced states and kill-all commands after the snapshot
+change MAME only. `mutation_frames` lists the timed commands. They are
+reference timelines for preparation, not proof that a free port run equals
+MAME. Use step mode to examine a routine, with those external changes in
+mind. A kept god control refreshes invulnerability each frame; a kept pin
+can override movement each frame. Neither is replayed by `port.sh`.
+
+The `_replay` companions build the objects before the snapshot, drop probe
+controls at the snapshot, omit later mutations and replay only keys. Holds
+stop refreshing their fields; the saved values remain in the state. Their
+short setup can include keys. Input after the snapshot starts at frame 0.
+These are separate scenarios: ending god mode and pins changes
+the encounter, so do not read their frames as the design timeline's frames.
+The original probe uses video frames; the recorder uses game frames after
+the snapshot. Lag can also change the timing relative to the old probes.
+
+Record one headless MAME process per batch, sequentially:
+
+```sh
+for batch in humans dinosaurs bosses replay; do
+  PR_TIMEOUT=3600 PR_SNAPS=none PR_SHEET=0 \
+    re/harness/probe/probe_record.sh re/harness/pokes/m600_${batch}.txt all
+done
+```
+
+Run every input through the port from the recorded state:
+
+```sh
+tail -n +2 re/harness/scripts/m600_scenarios.tsv |
+while IFS="$(printf '\t')" read -r case_id name batch frames recipe mutations; do
+  MODE=step re/harness/port.sh re/harness/scripts/${name}.txt "$name" "$frames"
+done
+```
+
+Compare a chosen scenario without allow rules:
+
+```sh
+name=m600_h1_hun_v400_replay
+re/.venv/bin/python -I re/harness/diff.py \
+  re/out/traces/${name}.mame.trc re/out/traces/${name}.step.trc
+```
+
+The `.state`, `.mame.trc`, `.step.trc` and recorder-generated `.input.txt`
+files stay under ignored `re/out/traces/`. Batch logs stay under
+`re/out/probe/m600_*-rec/`. For these cases, use `probe_record.sh` to record:
+`record.sh` and `check.sh` do not reconstruct their probe scene setup.
+The same input files can be used with `MODE=run` once the relevant classes
+are implemented, especially the replay companions.
+
+## Player moves and respawn preparation scenarios (M5-15)
+
+The scenario batches in `re/harness/pokes/m515_moves.txt` and `re/harness/pokes/m515_respawn.txt`
+prepare ground truth MAME recordings for D2a scenarios A1 to A14 across all four heroes
+(Mustapha, Hannah, Mess, and Jack as control) and D2b scenarios S1 to S21.
+Every scenario name is prefixed with `m515_` so recordings never clash with parallel workers.
+`re/harness/scripts/m515_scenarios.tsv` catalogues all 90 scenarios, batches, and frame counts.
+
+| Batch | Scope | Scenarios |
+| --- | --- | --- |
+| `m515_moves.txt` | D2a A1 to A14: idle, walk, run, double tap, jumps, jump attacks, running jumps, chain, combo throw, grabs, special, dash, command moves, wall jump | 55 |
+| `m515_respawn.txt` | D2b S1 to S21: lost life respawn (4 heroes), air strike timeline, strike on enemies, HP floor, blast reach, boss/monster strikes, item/TNT reactions, multiplayer respawn, join with coin, continue, time over invulnerability, hero damage scaling, hurt sequence, lie/mash, dizzy, 1UP, HUD lives/bars, HP carry, score items/kills, time over | 35 |
+
+Record the batches in headless MAME using SDL dummy drivers:
+
+```sh
+re/harness/probe/probe_record.sh re/harness/pokes/m515_moves.txt all
+re/harness/probe/probe_record.sh re/harness/pokes/m515_respawn.txt all
+```
+
+Replay each scenario through the port in step mode:
+
+```sh
+tail -n +2 re/harness/scripts/m515_scenarios.tsv |
+while IFS="$(printf '\t')" read -r name batch frames topic; do
+  MODE=step re/harness/port.sh "re/harness/scripts/${name}.txt" "$name" "$frames"
+done
+```
+
+Compare with diff.py:
+
+```sh
+re/.venv/bin/python -I re/harness/diff.py \
+  re/out/traces/m515_a2_walk_mustapha.mame.trc re/out/traces/m515_a2_walk_mustapha.step.trc
+```
+
+All 90 scenarios produce complete traces (`.state`, `.mame.trc`, `.input.txt`) and run cleanly in `port.sh` without panics.
+Jack move recordings reproduce existing move behavior with 0 ported-class pairs and 0 globals differing.
+
+### M6-00 completion report (2026-10-13)
+
+Prepared four batches, 149 input scripts and the scenario manifest. All 51
+requested acceptance IDs have references. H16 was built from its section 14
+recipe; H6 also has a level 31 variant. The 18 replay companions end probe
+controls at the snapshot. No game code, recorder code or allow rules changed.
+
+- G1: `cargo build` passed. `cargo test`: 153 passed, 0 failed, 1 ignored.
+- G2: skipped by the lane B task instruction. No regression claim.
+- G3 recording: 149 complete MAME scenarios, 256,968 game frames and 1,143
+  lag vblanks. All trace record numbers and lengths were checked. All 149
+  input scripts match the recorder output. Four sequential headless MAME
+  processes recorded the four batches; all exited normally.
+- G3 port comparison: all 149 scenarios were attempted through `port.sh`
+  in step mode, without allow rules. 133 port traces completed. Fifteen
+  car traces stopped after 363 game frames; the car replay stopped before
+  frame 0. All have the same bounds panic at `dino-assets/src/stage.rs:87`,
+  requesting area 1 from a stage with one area, during `objects_update`.
+  The total compared port output contains 224,979 game frames. The car
+  replay's comparer exit 0 checks only its sync record and is not a pass.
+  No completed scenario is equal to MAME with the current port.
+- G4: game run and game screenshots skipped by the lane B instruction.
+- G5: only scenario commands, inputs and documentation were added. No
+  routines or ROM tables were ported. Runtime traces and states stay ignored.
+
+The first differences of the 148 comparisons with a difference are at
+frame -1 for 16 cases, 0 for 40, 1 for 63, 2 for 9, 5 for 12, 6 for 7,
+and 27 for 1. Kept god mode causes the 63 frame-1 invulnerability differences.
+Timed MAME-only spawns and kills cause allocation and census differences.
+Unported enemies, effects, scene actors and car behavior account for the
+remaining target-class differences. The replay companions remove ongoing
+probe controls but still need those classes to be implemented.
+
+Open shared-code questions: the snapshot loader reconstructs different spawn
+pointers in the 16 frame-minus-one cases; the HUD has text-layer differences
+in the bullet and Episode 3 carrier cases; the Episode 5 hunter walk starts
+with floor-item motion, animation and RNG differences. Their precise causes
+need their owners. The car area-index panic also needs the camera/stage
+owner. Preparation is complete; port parity remains implementation work.
+
+Detailed evidence is under `re/out/probe/_input/`:
+`m600_audit.log`, `m600_build.log`, `m600_test.log`, `m600_results.tsv`,
+`m600_first_differences.tsv`, `m600_car_backtrace.log`, and each scenario's
+`.port.log` and `.diff.log`. MAME's PLD and QSound checksum warnings are the
+existing placeholder-ROM warnings noted in the harness limits above.

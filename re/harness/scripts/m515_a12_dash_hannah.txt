@@ -1,0 +1,5 @@
+# probe segment m515_a12_dash_hannah: the key lines after the snapshot (frame 0 = first game frame after it)
+0-9:
+10-10:R
+13-35:R
+35-35:A

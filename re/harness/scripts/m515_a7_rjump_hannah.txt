@@ -1,0 +1,21 @@
+# probe segment m515_a7_rjump_hannah: the key lines after the snapshot (frame 0 = first game frame after it)
+0-9:
+10-10:R
+13-40:R
+30-30:RJ
+90-140:L
+170-170:R
+173-200:R
+190-190:RJ
+194-194:A
+250-300:L
+330-330:R
+333-360:R
+350-350:RJ
+360-360:A
+410-460:L
+490-490:R
+493-520:R
+510-510:RJ
+528-528:A
+570-620:L
