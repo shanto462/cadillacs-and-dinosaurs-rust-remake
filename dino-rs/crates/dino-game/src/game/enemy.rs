@@ -20,6 +20,7 @@ mod class14_tests;
 mod class15;
 mod class98;
 mod class100;
+mod class17;
 mod class20;
 mod class20_ai;
 mod class20_attack;
@@ -171,6 +172,7 @@ impl Game {
                 10 => self.enemy_class10(&mut e, h),
                 14 => self.enemy_class14(&mut e, h),
                 15 => self.enemy_class15(&mut e, h),
+                17 => self.enemy_class17(&mut e, h),
                 20 => self.enemy_class20(&mut e, h),
                 34 => self.enemy_class34(&mut e, h),
                 41 => self.enemy_class41(&mut e, h),

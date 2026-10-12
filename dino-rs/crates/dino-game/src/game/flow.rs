@@ -31,6 +31,8 @@ mod mame_check;
 pub mod picture;
 #[path = "flow/profiles.rs"]
 pub mod profiles;
+#[path = "flow/ranking.rs"]
+pub mod ranking;
 #[path = "flow/scene.rs"]
 pub mod scene;
 #[path = "flow/text.rs"]
@@ -370,8 +372,7 @@ impl Game {
         self.cam.s3.cam_y = 0;
         // 0xB10: the two sprite buffers. (Not `SpriteList::clear`: that is the start of the sprite
         // list builder 0x13FA6 and steps the water splash timer, which 0xAE0 does not.)
-        self.sprites.entries.clear();
-        self.sprites.debug_rects.clear();
+        self.sprites.wipe();
         self.flow_clear_scroll1();
         self.vram.clear2();
         self.vram.clear3();

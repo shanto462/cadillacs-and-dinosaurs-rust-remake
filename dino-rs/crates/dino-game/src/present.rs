@@ -10,19 +10,24 @@ use dino_assets::{TILES8_COUNT, TILES32_FIRST};
 
 pub fn draw(g: &mut Game, gpu: &mut Gpu) {
     if g.pal.dirty {
-        gpu.upload_palettes(&g.pal.words);
+        gpu.upload_palettes(g.pal.shown_words());
         g.pal.dirty = false;
     }
     let scroll1_behind = g.w.layer_ctrl == 0x06D6;
-    draw_scroll3(g, gpu);
-    draw_scroll2(g, gpu);
-    draw_scroll1(g, gpu, if scroll1_behind { Layer::TextBehind } else { Layer::Hud });
+    // The screen shows the game a few frames late (`camera::VIDEO_LATENCY`): the tile layers are drawn from
+    // the scroll registers, which hold the camera shadows of two frames ago, the sprite list is the one of
+    // two frames ago (`SpriteList::submit`, so the sprites stay in step with the tiles) and the colours
+    // are the ones of the frame before (`PaletteRam::latch`). The tile maps themselves are shown at once.
+    let scroll = g.cam.shown_scroll();
+    draw_scroll3(g, gpu, scroll.s3);
+    draw_scroll2(g, gpu, scroll.s2);
+    draw_scroll1(g, gpu, scroll.cam1, if scroll1_behind { Layer::TextBehind } else { Layer::Hud });
     g.sprites.submit(gpu);
 }
 
 /// Scroll3: 32x32 tiles, codes 0x1C00..0x1FFF (others are hidden by the bank mapper).
-fn draw_scroll3(g: &Game, gpu: &mut Gpu) {
-    let (ox, oy) = layer_origin(g.cam.s3.cam_x, g.cam.s3.cam_y, 0x700);
+fn draw_scroll3(g: &Game, gpu: &mut Gpu, cam: (u16, u16)) {
+    let (ox, oy) = layer_origin(cam.0, cam.1, 0x700);
     let (c0, r0) = ((ox & 0x7FF) as i32 >> 5, (oy & 0x7FF) as i32 >> 5);
     let (fx, fy) = ((ox & 31) as i32, (oy & 31) as i32);
     for r in 0..8 {
@@ -51,8 +56,8 @@ fn draw_scroll3(g: &Game, gpu: &mut Gpu) {
 
 /// Scroll2: 16x16 tiles, codes 0x4000..0x6FFF. Tiles whose priority group mask is nonzero are
 /// drawn again over the sprites with only the masked pens.
-fn draw_scroll2(g: &Game, gpu: &mut Gpu) {
-    let (ox, oy) = layer_origin(g.cam.s2.cam_x, g.cam.s2.cam_y, 0x300);
+fn draw_scroll2(g: &Game, gpu: &mut Gpu, cam: (u16, u16)) {
+    let (ox, oy) = layer_origin(cam.0, cam.1, 0x300);
     let (c0, r0) = ((ox & 0x3FF) as i32 >> 4, (oy & 0x3FF) as i32 >> 4);
     let (fx, fy) = ((ox & 15) as i32, (oy & 15) as i32);
     for r in 0..15 {
@@ -86,8 +91,8 @@ fn draw_scroll2(g: &Game, gpu: &mut Gpu) {
 }
 
 /// Scroll1: 8x8 text tiles; the column parity picks the left or right half of the 16x8 cell.
-fn draw_scroll1(g: &Game, gpu: &mut Gpu, layer: Layer) {
-    let (ox, oy) = layer_origin(g.cam.cam1_x, g.cam.cam1_y, 0x100);
+fn draw_scroll1(g: &Game, gpu: &mut Gpu, cam: (u16, u16), layer: Layer) {
+    let (ox, oy) = layer_origin(cam.0, cam.1, 0x100);
     let (c0, r0) = ((ox & 0x1FF) as i32 >> 3, (oy & 0x1FF) as i32 >> 3);
     let (fx, fy) = ((ox & 7) as i32, (oy & 7) as i32);
     for r in 0..29 {

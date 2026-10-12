@@ -98,9 +98,8 @@ pub struct Front {
     /// Passes of the system task to skip (the attract task is busy and the scan of the task slots
     /// does not come round, see `Game::flow_attract_busy`).
     pub sys_skip: u8,
-    /// The stub screen that is up and the frame it started.
+    /// The screen that is up: the profile cards or a stub.
     pub stub: Stub,
-    pub stub_start: u32,
     /// How many times the title, the profile cards and the ranking ran (the measured lengths of
     /// some frames differ by pass).
     pub title_runs: u16,
@@ -244,7 +243,7 @@ impl Game {
             sst::LOOP => {
                 // The attract task is busy (a clear of all layers that the port writes as a sleep):
                 // the scan of the task slots does not come round to slot 0 in these frames.
-                if self.flow.front.sys_skip > 0 || self.flow_attract_pass_lost() {
+                if self.flow.front.sys_skip > 0 {
                     self.flow.front.sys_skip = self.flow.front.sys_skip.saturating_sub(1);
                     self.flow.front.sys_task.sleep(1);
                     return;

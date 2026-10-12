@@ -12,6 +12,11 @@ use dino_assets::enemy::Wave;
 mod class93;
 #[path = "prop/class94.rs"]
 mod class94;
+// Pool B classes of the ranking screen (M1-07): the Cadillac (86) and the cloud manager (89).
+#[path = "prop/class86.rs"]
+mod class86;
+#[path = "prop/class89.rs"]
+mod class89;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -40,6 +45,8 @@ impl Game {
             match p.b.k20 / 4 {
                 15 => self.prop_wave(&mut p, h, i),
                 73 => self.prop_bird_spawner(&mut p, i),
+                86 => self.prop_class86(&mut p, i),
+                89 => self.prop_class89(&mut p, i),
                 93 => self.prop_class93(&mut p, i),
                 94 => self.prop_class94(&mut p, i),
                 _ => self.prop_unported(&mut p, h, i),

@@ -49,11 +49,15 @@ impl Vram {
 pub struct PaletteRam {
     pub words: Vec<u16>,
     pub dirty: bool,
+    /// The colours the screen shows: the palette of the frame before (the video hardware copies the
+    /// palette memory in the vertical blank, one frame late, see `latch`). Empty until the first frame ends.
+    shown: Vec<u16>,
+    prev: Vec<u16>,
 }
 
 impl Default for PaletteRam {
     fn default() -> Self {
-        PaletteRam { words: vec![0; 2048], dirty: true }
+        PaletteRam { words: vec![0; 2048], dirty: true, shown: Vec::new(), prev: Vec::new() }
     }
 }
 
@@ -68,8 +72,48 @@ impl PaletteRam {
         &mut self.words[bank * 512..bank * 512 + 512]
     }
 
+    /// The end of a frame: the screen shows the palette as it was at the end of the frame before (the
+    /// recordings of the fades: a MAME picture of a fade step shows the brightness of the step before).
+    pub fn latch(&mut self) {
+        if self.shown.is_empty() {
+            self.shown.clone_from(&self.words);
+            self.prev.clone_from(&self.words);
+            self.dirty = true;
+            return;
+        }
+        if self.prev != self.shown {
+            self.shown.clone_from(&self.prev);
+            self.dirty = true;
+        }
+        self.prev.clone_from(&self.words);
+    }
+
+    /// The colours the screen shows now (`words` before the first frame ends).
+    pub fn shown_words(&self) -> &[u16] {
+        if self.shown.is_empty() { &self.words } else { &self.shown }
+    }
+
     pub fn copy(&mut self, start: usize, words: &[u16]) {
         self.words[start..start + words.len()].copy_from_slice(words);
         self.dirty = true;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The screen shows the palette of the frame before.
+    #[test]
+    fn the_screen_shows_the_palette_one_frame_late() {
+        let mut p = PaletteRam::default();
+        assert_eq!(p.shown_words()[0], 0);
+        let mut shown = Vec::new();
+        for v in 1..=4u16 {
+            p.words[0] = v;
+            p.latch();
+            shown.push(p.shown_words()[0]);
+        }
+        assert_eq!(shown, [1, 1, 2, 3]);
     }
 }

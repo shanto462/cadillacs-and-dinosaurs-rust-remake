@@ -48,6 +48,8 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x4200E, // class 15 flying pieces (0x41F2E)
     0x71F72, // class 98 title logo (0x6A21E): the "Cadillacs" / "Dinosaurs" letters
     0x71F9E, // class 100 profile card portraits and moves (0x6A608)
+    0x8B5E6, // pool B class 86, the Cadillac of the ranking screen (0x8B43C)
+    0x42516, // pool A class 17, the two heroes in the Cadillac (0x423B8)
     // Pool E (items, phase 1 task 2). Containers 0x28C8A..0x28D1C, one table per variant.
     0x2995E, // container var 0
     0x2998C, // var 2

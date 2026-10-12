@@ -86,7 +86,7 @@ impl Game {
     }
 
     /// 0x88B0: one step on every bank in the mask, in order OBJ, scroll1, scroll2, scroll3.
-    fn fade_step(&mut self, fade_in: bool) {
+    pub(crate) fn fade_step(&mut self, fade_in: bool) {
         for i in 0..4 {
             if self.fade.mask & (1 << i) != 0 {
                 self.fade_bank_step(i, fade_in);

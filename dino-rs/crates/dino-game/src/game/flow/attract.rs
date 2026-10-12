@@ -14,8 +14,8 @@
 //! | 8 | 0x97D42 | ranking only (not reachable) |
 //! | 0xA | 0x97DBE | state = 0 (not reachable) |
 //!
-//! The title is real (`boot.rs`), and so are the profile cards (0x9A7E6, `profiles.rs`, M1-05). The
-//! ranking (0x1516C through 0x983D8, M1-07), the demo (0x99E88, M1-12), the story slides (0x988C0,
+//! The title is real (`boot.rs`), and so are the profile cards (0x9A7E6, `profiles.rs`, M1-05) and the
+//! ranking (0x1516C through 0x983D8, `ranking.rs`, M1-07). The demo (0x99E88, M1-12), the story slides (0x988C0,
 //! M1-08) and the opening movie (0x9BF50, M1-09) are stubs: a blank screen with a label that lasts
 //! exactly as long as the real screen did in the MAME recording `attract3.mame.trc`, so the state byte
 //! changes at the same frames (video frames 2744, 6874, 9311, 13411, 15848, 19979, 22416, 26516, 28953).
@@ -41,8 +41,6 @@ pub enum Stub {
 
 /// Frames of the stubs, measured in `attract3.mame.trc` (records = video frames - 2): from the
 /// frame the original calls the routine to the frame it returns.
-/// The ranking: 422 the first time, 423 afterwards.
-const RANKING_FRAMES: [u16; 2] = [422, 423];
 /// The cells of scroll3 the clear 0xAE0 has done when the frame it clears scroll2 in ends (the
 /// original clears the maps one after the other, 4096 cells at about 32 cycles each). Any value from
 /// 1072 to 3576 gives what the recording shows (56 of the 216 board cells left, see
@@ -70,8 +68,7 @@ impl Game {
     pub(super) fn flow_attract_clear(&mut self) {
         let c = &mut self.cam;
         (c.cam1_x, c.cam1_y, c.s2.cam_x, c.s2.cam_y, c.s3.cam_x, c.s3.cam_y) = (0, 0, 0, 0, 0, 0);
-        self.sprites.entries.clear();
-        self.sprites.debug_rects.clear();
+        self.sprites.wipe();
         self.flow_clear_scroll1();
         self.flow.front.clear_stage = 1;
     }
@@ -238,17 +235,14 @@ impl Game {
         self.flow_attract_busy(2, 2, st::RANK_START);
     }
 
-    /// 0x983D8: kill the blink task (slot 0x20), then the ranking 0x1516C (stub).
+    /// 0x983D8: kill the blink task (slot 0x20), then the ranking 0x1516C (`ranking.rs`), which returns in
+    /// `st::RANK_END`.
     pub(super) fn flow_attract_ranking_start(&mut self) {
-        self.brightness_full(); // 0x892C (the states that clear first do it here)
         self.flow.front.blink.kill();
-        self.sound(0xFF00); // 0x1516C stops the sound first
-        let k = self.flow.front.rank_runs as usize;
         self.flow.front.rank_runs = self.flow.front.rank_runs.saturating_add(1);
-        self.flow_attract_stub(Stub::Ranking, "RANKING");
-        // the ranking set-up is busy for one more frame
+        // the ranking set-up is busy for one more frame (the system task loses a pass)
         self.flow.front.sys_skip = 1;
-        self.flow_attract_wait(RANKING_FRAMES[k.min(1)], st::RANK_END);
+        self.flow_ranking_start();
     }
 
     /// The ranking returned: 0x983E8 (scroll1 Y to 0), then the end of the state routine.
@@ -285,7 +279,6 @@ impl Game {
     /// Starts a stub screen: clears the layers and writes the label.
     fn flow_attract_stub(&mut self, stub: Stub, label: &str) {
         self.flow.front.stub = stub;
-        self.flow.front.stub_start = self.flow.front.ticks;
         self.flow_clear_screen();
         // centred in row 46 of the scroll1 map (the rows 32 to 63 are the ones the screen shows)
         let text = format!("{label} (NOT PORTED)");
@@ -294,12 +287,5 @@ impl Game {
         for (i, c) in text.bytes().enumerate() {
             self.hud_put(at + 0x80 * i as u32, c as u16, 0x180);
         }
-    }
-
-    /// True when the system task loses its pass at this frame because of the screen that is up. The
-    /// profile cards lose theirs where their clears are (`flow_attract_busy`), so no screen has a
-    /// table of lost frames any more.
-    pub(super) fn flow_attract_pass_lost(&self) -> bool {
-        false
     }
 }

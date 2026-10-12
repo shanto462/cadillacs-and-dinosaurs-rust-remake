@@ -209,20 +209,20 @@ fn compare_power_on(
     trace: &str,
     last: i32,
     input: impl Fn(i32) -> [u8; 3],
-    before: impl FnMut(i32, &mut Game),
+    mut before: impl FnMut(i32, &mut Game),
 ) -> (Game, Vec<Differences>) {
-    compare_power_on_with(a, trace, last, input, before, |_, _, _| {})
+    compare_power_on_with(a, trace, last, input, |k, g, _| before(k, g), |_, _, _, _| {})
 }
 
-/// `compare_power_on` with a look at the game and the recording's RAM after each tick, for what the
+/// `compare_power_on` with a look at the game and the recording's RAM and gfx after each tick, for what the
 /// `Differences` do not hold.
 fn compare_power_on_with(
     a: &'static AssetPack,
     trace: &str,
     last: i32,
     input: impl Fn(i32) -> [u8; 3],
-    mut before: impl FnMut(i32, &mut Game),
-    mut after: impl FnMut(i32, &Game, &[u8]),
+    mut before: impl FnMut(i32, &mut Game, &[u8]),
+    mut after: impl FnMut(i32, &Game, &[u8], &[u8]),
 ) -> (Game, Vec<Differences>) {
     let mut rd = TraceReader::open(trace).expect("the recording opens");
     rd.next(); // record -1, the sync state
@@ -232,7 +232,7 @@ fn compare_power_on_with(
     let mut out = Vec::new();
     for k in 0..=last {
         g.w.input = input(k);
-        before(k, &mut g);
+        before(k, &mut g, &prev_ram);
         g.tick();
         assert_eq!(rd.next(), Some(k), "the recording has record {k}");
         let (gfx, ram) = (&rd.region("gfx").unwrap().data, &rd.region("ram").unwrap().data);
@@ -271,7 +271,7 @@ fn compare_power_on_with(
         if mc != pc {
             d.cams = Some((mc, pc));
         }
-        after(k, &g, ram);
+        after(k, &g, ram, gfx);
         let (msn, psn) = (mame_sounds(&prev_ram, ram), g.w.sounds.clone());
         if msn != psn {
             d.sounds = Some((msn, psn));
@@ -502,7 +502,7 @@ fn profile_cards_run_like_the_original() {
     let mut sprites = std::collections::BTreeMap::new();
     let mut ends = Vec::new();
     let mut was_up = false;
-    let (_, rows) = compare_power_on_with(a, trace, 28527, |_| [0; 3], |_, _| {}, |k, g, ram| {
+    let (_, rows) = compare_power_on_with(a, trace, 28527, |_| [0; 3], |_, _, _| {}, |k, g, ram, _gfx| {
         let up = g.flow.front.stub == super::attract::Stub::Profiles;
         if up {
             let (m, p) = ((ram16(ram, 0xFF0FE8), ram16(ram, 0xFF0FEA)), (g.flow.front.task.count, g.flow.front.task.sub));
@@ -531,6 +531,142 @@ fn profile_cards_run_like_the_original() {
     }
     assert_eq!(ends, [2318, 8884, 15421, 21989, 28526], "the routine returns after 1399 and then 1407 frames");
     assert_eq!(sprites.values().copied().collect::<Vec<_>>(), [12, 30, 15, 20], "the sprites of the cards at their starts: {sprites:?}");
+}
+
+/// A6 (M1-07), the ranking screen "BRAVES": the whole routine 0x1516C (through 0x983D8) in the nine runs it has
+/// in `attract3.mame.trc` (called at the records 2320, 6449, 8886, 11241, 15423, 19554, 21991, 24346 and 28528,
+/// after the profile cards, the story slides, the profile cards, the demo and so on), from the call to the frame
+/// it returns (422 frames the first time, 423 later; the records before the frame it returns, which is the first
+/// one of the next screen). In every record the tilemaps (the label block and the ten
+/// rows of the default table, the desert pages, the cut of the drawing by the video frame boundary), the palettes
+/// (set 4 and the fade of the title after it), the sprite list (the Cadillac with its two heroes, the clouds),
+/// the layer control, the sound codes (the stop code, the music 0x80 at the second frame, the ambient 0x70 when the
+/// car has arrived), the six scroll shadows (the desert goes by, 8 and 4 pixels a frame), the wait counter G.$7018
+/// and the random number state G.$14 (one per hero a frame, the clouds) equal the recording. The slides and the
+/// demo before three of the runs are stubs that play none of their random numbers, so the state G.$14 is set to
+/// the recording's value in the frame the routine is called.
+#[test]
+fn ranking_runs_like_the_original() {
+    let Some(a) = assets() else { return };
+    let trace = "../../../re/out/traces/attract3.mame.trc";
+    if !Path::new(trace).exists() {
+        eprintln!("mame_check: {trace} is missing, skipped");
+        return;
+    }
+    // (the frame it is called, the frames it lasts)
+    let runs: [(usize, usize); 9] =
+        [(2320, 422), (6449, 423), (8886, 423), (11241, 423), (15423, 423), (19554, 423), (21991, 423), (24346, 423), (28528, 423)];
+    let mut problems: Vec<String> = Vec::new();
+    let mut returned = Vec::new();
+    let mut was_up = false;
+    let (_, rows) = compare_power_on_with(
+        a,
+        trace,
+        28528 + 423,
+        |_| [0; 3],
+        |k, g, prev| {
+            if runs.iter().any(|&(s, _)| s as i32 == k) {
+                g.w.rng = ram16(prev, 0xFF8014);
+            }
+        },
+        |k, g, ram, _| {
+            let up = g.flow.front.stub == super::attract::Stub::Ranking;
+            if up {
+                if g.w.rng != ram16(ram, 0xFF8014) && problems.len() < 6 {
+                    problems.push(format!("record {k}: random number state (MAME) {:04X} (port) {:04X}", ram16(ram, 0xFF8014), g.w.rng));
+                }
+                if g.flow.front.task.state == super::ranking::rst::PASS && g.flow.front.task.count != ram16(ram, 0xFFF018) && problems.len() < 6 {
+                    problems.push(format!("record {k}: wait counter (MAME) {:04X} (port) {:04X}", ram16(ram, 0xFFF018), g.flow.front.task.count));
+                }
+            }
+            if was_up && !up {
+                returned.push(k as usize);
+            }
+            was_up = up;
+        },
+    );
+    assert!(problems.is_empty(), "{problems:?}");
+    for (from, len) in runs {
+        let bad: Vec<(usize, &Differences)> = rows
+            .iter()
+            .enumerate()
+            .take(from + len)
+            .skip(from)
+            .filter(|(_, d)| d.s1 + d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some() || d.sounds.is_some() || d.cams.is_some() || d.state.is_some())
+            .collect();
+        assert!(bad.is_empty(), "ranking run {from}: {} records differ, first {:?}", bad.len(), &bad[..bad.len().min(3)]);
+    }
+    assert_eq!(returned, runs.map(|(s, l)| s + l), "the routine returns after 422 and then 423 frames");
+}
+
+/// Diagnostic for M1-07: for each ranking run of `attract3.mame.trc` the number of writes of the draw
+/// (`Game::ranking_ops`) the original has done when the first frame after the call ends (the record S + 1: the
+/// smallest and the largest count that give the recording's tilemaps and scroll2 Y). These are the `CUTS` of
+/// `ranking.rs`. Run with `cargo test -p dino-game ranking_cut_report -- --ignored --nocapture`.
+#[test]
+#[ignore]
+fn ranking_cut_report() {
+    use super::ranking::Op;
+    let Some(a) = assets() else { return };
+    let trace = "../../../re/out/traces/attract3.mame.trc";
+    // the frames the ranking routine is called (the stop code 0xFF00 and the palette set 4)
+    let starts = [2320, 6449, 8886, 11241, 15423, 19554, 21991, 24346, 28528];
+    let mut found = Vec::new();
+    compare_power_on_with(a, trace, 28530, |_| [0; 3], |_, _, _| {}, |k, g, _ram, gfx| {
+        if !starts.contains(&(k - 1)) {
+            return;
+        }
+        let ops = g.ranking_ops();
+        let mut cells = [g.vram.scroll1.clone(), g.vram.scroll2.clone(), g.vram.scroll3.clone()];
+        let mut cam_y = g.cam.s2.cam_y;
+        let base = [SCROLL1, SCROLL2, SCROLL3];
+        let want = |layer: usize, i: usize| cell_at(gfx, base[layer], i);
+        let mut bad: i64 = (0..3).map(|l| (0..0x1000).filter(|&i| (cells[l][i].code, cells[l][i].attr) != want(l, i)).count() as i64).sum();
+        let cam_want = ram16(_ram, 0xFF8748);
+        let mut zero: Vec<usize> = Vec::new(); // in half writes
+        let mut best = (bad, 0usize);
+        if bad == 0 && cam_y == cam_want {
+            zero.push(0);
+        }
+        for (n, op) in ops.iter().enumerate() {
+            match *op {
+                Op::Cell(l, i, code, attr) => {
+                    let (l, i) = (l as usize - 1, i as usize);
+                    // the code word first: the frame can end between it and the attribute word
+                    let was = (cells[l][i].code, cells[l][i].attr) != want(l, i);
+                    cells[l][i].code = code;
+                    let half = (cells[l][i].code, cells[l][i].attr) != want(l, i);
+                    bad += half as i64 - was as i64;
+                    if bad == 0 && cam_y == cam_want && (code, attr) != (cells[l][i].code, cells[l][i].attr) {
+                        zero.push(n * 2 + 1); // n writes and the code of the next
+                    }
+                    cells[l][i].attr = attr;
+                    let is = (code, attr) != want(l, i);
+                    bad += is as i64 - half as i64;
+                }
+                Op::CamY(y) => cam_y = y,
+            }
+            if bad == 0 && cam_y == cam_want {
+                zero.push(n * 2 + 2);
+            }
+            if bad < best.0 {
+                best = (bad, n + 1);
+            }
+        }
+        if zero.is_empty() {
+            let l_bad: Vec<(usize, usize, (u16, u16), (u16, u16))> = (0..3)
+                .flat_map(|l| (0..0x1000).map(move |i| (l, i)))
+                .filter(|&(l, i)| (cells[l][i].code, cells[l][i].attr) != want(l, i))
+                .map(|(l, i)| (l, i, (cells[l][i].code, cells[l][i].attr), want(l, i)))
+                .take(8)
+                .collect();
+            println!("  record {k}: no count fits, fewest wrong {} at {}; after all writes (layer, cell, port, MAME): {l_bad:?} cam y {cam_y} (MAME {cam_want})", best.0, best.1);
+        }
+        found.push((k - 1, ops.len(), zero.first().copied(), zero.last().copied(), zero.len()));
+    });
+    for f in &found {
+        println!("ranking called at {}: {} writes, the first frame has done {:?} to {:?} of them ({} counts fit)", f.0, f.1, f.2, f.3, f.4);
+    }
 }
 
 /// Diagnostic report of the power-on comparison: the records that differ, by kind. Run with

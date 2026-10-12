@@ -262,6 +262,12 @@ impl Game {
                         return;
                     }
                 }
+                s if super::ranking::rst::owns(s) => {
+                    self.flow_ranking_script(); // the ranking screen (`ranking.rs`)
+                    if self.flow.front.task.sleeping() > 0 {
+                        return;
+                    }
+                }
                 st::PROFILES_END => {
                     self.flow_attract_profiles_end();
                     return;

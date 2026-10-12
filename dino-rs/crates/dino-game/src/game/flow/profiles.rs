@@ -90,7 +90,6 @@ impl Game {
     /// (two frames, the system task loses a pass); `pst::PALETTES` goes on.
     pub(super) fn flow_profile_start(&mut self) {
         self.flow.front.stub = Stub::Profiles;
-        self.flow.front.stub_start = self.flow.front.ticks;
         self.w.layer_ctrl = 0x12D6;
         self.title_pools_reset(); // 0x49A8, 0x4A18, 0x4A46, 0x4C48, 0x4C76, 0x12BE4, 0xFBE8
         self.flow_attract_clear(); // 0xAE0
@@ -256,7 +255,7 @@ impl Game {
     /// 0x8808: one step of all banks (0x88B0), then the step counter; at 0 the fade is over (the
     /// mask byte is cleared, 0x881E) and the handler returns, else the task sleeps one frame (0x95A).
     fn flow_profile_fade_step(&mut self, fade_in: bool) {
-        self.flow_fade_bank_steps(fade_in);
+        self.fade_step(fade_in); // 0x88B0
         self.fade.steps = self.fade.steps.wrapping_sub(1);
         if self.fade.steps == 0 {
             self.fade.mask = 0;
@@ -264,25 +263,6 @@ impl Game {
         } else {
             let next = if fade_in { pst::FADE_IN } else { pst::FADE_OUT };
             self.flow.front.task.wait(self.fade.delay, next);
-        }
-    }
-
-    /// 0x88B0 / 0x88F4: one step of the banks in the mask: the bank changes when its first word
-    /// (after the step, for a fade in) still has a brightness nibble, and then every word of it
-    /// changes by one step. The same as `palette.rs`, which keeps its copy to itself.
-    fn flow_fade_bank_steps(&mut self, fade_in: bool) {
-        for bank in 0..4 {
-            if self.fade.mask & (1 << bank) == 0 {
-                continue;
-            }
-            let words = self.pal.bank_mut(bank);
-            let probe = if fade_in { words[0].wrapping_add(0x1000) } else { words[0] };
-            if probe & 0xF000 == 0 {
-                continue;
-            }
-            for w in words.iter_mut() {
-                *w = if fade_in { w.wrapping_add(0x1000) } else { w.wrapping_sub(0x1000) };
-            }
         }
     }
 }

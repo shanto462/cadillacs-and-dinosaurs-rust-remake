@@ -23,6 +23,9 @@ const EFFECT_LISTS: &[u32] = &[
     0x9313C, // same, var != 0 (0x93060)
     0x93872, // debris piece (0x93564)
     0x9387E, // debris piece (0x9356C)
+    0x96B10, // cloud of the ranking screen, effect $20 = 0x80, var 0 (0x96AB6)
+    0x96B1C, // same, var 1 (0x96AC8)
+    0x96B28, // same, var 2 (0x96AD4)
 ];
 
 /// Raw-list animations (8-byte records), loaded with 0x16C6.

@@ -12,6 +12,7 @@
 //! mutably, like the 68000 code.
 
 use super::body::Body;
+use super::camera::VIDEO_LATENCY;
 use super::{Game, Handle, collide, slot_of};
 use crate::render::{Gpu, Layer};
 use dino_assets::effect::{EffectData, RawSprite};
@@ -67,12 +68,27 @@ pub struct SpriteList {
     pub splash_phase: u16,
     /// Handle of the object being drawn (stored into `ObjEntry::src`).
     pub cur_src: Handle,
+    /// What the screen shows of the lists: see `latch`. `None` until the first frame ends.
+    shown: Option<Shown>,
+}
+
+/// The lists built in the last frames, newest last, and what the screen shows now.
+#[derive(Clone, Default)]
+struct Shown {
+    /// (frame, entries, debug boxes) of the last build of each frame that built one.
+    builds: Vec<(u32, Vec<ObjEntry>, Vec<DebugBox>)>,
+    /// A build started in this frame.
+    built: bool,
+    /// 0xAE0 zeroed the sprite buffers in this frame.
+    wiped: bool,
+    frame: u32,
+    now: (Vec<ObjEntry>, Vec<DebugBox>),
 }
 
 impl Default for SpriteList {
     fn default() -> SpriteList {
         // 0x49A8 draw list reset: -$7126 = 1.
-        SpriteList { entries: Vec::new(), debug_boxes: false, debug_rects: Vec::new(), splash_timer: 1, splash_phase: 0, cur_src: 0 }
+        SpriteList { entries: Vec::new(), debug_boxes: false, debug_rects: Vec::new(), splash_timer: 1, splash_phase: 0, cur_src: 0, shown: None }
     }
 }
 
@@ -100,6 +116,9 @@ impl SpriteList {
     pub fn clear(&mut self) {
         self.entries.clear();
         self.debug_rects.clear();
+        if let Some(s) = &mut self.shown {
+            s.built = true;
+        }
         // 0x13FE6: subq.w #1,-$7126 ; bne ; -$7126 = 10 ; -$7124 = (-$7124 + 4) & 0xC
         self.splash_timer = self.splash_timer.wrapping_sub(1);
         if self.splash_timer == 0 {
@@ -238,14 +257,58 @@ impl SpriteList {
         }
     }
 
-    /// Hands the list to the GPU, last entry first, so the first entry ends on top.
+    /// 0xAE0 (0xB10): both sprite buffers are zeroed at once. The screen goes blank in the next frame.
+    pub fn wipe(&mut self) {
+        self.entries.clear();
+        self.debug_rects.clear();
+        if let Some(s) = &mut self.shown {
+            s.wiped = true;
+        }
+    }
+
+    /// The end of a frame. The screen shows the list of the last build that is `VIDEO_LATENCY` frames old or
+    /// older (the original builds into one of two buffers and the video hardware copies the one its register
+    /// points to, which the vertical blank code updates once a frame; a game that builds no list for a while,
+    /// like the profile cards during their fades, keeps showing the last one). The first call starts the
+    /// history, so a game that starts in a scene shows its sprites at once.
+    pub fn latch(&mut self) {
+        let (entries, rects) = (std::mem::take(&mut self.entries), std::mem::take(&mut self.debug_rects));
+        let s = self.shown.get_or_insert_with(|| Shown { built: true, ..Default::default() });
+        if s.built {
+            if s.builds.last().is_some_and(|b| b.0 == s.frame) {
+                s.builds.pop();
+            }
+            s.builds.push((s.frame, entries.clone(), rects.clone()));
+        }
+        self.entries = entries;
+        self.debug_rects = rects;
+        // the newest build that is old enough is shown; the builds before it are not needed again
+        let due = s.frame.checked_sub(VIDEO_LATENCY as u32);
+        let at = due.and_then(|d| s.builds.iter().rposition(|b| b.0 <= d));
+        s.now = at.map_or_else(Default::default, |k| (s.builds[k].1.clone(), s.builds[k].2.clone()));
+        if let Some(k) = at {
+            s.builds.drain(..k);
+        }
+        if s.wiped {
+            s.builds.clear();
+        }
+        s.built = false;
+        s.wiped = false;
+        s.frame = s.frame.wrapping_add(1);
+    }
+
+    /// Hands the list the screen shows to the GPU, last entry first, so the first entry ends on top.
     pub fn submit(&self, gpu: &mut Gpu) {
-        for e in self.entries.iter().rev() {
+        let (entries, rects) = match &self.shown {
+            Some(s) => (&s.now.0, &s.now.1),
+            None => (&self.entries, &self.debug_rects),
+        };
+        for e in entries.iter().rev() {
             let sy = (e.y as i32) & 0x1FF;
             let sy = if sy >= 0x1F0 { sy - 0x200 } else { sy };
             gpu.sprite(Layer::Sprites, e.x as i32 - 0x40, sy - 16, e.code, e.attr, e.flash);
         }
-        for r in &self.debug_rects {
+        for r in rects {
             let c: Color = match r.kind {
                 0 => GREEN,
                 1 => RED,
@@ -419,6 +482,32 @@ mod tests {
         for v in [0i16, 1, 0x10, 0x7F, 0x80, 0xFF, 0x100, 0x180, -1, -0x20] {
             assert_eq!((screen_y(v) as u16) & 0x1FF, 0x100u16.wrapping_sub(v as u16) & 0x1FF, "v={v}");
         }
+    }
+
+    fn entry(code: u16) -> ObjEntry {
+        ObjEntry { x: 0, y: 0, code, attr: 0, flash: 0, src: 0 }
+    }
+
+    /// What the screen shows of the sprite lists: the list of the last build that is 2 frames old or older, which
+    /// stays while no list is built; 0xAE0 blanks it from the next frame.
+    #[test]
+    fn the_screen_shows_the_sprite_list_two_frames_late() {
+        let mut s = SpriteList::default();
+        let shown = |s: &SpriteList| s.shown.as_ref().map(|x| x.now.0.iter().map(|e| e.code).collect::<Vec<_>>()).unwrap();
+        let mut seen = Vec::new();
+        for frame in 1..=8u16 {
+            if frame <= 5 {
+                s.clear(); // a build
+                s.entries.push(entry(frame));
+            }
+            if frame == 7 {
+                s.wipe();
+            }
+            s.latch();
+            seen.push(shown(&s));
+        }
+        let want: Vec<Vec<u16>> = vec![vec![], vec![], vec![1], vec![2], vec![3], vec![4], vec![5], vec![]];
+        assert_eq!(seen, want);
     }
 
     #[test]

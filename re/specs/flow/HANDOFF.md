@@ -271,7 +271,37 @@ where `attract.rs` goes on with the clear and the ranking stub as before.
   clears scroll3 in two frames when scroll3 has content: `CLEAR3_FIRST` cells in the first (any value from 1072 to 3576 equals the
   recording; the board's fourth strip is still there one frame).
 * The check: `mame_check.rs` `profile_cards_run_like_the_original` compares all five runs of `attract3.mame.trc` record by record
-  (tilemaps, palettes, sprite list, layer control, sound codes, the six scroll shadows, counter and index). Not compared, and
-  different in a picture: the scroll registers of the hardware show the shadows two frames late (cpsa in the recording), so a
-  port screenshot of a scrolling card has the checker 4 pixels off from a MAME snapshot. The renderer (`present.rs`) should apply
-  that latency to all scenes; the cards only show it first.
+  (tilemaps, palettes, sprite list, layer control, sound codes, the six scroll shadows, counter and index). The picture of the
+  port now lags its state like the original's (see "What the screen shows" in the M1-07 section below).
+
+## M1-07: the ranking screen, and what the screen shows (present.rs)
+
+`flow/ranking.rs` is the routine 0x1516C with 0x15594 / 0x15748 / 0x15888 / 0x1591C (the stub of M1-04 and `RANKING_FRAMES`
+are gone). It runs inside the attract task like the profile cards: `front.task` holds the script position (`ranking::rst`,
+an arm in `boot.rs`), `task.count` is G.$7018. `flow_attract_ranking_start` (0x983D8, also the game over ranking 0x97C94)
+ends the blink task and calls `flow_ranking_start`; the routine returns in `st::RANK_END` after pass 422 (frame S + 422 the
+first time, S + 423 later).
+
+* The draw is a list of writes in the original's order (`ranking_ops`: the label block, scroll2 page 0x16 four times,
+  scroll2 Y 0x40, scroll3 page 0x7C eight times, the ten rows). The first frame after the call does `ranking_cut()` words of
+  it (a cell is a code word and an attribute word, the frame boundary can fall between them), the next frame the rest, the end
+  of the handler (G.$7018, the Cadillac) and the first pass. The cuts are measured (`CUTS`, by run; later runs by the screen
+  before): `cargo test -p dino-game ranking_cut_report -- --ignored --nocapture` finds them in `attract3.mame.trc`.
+* Objects: pool B 89 cloud manager `prop/class89.rs`, pool C 0x80 clouds `effect/fx_cloud.rs`, pool B 86 Cadillac
+  `prop/class86.rs` (modes 0 and 2 as the ranking uses them; the ending uses the same handler with more sub states, not
+  ported), pool A 17 the two heroes `enemy/class17.rs`. Data: `FRONT_TABLES` (font 0x15768, cloud lists 0x8CA2E, speeds 0x96B34),
+  animation tables 0x8B5E6 and 0x42516 in `OBJECT_ANIM_TABLES`, the three cloud pictures in the extractor's `EFFECT_LISTS`.
+* Random numbers: the clouds and the heroes draw them in every pass. The rankings after the story slides and the demo start
+  with the state of G.$14 that those stubs do not play (M1-08, M1-12), so `ranking_runs_like_the_original` sets it from the
+  recording in the frame the routine is called; the first ranking after power on needs no help.
+* The check: `mame_check.rs` `ranking_runs_like_the_original` (all nine runs of `attract3.mame.trc`, record by record: tilemaps,
+  palettes, sprite list, layer control, sounds, scroll shadows, G.$14 and G.$7018).
+
+What the screen shows (`present.rs`, `camera.rs`, `draw.rs`, `vram.rs`): the original's picture lags its state. In a MAME
+picture taken with the recording's sample of record k: the tile maps are those of record k (written at once), the palette that of
+record k - 1, the scroll registers the camera shadows of record k - 2 (cpsa), and the sprites the list of the last build that
+is 2 records old or older (a game that builds no list for a while, like the profile cards in a fade, keeps showing the last
+one). `Game::tick` ends with `cam.latch_scroll()`, `sprites.latch()` and `pal.latch()`; `present::draw` uses `shown_scroll()`,
+the shown sprite list (`SpriteList::submit`) and `shown_words()`. 0xAE0 (`SpriteList::wipe`) blanks the sprites from the next
+frame. Checked against MAME pictures of the attract loop (71 profile frames, the title, stage 1): pixel exact except the frames
+where the first run of the profile cards does two passes in one frame (its sprites and fade appear a frame early in MAME).

@@ -81,6 +81,29 @@ pub struct Scroll3 {
     pub shift5f: u8,
 }
 
+/// The camera shadows the video hardware scrolls by: scroll1 G.$6C4 / $6C8, scroll2 G.$744 / $748,
+/// scroll3 G.$7E4 / $7E8, as (X, Y) pairs.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ScrollShadows {
+    pub cam1: (u16, u16),
+    pub s2: (u16, u16),
+    pub s3: (u16, u16),
+}
+
+/// How many frames late the video hardware shows what the game computes: the scroll registers (CPS-A
+/// 0x0C .. 0x16) of a recording's record k are the camera shadows of record k - 2, and a MAME picture
+/// taken at the same moment shows the sprite list of that frame (the one the shadows of k - 2 positioned),
+/// so the tiles and the sprites stay in step with each other. (The tile maps and the palettes are written
+/// at once.) `Camera::shown_scroll` and `SpriteList::latch` give what the screen shows.
+pub const VIDEO_LATENCY: usize = 2;
+
+/// The last shadows, oldest first, for [`Camera::shown_scroll`].
+#[derive(Clone, Debug, Default)]
+pub struct ScrollLatch {
+    hist: [ScrollShadows; VIDEO_LATENCY + 1],
+    filled: bool,
+}
+
 #[derive(Clone, Debug)]
 pub struct Camera {
     pub s2: Scroll2,
@@ -91,11 +114,39 @@ pub struct Camera {
     pub cam1_y: u16,
     /// G.$755C: shake strength requested this frame (consumed by 0x222D6, see `cam_shake`).
     pub shake_req: u8,
+    /// The shadows of the last frames (see [`VIDEO_LATENCY`]).
+    pub latch: ScrollLatch,
 }
 
 impl Default for Camera {
     fn default() -> Self {
-        Camera { s2: Scroll2::default(), s3: Scroll3::default(), cam1_x: 0, cam1_y: 0, shake_req: 0 }
+        Camera { s2: Scroll2::default(), s3: Scroll3::default(), cam1_x: 0, cam1_y: 0, shake_req: 0, latch: ScrollLatch::default() }
+    }
+}
+
+impl Camera {
+    /// The shadows now.
+    fn scroll_now(&self) -> ScrollShadows {
+        ScrollShadows { cam1: (self.cam1_x, self.cam1_y), s2: (self.s2.cam_x, self.s2.cam_y), s3: (self.s3.cam_x, self.s3.cam_y) }
+    }
+
+    /// The end of a frame: remember the shadows. The first call fills the whole history, so a game that
+    /// starts (or loads a state) in a scene shows its scroll at once.
+    pub fn latch_scroll(&mut self) {
+        let now = self.scroll_now();
+        let l = &mut self.latch;
+        if !l.filled {
+            l.hist = [now; VIDEO_LATENCY + 1];
+            l.filled = true;
+        } else {
+            l.hist.rotate_left(1);
+            l.hist[VIDEO_LATENCY] = now;
+        }
+    }
+
+    /// The scroll the hardware shows after the frames latched so far (the live shadows before the first).
+    pub fn shown_scroll(&self) -> ScrollShadows {
+        if self.latch.filled { self.latch.hist[0] } else { self.scroll_now() }
     }
 }
 
@@ -1153,3 +1204,23 @@ pub fn layer_origin(cam_x: u16, cam_y: u16, base_y: u16) -> (u16, u16) {
     (cam_x, base_y.wrapping_sub(cam_y).wrapping_add(16))
 }
 
+
+#[cfg(test)]
+mod latency_tests {
+    use super::*;
+
+    /// The scroll the screen shows is the shadow of two frames ago (the first frames show the first one).
+    #[test]
+    fn the_scroll_registers_show_the_shadows_two_frames_late() {
+        let mut c = Camera::default();
+        assert_eq!(c.shown_scroll().s2, (0, 0), "before the first frame the live shadows");
+        let mut shown = Vec::new();
+        for x in 1..=6u16 {
+            c.s2.cam_x = x;
+            c.s3.cam_y = 10 * x;
+            c.latch_scroll();
+            shown.push((c.shown_scroll().s2.0, c.shown_scroll().s3.1));
+        }
+        assert_eq!(shown, [(1, 10), (1, 10), (1, 10), (2, 20), (3, 30), (4, 40)]);
+    }
+}

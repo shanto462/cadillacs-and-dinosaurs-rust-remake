@@ -9,6 +9,7 @@
 //! * `0x10` water splash when landing in water, 0x92A48 (spawned by the player code 0x606E).
 //! * `0x20` burning flames attached to a body, 0x92FB4 (player 0x1C86E, enemy 0x2AD98).
 //! * `0x68` water ripple around a wading body, 0x9631C (player code 0x60E2), raw-list frames.
+//! * `0x80` cloud of the ranking screen, 0x96A7E (`effect/fx_cloud.rs`, made by the pool B class 89).
 //!
 //! Any other class is freed on its first update (logged once in debug builds) until it is ported.
 //!
@@ -25,6 +26,10 @@
 
 use super::body::Body;
 use super::{Game, Handle, POOL_C, Slot, collide, slot_of};
+
+// Pool C classes of the front end (M1-07): the clouds of the ranking screen.
+#[path = "effect/fx_cloud.rs"]
+mod fx_cloud;
 use dino_assets::effect::EffectData;
 use dino_assets::{FrameId, HitBox};
 
@@ -33,6 +38,7 @@ pub const FX_SPARK: u16 = 0x04;
 pub const FX_WATER_SPLASH: u16 = 0x10;
 pub const FX_FLAMES: u16 = 0x20;
 pub const FX_RIPPLE: u16 = 0x68;
+pub const FX_CLOUD: u16 = 0x80;
 
 /// Hit spark animation table (0x924BE stores it in +$40).
 const SPARK_TABLE: u32 = 0x924F6;
@@ -58,6 +64,8 @@ pub struct Effect {
     /// +$62 / +$64 offset from the owner (X mirrored by the owner's facing).
     pub off_x: i16,
     pub off_y: i16,
+    /// +$60 (long) speed of a cloud of the ranking screen, added to X every frame.
+    pub speed60: i32,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -186,6 +194,7 @@ impl Game {
                 FX_WATER_SPLASH => self.fx_water_splash(i),
                 FX_FLAMES => self.fx_flames(i),
                 FX_RIPPLE => self.fx_ripple(i),
+                FX_CLOUD => self.fx_cloud(i),
                 // TODO(port): remaining classes (handler addresses from the table at 0x237E6):
                 // 0x00 0x923E0, 0x08 0x92808, 0x0C 0x929B8, 0x14 0x92B7A, 0x18 0x92C9A,
                 // 0x1C 0x92ECC, 0x24 0x93184, 0x28 0x932D2, 0x2C 0x934F6 (debris, needs 0x12DAC),

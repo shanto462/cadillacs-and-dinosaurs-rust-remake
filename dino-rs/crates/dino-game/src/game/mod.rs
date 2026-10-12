@@ -272,6 +272,10 @@ impl Game {
         self.w.sounds.clear();
         self.flow_frame();
         self.run_fade_task();
+        // the video hardware shows the scroll and the sprite list of two frames ago (`camera::VIDEO_LATENCY`)
+        self.cam.latch_scroll();
+        self.sprites.latch();
+        self.pal.latch(); // the palette one frame late
     }
 
     /// 0xAAF6 game_frame: the in-game per-frame order.
