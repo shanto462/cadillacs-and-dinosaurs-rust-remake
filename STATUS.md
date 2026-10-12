@@ -47,8 +47,10 @@ every phase: the port must match the original frame by frame (checked with the p
 | D2b Player state rules (HP, lives, respawn, invulnerability, damage, score) | Done (2026-10-12) |
 | D3a Human enemies (incl. poachers waking dinosaurs) | Done (2026-10-12) |
 | D3d Bosses part 2 (Morgan / Morgue, Tyrog, Slisaurs, Fessenden) | Done (2026-10-13) |
-| D3f Effects | Running (agy) |
-| D3e part 2: walk of Episodes 3 to 5 | Running (codex) |
+| D3f Effects | Done (agy, reviewed) |
+| D3e part 2: walk of Episodes 3 to 5 | Done (codex, reviewed) |
+| X Task index for D5 | Done (grok) |
+| D5 Merge into the final build plan | Running |
 | D2c Weapons and multiplayer | Done (2026-10-12) |
 | D3c Bosses part 1 (Vice T., Butcher, Hogg and the car, Slice) | Done (2026-10-12) |
 | D4a Items and drops | Done (2026-10-13) |
@@ -58,7 +60,6 @@ every phase: the port must match the original frame by frame (checked with the p
 | Harness: 2 and 3 players, mid-game join | Done (codex): mp2 / mp3 match MAME (0 pairs); the join needs the join task ported |
 | D2a Player moves | Done (2026-10-12), `plan/game/design/D2a-player-moves.md` |
 | D5 inputs complete when D3e parts 2-3 and D3f are done | |
-| D5 Merge into the final build plan | Pending |
 
 ## Progress: old phase 1 (stage 1 complete; continues as milestone M5 after the backbone)
 

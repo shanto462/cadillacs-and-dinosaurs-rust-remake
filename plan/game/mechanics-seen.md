@@ -640,3 +640,86 @@ Source: `plan/game/sources/claude-doc-deep-dive-supplement-2.md`. The scene-by-s
 | BT20 | Last boss end: `0xACEE` at HP 0 (stage index 7 sets `G.$4D7`, `G.$4DB`), 1,000 points at +368 frames, dying steps at 2498, 2673, 3033, 3105, 3286, `+A6 = 1` and the hidden body, tally at +1,800, ending mode 0x1C after 3,600 more frames | R 0x63538, 0xACEE; M f84-kill | MISSING | D3d, D4c |
 | BT21 | Boss HP tables by band and player count for index 0, 4, 5, 6, 8, 9 (and Tyrog halved), HUD scale 100 | R 0x31E14 | PARTIAL (rows in `boss_hp`) | D3d |
 | BT22 | Boss target rule: fewest attackers, ties to the later player (the supplement's rearmost) | R 0x32032 | DONE (D3a) | D3d |
+
+### From `design/D3e-part2-ep3-5.md` (D3e part 2, walk of Episodes 3 to 5 (codex)), 42 rows
+
+| ID | Mechanic | Source | Port | Notes |
+| --- | --- | --- | --- | --- |
+| W201 | Episode 3 uses one continuous area with separate foot-lock and car paths | [R: 0x22398,0x22B9E; M: d3e2-r3/e3-car-loop] | D4c / D3c | Keep the special camera table |
+| W202 | B95 changes 16 colours in one palette per object, not three palettes | [R: 0x9227A,0x922D0; M: d3e2-r4/e3-blend-timer] | P205 | Three RGB components were mistaken for palettes |
+| W203 | Seven B95 triggers use periods 15,15,2,2,2,2,2 and three destination palette slots | [R: 0x922C8,0x922D0; M: d3e2-r3/e3-car-loop] | P205 | Exact slots in section 3 |
+| W204 | Radio sources include the first barrel, last road pail, middle drum and one rolling barrel | [R: C:31 script records; M: d3e2-r4/e3a0-hit-*] | D3c / D4a | Also eight enemy radio rows, D3c |
+| W205 | Six Episode 3 tire stacks are E5 containers, not map decoration | [R: 0xAE7D4 onwards; M: d3e2-r4/e3a0-hit-b00-14 through hit-d80-14] | D4a | Empty rows, tire puffs |
+| W206 | A70 road riders and A65 hopping barrels hurt heroes and enemies | [R: D3a section 10; M: d3e2-r1/e3a0-check-8f0, check-26e0] | D3a | Keep their monster collision passes |
+| W207 | Outer entrance crash breaks drums, tires and A27 men; upright gate/posts stay | [R: 0x420EA; M: d3e2-r1/e4-opening] | D3a / D4c | No separate gate tile break |
+| W208 | Episode 4 opening car A16/A17 differs from playable car B88 | [R: D3a section 11; D3c section 5; M: d3e2-r2/e4-gate-crash] | D3a / D3c | Separate owners and states |
+| W209 | Walther runs in beside a closed grate at X 0x320,Y 0,Z 0x20 | [M: d3e2-r2/e4-vent; R: wave 1 at 0xAF33A] | D3a | No measured vent-opening event |
+| W210 | Garage back tires have pizza/steak/sushi and gold-dust/dime rows | [R: D4a C:28,C:15; M: d3e2-r4/e4a1-hit-b0-58, hit-f0-58] | D4a | Pizza is not guaranteed |
+| W211 | Overturned Cadillac is garage scroll2 art, with no separate break or loot | [R: ep4_a1_scroll2.png; M: d3e2-r4/e4a1-scenery-grid] | Map rendering | Separate from arriving car |
+| W212 | B0 variants 1 and 2 are thin-stem fixtures with round tops; stems break | [R: 0x74FA2; M: d3e2-r3/e4-break-lamp-left, e4-break-lamp-right] | P202 | No loot or flame |
+| W213 | B0 variant 0 is a large cylindrical column whose upper body breaks off | [R: 0x75028; M: d3e2-r3/e4-break-window] | P202 | Old probe name says window, picture does not |
+| W214 | B1 garage gate makes a torn opening, composition 327 and 13x6 attribute patch | [R: 0x75320,0x75400; M: d3e2-r4/e4-fence-dx0-f1] | P203 | Persistent background patch |
+| W215 | B0/B1 breaks have no container drop call or hostile attack registration | [R: 0x74FA2 to 0x7542C; M: d3e2-r3/e4-break-*] | P201 to P203 | Do not use E5 break rewards |
+| W216 | B59 variants 0,1,2 animate foundry far-layer colours | [R: 0x861E8; M: d3e2-r4/e4-palettes] | P204 | Not gates or tile-code swaps |
+| W217 | Foundry weapons are placed guns with player-count and level gates | [R: 0xAF260 onwards; D4a section 8.1; M: d3e2-r1/e4a2-check-180] | D4a | Rifle, shotgun and M-16 positions in section 6 |
+| W218 | Episode 5 starts in daylight with three torches, two barbecues and an egg | [R: 0xAF6E4; M: d3e2-r1/e5-opening] | Items / map | Pre-study night label rejected |
+| W219 | Torch floor fire is E6 overlay; swung torch burn comes from weapon logic | [R: 0x24F6E; D4a section 4; M: d3e2-r1/e5a0-sweep-back] | D4a / D2c | Separate from hut fire |
+| W220 | Meadow diamond is a placed treasure at trigger 0x180, not a broken rock reward | [R: 0xAF7F4; M: d3e2-r1/e5a0-check-170] | D4a | Appears inside the picture |
+| W221 | Hunters wake the sleeping Shivat; kill-all sweep can prevent the scene | [R: D3a section 2.3; M: d3e2-r3/e5-hunter-natural] | D3a / D3b | Use natural reference |
+| W222 | B48 is a 128-call no-op, not the cliff rock spawner | [R: 0x84316; M: d3e2-r1/e5a0-check-660] | P210 | Nearby unused tile routine stays inactive |
+| W223 | Six scripted/wave rock records use A66, with one gated to 2P+ | [R: Episode 5 list 2 and waves 2/3; M: d3e2-r1/e5a0-check-6f0] | D3a | Floor hazard, HP 8 |
+| W224 | Falling-rock debris can become throwable stones after bouncing | [R: 0x294AA,0x93770; M: d3e2-r4/e5-rock-debris] | D4a / D3f | Conditional conversion, not guaranteed loot |
+| W225 | Stone limit is checked before debris finishes, so it is not a strict final cap | [R: D4a section 8.4; M: D4a stones2_boulder] | D4a / D3f | Preserve original delayed counting |
+| W226 | Bridge has eight barrels in two depth rows and stays intact when they break | [R: 0xAF974 to 0xAF9E4; M: d3e2-r4/e5a1-hit-*] | Map / D4a | Correct contents in section 8 |
+| W227 | Bridge route lowers camY 0x200 to 0x100 through diagonal mode, without fade | [R: D4c section 2.3; M: d3e2-r3/e5-bridge-cross, partial] | D4c | Full natural capture open |
+| W228 | B5 is far-layer chimney smoke | [R: 0x76A3E; M: d3e2-r4/e5-far-isolate-b00] | P206 | Four pictures, 16 frames |
+| W229 | B6 is far-layer fire behind village openings, not steam | [R: 0x76AE6; re/out/d3e2/far-tiles.png; M: d3e2-r4/e5-far-isolate-f00] | P206 | Three 12-frame tile animations |
+| W230 | B10 and B13 are repeating foreground fire patches keyed to global tile clock | [R: 0x7861C,0x79232; M: d3e2-r2/e5-fire-f00] | P207 / P208 | No hut HP or collapse trigger |
+| W231 | Eight B13 records include two different variants at X 0xE20 | [R: 0xAD31E,0xAD32C; M: d3e2-r2/e5-fire-c80] | P208 | Do not deduplicate by position |
+| W232 | B62 cycles fire palettes and requests sound 0x8E | [R: 0x865F2; M: d3e2-r2/e5-fire-f00] | P209 | Hardware toggle remains open |
+| W233 | Village scenery fire has no attack box or extinguishing interaction | [R: B5/B6/B10/B13/B62 handlers; M: d3e2-r4/e5a1-scenery-grid] | Scenery classes | Keep separate weapon and bomb damage |
+| W234 | Water buckets are E5 pails; break gives loot and no water splash | [R: 0xAFA24 to 0xAFA74; M: d3e2-r4/e5a1-hit-f68-160 through hit-fb8-160] | D4a | No fire suppression |
+| W235 | Special bucket needs a live gun on the field to become ammo | [R: 0x24C3A; D4a section 6.3] | D4a | Gun need not be held |
+| W236 | Fossil bucket is ammonite 30/32 or dime 2/32; last bucket selects cake/coffee by level | [R: D4a C:1F,C:20,C:24; M: d3e2-r4/e5a1-hit-f90-160, hit-fb8-160] | D4a | Preserve random and gate rules |
+| W237 | B49 opens a wall/shutter patch automatically at wave 6 | [R: 0x8438E; M: d3e2-r2/e5-wall-burst] | P211 | Twenty tile words and four attribute changes |
+| W238 | B49's running handler does not spawn the nearby two portrait-box makers | [R: 0x843A2 to 0x844B4; M: d3e2-r2/e5-wall-burst] | P211 | Reject pre-study dialogue pair |
+| W239 | B70 is decorative rifle art with cartridge marks and no pickup | [R: 0x896E6,0x8973A; M: d3e2-r4/e5-chief-gun] | P212 | Do not replace with E0 weapon |
+| W240 | Chief scene, portrait text, shots and A35-to-A36 change are separate from wall burst | [R: D3d section 2; M: d3e2-r4/e5-chief-gun] | D3d / P213 | Exact boss work remains in D3d |
+| W241 | B89 makes desert scenery, B90 is chained caption logic, neither is a car wheel | [R: 0x8C996,0x8CD06; D3c section 5.2] | Context check | Live Episode 3 trigger not sampled here |
+| W242 | Camera jumps can omit earlier village patch initialization and leave dark columns | [R: capture-recipes.md section 8; M: d3e2-r1/e5a1-check-f10] | Probe limitation | Do not port the artifact |
+
+
+### From `design/D3f-effects.md` (D3f effects (agy)), 30 rows
+
+| ID | Mechanic | Source | Port | Notes |
+| --- | --- | --- | --- | --- |
+| FX01 | Pool C effect pool: 48 slots of 0x80 bytes at RAM 0xFF9A74; allocator 0x4884, free 0x4964; update loop 0x237B2 dispatches via 42-entry pointer table 0x237E6 with class word +$20 scaled by 4 | R: 0x4884, 0x4964, 0x4CA4, 0x237B2, 0x237E6 | PARTIAL | 4 of 42 classes ported in effect.rs |
+| FX02 | Hit sparks (class 1, 0x924AA): table 0x924F6, 26 anims; spawned by combat hit confirm 0x12720 with attack byte 6; jitter helper 0x92450 uses 8-entry table 0x9248A by G.$0 & 0xE | R: 0x12720, 0x92450, 0x924AA, 0x924F6 | DONE | In effect.rs fx_spark |
+| FX03 | Water splash (class 4, 0x92A48): table 0x92AC0, 6 anims; spawned by player landing 0x606E; suppresses owner reflection; sound 0x9AF4 | R: 0x606E, 0x92A48, 0x92AC0 | DONE | In effect.rs fx_water_splash |
+| FX04 | Attached burning flames (class 8, 0x92FB4): direct airborne chains 0x93096/0x930F4 and dying-out ground chains 0x930D4/0x9313C; drawn on odd frames only (30 Hz flicker); spawned by player 0x1C876 and enemy 0x2ADAE | R: 0x1C876, 0x2ADAE, 0x92FB4 | DONE | In effect.rs fx_flames |
+| FX05 | Water ripple (class 26, 0x9631C): raw list 0x96360, 3 frames; spawned every 7 frames by wading hero 0x60E2; X jittered by G.$4 noise | R: 0x60E2, 0x9631C, 0x96360 | DONE | In effect.rs fx_ripple |
+| FX06 | Ground dust puff (class 7, 0x92ECC): raw list 0x92F3A; spawned by helper 0x92E5E (0x92E76 slide, 0x92EA4 landing) and thrown item landing 0x29F54; lasts 14 frames | R: 0x29F54, 0x92E5E, 0x92ECC, 0x92F3A | MISSING | Needed for dashes and knockdowns |
+| FX07 | Container debris (class 11, 0x934F6): table 0x937AA, 18 anims; wood planks, metal shards, stone rubble, tires; parabolic arc with floor bounce; 9 rubble pieces from stone break | R: 0x259E8, 0x292A6, 0x2944A, 0x934F6 | MISSING | D4a IT10 |
+| FX08 | Bonus stone weapon spawn (0x93770): broken stone/boulder pieces roll chance (2/16, 8/16, 3/16) to spawn collectible stone weapon if G.$4F1 < 3 | R: 0x294AA, 0x93770 | MISSING | D4a IT11 |
+| FX09 | Dizzy stun stars (class 19, 0x94462): table 0x944DC, 2 anims; spawned by stun check 0x94338; orbits head; timer decrements by 3 when mashing stick/buttons; looping sound 0x51 | R: 0x94338, 0x94462, 0x944DC | MISSING | Stun recovery |
+| FX10 | Fatal burn death collapse (class 15, 0x93E54): table 0x93F42, 6 anims; charred body smolders 60-90 frames then dissolves to ash; sound 0x23 | R: 0x93D48, 0x93E54, 0x93F42 | MISSING | Fire death |
+| FX11 | Gunshot muzzle flash (class 31, 0x96800): table 0x96884, 4 anims (handgun, rifle, shotgun, machine gun); lasts 2-4 frames; anchored to weapon muzzle | R: 0x24ECC, 0x967C4, 0x96800, 0x96884 | MISSING | Firearm shooting |
+| FX12 | Bullet ricochet metal spark (class 33, 0x96B78): table 0x96D06, 1 anim; spawned on bullet hit against metal/armor 0x28720; 4-way scatter table 0x96D8A; sound 0x2F | R: 0x28720, 0x96B42, 0x96B78, 0x96D06 | MISSING | Metal armor hit |
+| FX13 | Respawn flash (class 14 var 0, 0x93B28): table 0x93C82, 5 anims; expanding vertical light column and ground disc; spawned at player drop-in 0x18C20; 30 frames duration | R: 0x18C20, 0x93B28, 0x93C82 | MISSING | Revive drop-in |
+| FX14 | 1UP floating text marker (class 14 var 2, 0x93B28): raw list 0x93D1A; spawned on extra life threshold 0x6B98; holds over hero head for exactly 180 frames; sound 0x4A | R: 0x6B98, 0x93BF8, 0x93D1A | MISSING | Extra life award |
+| FX15 | Respawn invulnerability sparkles (class 23, 0x9590E): direct chain 0x95980, 5 frames; spawned every 4th frame by player 0x18CD4 during 360-frame invulnerability window G.$EC | R: 0x18CD4, 0x958E4, 0x9590E, 0x95980 | MISSING | Invulnerability indicator |
+| FX16 | Heavy smoke puffs (class 21, 0x94672): table 0x951AC, 60 anims; multi-directional expanding cloud rings for container breaks (barrel 10 puffs, tires 5, statue 8); sound 0x27 | R: 0x292A6, 0x94640, 0x94672, 0x951AC | MISSING | Container break puffs |
+| FX17 | Dynamite fuse spark (class 25, 0x96296): table 0x28904; attached to dynamite or TNT drum fuse tip at (+10, +57) offset; loops until blast; sound 0x79 | R: 0x25E40, 0x28E5A, 0x9625C, 0x96296 | MISSING | Lit explosive fuse |
+| FX18 | Massive explosion fireball (class 24, 0x959E6): table 0x95E28, 41 anims; expanding blast core, fireball plume, and shockwaves; sound 0x3A | R: 0x26140, 0x28E5A, 0x959B4, 0x959E6 | MISSING | Heavy explosions |
+| FX19 | Screen flash whiteout (class 22, 0x95840): direct CPS1 palette RAM write (0x914160/0x914180 ORed with 0xF000F000); 4-frame decay; thunder sound 0x3A | R: 0x9582A, 0x95840 | MISSING | Detonation flash |
+| FX20 | "STAGE CLEARED!" banner (class 9, 0x93184): direct frames 0x93262 (compositions 2895-2903); shows banner and stage digits 1-8 based on G.$4D9; 180 frame hold; clear theme 0x0D | R: 0x93152, 0x93184, 0x93262 | MISSING | Stage clear sequence |
+| FX21 | "TIME OVER" flying words (class 28, 0x96488): raw lists 0x96546 ("TIME") and 0x96550 ("OVER"); fly from right and left at 4 px/f to center X 0xC0; kills all heroes at t = 48 | R: 0x103FE, 0x1046A, 0x96450, 0x96488 | MISSING | Time out flow |
+| FX22 | Pool D auxiliary sprite pool: 16 slots of 0x80 bytes at RAM 0xFFDDF4; allocator 0x48A8, free 0x4994; passive sprite buffers driven by owning Pool B or system objects | R: 0x48A8, 0x4994, 0x4CCC | MISSING | Dedicated sprite buffers |
+| FX23 | Stage clock sprite list (Pool D slot 15, RAM 0xFFDFE4): initialized from template 0x81194 by 0x81062; per-frame routine 0x8114E maps BCD clock G.$4E8 to font tiles 0x811CA; alert 0x34 at <= 15 s | R: 0x81062, 0x8114E, 0x81194, 0x811CA | MISSING | Stage HUD clock |
+| FX24 | HUD item & score message overlays: Pool B class 100 (0x7E72C) allocates Pool D slot via 0x48A8; copies item string and score text; raw list priority 0xD0; 60 frame duration | R: 0x7E72C, 0x7E7D6, 0x7E806 | MISSING | Pickup popups |
+| FX25 | Torch glow overlay (Pool E class 6, 0x29B06): attached to torch weapon 0x205; idle flame 0x29CB6 (6 f), swing flame 0x29CF4 (4 f); Z depth alternates between -1 and +2 on even/odd frames | R: 0x29B06, 0x29C26, 0x29CB6, 0x29CF4 | MISSING | Luminous torch halo |
+| FX26 | Boss afterimage shadow (class 27, 0x963D6): clones owner composition and facing; 6 steps of 6 frames (36 frames total); cycles palettes 0x9D to 0x8B; sound 0x22 | R: 0x9639E, 0x963D6 | MISSING | Slice and Slisaur dash |
+| FX27 | Sleeping dinosaur snore "Z" (class 30, 0x966B4): table 0x96770, 1 anim; spawned every 120 frames above sleeping Shivat (0x48576) and Mack (0x535B4); floats upward 40 frames | R: 0x48576, 0x535B4, 0x966B4, 0x96770 | MISSING | Sleeping dinos |
+| FX28 | Cadillac radio call exhaust smoke (class 36, 0x96FF4) and tire burnout smoke (class 37, 0x9720A): tables 0x97150 and 0x972B2; spawned by radio call 0x8BD24 in Episode 3; sounds 0x3E and 0x3F | R: 0x8BD24, 0x96FD4, 0x971D6, 0x9720A | MISSING | Ep3 Cadillac drive |
+| FX29 | Continue countdown digits (class 17, 0x94100): direct table 0x9421A (digits 9-0); pulses 51 frames per digit; second beep 0x34; fuse sparks (class 6, 16) accompany countdown | R: 0xED0C, 0x94100, 0x9421A | MISSING | Continue screen timer |
+| FX30 | Pool C Class 38 (0x000000): NULL entry in table 0x237E6 at 0x2387E; orphan handler at 0x97430 and uncalled spawner at 0x97414; completely unused dead code in ROM | R: 0x2387E, 0x97414, 0x97430 | DEAD CODE | Documented skip |
