@@ -1,0 +1,108 @@
+warning: method `motion_y` is never used
+   --> crates/dino-game/src/game/body.rs:171:12
+    |
+132 | impl Body {
+    | --------- method in this implementation
+...
+171 |     pub fn motion_y(&mut self) {
+    |            ^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: method `fx_spawn_water_ripple` is never used
+   --> crates/dino-game/src/game/effect.rs:491:12
+    |
+166 | impl Game {
+    | --------- method in this implementation
+...
+491 |     pub fn fx_spawn_water_ripple(&mut self, owner: Handle, noise: u16) -> bool {
+    |            ^^^^^^^^^^^^^^^^^^^^^
+
+warning: method `enemy_set_boss_hp` is never used
+   --> crates/dino-game/src/game/enemy.rs:478:12
+    |
+153 | impl Game {
+    | --------- method in this implementation
+...
+478 |     pub fn enemy_set_boss_hp(&self, b: &mut Body, idx: usize) {
+    |            ^^^^^^^^^^^^^^^^^
+
+warning: method `enemy_spawn_piece` is never used
+  --> crates/dino-game/src/game/enemy/class15.rs:28:12
+   |
+25 | impl Game {
+   | --------- method in this implementation
+...
+28 |     pub fn enemy_spawn_piece(&mut self, pos: (i16, i16, i16), kind: u16, facing: u8) {
+   |            ^^^^^^^^^^^^^^^^^
+
+warning: field `state` is never read
+  --> crates/dino-game/src/game/flow.rs:77:9
+   |
+75 | pub struct Clear {
+   |            ----- field in this struct
+76 |     pub live: bool,
+77 |     pub state: u8,
+   |         ^^^^^
+   |
+   = note: `Clear` has derived impls for the traits `Debug` and `Clone`, but these are intentionally ignored during dead code analysis
+
+warning: method `flow_boss_defeated` is never used
+   --> crates/dino-game/src/game/flow.rs:514:12
+    |
+148 | impl Game {
+    | --------- method in this implementation
+...
+514 |     pub fn flow_boss_defeated(&mut self, boss: Handle) {
+    |            ^^^^^^^^^^^^^^^^^^
+
+warning: multiple methods are never used
+   --> crates/dino-game/src/game/hud.rs:266:12
+    |
+216 | impl Game {
+    | --------- methods in this implementation
+...
+266 |     pub fn hud_clear_rect(&mut self, r: [u8; 4]) {
+    |            ^^^^^^^^^^^^^^
+...
+359 |     fn hud_msg_of(&self, kind: u8, e: Handle, w6: u16) -> Msg {
+    |        ^^^^^^^^^^
+...
+366 |     pub fn hud_hit(&mut self, e: Handle, kind: u8) {
+    |            ^^^^^^^
+...
+376 |     pub fn hud_hit_credit(&mut self, e: Handle, kind: u8) {
+    |            ^^^^^^^^^^^^^^
+...
+381 |     fn hud_push_hit(&mut self, e: Handle, who: u8, kind: u8) {
+    |        ^^^^^^^^^^^^
+...
+428 |     pub fn hud_add_score(&mut self, h: Handle, off: u32) {
+    |            ^^^^^^^^^^^^^
+...
+725 |     pub fn hud_clear_idle_blocks(&mut self) {
+    |            ^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `RIGHT` is never used
+  --> crates/dino-game/src/game/player.rs:23:11
+   |
+23 | pub const RIGHT: u8 = 1;
+   |           ^^^^^
+
+warning: constant `LEFT` is never used
+  --> crates/dino-game/src/game/player.rs:24:11
+   |
+24 | pub const LEFT: u8 = 2;
+   |           ^^^^
+
+warning: method `rank_event_18410` is never used
+   --> crates/dino-game/src/game/rank.rs:256:12
+    |
+ 51 | impl Game {
+    | --------- method in this implementation
+...
+256 |     pub fn rank_event_18410(&mut self, b4d0: u8) {
+    |            ^^^^^^^^^^^^^^^^
+
+warning: `dino-game` (bin "dino-game") generated 10 warnings
+    Finished `dev` profile [optimized + debuginfo] target(s) in 0.07s

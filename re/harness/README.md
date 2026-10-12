@@ -1329,3 +1329,15 @@ Detailed evidence is under `re/out/probe/_input/`: `m800_audit.log`,
 Batch logs are under `re/out/probe/m800_*-rec/`; states and traces are under
 `re/out/traces/`.
 
+
+## Port-side pokes and probe sidecars (M2-00 port side, 2026-10-13)
+
+- `dino-game --poke F:ADDR:SIZE:VAL` (repeatable), `--poke-file FILE` (the `frame addr size value` format of
+  `DINO_POKES`, plus `#!clock game|power` and `#!unknown warn|error`), `--poke-clock power|game`. Addresses are full
+  hex or `G.$4D0` style; every field the trace models can be poked; an unknown address is an error.
+- `probe.lua` writes `NAME.pokes.txt` next to every probe scenario: one line per write the probe made after the
+  snapshot (god mode, holds, hp, lives, score, time, poke, objset), frame k = before the tick of frame k.
+  `port.sh` applies it by itself; `POKES=none` turns it off, `POKES=FILE` uses another file, `PORT_OPTS` adds options.
+  Spawns after a snapshot are not replayable (marked as a comment).
+- The snapshot loader reads stage and area before the objects, so later episodes load correctly (frame -1
+  differences of the m515 / m516 / m600 / m700 scenarios went from 123 to 0).

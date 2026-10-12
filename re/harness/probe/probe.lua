@@ -31,8 +31,10 @@
 -- Holds and `god` stop at the snapshot unless `keep` is given. `trace N` then records N game frames of
 -- harness records (NAME.mame.trc, the same file as record.sh writes). The key lines after the snapshot are
 -- the input script of the scenario, with frame 0 = the first game frame after the snapshot; they are also
--- written to NAME.input.txt for re/harness/port.sh. Directives after the snapshot run at their game frame
--- (the port does not see them). `frames N` does not apply to such a segment (PR_SNAP_MAXF is the limit
+-- written to NAME.input.txt for re/harness/port.sh. Directives after the snapshot run at their game frame;
+-- every RAM write they make, and every write of the holds and `god` that `keep` leaves running, goes to the
+-- sidecar NAME.pokes.txt (frame hexaddr size value, see "The sidecar" below) that the port replays
+-- (a `spawn` after the snapshot is MAME only). `frames N` does not apply to such a segment (PR_SNAP_MAXF is the limit
 -- for the snapshot). Key lines before the snapshot of a segment WITHOUT `jump` count vblank IRQs from power
 -- on (what record.sh boot scripts count, about 70 fewer than video frames at the stage start), so the
 -- lines of scripts/boot_jack.txt give the state of `DINO_SYNC=control` bit for bit. Needs PR_RECORD_LUA
@@ -61,9 +63,13 @@ local RUNNAME = env("PR_NAME", "probe")
 local function r8(a) return space:read_u8(a) end
 local function r16(a) return space:read_u16(a) end
 local function r32(a) return space:read_u32(a) end
-local function w8(a, v) space:write_u8(a, v & 0xFF) end
-local function w16(a, v) space:write_u16(a, v & 0xFFFF) end
-local function w32(a, v) space:write_u32(a, v & 0xFFFFFFFF) end
+-- wlog: while the writes of one game frame after the snapshot are collected for the sidecar file
+-- (NAME.pokes.txt, see "Scenarios" below), a table; every write below is appended to it. nil otherwise.
+local wlog = nil
+local function w8(a, v) v = v & 0xFF; space:write_u8(a, v); if wlog then wlog[#wlog + 1] = { a, 1, v } end end
+local function w16(a, v) v = v & 0xFFFF; space:write_u16(a, v); if wlog then wlog[#wlog + 1] = { a, 2, v } end end
+local function w32(a, v) v = v & 0xFFFFFFFF; space:write_u32(a, v); if wlog then wlog[#wlog + 1] = { a, 4, v } end end
+local wnotes = nil    -- directives of that frame that the port cannot replay (spawn), as sidecar comments
 local function s16(v) if v >= 0x8000 then return v - 0x10000 end return v end
 local function s8(v) if v >= 0x80 then return v - 0x100 end return v end
 local function s32(v) if v >= 0x80000000 then return v - 0x100000000 end return v end
@@ -599,7 +605,12 @@ local function exec(it)
     if addr then drop_hold(addr) end
     log("X", "release %X", addr or 0)
   elseif c == "spawn" then
+    -- the allocator and the new object are not replayable as plain writes: MAME only (a sidecar comment)
+    local saved = wlog
+    wlog = nil
     do_spawn(a)
+    wlog = saved
+    if saved and wnotes then wnotes[#wnotes + 1] = "spawn " .. table.concat(a, " ") end
   elseif c == "hp" then
     local v = num(a[1]) or 100
     local p = player_arg(a, 2)
@@ -1049,7 +1060,7 @@ local function trace_paths()
   local dir = env("PR_TRACE_DIR", nil) or (OUTDIR .. "/" .. seg.rel:gsub("/$", ""))
   local name = env("PR_TRACE_NAME", nil) or seg.name
   return { state = dir .. "/" .. name .. ".state", trace = dir .. "/" .. name .. ".mame.trc",
-    input = dir .. "/" .. name .. ".input.txt" }
+    input = dir .. "/" .. name .. ".input.txt", pokes = dir .. "/" .. name .. ".pokes.txt" }
 end
 
 -- Directives after the snapshot line, frames counted in game frames from the snapshot.
@@ -1057,9 +1068,42 @@ local function run_post(k)
   while #post_items > 0 and post_items[1].frame <= k do
     local it = table.remove(post_items, 1)
     it.frame = T or 0                       -- `watch` counts from the video frame it starts at
-    if STATE_CMDS[it.cmd] then log("NOTE", "%s after the snapshot: the port does not run it", it.cmd) end
+    if STATE_CMDS[it.cmd] then
+      log("NOTE", "%s after the snapshot: %s", it.cmd, it.cmd == "spawn" and "MAME only, the port does not run it"
+        or "its writes go to the sidecar file for the port")
+    end
     exec(it)
   end
+end
+
+-- The sidecar NAME.pokes.txt: every RAM write that the probe makes between two game frames after the snapshot
+-- (apply_holds: holds, god; run_post: poke, hp, lives, score, time, killall, rank, level, aggr, objset ...), in the
+-- DINO_POKES line format `frame hexaddr size value`. Frame k is the game frame whose tick the write comes before:
+-- the writes after record k - 1 (the snapshot is record -1), so the same clock as the key lines. `#!clock game`
+-- tells the port (dino-game --poke-file, re/harness/port.sh does it) to apply them there; `#!unknown warn`
+-- that a write to a byte the port does not model is reported and skipped instead of stopping the run.
+-- A `spawn` is not recorded (it is MAME only): a comment line marks it.
+local function side_open(path, name)
+  local fh = assert(io.open(path, "w"))
+  fh:write("# probe sidecar of segment ", name, ": the RAM writes the probe made between two game frames after the snapshot\n")
+  fh:write("# (holds, god, timed pokes). Format of DINO_POKES: frame hexaddr size value. Frame k = before the tick of\n")
+  fh:write("# game frame k, after record k - 1 (the clock of the key lines of NAME.input.txt).\n")
+  fh:write("#!clock game\n#!unknown warn\n")
+  return fh
+end
+local function side_begin() wlog, wnotes = {}, {} end
+local function side_end(k)
+  local w, notes = wlog, wnotes
+  wlog, wnotes = nil, nil
+  if not (sn.pf and w) then return end
+  for _, n in ipairs(notes) do sn.pf:write(string.format("# frame %d: %s (MAME only, not replayed)\n", k, n)) end
+  local last = nil
+  for _, e in ipairs(w) do
+    local line = string.format("%d %06X %d 0x%X\n", k, e[1], e[2], e[3])
+    if line ~= last then sn.pf:write(line) end
+    last = line
+  end
+  sn.writes = sn.writes + #w
 end
 
 local function take_snapshot()
@@ -1084,14 +1128,17 @@ local function take_snapshot()
   inf:write("# probe segment ", seg.name, ": the key lines after the snapshot (frame 0 = first game frame after it)\n")
   for _, l in ipairs(postlines) do inf:write(l, "\n") end
   inf:close()
+  sn.pf, sn.writes = side_open(sn.paths.pokes, seg.name), 0
   sn.fh = assert(io.open(sn.paths.trace, "wb"))
   W.write_header(sn.fh, string.format(',"kind":"trace","clock":"game","sync_vblank":%d,"frames":%d,"input":%s,"probe_segment":%s',
     irq_n, trace_n, W.json_str(sn.paths.input), W.json_str(seg.name)))
   W.write_record(sn.fh, -1, 0, irq_n, 0, nil, snap)
   sn.prev, sn.phase, sn.k, sn.lag, sn.lagged = snap, "trace", 0, 0, 0
   log("SNAPSHOT", "state written (video frame %d, IRQ %d, game frame counter %d); tracing %d game frames", F, irq_n, r16(G.frame), trace_n)
+  side_begin()
   run_post(0)
   apply_holds()
+  side_end(0)
   cur = script_at(postkeys, 0)
 end
 
@@ -1113,11 +1160,14 @@ local function irq_tap()
     sn.prev, sn.lagged, sn.lag, sn.k = snap, sn.lagged + sn.lag, 0, sn.k + 1
     if sn.k >= trace_n then
       sn.fh:close(); sn.fh = nil
+      if sn.pf then sn.pf:close(); sn.pf = nil end
       sn.phase, sn.msg = "done", string.format("trace %d frames (lag vblanks %d)", sn.k, sn.lagged)
       return
     end
+    side_begin()
     run_post(sn.k)
     apply_holds()
+    side_end(sn.k)
     cur = script_at(postkeys, sn.k)
   end
 end
@@ -1192,6 +1242,8 @@ end
 local function end_segment(msg)
   log("END", "%s", msg)
   if sn.fh then sn.fh:close(); sn.fh = nil end
+  if sn.pf then sn.pf:close(); sn.pf = nil end
+  wlog, wnotes = nil, nil
   if sn.paths and not msg:match("^trace %d+ frames") then   -- never leave a partial scenario behind
     for _, path in pairs(sn.paths) do os.remove(path) end
   end

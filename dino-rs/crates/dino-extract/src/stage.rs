@@ -5,7 +5,9 @@ use crate::rom::Rom;
 use dino_assets::stage::*;
 
 /// Areas per stage (stage table in SPEC 4.6).
-const AREAS: [u8; 8] = [3, 3, 1, 3, 2, 3, 4, 3];
+/// Episode 8 has a fourth area (the lair, a 2 x 1 screen map, header at 0x2166A + 30). Episode 3's
+/// second part is driven by its own camera controller 0x22398 (not ported yet, M3-08).
+const AREAS: [u8; 8] = [3, 3, 1, 3, 2, 3, 4, 4];
 
 /// Scroll2 screen tables per stage, plus the table that follows the last one (end marker).
 const SCREEN_TABLES: [u32; 9] = [0x138FC8, 0x139AC8, 0x13BAC8, 0x13BDC8, 0x13DDC8, 0x13FDC8, 0x141DC8, 0x143DC8, 0x145DC8];

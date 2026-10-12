@@ -1,0 +1,4 @@
+# Episode 6 boot poke: stage 5 (Episode 6), sub mode 0, mode 8 (story panel)
+1300 FF84D9 1 5
+1300 FF84D1 1 0
+1300 FF84D0 1 8

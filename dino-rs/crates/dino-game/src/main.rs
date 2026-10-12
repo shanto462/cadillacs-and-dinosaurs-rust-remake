@@ -4,11 +4,15 @@
 //!         [--config FILE] [--print-config]
 //!         [--input SCRIPT | --input-file PATH] [--viewer] [--view char,set,anim]
 //!         [--screenshot out.png --frames N] [--load-state FILE] [--trace FILE --frames N]
-//!         [--step-from MAME.trc] [--follow-rng MAME.trc]`
+//!         [--step-from MAME.trc] [--follow-rng MAME.trc]
+//!         [--poke FRAME:ADDR:SIZE:VALUE]... [--poke-file FILE]... [--poke-clock power|game]`
 //! Without `--stage` and `--chars` the game starts from power on (the boot screens and the attract
 //! mode); `--stage N` / `--chars` start directly in a stage (development).
 //! `--config FILE` reads the settings (difficulty, coin mode, free play ...; see `game/flow/config.rs`),
 //! `--print-config` prints the factory settings file.
+//! `--poke` / `--poke-file` write RAM values into the running game at a frame (the lines of MAME's
+//! `DINO_POKES`: `frame hexaddr size value`, power frames unless `--poke-clock game`; see
+//! `harness.rs`, `PokeSet`). An address the port has no field for is an error.
 //! See `input.rs` for keys and the input script format, `harness.rs` and `re/harness/README.md`
 //! for `--load-state` (start from a MAME snapshot) and `--trace` (headless run for the diff).
 
@@ -52,6 +56,7 @@ struct Args {
     load_state: Option<String>,
     step_from: Option<String>,
     follow_rng: Option<String>,
+    pokes: harness::PokeSet,
 }
 
 fn args() -> Args {
@@ -81,7 +86,33 @@ fn args() -> Args {
         load_state: value("--load-state"),
         step_from: value("--step-from"),
         follow_rng: value("--follow-rng"),
+        pokes: pokes(&a),
     }
+}
+
+/// `--poke F:ADDR:SIZE:VAL` (repeatable), `--poke-file FILE` (repeatable), `--poke-clock power|game`
+/// (the clock of `--poke` and of the files that have no `#!clock` line; default `power`).
+fn pokes(a: &[String]) -> harness::PokeSet {
+    let fail = |e: String| -> ! {
+        eprintln!("error: {e}");
+        std::process::exit(1);
+    };
+    let clock = match a.iter().position(|x| x == "--poke-clock").and_then(|i| a.get(i + 1)).map(String::as_str) {
+        None | Some("power") => harness::PokeClock::Power,
+        Some("game") => harness::PokeClock::Game,
+        Some(other) => fail(format!("--poke-clock must be power or game, not `{other}`")),
+    };
+    let mut set = harness::PokeSet::default();
+    for (i, x) in a.iter().enumerate() {
+        let Some(v) = a.get(i + 1) else { continue };
+        let r = match x.as_str() {
+            "--poke" => set.add_spec(v, clock),
+            "--poke-file" => set.add_file(v, clock),
+            _ => Ok(()),
+        };
+        r.unwrap_or_else(|e| fail(e));
+    }
+    set
 }
 
 /// Extracts the assets. With `--load-state`, the frame records the snapshot's objects point at
@@ -123,7 +154,7 @@ fn main() {
         let (load, step) = (args.load_state.as_deref(), args.step_from.as_deref());
         let follow = args.follow_rng.as_deref();
         let start = harness::Start { boot: !args.direct, stage: args.stage, chars: &args.chars };
-        let r = harness::run(assets, trace, load, step, follow, start, config, args.script.as_ref(), frames);
+        let r = harness::run(assets, trace, load, step, follow, start, config, args.script.as_ref(), args.pokes, frames);
         if let Err(e) = r {
             eprintln!("error: {e}");
             std::process::exit(1);
@@ -133,7 +164,7 @@ fn main() {
     macroquad::Window::from_config(window_conf(), windowed(args, config));
 }
 
-async fn windowed(args: Args, config: game::flow::Config) {
+async fn windowed(mut args: Args, config: game::flow::Config) {
     let assets = load_assets(args.load_state.as_deref(), None);
     let mut gpu = Gpu::new(assets);
 
@@ -153,6 +184,14 @@ async fn windowed(args: Args, config: game::flow::Config) {
         None => game.flow_boot(), // power on: the boot screens, then the attract mode
     }
     let mut tick_no = 0u32;
+    // Pokes (`--poke`): the same clocks as a headless run, where tick n is trace record n.
+    let mut pokes = std::mem::take(&mut args.pokes);
+    let poke_fail = |e: String| -> ! {
+        eprintln!("error: {e}");
+        std::process::exit(1);
+    };
+    pokes.check(&mut game).unwrap_or_else(|e| poke_fail(e));
+    pokes.apply(&mut game, -1, true).unwrap_or_else(|e| poke_fail(e));
     if viewer.is_some() {
         gpu.upload_palettes(&viewer::Viewer::palettes(assets).words);
     }
@@ -186,7 +225,9 @@ async fn windowed(args: Args, config: game::flow::Config) {
                     game.w.input = f.players;
                     game.w.system = f.system | 0x08; // 0x738 quirk, see harness.rs
                     game.w.coins = f.coins;
+                    pokes.apply(&mut game, tick_no as i32, false).unwrap_or_else(|e| poke_fail(e));
                     game.tick();
+                    pokes.apply(&mut game, tick_no as i32, true).unwrap_or_else(|e| poke_fail(e));
                     tick_no += 1;
                 }
             }

@@ -1270,6 +1270,13 @@ impl Game {
                 }
             }
         }
+        // Stage and area first. The visit reaches the objects before the globals, and it turns ROM
+        // pointers into indexes with the tables of the stage and area: the wave controllers' +$A0
+        // (`Prop::trace_visit`), the spawn lists G.$674 / $678 and the camera event pointer. With
+        // the stale values of a new game these were read in the tables of stage 0 area 0, so any
+        // other episode or area differed at frame -1.
+        self.w.stage = l.read(g(0x04D9), 1) as u8;
+        self.cam.s2.area = l.read(g(0x073C + 0x4A), 1) as u8;
         self.trace_visit(&mut l);
         self.trace_unmapped = l.unmapped;
         let mut warn = l.errors;
@@ -1454,6 +1461,157 @@ impl Game {
     }
 }
 
+// ------------------------------------------------------------------------------------------
+// Pokes (`--poke`, probe sidecar files; `harness.rs` `PokeSet`)
+// ------------------------------------------------------------------------------------------
+
+/// Fields the trace keeps in another form than the port does (a pointer for an index or a frame
+/// id, a list for a count). They are converted only when loading a snapshot, so a poke into them
+/// would be dropped without a word. A poke into one of these is an error.
+const POKE_DERIVED: &[&str] = &[
+    "frame",
+    "frame2",
+    "wave_ptr",
+    "free_count",
+    "free_ptr",
+    "free_slot",
+    "spawn_list1",
+    "spawn_list2",
+    "next_event",
+    "floor_ptr",
+    "obst_ptr",
+    "obst_prev_ptr",
+    "item_count",
+    "item_ptr",
+    "item_slot",
+];
+
+/// Visits the fields once to write a RAM store (`size` bytes at `addr`, as the 68000 stores it)
+/// into every modeled field it overlaps. With `apply` false nothing is written: the visit only
+/// finds out whether the poke can be taken (every byte covered, no derived field).
+struct PokeVisit {
+    addr: u32,
+    size: u8,
+    value: u32,
+    apply: bool,
+    covered: [bool; 4],
+    derived: Option<&'static str>,
+}
+
+impl Visit for PokeVisit {
+    fn field(&mut self, addr: u32, size: u8, name: &'static str, v: &mut u32) {
+        let (lo, hi) = (addr.max(self.addr), (addr + size as u32).min(self.addr + self.size as u32));
+        if lo >= hi {
+            return;
+        }
+        if POKE_DERIVED.contains(&name) {
+            self.derived = Some(name);
+            return;
+        }
+        for b in lo..hi {
+            self.covered[(b - self.addr) as usize] = true;
+            if self.apply {
+                let at_field = 8 * (addr + size as u32 - 1 - b);
+                let at_poke = 8 * (self.addr + self.size as u32 - 1 - b);
+                let byte = (self.value >> at_poke) & 0xFF;
+                *v = (*v & !(0xFF << at_field)) | (byte << at_field);
+            }
+        }
+    }
+}
+
+impl Game {
+    /// Fields the trace does not list but a recipe pokes: G.$46B free play (a flag), G.$757A the
+    /// demo counter (a word, the demo row of the attract loop). Returns whether `addr` is one.
+    fn trace_poke_extra(&mut self, addr: u32, size: u8, value: u32, apply: bool) -> bool {
+        if addr == g(0x046B) && size == 1 {
+            if apply {
+                self.flow.front.sys.free_play = value & 0xFF != 0;
+            }
+            return true;
+        }
+        if addr == g(0x757A) && size == 2 {
+            if apply {
+                self.flow.front.demo_counter = value as u16;
+            }
+            return true;
+        }
+        if addr == g(0x757A) && size == 1 {
+            if apply {
+                self.flow.front.demo_counter = (self.flow.front.demo_counter & 0x00FF) | ((value as u16 & 0xFF) << 8);
+            }
+            return true;
+        }
+        if addr == g(0x757B) && size == 1 {
+            if apply {
+                self.flow.front.demo_counter = (self.flow.front.demo_counter & 0xFF00) | (value as u16 & 0xFF);
+            }
+            return true;
+        }
+        false
+    }
+
+    /// Which RAM bytes a poke can reach, indexed from 0xFF0000: 0 no modeled field, 1 a field a poke
+    /// can set (also the extra fields of `trace_poke_extra`), 2 a derived field (`POKE_DERIVED`). Used
+    /// to check a whole poke file before a run starts.
+    pub fn trace_poke_map(&mut self) -> Vec<u8> {
+        let mut names = Names::default();
+        self.trace_visit(&mut names);
+        let mut map = vec![0u8; 0x10000];
+        for (addr, size, name) in names.list {
+            let kind = if POKE_DERIVED.contains(&name) { 2 } else { 1 };
+            for k in 0..size as u32 {
+                if let Some(o) = (addr + k).checked_sub(RAM).filter(|o| *o < 0x10000) {
+                    if map[o as usize] != 1 {
+                        map[o as usize] = kind;
+                    }
+                }
+            }
+        }
+        for a in [g(0x046B), g(0x757A), g(0x757B)] {
+            map[(a - RAM) as usize] = 1;
+        }
+        map
+    }
+
+    /// Harness: stores `value` (`size` 1, 2 or 4 bytes, as the 68000 writes it) at the original RAM
+    /// address `addr`, into the port's own field or fields there. The error says why a poke
+    /// cannot be taken: no modeled field at that address, a derived field (`POKE_DERIVED`), or
+    /// a field of a free pool slot (a free slot keeps only +$00 in the port).
+    pub fn trace_poke(&mut self, addr: u32, size: u8, value: u32) -> Result<(), String> {
+        if self.trace_poke_extra(addr, size, value, true) {
+            return Ok(());
+        }
+        let mut p = PokeVisit { addr, size, value, apply: false, covered: [false; 4], derived: None };
+        self.trace_visit(&mut p);
+        if let Some(name) = p.derived {
+            return Err(format!("{addr:06X}: `{name}` is a field the port keeps in another form (pointer or list), a poke cannot set it"));
+        }
+        if let Some(k) = (0..size as usize).find(|k| !p.covered[*k]) {
+            let a = addr + k as u32;
+            let why = match slot_of_ram(a) {
+                Some(h) => format!("it is inside the object {h:04X}, which is a free slot or has no such field in the port"),
+                None => "the port has no field there".to_string(),
+            };
+            return Err(format!("{addr:06X} size {size}: byte {a:06X} is not modeled: {why}"));
+        }
+        p.apply = true;
+        self.trace_visit(&mut p);
+        Ok(())
+    }
+}
+
+/// The object (pool slot) of a RAM address, as its handle.
+fn slot_of_ram(a: u32) -> Option<u16> {
+    let h = a.checked_sub(RAM).filter(|o| *o < 0x10000)? as u16;
+    for (base, stride, n) in [PLAYERS, POOL_A, POOL_B, POOL_E, POOL_C, POOL_D] {
+        if h >= base && h < base + stride * n as u16 {
+            return Some(base + (h - base) / stride * stride);
+        }
+    }
+    None
+}
+
 impl<T> Pool<T> {
     /// Slot index of a handle of this pool.
     pub fn index_of(&self, h: u16) -> Option<usize> {
@@ -1503,6 +1661,65 @@ mod tests {
         assert_eq!(b.enemies.slots[e].m.w(0x76), 0xB274);
         // The next allocation is the same slot on both sides.
         assert_eq!(b.enemies.alloc(), a.enemies.alloc());
+    }
+
+    /// A snapshot of a later episode and area: the spawn list pointers and the wave controller's
+    /// +$A0 are turned into indexes with the tables of the snapshot's own stage and area, not of the
+    /// game that loads it (which starts in stage 0, area 0). The loader reads those two first.
+    #[test]
+    fn load_reads_stage_and_area_before_the_pointers() {
+        use dino_assets::enemy::{AreaScript, StageScript};
+        let mut pack = AssetPack::default();
+        pack.enemy.stages = (0..8).map(|_| StageScript { areas: vec![AreaScript::default(); 4], ..Default::default() }).collect();
+        // Episode 5 (stage 4), area 2: lists of its own, at addresses that differ from stage 0 area 0.
+        pack.enemy.stages[4].areas[2] = AreaScript { list1_addr: 0xAD000, list2_addr: 0xAF000, ..Default::default() };
+        pack.enemy.stages[4].waves = vec![Wave {
+            addr: 0x7C000,
+            groups: vec![WaveGroup { thr: [0; 3], spawns: vec![SpawnRec::default(); 2] }, WaveGroup { thr: [0; 3], spawns: vec![SpawnRec::default(); 3] }],
+            ..Default::default()
+        }];
+        let a: &'static AssetPack = Box::leak(Box::new(pack));
+        let mut ram = vec![0u8; 0x10000];
+        let mut put = |addr: u32, size: usize, v: u32| {
+            let o = (addr - RAM) as usize;
+            ram[o..o + size].copy_from_slice(&v.to_be_bytes()[4 - size..]);
+        };
+        put(g(0x04D9), 1, 4); // stage
+        put(g(0x073C + 0x4A), 1, 2); // area
+        put(g(0x0674), 4, 0xAD000 + 14 * 5); // spawn list 1: record 5
+        put(g(0x0678), 4, 0xAF000 + 16 * 7); // spawn list 2: record 7
+        // A wave controller (class 15, variant 0) in pool B slot 0, waiting in group 1.
+        let (base, ..) = POOL_B;
+        put(obj(base), 1, 1);
+        put(obj(base) + 0x20, 2, 15 * 4);
+        put(obj(base) + 0x05, 1, 0); // sub 0
+        put(obj(base) + 0x04, 1, 2); // mode 2: running
+        put(obj(base) + 0xA0, 4, 0x7C000 + 54);
+        let mut game = Game::new(a);
+        let warnings = game.trace_load(&ram, &vec![0u8; 0x30000]);
+        assert_eq!((game.w.stage, game.cam.s2.area), (4, 2));
+        assert_eq!((game.spawn.l1, game.spawn.l2), (5, 7));
+        assert_eq!((game.props.slots[0].m.w(0xA0), game.props.slots[0].m.w(0xA2)), (1, 0));
+        assert!(warnings.iter().all(|w| !w.contains("wave controller")), "{warnings:?}");
+    }
+
+    /// A poke into an object's field needs the object: a free pool slot keeps only +$00.
+    #[test]
+    fn poke_needs_a_live_object() {
+        let mut a = AssetPack::default();
+        a.enemy.stages = (0..8).map(|_| Default::default()).collect();
+        let mut game = Game::new(Box::leak(Box::new(a)));
+        let x = obj(POOL_A.0 + 0xE0 * 3) + 8; // pool A slot 3, +$08 x
+        assert!(game.trace_poke(x, 2, 0x0123).is_err());
+        let i = game.enemies.alloc().unwrap(); // slot 23 (the first allocation)
+        game.enemies.slots[i].b.live = 1;
+        let x = obj(game.enemies.handle(i)) + 8;
+        game.trace_poke(x, 2, 0x0123).unwrap();
+        assert_eq!(game.enemies.slots[i].b.x >> 16, 0x0123);
+        // A derived field (a pointer kept as an index) is an error, never silently dropped.
+        assert!(game.trace_poke(g(0x0674), 4, 1).is_err());
+        game.trace_poke(g(0x04D9), 1, 3).unwrap();
+        assert_eq!(game.w.stage, 3);
     }
 
     #[test]

@@ -9,8 +9,13 @@
 #   NAME.state        RAM and video RAM at the snapshot (port: --load-state)
 #   NAME.mame.trc     the harness trace, record -1 = the snapshot, then N game frames (same file as record.sh writes)
 #   NAME.input.txt    the key lines after the snapshot, in the harness script format (port: --input-file)
+#   NAME.pokes.txt    the sidecar: every RAM write the probe made after the snapshot (holds such as `god`, `hold`,
+#                     `rank`, `level`, `killall`, and timed `poke`, `hp`, `objset` ... lines; not `spawn`), one per game
+#                     frame in the DINO_POKES line format `frame hexaddr size value`, frame k = before game frame k
+#                     (port: --poke-file; port.sh passes it by itself). MAME changes these every frame, the port
+#                     does not repeat them by any other means. Without `keep` it holds only what is timed after the snapshot.
 # Then compare with the port like any scenario (check.sh only reads scripts from re/harness/scripts/, use port.sh):
-#   MODE=step re/harness/port.sh re/out/traces/NAME.input.txt NAME N
+#   MODE=step re/harness/port.sh re/out/traces/NAME.input.txt NAME N      (uses NAME.pokes.txt if it exists; POKES=none: not)
 #   re/.venv/bin/python -I re/harness/diff.py re/out/traces/NAME.mame.trc re/out/traces/NAME.step.trc
 # Logs and screenshots: re/out/probe/BATCH-rec/SEGMENT/{log.txt,snap/}, MAME's own files in re/out/probe/BATCH-rec/mame/.
 # Environment (all optional): PR_TIMEOUT (seconds, default 900), PR_SNAPS / PR_FRAMES / PR_WATCH (as probe.sh),
@@ -75,9 +80,9 @@ for SEG in $WANT; do
   case "$MSG" in
     "trace "[0-9]*" frames"*)
       N=${MSG#trace }; N=${N%% frames*}
-      if [ -s "$TRACES/$NAME.state" ] && [ -s "$TRACES/$NAME.mame.trc" ] && [ -f "$TRACES/$NAME.input.txt" ]; then
+      if [ -s "$TRACES/$NAME.state" ] && [ -s "$TRACES/$NAME.mame.trc" ] && [ -f "$TRACES/$NAME.input.txt" ] && [ -f "$TRACES/$NAME.pokes.txt" ]; then
         echo "recorded $NAME: $N frames ($MSG)"
-        echo "  state $(wc -c <"$TRACES/$NAME.state") bytes, trace $(wc -c <"$TRACES/$NAME.mame.trc") bytes"
+        echo "  state $(wc -c <"$TRACES/$NAME.state") bytes, trace $(wc -c <"$TRACES/$NAME.mame.trc") bytes, sidecar $(grep -cv '^#' "$TRACES/$NAME.pokes.txt" || true) writes"
         echo "  MODE=step re/harness/port.sh re/out/traces/$NAME.input.txt $NAME $N"
       else
         FAILED=1; echo "probe_record: $NAME: the output files are missing" >&2
@@ -85,7 +90,7 @@ for SEG in $WANT; do
     *)
       FAILED=1
       echo "probe_record: $SEG: ${MSG:-did not finish}" >&2
-      rm -f "$TRACES/$NAME.state" "$TRACES/$NAME.mame.trc" "$TRACES/$NAME.input.txt" ;;
+      rm -f "$TRACES/$NAME.state" "$TRACES/$NAME.mame.trc" "$TRACES/$NAME.input.txt" "$TRACES/$NAME.pokes.txt" ;;
   esac
 done
 if [ "$FAILED" = 1 ]; then

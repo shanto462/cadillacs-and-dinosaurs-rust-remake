@@ -1,0 +1,77 @@
+# M3-07: snapshots of later episodes and areas, for the port's snapshot loader (dino-game --load-state / --step-from).
+# Each scenario jumps into an episode and area at a camera X, takes the snapshot and records 600 game frames of walking.
+# Record: PR_SNAPS=none PR_SHEET=0 re/harness/probe/probe_record.sh re/harness/pokes/m307_snapshots.txt all
+# Run:    MODE=step re/harness/port.sh re/out/traces/NAME.input.txt NAME 600   (picks up NAME.pokes.txt, the god writes)
+# `snapshot keep` keeps `god on` running: MAME rewrites +$00 and +$F9 of the players every frame, and the sidecar
+# NAME.pokes.txt makes the port do the same. The scenarios without `keep` need no sidecar writes.
+
+# Episode 2 (stage 1), area 0, camera X 0x400: the check of M3-07. Jack walks right with a few attacks and jumps.
+segment m307_e2a0_x400_walk
+jump 2 0 0x400 char=jack
+god on
+10 snapshot keep
+0-99:R
+100-101:A
+110-111:A
+120-199:R
+200-201:J
+202-299:R
+300-301:A
+302-399:R
+400-401:J
+402-599:R
+trace 600
+
+# The same without god mode: Jack can be hit, so no write of the probe is involved (the sidecar is empty).
+segment m307_e2a0_x400_plain
+jump 2 0 0x400 char=jack
+10 snapshot
+0-99:R
+100-101:A
+110-111:A
+120-199:R
+200-201:J
+202-299:R
+300-301:A
+302-399:R
+400-401:J
+402-599:R
+trace 600
+
+# Standing still: the camera does not move.
+segment m307_e2a0_x400_idle
+jump 2 0 0x400 char=jack
+10 snapshot
+trace 600
+
+# Episode 2 area 2, camera X 0x1A0.
+segment m307_e2a2_x1a0_walk
+jump 2 2 0x1A0 char=jack
+god on
+10 snapshot keep
+0-599:R
+trace 600
+
+# Episode 3 (stage 2): its own camera controller 0x22398, which the port does not have yet.
+segment m307_e3a0_x300_walk
+jump 3 0 0x300 char=jack
+god on
+10 snapshot keep
+0-599:R
+trace 600
+
+# Episode 4 area 1, camera X 0x4A2.
+segment m307_e4a1_x4a2_walk
+jump 4 1 0x4a2 char=jack
+god on
+10 snapshot keep
+0-599:R
+trace 600
+
+# Episode 8 area 3, camera X 0x1000.
+segment m307_e8a3_x1000_walk
+jump 8 3 0x1000 char=jack
+god on
+10 snapshot keep
+0-599:R
+trace 600

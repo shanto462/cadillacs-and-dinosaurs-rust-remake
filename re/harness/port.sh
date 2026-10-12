@@ -11,6 +11,13 @@
 #
 # NAME defaults to the script name without .txt, FRAMES to 600. Inputs come from the same
 # files as record.sh (re/out/traces/NAME.state, NAME.mame.trc). See README.md.
+#
+# Pokes. If re/out/traces/NAME.pokes.txt exists (the sidecar of probe_record.sh: the holds, `god` and timed
+# writes the probe made after the snapshot) the port repeats those writes at the same game frames
+# (`--poke-file`, game clock: before the tick of frame k, after record k - 1). POKES=none leaves them out,
+# POKES=FILE uses another file (the lines of MAME's DINO_POKES; `#!clock game` or `power`, see
+# dino-rs/crates/dino-game/src/harness.rs `PokeSet`). PORT_OPTS adds options to the port, for example
+# PORT_OPTS="--poke 1300:FF84D0:1:8" (power frames, as DINO_POKES).
 set -e
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 SCRIPT=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
@@ -25,6 +32,14 @@ case "${MODE:-run}" in
   step)   OPTS="--step-from $OUT/$NAME.mame.trc";                               TRACE=$OUT/$NAME.step.trc ;;
   *) echo "MODE must be run, follow or step"; exit 1 ;;
 esac
+if [ -n "${POKES:-}" ]; then
+  if [ "$POKES" != none ]; then
+    [ -f "$POKES" ] || { echo "port.sh: no such poke file: $POKES" >&2; exit 2; }
+    OPTS="$OPTS --poke-file $POKES"
+  fi
+elif [ -f "$OUT/$NAME.pokes.txt" ]; then
+  OPTS="$OPTS --poke-file $OUT/$NAME.pokes.txt"
+fi
 # shellcheck disable=SC2086
-./target/release/dino-game --rom "$ROOT/dino.zip" $OPTS \
+./target/release/dino-game --rom "$ROOT/dino.zip" $OPTS ${PORT_OPTS:-} \
   --input-file "$SCRIPT" --frames "$FRAMES" --trace "$TRACE" 2>&1 | grep -v 'not ported (freed)'
