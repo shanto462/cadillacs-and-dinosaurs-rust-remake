@@ -28,7 +28,42 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x2E7BC, // hit reactions (table 0x2E68C by +$84) of the class 2 variants: name 0
     0x2E928, // name 1
     0x2EA94, // name 0x1A
+    // Pool E (items, phase 1 task 2). Containers 0x28C8A..0x28D1C, one table per variant.
+    0x2995E, // container var 0
+    0x2998C, // var 2
+    0x299FE, // var 4
+    0x29A66, // var 6
+    0x29A86, // var 8
+    0x29AA6, // var 0xA
+    0x29AC8, // var 0xC
+    0x2A174, // treasure (0x2A044)
+    0x28B54, // food (0x289A8)
+    // Weapons (0x24D8A..0x25020, by type), explosions, bullets, shells, projectiles, pellets.
+    0x265F4, // type 0
+    0x268BC, // 1
+    0x26A3C, // 2
+    0x26BBC, // 3
+    0x26D3C, // 4
+    0x26F7E, // 5
+    0x270FE, // 6
+    0x2727E, // 7
+    0x273FE, // 8
+    0x2757E, // 9
+    0x276FE, // 10 / 11
+    0x2787E, // 12 (time bomb)
+    0x27B12, // 13 (fire bomb)
+    0x27CD2, // 14 (explosive stick, +$5C = 0)
+    0x27D1A, // 14 (+$5C = 1)
+    0x27D62, // 14 (+$5C >= 2)
+    0x28102, // explosions (class 1)
+    0x28904, // bullets (class 3)
+    0x29EB4, // shells (class 7)
+    0x2A00A, // projectiles (class 8)
+    0x2A49C, // pellets (class 10)
 ];
+
+/// Single frame records items load directly (0x1236): the ammo box picture.
+pub const OBJECT_FRAMES: &[u32] = &[0x285DC];
 
 pub fn extract(rom: &Rom, extra: &crate::ExtraFrames) -> SpriteData {
     let mut data = SpriteData { compositions: compositions(rom), ..Default::default() };
@@ -43,6 +78,9 @@ pub fn extract(rom: &Rom, extra: &crate::ExtraFrames) -> SpriteData {
     }
     for &table in OBJECT_ANIM_TABLES {
         walker.table(table, 10);
+    }
+    for &frame in OBJECT_FRAMES {
+        walker.walk(frame, 10);
     }
     // On demand (harness): frame records of objects whose animation table is not registered yet.
     for &addr in &extra.sprite {

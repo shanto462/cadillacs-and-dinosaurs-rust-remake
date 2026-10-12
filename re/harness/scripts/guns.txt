@@ -1,0 +1,25 @@
+# Phase 1 task 2 (items): pokes/guns.lua. Jack picks up the pistol (A), empties it (six shots) and throws the empty
+# pistol (A), then takes the rifle, fires two shots, then the Uzi and the M-16 (hold A: automatic fire). After each
+# pick-up he steps right, away from the weapon he dropped (a press of A would pick it up again).
+0-12:L
+15-16:A
+45-46:A
+65-66:A
+85-86:A
+105-106:A
+125-126:A
+145-146:A
+170-171:A
+220-234:L
+237-238:A
+255-262:R
+275-276:A
+295-296:A
+310-322:L
+326-327:A
+345-352:R
+360-410:A
+425-440:L
+444-445:A
+462-469:R
+480-530:A

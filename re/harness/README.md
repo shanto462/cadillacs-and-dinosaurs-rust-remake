@@ -51,11 +51,49 @@ the trace set; `FRAMES` the number of test frames.
 | `stage1_fight` | `scripts/stage1_fight.txt` | `control+86` | 1400 | walk to the first wave, then 1000 frames of punch chains, jump kicks and steps against up to four thugs |
 | `obstacle` | `scripts/obstacle.txt` | `control+86` | 600 | Jack walks into the first containers (the terrain obstacle test 0x12E9A, wall bit 0x80, +$94) |
 
+Item scenarios (phase 1 task 2). The first waves give few items, so these start from a `DINO_POKE` file
+(below) that puts the items on the floor, and a script that plays with them. Record with
+`DINO_POKE=re/harness/pokes/NAME.lua DINO_SYNC=control+86 re/harness/record.sh re/harness/scripts/NAME.txt NAME FRAMES`.
+Compare in `MODE=step` with `DINO_STEP_PLAYERS=1` (see below).
+
+| NAME | script / poke | FRAMES | what it covers |
+| --- | --- | --- | --- |
+| `items` | `scripts/items.txt` (no poke, `control` + 86) | 1250 | the stage1_fight run (two containers break) and then the bomb and the DIME they drop: lift, held, throw, bounce, arm, blast, treasure |
+| `misc` | `scripts/misc.txt`, `pokes/misc.lua` | 200 | food and a treasure on the floor: eat (heal, points at full HP), take |
+| `containers`, `containers2`, `containers3` | `scripts/containers.txt` with `pokes/containers.lua`, `containers2.lua`, `containers3.lua` | 400 | lift, throw, bounce and break of the container variants, the drop roll, the debris effect |
+| `guns` | `scripts/guns.txt`, `pokes/guns.lua` | 600 | pistol (empty, thrown), rifle, Uzi and M-16 (automatic fire), shots, shells |
+| `guns2` | `scripts/guns2.txt`, `pokes/guns2.lua` | 420 | shotgun, bazooka (rocket and its shell), bat swings |
+| `bombs` | `scripts/bombs.txt`, `pokes/bombs.lua` | 900 | fire bomb, explosive sticks, time bomb: throw, bounce, explosions |
+| `ammo` | `scripts/ammo.txt`, `pokes/ammo.lua` | 220 | pistol, two ammo boxes (refill, then 1000 points for a full gun) |
+
+MAME's lag frame (frame 1064 of `items`) is ignored by the comparison. Result with the port of task 2: only frames where the player's own state machine changes (pick-up,
+throw, first frame of a swing, the player side is task 3) differ in the item classes.
+
 ```sh
 DINO_SYNC=control+86 re/harness/record.sh re/harness/scripts/stage1_fight.txt stage1_fight 1400
 for m in run follow step; do MODE=$m re/harness/port.sh re/harness/scripts/stage1_fight.txt stage1_fight 1400; done
 re/.venv/bin/python -I re/harness/diff.py re/out/traces/stage1_fight.mame.trc re/out/traces/stage1_fight.step.trc
 ```
+
+### Scenarios that need objects: `DINO_POKE`
+
+`DINO_POKE=file.lua` (record time only) runs a Lua file once at the sync point, before the snapshot is
+written, so MAME and the port both start from the edited RAM. The file gets the table `DINO`
+(`local DINO = ...`): `DINO.space` (the main CPU memory space) and
+`DINO.spawn_item(class_word, variant, x, z [, w5c, drop_row])`, which takes a pool E slot the way the
+stage script does (0xFDAE: free list G.$65FE / $65F4, class word = class * 4, variant = `+$26`). Other
+pokes may write RAM through `DINO.space` (for example Jack's HP). Examples: `re/harness/pokes/`.
+
+### `DINO_STEP_PLAYERS=1` (step mode only)
+
+In `step` mode every object starts a frame from MAME's state after the previous frame. The players
+run before pool E in the same frame, and the port's player does not lift, throw or swing weapons yet
+(task 3), so a player difference would hide what the items do. With `DINO_STEP_PLAYERS=1` the port
+also reads the players of MAME's record of the frame being run (one record ahead) and loads them
+after its own players' update, just before pool E runs, so the items see the same player as in the original. Limits: the item
+classes then compare exactly, but the player fields themselves are copied, not tested, and
+the score the items add to the player shows doubled in the diff (the loaded player already contains it).
+Use it only for the item scenarios.
 
 ## Checking one routine against the original code
 

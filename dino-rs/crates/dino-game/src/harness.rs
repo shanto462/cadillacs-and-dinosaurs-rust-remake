@@ -305,6 +305,16 @@ pub fn run(
         json_str(step.or(load).unwrap_or("")),
         warn.join(",")
     );
+    // `DINO_STEP_PLAYERS`: a second reader, one record ahead, supplies the players' state after the
+    // frame being run (see `Game::trace_load_players`).
+    let mut ahead = match (step, std::env::var_os("DINO_STEP_PLAYERS")) {
+        (Some(p), Some(_)) => {
+            let mut r = TraceReader::open(p)?;
+            r.next(); // record -1
+            Some(r)
+        }
+        _ => None,
+    };
     let mut tw = TraceWriter::create(trace, &mut game, &meta)?;
     tw.record(&mut game, -1)?;
     for k in 0..frames {
@@ -323,6 +333,12 @@ pub fn run(
             }
             let ram = &rd.region("ram")?.data;
             game.w.rng = u16::from_be_bytes([ram[0x8014], ram[0x8015]]); // G.$14
+        }
+        if let Some(a) = &mut ahead {
+            if a.next().is_none() {
+                return Err(format!("the MAME trace has no record for frame {k}"));
+            }
+            game.spawn.g.step_players = Some(a.region("ram")?.check(0xFF0000)?.to_vec());
         }
         let f = script.map(|s| s.at(k)).unwrap_or_default();
         game.w.input = f.players;

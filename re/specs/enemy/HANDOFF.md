@@ -28,7 +28,7 @@ Code: `dino-rs/crates/dino-game/src/game/{enemy.rs, enemy_combat.rs, spawn.rs, r
 - Pool A classes other than 2 are freed at once (`enemy_class_unported`); scenery 49/50 freed.
   `enemy_recover_other` (0x2B56C for other classes) only resets to state 0.
 - Pool B classes other than 15 are freed at once (props, scenery, B#12/#14/#20/#31/#40/#66/#69/#73/#74).
-- **item.rs**: pool E update is empty; `item_drop_from_enemy` (0x24B36) only clears +$96.
+- **item.rs**: done in phase 1 task 2 (see `plan/phase-01-stage1-complete.md`); only class 6 (0x29B06, glow of weapon type 11), the RADIO event 0x8BD24 and the dust trail 0x92E5E are missing.
 - `enemy_grabbed` (0x2B35A) releases at once. `enemy_hud_hit` (0x16B36) is ported (HUD ring message, phase 0).
 - Floor collision: done in phase 1 task 1 (`game/terrain.rs`: 0x12CB4 with floor lookup, walls, street edges and the obstacle test; `enemy_floor_collision` / `enemy_snap_to_floor`).
 - Sounds 0x9796 / 0xA354 / 0x97D2 are issued (`snd.rs`, phase 0); effects 0x606E, 0x92E5E, 0x94338, 0x2AD98 not called.
@@ -49,11 +49,9 @@ Code: `dino-rs/crates/dino-game/src/game/{enemy.rs, enemy_combat.rs, spawn.rs, r
    If borrow-check errors appear in my files (never reached so far because other files did not compile), fix them.
 2. Append the hit animation tables to `OBJECT_ANIM_TABLES` (sprites.rs, allowed edit): 0x2E7BC (Ferris),
    0x2E928 (Gneiss), 0x2EA94 (Driver) and the other entries of 0x2E68C / 0x2E724 that stage 1 uses.
-3. item.rs: pool E update 0x233C6; food (0x2898C, eat 0x28AA4), treasure (0x2A028), container
-   (0x28C76: init read up to 0x28F76, idle, break 0x296AC), weapons (0x24D44), ammo (0x283DE),
-   drop roll 0x24B36 / 0x24B48 (tables 0xB6D12 / 0xB64F2 / 0xB64D2), land check 0x24CE6, item list
-   0x69EE push (0x4AC2). Document the pickup interface for the player port at the top of item.rs.
-4. Container hits: find the pass that damages pool E (likely 0x10CD0 with list 0x671C / $6724).
+3. (done, phase 1 task 2) item.rs: pool E, all classes but 6, drop rolls, hit passes in `item/hits.rs`; the pickup interface for
+   the player port is documented at the top of item.rs.
+4. (done) Container hits: passes 0x11F86 / 0x1201C / 0x120D2 in `item/hits.rs`.
 5. Uncomment `player_hit_by_enemy(p, e)` in `pass_115b0` once the player port has it.
 6. Stage 1 classes: #10 HAMMER/ELMER/WRENCH (0x3B828), #14 BLADE/RAZOR (0x4020E), #20 PUNK/THUG
    (0x457B0), #18 VICE T. (0x42590, notes in SPEC section 12) and pool B class 22 (0x7BEF6); then

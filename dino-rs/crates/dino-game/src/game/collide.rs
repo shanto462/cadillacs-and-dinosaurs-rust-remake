@@ -6,7 +6,10 @@ use super::body::Body;
 use dino_assets::{HitBox, SpriteData};
 
 pub fn boxes(s: &SpriteData, b: &Body, index: u8) -> Vec<HitBox> {
-    if b.multi_box { s.hitboxes.multi(b.box_table, index) } else { vec![s.hitboxes.single(b.box_table, index)] }
+    // The 68000 has a 24-bit address bus: pool E objects keep flag bits in the top byte of the
+    // table pointer (a container has 0xC0100000) and the box lookup ignores them.
+    let table = b.box_table & 0xFF_FFFF;
+    if b.multi_box { s.hitboxes.multi(table, index) } else { vec![s.hitboxes.single(table, index)] }
 }
 
 fn axis(a0: i16, asz: i16, b0: i16, bsz: i16) -> bool {

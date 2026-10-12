@@ -77,6 +77,24 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0xB64D2, 0xE40, "drop rows: fallback 0xB64D2, containers 0xB64F2, enemies 0xB6D12"),
     (0x28B10, 0x48, "food heal and score offset"),
     (0x2A164, 0x10, "treasure score offsets"),
+    // pool E: containers, hand positions, guns
+    (0x29860, 0x0E, "container thrown attack id by variant"),
+    (0x2986E, 0xF0, "container throw velocities: table of 4 pointers, then 4 x 7 records (vx, ax, vy, ay)"),
+    (0x28F24, 8, "container fuse: blink count, blink period by stage"),
+    (0x29552, 0x15A, "container debris: chance masks, then the piece lists 0x295F4 / 0x29650"),
+    (0x24CC6, 0x20, "gun flag by weapon variant (0x24C3A)"),
+    (0x2494A, 0x10, "gun-kind flag by item kind low nibble (0x248F6)"),
+    (0x2CBA0, 0x20, "weapon attack tables (0x259C8)"),
+    (0x2855A, 0x80, "ammo box refill by weapon variant: max ammo, kind, +$A2"),
+    (0x122230, 0x600, "hand position of held items: 4 pointers, then (dx, dy) by character and attach index"),
+    (0x120A20, 0x1810, "hand animation of held items: 4 pointers, then pointer rows by +$A2, then ids by attach index"),
+    (0x26408, 0x200, "weapon tables: explosion chain offsets, throw vectors 0x26534.., hand offsets 0x265B4, depth speeds 0x265D4"),
+    (0x28814, 0xE0, "bullet records (vx, animation, attack id, aim), pointer rows, vertical speeds, aim tables (class 3)"),
+    (0x2A484, 0x18, "pellet records (vx, vy) by variant (class 10)"),
+    (0x62AE, 0x28, "weapon reach box by character: 5 words (0x6248)"),
+    (0x9E5C, 4, "bazooka sound by voice bank (0x9E08)"),
+    (0xA498, 6, "shotgun sound by voice bank (0xA442)"),
+    (0x9FAA, 12, "eating sound by voice bank, normal and Hannah rows (0x9F54)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {

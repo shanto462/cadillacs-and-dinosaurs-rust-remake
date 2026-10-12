@@ -1,0 +1,10 @@
+# Phase 1 task 2 (items): pokes/misc.lua puts food and a treasure in a row left of Jack (and Jack at 48 HP).
+# Jack walks onto each and presses attack: eat (heal, then points at full HP) and take the treasure.
+0-12:L
+15-16:A
+25-45:L
+48-49:A
+58-78:L
+81-82:A
+92-110:L
+113-114:A

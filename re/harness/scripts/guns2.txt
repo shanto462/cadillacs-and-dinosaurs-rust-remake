@@ -1,0 +1,15 @@
+# Phase 1 task 2 (items): pokes/guns2.lua. Jack fires the shotgun (three shots), walks to the bazooka and fires it
+# twice, then takes the bat and swings it.
+0-12:L
+15-16:A
+45-46:A
+75-76:A
+105-106:A
+120-134:L
+138-139:A
+170-171:A
+230-231:A
+300-314:L
+318-319:A
+350-351:A
+370-371:A

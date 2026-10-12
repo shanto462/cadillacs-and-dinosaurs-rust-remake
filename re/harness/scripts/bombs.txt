@@ -1,0 +1,14 @@
+# Phase 1 task 2 (items): pokes/bombs.lua. Jack picks up each throwable (A), throws it (A) and waits for it to
+# bounce and go off: fire bomb, two explosive sticks, time bomb.
+0-12:L
+15-16:A
+45-46:A
+200-214:L
+217-218:A
+245-246:A
+400-414:L
+417-418:A
+445-446:A
+600-614:L
+617-618:A
+645-646:A

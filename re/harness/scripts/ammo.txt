@@ -1,0 +1,10 @@
+# Phase 1 task 2 (items): pokes/ammo.lua. Jack picks up the pistol, fires two shots, takes the first ammo box
+# (refill), then the second one (the gun is full: points).
+0-12:L
+15-16:A
+45-46:A
+65-66:A
+80-93:L
+96-97:A
+130-142:L
+145-146:A

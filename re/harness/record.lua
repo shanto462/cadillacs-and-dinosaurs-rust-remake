@@ -12,6 +12,10 @@
 --                "vblank:N": sync at vblank N
 --   DINO_MAX_VBLANKS  give up after this many vblanks without reaching the sync point (default 30000)
 --   DINO_SNAP_EVERY   also save a PNG screenshot every N test frames (0 = never)
+--   DINO_POKE    optional Lua file run once at the sync point, before the snapshot is taken: it edits
+--                RAM (the snapshot and the whole recording start from the edited state, the port loads
+--                it from the .state). It receives one argument, the table DINO (`local DINO = ...`)
+--                with DINO.space and DINO.spawn_item(...).
 --
 -- Timing. The vblank IRQ (0x542) sets the frame flag -$7EAE(a5) = 0xFF0152 at 0x5C8, before it
 -- flushes the sound queue, writes the scroll registers, reads the inputs (0x738) and ticks the
@@ -43,6 +47,7 @@ local cfg = {
   sync = env("DINO_SYNC", "control"),
   max_vblanks = tonumber(env("DINO_MAX_VBLANKS", "30000")),
   snap_every = tonumber(env("DINO_SNAP_EVERY", "0")),
+  poke = env("DINO_POKE", nil),
 }
 
 local function log(fmt, ...)
@@ -107,6 +112,30 @@ local function script_at(segs, frame)
     end
   end
   return out
+end
+
+-- Pokes (DINO_POKE): helpers for scenarios that need objects the first waves do not give.
+DINO = { space = space }
+
+-- Spawn a pool E object like the stage script does (0xFDAE with pool selector 3): pops the free
+-- list ($65F4 count, $65FE pointer, 0x4818), then writes +$00 = 1, +$20 class word (class * 4),
+-- +$08 X, +$10 Z, +$26 variant, +$5C and +$96. The object starts at mode 0 and initialises itself.
+function DINO.spawn_item(class_word, var, x, z, w5c, drop_row)
+  local cnt = space:read_u16(0xFFE5F4)
+  assert(cnt > 0, "pool E is full")
+  local ptr = space:read_u16(0xFFE5FE)
+  local slot = space:read_u16(0xFF0000 + ptr)
+  space:write_u16(0xFFE5FE, (ptr + 2) & 0xFFFF)
+  space:write_u16(0xFFE5F4, cnt - 1)
+  local a = 0xFF0000 + slot
+  space:write_u8(a, 1)
+  space:write_u16(a + 0x20, class_word)
+  space:write_u16(a + 0x08, x)
+  space:write_u16(a + 0x10, z)
+  space:write_u16(a + 0x26, var)
+  space:write_u16(a + 0x5C, w5c or 0)
+  space:write_u8(a + 0x96, drop_row or 0)
+  return a
 end
 
 local boot_segs = cfg.boot and parse_script(read_file(cfg.boot)) or nil
@@ -286,6 +315,7 @@ local function on_vblank()
       return
     end
     if not lagging() and sync_now(vblank) then
+      if cfg.poke then assert(loadfile(cfg.poke))(DINO) end
       local snap = snapshot()
       if cfg.state then write_state(snap) end
       if cfg.trace then

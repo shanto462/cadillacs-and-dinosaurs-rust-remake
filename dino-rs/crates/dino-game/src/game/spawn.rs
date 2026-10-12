@@ -51,6 +51,13 @@ pub struct Globals {
     pub b4de: u8,
     /// G.$7B2 a burning enemy exists (2).
     pub b7b2: u8,
+    /// G.$4FA rifles seen by the item update this frame (cleared by `objects_update` 0xE934,
+    /// before pool E runs). G.$43B: toggle bits of the item sounds (0x9FB6, 0x9E60, 0x9FF8, 0xA404).
+    pub b4fa: u8,
+    pub snd_toggle_b: u8,
+    /// Harness only (`DINO_STEP_PLAYERS`): MAME's RAM image after the frame being run; the pool E
+    /// update loads the players from it before it runs (`Game::trace_load_players`).
+    pub step_players: Option<Vec<u8>>,
 }
 
 /// State of the interpreter (struct at G.$66C).

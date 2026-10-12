@@ -43,14 +43,42 @@ no difference. Add the class to `PORTED_CLASSES` in `dino-game/src/game/trace.rs
    0x2B35A is a stub, see below).
    Evidence of the task as first found: stage1_jack frame 313 (`player.wall`), explore 335,
    stage1_fight 186, 441, 473, 780.
-2. **Items (enemy area).** Pool E class 5 and the item objects: food (heal), treasure (points),
-   weapons with ammo, drop tables (0x24B36, 0xB6D12), pickup rules, the item list the player
-   reads. Spec: `re/specs/enemy/SPEC.md` section 13. Handlers from the table 0x233F0: class 0
-   0x24D44 (weapons), class 5 0x28C76 (containers: hit by Jack and by thugs, hit sparks, the break
-   sounds 0xF5 0x6E, debris effect class 0x0B 0x934F6; G.$67BE changes at explore frame 109),
-   class 9 0x2A028 (treasure). A sound 0x34 repeats every 51 frames from frame 967 of stage1_fight;
-   its source is not identified yet (probably an item). Pool E update 0x233C6 (also the free
-   list G.$65FE / $65F4). Phase 0 evidence: explore / stage1_fight frames 109, 789, 791.
+2. **Items (enemy area). DONE (2026-10-12).** Ported in `dino-game/src/game/item.rs` and
+   `item/{shared,container,hits,small,weapon,blast}.rs` (tables through `dino-extract/src/{sprites,enemy}.rs`):
+   - Pool E update 0x233C6 with the class table 0x233F0, allocator 0x4818, free 0x48D4 (free list G.$65FE /
+     $65F4), registration into the lists 0x69EE (pickup), 0x6AFC (hurtable), 0x671A (attackers) and the
+     obstacle list (0x4A96, `item_register_obstacle`: the `item_hold_obstacle` imitation is gone).
+   - Class 0 weapons 0x24D44 (all 15 types: melee, guns, thrown bombs and sticks), class 1 explosions
+     0x27E16, class 2 ammo boxes 0x283DE (refill 0x284E2), class 3 gun bullets 0x2860A, class 4 food
+     0x2898C (eat 0x28AA4), class 5 containers 0x28C76 (all variants and the explosive barrel: hits by
+     players, thugs, thrown items and crushing bodies, hit sparks, break sounds 0xF5 / 0x6E, debris effect
+     0x934F6 in pool C), class 7 shell 0x29D1E, class 8 projectile 0x29EC4, class 9 treasure 0x2A028,
+     class 10 pellet 0x2A39A, class 11 attack box 0x2A534. **Class 6 (0x29B06, glow overlay of weapon
+     type 11) is not ported** (it only draws; the harness holds it frozen).
+   - Hit passes 0x11F86 / 0x1201C / 0x120D2 (`item/hits.rs`); items as attackers in the enemy pass
+     0x11008 (`player_move_word` / `player_action` in `enemy_combat.rs` read an item's +$A0 / +$C8).
+   - Drop rolls 0x24B36 (table 0xB6D12) and 0x24B48 (0xB64F2, fallback row 0xB64D2) from enemy deaths
+     and container breaks (`item_drop_from_enemy`, `item_drop_roll`), food heal and score (0x28AA4 with
+     the table 0x28B10), treasure scores (0x2A164), the drop hop and landing test (0x24CE6).
+   - API for the player (task 3): documented at the top of `item.rs`: `item_list()`, `item_kind(h)`,
+     `item_pickup_begin(item, player)`, `item_drop_held(item)`; the held weapon runs inside the item
+     class and reads the player's `+$B4 / +$B6 / +$C4 / +$C5 / +$2C / +$A8` (see Findings of task 2).
+   - Sound 0x34 (every 51 frames from frame 967 of stage1_fight) is **not an item**: it comes from pool B
+     class 31 (0x81046, task 4).
+   **Checks:** `cargo build` / `cargo test` green (59 unit tests, 10 new in `item/tests.rs`: food heal and
+   score, the drop tables, the fuse, the landing test, the hand position). `PORTED_CLASSES` has the 11 item
+   classes. Step runs of `stage1_jack`, `stage1_late`, `explore`, `stage1_fight`, `obstacle`: no pool E
+   difference (`item` lines no longer `[NOT PORTED]`, none listed) and the other ported classes are
+   unchanged (same enemy class 2 grab difference as task 1). `follow` runs: no item difference in
+   stage1_fight, explore, obstacle. `run` runs of stage1_fight still diverge from frame 118 (unported
+   enemies call `rand()`), and the items follow from frame 789. Seven new scenarios record items in
+   MAME (`items`, `misc`, `containers`..`containers3`, `guns`, `guns2`, `bombs`, `ammo`; README) with
+   pokes that place the items; step runs with `DINO_STEP_PLAYERS=1`: the only item differences are the
+   transition frames where the player port (task 3) changes state (pick-up, throw, swing). Not exercised
+   by any recording (desk-reviewed against the listing): the gun shot code of the player's own
+   fire, melee swings that hit, the flights 0x10 and 0x14 of weapons, `weapon_enemy_near`, `item_eat`
+   with an enemy-dropped item (food and treasure are unit-tested). Phase 0 evidence of the task:
+   explore / stage1_fight frames 109, 789, 791.
 3. **Weapons and pickup (player area).** `find_pickup` 0x5AA2, pickup state, held weapon states
    (0x201/0x202 melee, 0x203 charge, 0x206/0x207 guns, 0x209 recoil, 0x20A heavy object), ammo,
    dropping on hit. Spec: `re/specs/player/SPEC.md` section 4.9.
@@ -90,7 +118,7 @@ and stage clear screen match the original.
 
 ## Status
 
-In progress. Task 1 done (2026-10-12). Handoff notes: `re/specs/enemy/HANDOFF.md`,
+In progress. Tasks 1 and 2 done (2026-10-12). Handoff notes: `re/specs/enemy/HANDOFF.md`,
 `re/specs/player/HANDOFF.md`, `re/specs/flow/HANDOFF.md`.
 Tasks 1 to 3, 6 and 7 come from the phase 0 comparison (2026-10-12).
 
@@ -99,7 +127,7 @@ Tasks 1 to 3, 6 and 7 come from the phase 0 comparison (2026-10-12).
 - **Items / task 2:** containers (pool E class 5, types `$26` = 0, 1, 2, 5, 6) call `item_register_obstacle`
   (0x4A96, from 0x28F46 / 0x28F70) every frame they are alive: it clears +$AC and pushes the object on
   the obstacle list; the obstacle test sets +$AC = 1 when something climbs onto it (the container
-  handler reads +$AC at 0x28ECE). The harness hold (`item_hold_obstacle` in `item.rs`) only imitates this for
+  handler reads +$AC at 0x28ECE). (Done in task 2: the hold `item_hold_obstacle` is gone, the real registration runs.) The harness hold only imitated this for
   frozen containers in state 2 / 0 with HP; replace it when the class is ported. Until then `run` and
   `follow` runs have no obstacle list (the snapshot containers stay in state 0, MAME's init runs in
   frame 109 of explore / stage1_fight / obstacle). Items call 0x12CB4 themselves (`terrain_collide(b, h,
@@ -124,3 +152,34 @@ Tasks 1 to 3, 6 and 7 come from the phase 0 comparison (2026-10-12).
   into the offset table of the stage; they are never used. Stage 1 (internal 0) areas 0..2 are one flat
   segment at height 0, so all the stage 1 terrain is in the scroll2 tile classes.
 
+
+### Findings of task 2 for the later tasks
+
+- **Player port (task 3):** the held weapon is run by the item (class 0), the player only keeps its
+  state machine. The two sides talk through fields that are set and used inside one frame, so a
+  post-frame snapshot does not show them: `+$C4` of the player (attack flag, set by the player,
+  cleared by the item when it used the frame), `+$2C` (frame byte: 0 bending, 1 the moment of the grab,
+  1 / 2 the swing frame), `+$B6` (held kind, the item sets 0 when thrown or broken, or its new kind when
+  a gun runs empty), `+$C5` (drop request), `+$A8`. Until task 3 lands, `DINO_STEP_PLAYERS=1` (README) lets
+  the item scenarios compare the items against MAME's player. Without it, step runs of the item
+  scenarios show the player's missing pick-up and throw as item differences.
+- **`find_pickup` 0x5AA2:** read `item_list()` (the list of the previous frame: cleared in
+  `objects_update` after the players); an item qualifies when `live == 1`, `mode == 2`, `sub == 0`.
+  Call `item_pickup_begin` / `item_drop_held`. `item_ammo_refill` (0x284E2) is private to `item/small.rs`
+  (the ammo box calls it); make it `pub` if the player needs it.
+- **Mailbox with enemies:** items attack enemies and crush containers through the lists 0x671A / 0x6AC2 /
+  0x671E / 0x6AFC. `player_hit_by_enemy` is still not called (task 4), so enemy attacks hurting a player
+  holding a weapon (drop on hit) are untested.
+- **Edits in files owned by others (reviewed):** `collide.rs` (box table flag bits masked to 24 bits),
+  `trace.rs` (item fields, `PORTED_CLASSES`, `trace_load_players`), `harness.rs` (`DINO_STEP_PLAYERS`),
+  `spawn.rs` (G.$43B toggles and the step-players buffer), `enemy_combat.rs` (items as attackers),
+  `dino-extract/src/{sprites,enemy}.rs` (item animation tables, drop rows, food / treasure tables, hand position and animation tables, gun tables), and
+  `re/harness/record.lua` (`DINO_POKE`, `DINO.spawn_item`).
+- **RADIO (stage 3):** the food-like item `+$26 = 0xC` with G.$4D9 = 2 calls 0x8BD24 (three pool B
+  objects of class 0x58, the kill-all event). TODO(phase 7) in `item/small.rs`.
+- **`enemy_despawn_if_far` (0x173C) in `enemy.rs`** misses the Z + Y limit of the vertical scene (stage 7
+  elevator: 0x1782 tests `|X|` and `Z + Y`); the item version (`item_despawn_far`) has it. Fix when stage 7
+  is ported (phase 11).
+- **Effects:** the dust trail of a thrown weapon (0x92E5E) is still not called (task 7).
+- **Scenario cost:** `items` takes the stage1_fight run to break two containers (1250 frames); the poked
+  scenarios are quick (200 to 900 frames).

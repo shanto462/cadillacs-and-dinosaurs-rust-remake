@@ -15,7 +15,7 @@
 use super::body::Body;
 use super::effect::{Effect, Special};
 use super::enemy::{Enemy, Ram};
-use super::item::Item;
+use super::item::{Item, class};
 use super::player::Player;
 use super::prop::Prop;
 use super::{Game, POOL_A, POOL_B, POOL_C, POOL_D, POOL_E, PLAYERS, Pool};
@@ -384,6 +384,89 @@ const ENEMY_RAW: &[(u32, u8, &str)] = &[
     (0xBC, 1, "obst_t"),
 ];
 
+/// Raw bytes of a pool E object that the item code reads or writes (everything the shared
+/// header `Body` does not cover). One byte each: the classes use the same offset as a byte or as
+/// half of a word.
+const ITEM_RAW: &[(u32, u8, &str)] = &[
+    (0x5B, 1, "r5b"),
+    (0x5C, 1, "r5c"),
+    (0x5D, 1, "r5d"),
+    (0x73, 1, "r73"),
+    (0x74, 1, "r74"),
+    (0x75, 1, "r75"),
+    (0x76, 1, "r76"),
+    (0x77, 1, "r77"),
+    (0x79, 1, "r79"),
+    (0x7A, 1, "r7a"),
+    (0x7C, 1, "r7c"),
+    (0x7D, 1, "r7d"),
+    (0x7E, 1, "r7e"),
+    (0x7F, 1, "r7f"),
+    (0x80, 1, "r80"),
+    (0x81, 1, "r81"),
+    (0x82, 1, "r82"),
+    (0x83, 1, "r83"),
+    (0x84, 1, "r84"),
+    (0x85, 1, "r85"),
+    (0x86, 1, "r86"),
+    (0x87, 1, "r87"),
+    (0x88, 1, "r88"),
+    (0x89, 1, "r89"),
+    (0x8A, 1, "r8a"),
+    (0x8B, 1, "r8b"),
+    (0x8C, 1, "r8c"),
+    (0x8D, 1, "r8d"),
+    (0x8E, 1, "r8e"),
+    (0x8F, 1, "r8f"),
+    (0x90, 1, "r90"),
+    (0x91, 1, "r91"),
+    (0x92, 1, "r92"),
+    (0x93, 1, "r93"),
+    (0x94, 1, "r94"),
+    (0x95, 1, "r95"),
+    (0x96, 1, "r96"),
+    (0x97, 1, "r97"),
+    (0x98, 1, "r98"),
+    (0x99, 1, "r99"),
+    (0x9B, 1, "r9b"),
+    (0x9C, 1, "r9c"),
+    (0x9D, 1, "r9d"),
+    (0x9E, 1, "r9e"),
+    (0x9F, 1, "r9f"),
+    (0xA0, 1, "ra0"),
+    (0xA1, 1, "ra1"),
+    (0xA2, 1, "ra2"),
+    (0xA3, 1, "ra3"),
+    (0xA4, 1, "ra4"),
+    (0xA5, 1, "ra5"),
+    (0xA6, 1, "ra6"),
+    (0xA7, 1, "ra7"),
+    (0xA8, 1, "ra8"),
+    (0xA9, 1, "ra9"),
+    (0xAA, 1, "raa"),
+    (0xAB, 1, "rab"),
+    (0xAC, 1, "rac"),
+    (0xAD, 1, "rad"),
+    (0xAE, 1, "rae"),
+    (0xAF, 1, "raf"),
+    (0xB0, 1, "rb0"),
+    (0xB1, 1, "rb1"),
+    (0xB2, 1, "rb2"),
+    (0xB3, 1, "rb3"),
+    (0xB4, 1, "rb4"),
+    (0xB5, 1, "rb5"),
+    (0xB6, 1, "rb6"),
+    (0xB7, 1, "rb7"),
+    (0xB8, 1, "rb8"),
+    (0xB9, 1, "rb9"),
+    (0xBA, 1, "rba"),
+    (0xBB, 1, "rbb"),
+    (0xBC, 1, "rbc"),
+    (0xBD, 1, "rbd"),
+    (0xBE, 1, "rbe"),
+    (0xBF, 1, "rbf"),
+];
+
 impl Ram {
     fn trace_list(&mut self, f: &mut F, list: &[(u32, u8, &'static str)]) {
         for &(off, size, name) in list {
@@ -427,15 +510,15 @@ impl Enemy {
 }
 
 impl Item {
-    /// Pool E is not ported yet: the header, the fields the obstacle test reads (hit box,
-    /// floor) and, when loading, the raw bytes.
+    /// Header, the copy of the frame record in +$30 (items copy +$28 there every frame), the
+    /// shared fields +$40..+$9A and the raw bytes `ITEM_RAW`. When loading, all raw bytes first.
     pub fn trace_visit(&mut self, f: &mut F) {
-        self.b.trace_header(f, false);
         self.m.trace_load_all(f, 0xC0);
-        f.u32(0x44, "box_table", &mut self.b.box_table);
-        f.u8(0x48, "body_box", &mut self.b.body_box);
-        f.i16(0x54, "floor", &mut self.b.floor);
-        f.i16(0x56, "floor2", &mut self.b.floor2);
+        self.b.trace_header(f, false);
+        let live = self.b.live != 0;
+        f.frame(0x30, "frame2", &mut self.b.frame2, false, false, live);
+        self.b.trace_rest(f);
+        self.m.trace_list(f, ITEM_RAW);
     }
 }
 
@@ -643,7 +726,22 @@ pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2]),
     ("prop", &[15]),
-    ("item", &[]),
+    (
+        "item",
+        &[
+            class::WEAPON,
+            class::BLAST,
+            class::AMMO,
+            class::BULLET,
+            class::FOOD,
+            class::CONTAINER,
+            class::SHELL,
+            class::PROJECTILE,
+            class::TREASURE,
+            class::GUN_SHOT,
+            class::ATTACK_BOX,
+        ],
+    ),
     ("effect", &[0x04 / 4, 0x10 / 4, 0x20 / 4, 0x68 / 4]),
     ("special", &[]),
 ];
@@ -819,6 +917,7 @@ impl Game {
         // Enemy-side globals (spawn.rs).
         let s = &mut self.spawn.g;
         f.u8(0x043A, "snd_toggle", &mut self.w.snd_toggle);
+        f.u8(0x043B, "snd_toggle_b", &mut s.snd_toggle_b);
         f.u16(0x043C, "snd_hit_toggle", &mut self.w.snd_hit_toggle);
         f.u8(0x04F3, "alive", &mut s.alive);
         f.u8(0x04FB, "alive_run", &mut s.alive_run);
@@ -829,6 +928,7 @@ impl Game {
         f.u8(0x0502, "b502", &mut s.b502);
         f.u8(0x04D5, "b4d5", &mut s.b4d5);
         f.u8(0x04F1, "b4f1", &mut s.b4f1);
+        f.u8(0x04FA, "b4fa", &mut s.b4fa);
         f.u8(0x04FC, "b4fc", &mut s.b4fc);
         f.u8(0x0504, "b504", &mut s.b504);
         f.u8(0x0505, "b505", &mut s.b505);
@@ -854,6 +954,7 @@ impl Game {
         // Camera (stage port): scroll2 controller G.$73C, scroll3 G.$7DC, scroll1 G.$6C4.
         self.trace_camera(f);
         self.trace_terrain(f);
+        self.trace_item_list(f);
         // Sprite list builder state.
         f.u16(n(0x7126), "splash_timer", &mut self.sprites.splash_timer);
         f.u16(n(0x7124), "splash_phase", &mut self.sprites.splash_phase);
@@ -890,6 +991,32 @@ impl Game {
         f.u16(0x6A28, "obst_prev_ptr", &mut p);
         for k in 0..super::terrain::OBSTACLE_SLOTS {
             f.u16(0x6A58 - 2 * k as u32, "obst_slot", &mut t.buf[k]);
+        }
+    }
+
+    /// The pickup list G.$69EE (count), $69F0 (pointer), the stack below $6A22 (pool E update).
+    /// Only the entries in use are traced (the stack keeps stale words). Items registered by the
+    /// previous frame are what `find_pickup` reads; loading it makes `--step-from` runs see them.
+    fn trace_item_list(&mut self, f: &mut F) {
+        let list = self.combat.get(0x69EE).to_vec();
+        let n = list.len();
+        let mut count = n as u16;
+        f.u16(0x69EE, "item_count", &mut count);
+        let mut ptr = 0xEA22u16.wrapping_sub(2 * count);
+        f.u16(0x69F0, "item_ptr", &mut ptr);
+        let used = if f.all() { 24 } else { (count as usize).min(24) };
+        let mut loaded = Vec::new();
+        for k in 0..used {
+            // The first registration is stored at the top (address $6A20), the next below it.
+            let mut h = if k < n { list[n - 1 - k] } else { 0 };
+            f.u16(0x6A20 - 2 * k as u32, "item_slot", &mut h);
+            loaded.push(h);
+        }
+        if f.loading() {
+            self.combat.clear(0x69EE);
+            for &h in loaded.iter().take((count as usize).min(24)) {
+                self.combat.push(0x69EE, h);
+            }
         }
     }
 
@@ -1086,6 +1213,21 @@ impl Game {
         self.trace_load_tasks(ram, &mut warn);
         self.trace_load_gfx(gfx);
         warn
+    }
+
+    /// Harness (step runs with `DINO_STEP_PLAYERS`): load the three player objects (and the
+    /// per-player fields kept by other ports) from the MAME RAM image of the frame being run, so
+    /// that the objects updated after the players (pool E, A, ...) see the players exactly as
+    /// the original had them in that frame, whatever the player port computed itself.
+    pub fn trace_load_players(&mut self, ram: &[u8]) {
+        let a = self.assets;
+        let mut l = Load { ram, errors: Vec::new(), unmapped: self.trace_unmapped.clone() };
+        for i in 0..3 {
+            let mut f = F::new(&mut l, obj(Game::player_handle(i)), a);
+            self.players[i].trace_visit(&mut f);
+            self.trace_player_extras(i, &mut f);
+        }
+        self.trace_unmapped = l.unmapped;
     }
 
     /// Abstract state the port keeps instead of the task table (0xFF0052, 16 bytes per slot:

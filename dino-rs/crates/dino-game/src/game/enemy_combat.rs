@@ -27,9 +27,6 @@ impl Game {
     pub fn pass_10cd0(&mut self) {}
     pub fn pass_11962(&mut self) {}
     pub fn pass_11a9e(&mut self) {}
-    pub fn pass_11f86(&mut self) {}
-    pub fn pass_1201c(&mut self) {}
-    pub fn pass_120d2(&mut self) {}
     pub fn pass_11e56(&mut self) {}
     pub fn pass_11cec(&mut self) {}
     pub fn pass_1185a(&mut self) {}
@@ -174,10 +171,11 @@ impl Game {
         self.enemy_add_score(who, v);
     }
 
-    /// Player +$A0 word of a player attacker (held / previous input), 0 for other objects.
+    /// +$A0 word of an attacker: a player's held / previous input, an item's kind word, else 0.
     fn player_move_word(&self, a: Handle) -> u16 {
         match slot_of(a) {
             Some(Slot::Player(i)) => ((self.players[i].held as u16) << 8) | self.players[i].prev as u16,
+            Some(Slot::Item(i)) => self.items.slots[i].m.w(0xA0), // an item's kind word
             _ => 0,
         }
     }
@@ -186,6 +184,7 @@ impl Game {
     fn player_action(&self, a: Handle) -> u8 {
         match slot_of(a) {
             Some(Slot::Player(i)) => self.players[i].action,
+            Some(Slot::Item(i)) => self.items.slots[i].m.b(0xC8),
             _ => 0,
         }
     }

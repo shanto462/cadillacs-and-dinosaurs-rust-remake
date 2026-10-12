@@ -1,0 +1,8 @@
+# Phase 1 task 2 (items): pokes/containers*.lua put two containers left of Jack, one in the row 0x20 nearer
+# the camera (the game lifts it first) and one in his row. Jack walks into the first, lifts it (A with the
+# stick toward it), throws it (A), waits for it to bounce and break, then does the same with the second.
+0-46:L
+48-49:LA
+90-91:A
+170-171:LA
+220-221:A
