@@ -13,5 +13,5 @@
 - Character ids: 0 Jack, 1 Mustapha, 2 Hannah, 3 Mess (verified by art; the name table order differs).
 - REA cannot open 68000 code; use Ghidra headless (`re/README.md`) and `re/tools/d`.
 - Sub-agents (user rule, 2026-10-12): **at most 2 sub-agents run at the same time**, of which at most
-  1 writes game code (`dino-rs/`). Agents never start their own agents. Start the next one only when a
-  running one has finished.
+  1 writes game code (`dino-rs/`). Agents never start their own agents. Start a new one only when fewer than 2
+  are running; never stop a running agent to get under the limit, let it finish.
