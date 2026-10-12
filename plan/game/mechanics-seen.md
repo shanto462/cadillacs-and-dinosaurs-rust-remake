@@ -97,7 +97,7 @@ STUB (empty named function), MISSING (no code), UNKNOWN (original not understood
 | ID | Mechanic | Source | Port | Notes |
 | --- | --- | --- | --- | --- |
 | D01 | Sleeping dinosaurs (Z letters, a roar every 50 to 113 f) | en 11, M demo 1 | MISSING | Episodes 2, 5 |
-| D02 | Poachers' hits wake a dinosaur and it attacks poachers as well as heroes | en 11, W:ah | MISSING | targets the nearest enemy with chance 14/16 |
+| D02 | Poachers' hits wake a dinosaur and it attacks poachers as well as heroes | en 11, W:ah, U (2026-10-12: "yep in few stages, 2 and probably 5 and 6") | MISSING | targets the nearest enemy with chance 14/16. D3b: the dinosaur hunter (A79, a poacher type) wakes a sleeping Shivat with its third swing (0x533FA); a rifle poacher (A13) did not wake it in a spawned test. **D3a must check in natural play** (real scripts, no spawns) in Episodes 2, 5 and 6: which poachers wake or anger which dinosaurs, and how (swing, bullet, other) |
 | D03 | Hit by a hero it becomes hostile: palette flash, then enraged (red) | en 11, W:ja | MISSING | |
 | D04 | At 0 HP the dinosaur calms down (turns green) and walks away, gives no score | en 11, W:ja | MISSING | |
 | D05 | A dinosaur leaves when the camera passes the X in its spawn record | en 11 | MISSING | |
