@@ -54,7 +54,7 @@ every phase: the port must match the original frame by frame (checked with the p
 | D2c Weapons and multiplayer | Done (2026-10-12) |
 | D3c Bosses part 1 (Vice T., Butcher, Hogg and the car, Slice) | Done (2026-10-12) |
 | D4a Items and drops | Done (2026-10-13) |
-| D3e part 3: walk of Episodes 6 to 8 | Running |
+| D3e part 3: walk of Episodes 6 to 8 | Done (2026-10-13) |
 | D4b Time, rank and score | Done (agy, reviewed) |
 | D4e Sound cues | Done (grok, reviewed) |
 | Harness: 2 and 3 players, mid-game join | Done (codex): mp2 / mp3 match MAME (0 pairs); the join needs the join task ported |
