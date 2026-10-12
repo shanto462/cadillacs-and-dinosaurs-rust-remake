@@ -27,6 +27,16 @@ helper (exists: `DINO.spawn_enemy`, `spawn_item`; add pool B), a contact sheet s
 `plan/game/design/capture-recipes.md`. Done when: any episode and area can be reached in under 60 seconds of
 emulated time from a script line, and the document lists the recipe for every screen in `README.md` section 2.
 
+### X0: extract every asset (1 task, 2 to 3 h) - runs with T0
+
+Asked by the user ("extract all possible assets or game files, in that way, you will have understanding,
+what's really in the game"). A `dump` subcommand of `dino-extract` (plus Python tools) renders everything to
+`re/out/assets/` (git-ignored): all tiles and palettes, every sprite composition grouped by owner, every
+animation (GIF with real timing, strip with hit boxes), every stage and area map, front end pictures, all
+text, the Z80 program, every QSound sample and every sound code recorded from MAME as WAV, and a local
+`index.html` gallery. The catalog in words (no ROM data) is `design/asset-catalog.md`, with the things the
+plan does not know about yet at the top. Every design agent starts by looking at the dump for its area.
+
 ### D2: player mechanics (3 tasks, 2 to 3 h each)
 
 Sources: `re/specs/player/SPEC.md` and `HANDOFF.md`, `dino-game/src/game/player*.rs`, the tables 0xA26FC (attack
