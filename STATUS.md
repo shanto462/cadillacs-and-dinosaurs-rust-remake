@@ -45,11 +45,12 @@ every phase: the port must match the original frame by frame (checked with the p
 | D4c Camera, bounds, transitions, scripted scenes | Done (2026-10-12) |
 | D3b Dinosaurs and flyers | Done (2026-10-12) |
 | D2b Player state rules (HP, lives, respawn, invulnerability, damage, score) | Done (2026-10-12) |
-| D3a Human enemies (incl. poachers waking dinosaurs) | Running |
+| D3a Human enemies (incl. poachers waking dinosaurs) | Done (2026-10-12) |
+| D3d Bosses part 2 (Morgan / Morgue, Tyrog, Slisaurs, Fessenden) | Running |
 | D2c Weapons and multiplayer | Done (2026-10-12) |
 | D3c Bosses part 1 (Vice T., Butcher, Hogg and the car, Slice) | Running |
 | D2a Player moves | Done (2026-10-12), `plan/game/design/D2a-player-moves.md` |
-| D3d, D3e parts 2-3, D3f, D4a, D4b, D4e | Pending (at most 2 agents at a time) |
+| D3e parts 2-3, D3f, D4a, D4b, D4e | Pending (at most 2 agents at a time) |
 | D5 Merge into the final build plan | Pending |
 
 ## Progress: old phase 1 (stage 1 complete; continues as milestone M5 after the backbone)
