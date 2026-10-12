@@ -1,0 +1,2 @@
+# probe segment m800_a13_e6a2_boss_intro: the key lines after the snapshot (frame 0 = first game frame after it)
+0-120:R

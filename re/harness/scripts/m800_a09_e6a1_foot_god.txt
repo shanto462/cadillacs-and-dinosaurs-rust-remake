@@ -1,0 +1,2 @@
+# probe segment m800_a09_e6a1_foot_god: the key lines after the snapshot (frame 0 = first game frame after it)
+0-100:R

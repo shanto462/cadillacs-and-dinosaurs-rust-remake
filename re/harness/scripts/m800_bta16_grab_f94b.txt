@@ -1,0 +1,5 @@
+# probe segment m800_bta16_grab_f94b: the key lines after the snapshot (frame 0 = first game frame after it)
+320-345:R
+350-352:RA
+410-430:R
+434-436:LA

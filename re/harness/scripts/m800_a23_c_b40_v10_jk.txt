@@ -1,0 +1,5 @@
+# probe segment m800_a23_c_b40_v10_jk: the key lines after the snapshot (frame 0 = first game frame after it)
+20-21:J
+30-32:A
+70-71:J
+80-82:A

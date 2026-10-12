@@ -1,0 +1,69 @@
+# Boot timings only. The Episode 1 full runs are record.sh scripts
+# (re/harness/scripts/m517_ep1_*.txt) with the matching boot_*.txt file.
+# Do not record these short segments as the full runs, and do not keep
+# probe holds after the snapshot.
+segment m517_boot_jack
+# Power on to stage 1 with player 1 as Jack (used by record.sh before the sync point).
+# Frames are vblanks counted from power on.
+600-607:C   # coin 1
+700-705:S   # start 1
+900-905:A   # choose the character under the cursor (Jack is the first position)
+snapshot control
+0-119:
+trace 120
+
+segment m517_boot_mustapha
+# Power on to stage 1 with player 1 as mustapha (the select screen cursor starts on Jack; Hannah is the 2nd position, Mustapha the 3rd, Mess the 4th).
+# Same as boot_jack.txt, with 2 press(es) of R before the character is accepted.
+600-607:C   # coin 1
+700-705:S   # start 1
+800-803:R   # cursor to the right
+820-823:R   # cursor to the right
+900-905:A   # choose the character under the cursor
+snapshot control
+0-119:
+trace 120
+
+segment m517_boot_hannah
+# Power on to stage 1 with player 1 as hannah (the select screen cursor starts on Jack; Hannah is the 2nd position, Mustapha the 3rd, Mess the 4th).
+# Same as boot_jack.txt, with 1 press(es) of R before the character is accepted.
+600-607:C   # coin 1
+700-705:S   # start 1
+800-803:R   # cursor to the right
+900-905:A   # choose the character under the cursor
+snapshot control
+0-119:
+trace 120
+
+segment m517_boot_mess
+# Power on to stage 1 with player 1 as mess (the select screen cursor starts on Jack; Hannah is the 2nd position, Mustapha the 3rd, Mess the 4th).
+# Same as boot_jack.txt, with 3 press(es) of R before the character is accepted.
+600-607:C   # coin 1
+700-705:S   # start 1
+800-803:R   # cursor to the right
+820-823:R   # cursor to the right
+840-843:R   # cursor to the right
+900-905:A   # choose the character under the cursor
+snapshot control
+0-119:
+trace 120
+
+segment m517_boot_3p
+# Power on in the factory three-player, separate-coin-slot cabinet mode.
+# P1 Jack, P2 Mustapha, P3 Mess. Frames are vblanks counted from power on.
+600-607:1C
+640-647:2C
+680-687:3C
+700-705:1S
+740-745:2S   # join while character select is open
+780-785:3S
+# Cursors start on Jack, Hannah, Mustapha. Move P3 before P2 to free Mustapha.
+800-803:1L   # Jack -> Mess
+820-823:1R   # Mess -> Jack
+840-843:3R   # Mustapha -> Mess
+860-863:2R   # Hannah -> Mustapha
+900-905:1A2A3A
+snapshot control
+0-119:
+trace 120
+

@@ -1,0 +1,281 @@
+# M8-00 reference timelines. See the M8-00 section of re/harness/README.md.
+# Setup frame 0 becomes trace frame 0; lag can change video frame timing.
+# No screenshots. MAME-only timed directives are listed in m800_scenarios.tsv.
+
+# A01; recipe d3e3/run1.txt / e6a0-wall-z32
+segment m800_a01_e6a0_wall_z32
+jump 6 0 0x2C0
+god on
+0 snapshot keep
+2 poke 0xFFB27C 2 0x32C
+2 poke 0xFFB284 2 32
+20-22:A
+trace 140
+
+# A01; recipe d3e3/run1.txt / e6a0-wall-z48
+segment m800_a01_e6a0_wall_z48
+jump 6 0 0x2C0
+god on
+0 snapshot keep
+2 poke 0xFFB27C 2 0x32C
+2 poke 0xFFB284 2 48
+20-22:A
+trace 140
+
+# A01; recipe d3e3/run1.txt / e6a0-wall-z64
+segment m800_a01_e6a0_wall_z64
+jump 6 0 0x2C0
+god on
+0 snapshot keep
+2 poke 0xFFB27C 2 0x32C
+2 poke 0xFFB284 2 64
+20-22:A
+trace 140
+
+# A01; recipe d3e3/run1.txt / e6a0-wall-z79
+segment m800_a01_e6a0_wall_z79
+jump 6 0 0x2C0
+god on
+0 snapshot keep
+2 poke 0xFFB27C 2 0x32C
+2 poke 0xFFB284 2 79
+20-22:A
+trace 140
+
+# A01; recipe d3e3/run1.txt / e6a0-wall-z16
+segment m800_a01_e6a0_wall_z16
+jump 6 0 0x2C0
+god on
+0 snapshot keep
+2 poke 0xFFB27C 2 0x32C
+2 poke 0xFFB284 2 16
+20-22:A
+trace 140
+
+# A02; recipe d3e3/run1.txt / e6a0-wall-jk
+segment m800_a02_e6a0_wall_jk
+jump 6 0 0x2C0
+god on
+0 snapshot keep
+2 poke 0xFFB27C 2 0x300
+2 poke 0xFFB284 2 48
+10-40:R
+14-15:J
+22-24:A
+trace 140
+
+# A02; recipe d3e3/run2.txt / c-b3-special
+segment m800_a02_c_b3_special
+jump 6 0 0x2C0
+god on
+hold 0xFFB27C 2 0x300
+hold 0xFFB284 2 48
+0 snapshot keep
+20-22:AJ
+trace 100
+
+# A03; recipe d3e3/run1.txt / e6a0-wall-walk
+segment m800_a03_e6a0_wall_walk
+jump 6 0 0x2C0
+god on
+0 snapshot keep
+2 poke 0xFFB27C 2 0x330
+2 poke 0xFFB284 2 48
+4-260:R
+trace 280
+
+# A04; recipe d3e3/run4.txt / tc-b3v0
+segment m800_a04_tc_b3v0
+jump 6 0 0x2C0
+god on
+0 snapshot keep
+2 poke 0xFFB27C 2 812
+2 poke 0xFFB284 2 48
+20-22:A
+trace 160
+
+# A05; recipe d3e3/run2.txt / n-e6a0-doors
+segment m800_a05_n_e6a0_doors
+jump 6 0 0x1C0
+god on
+hold 0xFF850E 1 2
+0 snapshot keep
+0-300:R
+trace 1500
+
+# A05; recipe d3e3/run4.txt / tc-b4v4
+segment m800_a05_tc_b4v4
+jump 6 0 0x1A0
+god on
+0 snapshot keep
+2 spawn B 4 var=4 ax=544 z=96
+trace 140
+
+# A05; recipe d3e3/run4.txt / tc-b4v8
+segment m800_a05_tc_b4v8
+jump 6 0 0x240
+god on
+0 snapshot keep
+2 spawn B 4 var=8 ax=672 z=96
+trace 140
+
+# A05; recipe d3e3/run4.txt / tc-b4vC
+segment m800_a05_tc_b4vC
+jump 6 0 0x700
+god on
+0 snapshot keep
+2 spawn B 4 var=12 ax=1968 z=96
+trace 140
+
+# A06; recipe d3e3/run1.txt / e6a0-lamps
+segment m800_a06_e6a0_lamps
+jump 6 0 0x400
+god on
+0 snapshot keep
+trace 260
+
+# A07; recipe d3e3/run2.txt / a-e6a1-storm
+segment m800_a07_a_e6a1_storm
+jump 6 1 0x2E0
+god on
+0 snapshot keep
+trace 800
+
+# A08; recipe d3e3/run2.txt / n-e6a1-lightning
+segment m800_a08_n_e6a1_lightning
+jump 6 1 0x2E0
+god on
+0 snapshot keep
+trace 700
+
+# A09; recipe d3e3/run1.txt / e6a1-foot-god
+segment m800_a09_e6a1_foot_god
+jump 6 1 0x4E0
+god on
+0 snapshot keep
+0-100:R
+220 poke 0xFFB27C 2 0x6C0
+trace 900
+
+# A10; recipe d3e3/run1.txt / e6a1-barrels-slow
+segment m800_a10_e6a1_barrels_slow
+jump 6 1 0x100
+god on
+0 snapshot keep
+0-9:R
+14-16:A
+30-39:R
+44-46:A
+60-69:R
+74-76:A
+90-99:R
+104-106:A
+120-129:R
+134-136:A
+150-159:R
+164-166:A
+180-189:R
+194-196:A
+210-219:R
+224-226:A
+240-249:R
+254-256:A
+270-279:R
+284-286:A
+300-309:R
+314-316:A
+330-339:R
+344-346:A
+360-369:R
+374-376:A
+390-399:R
+404-406:A
+420-429:R
+434-436:A
+450-459:R
+464-466:A
+480-489:R
+494-496:A
+510-519:R
+524-526:A
+540-549:R
+554-556:A
+570-579:R
+584-586:A
+600-609:R
+614-616:A
+630-639:R
+644-646:A
+660-669:R
+674-676:A
+690-699:R
+704-706:A
+720-729:R
+734-736:A
+750-759:R
+764-766:A
+780-789:R
+794-796:A
+810-819:R
+824-826:A
+840-849:R
+854-856:A
+870-879:R
+884-886:A
+trace 900
+
+# A10; recipe d3e3/run1.txt / e6a1-barrels-fast
+segment m800_a10_e6a1_barrels_fast
+jump 6 1 0x100
+god on
+0 snapshot keep
+0-1:R
+3-900:R
+trace 900
+
+# A11; recipe d3e3/run2.txt / a-e6a1-swamp
+segment m800_a11_a_e6a1_swamp
+jump 6 1 0xA00
+god on
+0 snapshot keep
+trace 300
+
+# A12; recipe d3e3/run2.txt / a-e6a2-water
+segment m800_a12_a_e6a2_water
+jump 6 2 0xD90
+god on
+0 snapshot keep
+trace 300
+
+# A13; recipe d3e3/run1.txt / e6a2-boss-intro
+segment m800_a13_e6a2_boss_intro
+jump 6 2 0xEF0
+god on
+hold 0xFF850E 1 2
+0 snapshot keep
+0-120:R
+trace 1500
+
+# A32; recipe d3e3/run3.txt / s-e6a0-k18
+segment m800_a32_s_e6a0_k18
+jump 6 0 0x760
+god on
+hold 0xFF850E 1 2
+0 snapshot keep
+20 poke 0xFF84DE 1 18
+20 poke 0xFF8514 1 0
+20 poke 0xFFB344 1 0
+20 poke 0xFFB4C4 1 0
+20 poke 0xFFB644 1 0
+20 poke 0xFF84DD 1 7
+trace 1800
+
+# A20; recipe d3b/b2.txt / bronto-0
+segment m800_d3b_a20_foot
+jump 6 1
+hold 0xFF850E 1 2
+level 0 free
+hp 100
+0 snapshot keep
+2 spawn A 22 var=0 x=+0x80
+trace 900

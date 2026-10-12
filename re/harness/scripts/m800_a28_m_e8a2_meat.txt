@@ -1,0 +1,4 @@
+# probe segment m800_a28_m_e8a2_meat: the key lines after the snapshot (frame 0 = first game frame after it)
+0-196:R
+210-212:AR
+240-2300:R

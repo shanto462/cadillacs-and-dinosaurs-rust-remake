@@ -1,0 +1,2 @@
+# probe segment m800_bta7_k8_walk: the key lines after the snapshot (frame 0 = first game frame after it)
+0-2600:R

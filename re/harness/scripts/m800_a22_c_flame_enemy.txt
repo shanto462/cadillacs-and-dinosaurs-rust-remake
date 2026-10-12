@@ -1,0 +1,1 @@
+# probe segment m800_a22_c_flame_enemy: the key lines after the snapshot (frame 0 = first game frame after it)

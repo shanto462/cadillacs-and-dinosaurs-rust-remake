@@ -1,0 +1,5 @@
+# probe segment m800_bta11_grab_ty4v1: the key lines after the snapshot (frame 0 = first game frame after it)
+12-60:R
+62-64:RA
+100-130:R
+132-134:RA

@@ -1,0 +1,6 @@
+name	boot	frames	lag	boss	boss_hp	level	players	heroes	clear	tally	first_diff	ported_pairs	unported_pairs	globals
+m517_ep1_jack	boot_jack.txt	29857	471	11905	500	16	1	0	29226	29792	23	420	499	120
+m517_ep1_3p	boot_3p.txt	24336	666	9456	750	21	3	0,1,3	23493	24240	40	551	534	117
+m517_ep1_mustapha	boot_mustapha.txt	30544	400	23537	550	24	1	1	29937	30500	8	265	446	115
+m517_ep1_hannah	boot_hannah.txt	15456	401	8547	500	16	1	2	14712	15390	20	333	406	110
+m517_ep1_mess	boot_mess.txt	16145	461	10480	550	20	1	3	15399	16080	12	290	414	114

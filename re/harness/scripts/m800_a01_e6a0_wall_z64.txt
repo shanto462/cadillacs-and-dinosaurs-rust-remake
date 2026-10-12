@@ -1,0 +1,2 @@
+# probe segment m800_a01_e6a0_wall_z64: the key lines after the snapshot (frame 0 = first game frame after it)
+20-22:A

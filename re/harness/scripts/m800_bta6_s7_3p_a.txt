@@ -1,0 +1,2 @@
+# probe segment m800_bta6_s7_3p_a: the key lines after the snapshot (frame 0 = first game frame after it)
+0-900:R

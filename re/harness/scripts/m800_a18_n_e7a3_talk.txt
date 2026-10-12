@@ -1,0 +1,2 @@
+# probe segment m800_a18_n_e7a3_talk: the key lines after the snapshot (frame 0 = first game frame after it)
+0-900:R

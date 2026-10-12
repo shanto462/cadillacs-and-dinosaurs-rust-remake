@@ -1,0 +1,1 @@
+# probe segment m800_bta13_f94_intro: the key lines after the snapshot (frame 0 = first game frame after it)

@@ -1113,3 +1113,219 @@ Detailed evidence is under `re/out/probe/_input/`: `m700_audit.log`,
 `m700_first_differences.tsv`, the five `m700_*_record.log` files and each
 scenario's `.port.log` and `.diff.log`. Batch logs are under
 `re/out/probe/m700_*-rec/`; states and traces are under `re/out/traces/`.
+
+## Episode 1 full runs (M5-17)
+
+Five power-on recordings of Episode 1, from the first frame of control through
+the clear tally. No god mode, no pins, and no writes after the snapshot. The
+port can replay the keys. `scripts/m517_scenarios.tsv` lists the lengths.
+`pokes/m517_boot.txt` only documents the boot timings. The full runs use
+`record.sh` and the existing `boot_*.txt` files.
+
+| Scenario | Boot | Frames | Boss frame | Vice HP | Level | Heroes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `m517_ep1_jack` | `boot_jack.txt` | 29857 | 11905 | 500 | 16 | Jack |
+| `m517_ep1_3p` | `boot_3p.txt` | 24336 | 9456 | 750 | 21 | Jack, Mustapha, Mess |
+| `m517_ep1_mustapha` | `boot_mustapha.txt` | 30544 | 23537 | 550 | 24 | Mustapha |
+| `m517_ep1_hannah` | `boot_hannah.txt` | 15456 | 8547 | 500 | 16 | Hannah |
+| `m517_ep1_mess` | `boot_mess.txt` | 16145 | 10480 | 550 | 20 | Mess |
+
+Vice is pool A class 18, handler 0x42590. The HP above is the value at the
+first frame he is alive. It matches the D3c section 1.2 row for that player
+count and level band (1 player 16 to 19 is 500, 20 to 23 is 550, 24 to 27 is
+550, 3 players 20 to 23 is 750). These runs are not locked at level 12, so
+they are not the BS-A1 sample of 500 / 600 / 700.
+
+Each trace stops on the last frame before the next episode. The tally frame
+is inside the trace (Jack 29792, 3p 24240, Mustapha 30500, Hannah 15390,
+Mess 16080). The 40000 frame source is `re/out/traces/<name>.full.mame.trc`.
+
+Jack's input is the quiet-window script from the first pass: direction keys
+are removed while he is absent or the mode is the continue screen, and the
+trace shows only hero 0. The 3 player script walks and attacks with all
+three players. Its trace keeps slot 0 as Jack, slot 1 as Mustapha and slot 2
+as Mess, including at the boss. Mustapha, Hannah and Mess hold Right on
+every frame. A continue strip starts on the previous hero and moves only on
+a left or right edge (D4d 6.5), so attack confirms the same hero. Their
+traces contain only that hero.
+
+Record one headless MAME process per run:
+
+```sh
+DINO_BOOT=re/harness/scripts/boot_jack.txt \
+  re/harness/record.sh re/harness/scripts/m517_ep1_jack.txt m517_ep1_jack 40000
+```
+
+Use `boot_mustapha.txt`, `boot_hannah.txt`, `boot_mess.txt` or `boot_3p.txt`
+for the other four. Replay in step mode:
+
+```sh
+tail -n +2 re/harness/scripts/m517_scenarios.tsv |
+while IFS="$(printf '\t')" read -r name boot frames rest; do
+  MODE=step re/harness/port.sh "re/harness/scripts/${name}.txt" "$name" "$frames"
+done
+```
+
+### M5-17 completion report (2026-10-13)
+
+Five scenarios. Each reaches Vice and the tally with the hero named above.
+No game code and no recorder code changed. No allow rules were added.
+
+- G1: `cargo build` passed. `cargo test`: dino-extract 7 passed; dino-game
+  164 passed, 0 failed, 2 ignored.
+- G2: skipped. This task does not change game code.
+- G3 recording: 5 complete traces, 116338 game frames, 2399 lag vblanks.
+  Jack and the 3 player run were already complete. Mustapha's earlier file
+  was a partial write and was recorded again. Hannah and Mess were recorded
+  again because the first traces changed hero on continue. Three sequential
+  headless MAME processes recorded the new runs. Each logged `recorded 40000
+  frames` and exited normally. The saved traces are the prefix through the
+  tally.
+- G3 port: all 5 scenarios finished `port.sh` in step mode, with no panic.
+  None equals MAME. Ported-class pairs: Jack 420, 3 players 551, Mustapha
+  265, Hannah 333, Mess 290. Unported-class pairs: 499, 534, 446, 406, 414.
+  Globals: 120, 117, 115, 110, 114. First difference frame: Jack 23, 3
+  players 40, Mustapha 8, Hannah 20, Mess 12.
+- G4: game run and screenshots skipped. This task changes no game code.
+- G5: scripts, the boot note, the manifest and this section only. No ported
+  routine and no ROM table.
+
+The first difference is the opening, before any fight. Jack, Hannah and Mess
+differ at scroll 1 cell 0xa24 (VRAM 90A890): MAME 0020018B, port 04C0018B.
+Mustapha (frame 8) and the 3 player run (frame 40) differ in special slot 15
+at E574: `ay` 4E19 against 4E1A, and draw flags 29 against 18. The same
+special pair shows up a few frames later on the other runs. `global.rng`
+then differs around frame 30. In step mode the port is loaded from MAME
+before the frame, so that gap is the rand calls of that frame. Unported
+objects still call `rand` in MAME.
+
+Vice himself is class 0x12, handler 0x42590, and the diff marks that class
+NOT PORTED. His object is the long difference once the fight starts (Jack
+from frame 11823, 3 players from 9440, Mustapha from 23488, Hannah from
+8496, Mess from 10416). Player fields differ later, after the first combat
+(Jack frame 321, Hannah frame 1349, Mustapha frame 3298, Mess frame 2405,
+3 player slots from frame 321). Those player gaps sit on top of the opening
+mismatch and the unported enemies. They are listed, not treated as a pass.
+
+Open questions: the shared scroll 1 cell at the start of control, the
+special slot 15 `ay` and draw flags in the opening, and the step-mode RNG
+gap while unported objects still call `rand`. A match across the boss waits
+until class 18 is ported. The level is whatever the natural rank reached.
+M5-22 owns the comparison and the fixes.
+
+Logs: `re/out/probe/_input/m517_final_summary.log`, `m517_*_rerecord.log`,
+`m517_*.port.log`, `m517_*.diff.log`. States and traces stay under
+`re/out/traces/`.
+
+## Episodes 6 to 8 preparation scenarios (M8-00)
+
+The four `pokes/m800_*.txt` files are probe scenario batches for M8-00. Each
+segment and input script uses the `m800_` prefix. They record alongside other
+workers without sharing scenario names or MAME output directories.
+`scripts/m800_scenarios.tsv` catalogues the case, scenario name, batch, frame
+count, recipe, and timed mutation frames.
+
+| Batch | Cases | Scenarios |
+| --- | --- | --- |
+| `m800_bosses.txt` | D3d BT-A6 to BT-A17: Slices, K-8, Tyrog forms 1 to 4 and host, Fessenden forms 1 and 2, transformations, grab reactions, defeat | 36 |
+| `m800_ep6.txt` | D3e part 3 A01 to A13, A32; D3b A20: walls, doors, lamps, storm, lightning, dinosaur foot, barrels, swamp, water, Tyrog intro, Ep6 area 0 scene script | 24 |
+| `m800_ep7.txt` | D3e part 3 A14 to A18: lift full and natural, lift wave 4, fences, Ep7 area 2 end script, Ep7 area 3 dialogue | 10 |
+| `m800_ep8.txt` | D3e part 3 A19 to A31: lab vents, flames and level scaling, flame enemy hits, pipes, sewer doors, sewer waves, end scripts, cave meat barrels, acid room, fire glow, ending defeat script | 38 |
+
+The batches preserve the probe controls and timings of the design recipes.
+Snapshots use `snapshot keep` when god mode, rank holds, pins, or clock freezes
+continue past the snapshot boundary. Directives after the snapshot (`poke`,
+`spawn`, `hp`, `killall`, `objset`) change MAME only; the port does not replay
+them without sidecars. Use step mode to inspect routines up to those external
+mutations.
+
+In `m800_a14_n_e7a1_full`, the lift in Episode 7 Area 1 ends around frame 4950
+to begin transitioning to Area 2. Directives with `killall` calls after the
+snapshot write to 0xFF850E during area transition, which held MAME tasks in
+state 4 (lag) permanently. Truncating the clean 4954 recorded frames in
+`m800_a14_n_e7a1_full.mame.trc` and header resolved the issue without re-triggering
+the lag loop. `m800_a14_e7a1_nat` (11,000 frames) recorded completely in 15 seconds
+without `killall` interference.
+
+Record each batch with one headless MAME process, sequentially:
+
+```sh
+for batch in bosses ep6 ep7 ep8; do
+  PR_TIMEOUT=3600 PR_SNAPS=none PR_SHEET=0 \
+    re/harness/probe/probe_record.sh re/harness/pokes/m800_${batch}.txt all
+done
+```
+
+Replay each scenario through the port in step mode:
+
+```sh
+tail -n +2 re/harness/scripts/m800_scenarios.tsv |
+while IFS="$(printf '\t')" read -r case_id name batch frames recipe mutations; do
+  MODE=step re/harness/port.sh re/harness/scripts/${name}.txt "$name" "$frames"
+done
+```
+
+Compare a chosen scenario without allow rules:
+
+```sh
+name=m800_bta6_s7_1p_a
+re/.venv/bin/python -I re/harness/diff.py \
+  re/out/traces/${name}.mame.trc re/out/traces/${name}.step.trc
+```
+
+States, MAME traces, port traces, generated inputs, probe logs, and audit logs
+remain under ignored `re/out/` paths. The input scripts and manifest contain
+commands and metadata only.
+
+### M8-00 completion report (2026-10-13)
+
+Prepared four batches, 108 input scripts, and one manifest. All 44 requested
+acceptance IDs have MAME references. No game code, recorder code, or allow rules
+changed.
+
+- G1: `cargo build` passed. `cargo test`: 164 passed, 0 failed, 2 ignored.
+- G2: skipped by the lane B instruction. No game code changes.
+- G3 recording: 108 complete MAME scenarios across 44 design cases, 198,787
+  game frames, and 377 lag vblanks. All trace record numbers, lengths, states,
+  and input scripts audited and checked. Four sequential headless MAME
+  processes recorded the four batches using SDL dummy drivers. All exited
+  normally.
+- G3 port comparison: all 108 scenarios ran through `port.sh` in step mode,
+  without allow rules. 96 port traces completed their full requested lengths.
+  12 scenarios stopped early due to the known stage bounds panic at
+  `crates/dino-assets/src/stage.rs:87:43` (`index out of bounds: the len is 1
+  but the index is 2` or 3) for Stage 8 Area 2 and Area 3 (Fessenden BT-A13 to
+  BT-A17, cave meat after frame 576 in A28, acid room A29 b53_a3, and ending
+  EE-F84 kill in A31). Total compared port frames: 147,512 game frames. Diff
+  exits: 97 with differences found, 11 exit 0 (stopped at frame 0 due to the
+  stage panic, so 0 frames compared).
+- G4: game run and game screenshots skipped by the lane B instruction.
+- G5: only probe batches, input scripts, metadata, and documentation were added.
+  No routines or ROM tables were ported. Runtime states and traces remain under
+  ignored `re/out/` paths.
+
+The first differences of the 97 comparisons with differences are at frame 0
+for 33 cases, frame 1 for 13, frame 2 for 9, frame 3 for 4, frame 4 for 1,
+frame 5 for 20, frame 8 for 9, frame 15 for 4, frame 17 for 1, frame 20 for 2,
+and frame 37 for 1.
+
+Frame 1 is kept god mode refreshing player invulnerability timer
+(`player[0] B274 +$F9 invuln`) in MAME only. Frame 5 and frame 8 differences
+are prop mode changes (`prop[19] C534 +$04 mode`) and unported flame/acid
+mechanics. Frame 0 differences stem from palette bank 2 / palette 16 mismatches
+in scenery checks, initial scroll 1 offsets (cell 0xa64), unported scene/effect
+objects (effect[37] ACF4), and AI RNG order differences. Frame 15, 17, and 20
+differences arise from scroll cell and camera synchronization as players
+advance into fence or dialogue triggers.
+
+Open questions: stage bounds panics in unported Stage 8 Areas 2 and 3; AI RNG
+call sequence divergence when scenes contain unported enemy or prop classes;
+and handling `killall` directives during stage or area transitions without
+stalling in lag vblanks.
+
+Detailed evidence is under `re/out/probe/_input/`: `m800_audit.log`,
+`m800_build.log`, `m800_test.log`, `m800_summary.log`, `m800_results.tsv`,
+`m800_first_differences.tsv`, and each scenario's `.port.log` and `.diff.log`.
+Batch logs are under `re/out/probe/m800_*-rec/`; states and traces are under
+`re/out/traces/`.
+
