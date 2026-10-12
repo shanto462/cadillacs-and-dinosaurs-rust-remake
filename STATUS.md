@@ -20,6 +20,11 @@ loading assets from the user's own `dino.zip`. Rules and file ownership: `dino-r
 | Sound (Kabuki-decrypted Z80 driver, QSound mixer, cpal output) | In progress | `re/specs/sound/HANDOFF.md` |
 | Stages 2-8 enemy classes and bosses | Not started | `re/specs/enemy/SPEC.md` section 3.2 lists the classes |
 
+## Plan
+
+The full plan with one file per phase is in [`plan/PLAN.md`](plan/PLAN.md). The rule for every
+phase: the port must match the original frame by frame (checked with the phase 0 harness).
+
 ## Next steps (in order)
 
 1. Read each `HANDOFF.md` and finish the player and enemy ports until stage 1 is playable

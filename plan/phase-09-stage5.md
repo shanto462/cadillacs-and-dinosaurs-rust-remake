@@ -1,0 +1,34 @@
+# Phase 9: stage 5 (internal stage 4)
+
+**Goal:** stage 5 plays exactly like the original, from its first frame to its stage clear.
+
+## Notes
+
+Savanna, then rocks; the largest class list. Tile animation phase ticks in this stage (phase 4 task 4).
+
+## Classes used by this stage's scripts (from `re/specs/enemy/stage_scripts.txt`)
+
+- Pool A: 2 Ferris/Gneiss/Driver (ported in an earlier phase), 3 Lash T., 6 Bludge, 10 Hammer T./Blk Elmer/Wrench T. (ported in an earlier phase), 13 Poacher J/Skinner/Gutter, 14 Blade/Razor (ported in an earlier phase), 18 Vice T./Walther (ported in an earlier phase), 20 Punk/Thug (ported in an earlier phase), 24 Shivat (dinosaur), 29 R Hopper (dinosaur), 35, 38 Mack, 45, 63 Blade (0x1C), 64 Punk/Wrench T. (0x1D/0x24), 66, 79 poacher variant, 82 Zeke.
+- Pool B: 5, 6, 10, 13, 15 (ported in an earlier phase), 20 (ported in an earlier phase), 31 (ported in an earlier phase), 48, 49, 50, 62, 66 (ported in an earlier phase), 69 (ported in an earlier phase), 70.
+- Pool E: 0, 4, 5 (ported in an earlier phase), 9.
+
+Classes marked "ported in an earlier phase" are shared with earlier stages. Names come from
+`re/specs/enemy/SPEC.md` section 3.2; classes without a name are not decoded yet.
+
+## Tasks (one agent each, in order)
+
+1. **Decode** the new classes (pool A [3, 6, 13, 24, 29, 35, 38, 45, 63, 64, 66, 79, 82], pool B [5, 6, 10, 13, 48, 49, 50, 62, 70], pool E [0, 4, 9]): role, states,
+   tables, spawn variants. Add the findings to `re/specs/enemy/` (one section per class).
+2. **Port** the new pool A classes, normal enemies first, then the boss.
+3. **Port** the new pool B and pool E classes (props, controllers, scenery, items).
+4. **Stage specifics** listed in the notes above (special mechanics, scripted scenes, area changes).
+5. **Exactness pass:** phase 0 comparison of a full run of this stage (1 and 3 players), started
+   from a snapshot at the stage's first frame. Fix differences.
+
+## Done when
+
+A full run of the stage matches the original in the phase 0 comparison.
+
+## Status
+
+Pending.
