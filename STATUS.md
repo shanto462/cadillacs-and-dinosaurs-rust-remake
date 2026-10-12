@@ -44,10 +44,11 @@ every phase: the port must match the original frame by frame (checked with the p
 | D3e Pool B inventory and area walk, part 1 (Episodes 1 and 2) | Done (2026-10-12) |
 | D4c Camera, bounds, transitions, scripted scenes | Done (2026-10-12) |
 | D3b Dinosaurs and flyers | Done (2026-10-12) |
-| D2b Player state rules (HP, lives, respawn, invulnerability, damage, score) | Running |
+| D2b Player state rules (HP, lives, respawn, invulnerability, damage, score) | Done (2026-10-12) |
+| D3a Human enemies (incl. poachers waking dinosaurs) | Running |
 | D2c Weapons and multiplayer | Running |
 | D2a Player moves | Done (2026-10-12), `plan/game/design/D2a-player-moves.md` |
-| D3a, D3c, D3d, D3e parts 2-3, D3f, D4a, D4b, D4e | Pending (at most 2 agents at a time) |
+| D3c, D3d, D3e parts 2-3, D3f, D4a, D4b, D4e | Pending (at most 2 agents at a time) |
 | D5 Merge into the final build plan | Pending |
 
 ## Progress: old phase 1 (stage 1 complete; continues as milestone M5 after the backbone)
