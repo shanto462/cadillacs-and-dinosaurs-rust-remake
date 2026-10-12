@@ -70,6 +70,88 @@ local function log(fmt, ...)
 end
 
 -- ---------------------------------------------------------------------------------------------
+-- Trace writer
+-- ---------------------------------------------------------------------------------------------
+
+local BLOCK = 64
+local REGIONS = {
+  { name = "ram", base = 0xFF0000, size = 0x10000 },  -- work RAM: globals, tasks, all objects
+  { name = "gfx", base = 0x900000, size = 0x30000 },  -- sprite lists, tilemaps, palettes
+  { name = "cpsa", base = 0x800100, size = 0x40 },    -- CPS-A registers (scroll, bases)
+  { name = "cpsb", base = 0x800140, size = 0x40 },    -- CPS-B registers (layer control)
+}
+
+local function share_bytes(tag, size)
+  local sh = shares[tag]
+  if sh == nil then return string.rep("\0", size) end
+  local parts = {}
+  for o = 0, size - 2, 2 do parts[#parts + 1] = string.pack(">I2", sh:read_u16(o)) end
+  return table.concat(parts)
+end
+
+local function snapshot()
+  return {
+    space:read_range(0xFF0000, 0xFFFFFF, 8),
+    space:read_range(0x900000, 0x92FFFF, 8),
+    share_bytes(":cps_a_regs", 0x40),
+    share_bytes(":cps_b_regs", 0x40),
+  }
+end
+
+local function json_regions()
+  local items = {}
+  for _, r in ipairs(REGIONS) do
+    items[#items + 1] = string.format('{"name":"%s","base":%d,"size":%d}', r.name, r.base, r.size)
+  end
+  return "[" .. table.concat(items, ",") .. "]"
+end
+
+local function json_str(s)
+  return '"' .. tostring(s):gsub('\\', '\\\\'):gsub('"', '\\"') .. '"'
+end
+
+local function write_header(fh, extra)
+  local json = string.format('{"source":"mame","format":1,"block":%d,"regions":%s%s}', BLOCK, json_regions(), extra or "")
+  fh:write("DINOTRC1", string.pack("<I4", #json), json)
+end
+
+-- Blocks of `cur_s` that differ from `prev_s` (all blocks when prev_s is nil).
+local function changed_blocks(prev_s, cur_s)
+  local out = {}
+  local n = #cur_s // BLOCK
+  local CHUNK = 4096
+  for c = 0, #cur_s - 1, CHUNK do
+    local a = cur_s:sub(c + 1, c + CHUNK)
+    if prev_s == nil or a ~= prev_s:sub(c + 1, c + CHUNK) then
+      for o = 0, #a - 1, BLOCK do
+        local blk = a:sub(o + 1, o + BLOCK)
+        if prev_s == nil or blk ~= prev_s:sub(c + o + 1, c + o + BLOCK) then
+          out[#out + 1] = string.pack("<I4", (c + o) // BLOCK) .. blk
+        end
+      end
+    end
+  end
+  return out
+end
+
+local function write_record(fh, frame, flags, vblank, lagv, prev, snap)
+  fh:write(string.pack("<i4I4I4I4", frame, flags, vblank, lagv))
+  for i = 1, #REGIONS do
+    local blocks = changed_blocks(prev and prev[i] or nil, snap[i])
+    fh:write(string.pack("<I4", #blocks))
+    if #blocks > 0 then fh:write(table.concat(blocks)) end
+  end
+  fh:write(string.pack("<I4", 0)) -- no extra JSON on the MAME side
+end
+
+-- Library mode: probe.lua loads this file with DINO_LIB_ONLY set to share the trace writer above
+-- (re/harness/probe/probe.lua, commands `snapshot` and `trace N`). Nothing else runs then.
+if DINO_LIB_ONLY then
+  return { snapshot = snapshot, write_header = write_header, write_record = write_record, json_str = json_str,
+    regions = REGIONS, block = BLOCK }
+end
+
+-- ---------------------------------------------------------------------------------------------
 -- Input scripts. Same format as the port's --input (dino-game/src/input.rs):
 --   "start-end:KEYS" segments separated by commas or new lines; '#' starts a comment.
 --   KEYS: U D L R (stick), A (attack), J (jump), S (start), C (coin). The digits 1, 2, 3 select
@@ -243,81 +325,6 @@ local function raw_in2()
   if cur.coin & 4 ~= 0 then b = b | 0x40 end
   if cur.start & 4 ~= 0 then b = b | 0x80 end
   return (~b) & 0xFF
-end
-
--- ---------------------------------------------------------------------------------------------
--- Trace writer
--- ---------------------------------------------------------------------------------------------
-
-local BLOCK = 64
-local REGIONS = {
-  { name = "ram", base = 0xFF0000, size = 0x10000 },  -- work RAM: globals, tasks, all objects
-  { name = "gfx", base = 0x900000, size = 0x30000 },  -- sprite lists, tilemaps, palettes
-  { name = "cpsa", base = 0x800100, size = 0x40 },    -- CPS-A registers (scroll, bases)
-  { name = "cpsb", base = 0x800140, size = 0x40 },    -- CPS-B registers (layer control)
-}
-
-local function share_bytes(tag, size)
-  local sh = shares[tag]
-  if sh == nil then return string.rep("\0", size) end
-  local parts = {}
-  for o = 0, size - 2, 2 do parts[#parts + 1] = string.pack(">I2", sh:read_u16(o)) end
-  return table.concat(parts)
-end
-
-local function snapshot()
-  return {
-    space:read_range(0xFF0000, 0xFFFFFF, 8),
-    space:read_range(0x900000, 0x92FFFF, 8),
-    share_bytes(":cps_a_regs", 0x40),
-    share_bytes(":cps_b_regs", 0x40),
-  }
-end
-
-local function json_regions()
-  local items = {}
-  for _, r in ipairs(REGIONS) do
-    items[#items + 1] = string.format('{"name":"%s","base":%d,"size":%d}', r.name, r.base, r.size)
-  end
-  return "[" .. table.concat(items, ",") .. "]"
-end
-
-local function json_str(s)
-  return '"' .. tostring(s):gsub('\\', '\\\\'):gsub('"', '\\"') .. '"'
-end
-
-local function write_header(fh, extra)
-  local json = string.format('{"source":"mame","format":1,"block":%d,"regions":%s%s}', BLOCK, json_regions(), extra or "")
-  fh:write("DINOTRC1", string.pack("<I4", #json), json)
-end
-
--- Blocks of `cur_s` that differ from `prev_s` (all blocks when prev_s is nil).
-local function changed_blocks(prev_s, cur_s)
-  local out = {}
-  local n = #cur_s // BLOCK
-  local CHUNK = 4096
-  for c = 0, #cur_s - 1, CHUNK do
-    local a = cur_s:sub(c + 1, c + CHUNK)
-    if prev_s == nil or a ~= prev_s:sub(c + 1, c + CHUNK) then
-      for o = 0, #a - 1, BLOCK do
-        local blk = a:sub(o + 1, o + BLOCK)
-        if prev_s == nil or blk ~= prev_s:sub(c + o + 1, c + o + BLOCK) then
-          out[#out + 1] = string.pack("<I4", (c + o) // BLOCK) .. blk
-        end
-      end
-    end
-  end
-  return out
-end
-
-local function write_record(fh, frame, flags, vblank, lagv, prev, snap)
-  fh:write(string.pack("<i4I4I4I4", frame, flags, vblank, lagv))
-  for i = 1, #REGIONS do
-    local blocks = changed_blocks(prev and prev[i] or nil, snap[i])
-    fh:write(string.pack("<I4", #blocks))
-    if #blocks > 0 then fh:write(table.concat(blocks)) end
-  end
-  fh:write(string.pack("<I4", 0)) -- no extra JSON on the MAME side
 end
 
 -- Flow batches keep the probe's runtime jump/hold/object helpers. The trace

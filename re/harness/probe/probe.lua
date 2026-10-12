@@ -21,7 +21,24 @@
 -- A directive line is `[FRAME] COMMAND args`; a key line is `a-b:KEYS` (see re/harness/README.md;
 -- U D L R A J S C, digits 1 2 3 choose the player). Old poke lines `FRAME HEXADDR SIZE VALUE` still work.
 -- Commands: jump, poke, hold, release, spawn, hp, lives, score, god, time, killall, rank, level, aggr,
--- watch, unwatch, snap, log, stop, events, peek, objset, frames, snaps.
+-- watch, unwatch, snap, log, stop, events, peek, objset, frames, snaps, snapshot, trace.
+--
+-- Scenarios (probe_record.sh, plan task M3-06). `[FRAME] snapshot [control|control+N] [keep]` ends the
+-- setup of a segment: the lines before it (jump, poke, spawn, hold, god, key lines, ...) build the scene
+-- with frames counted as above; at the first game frame boundary at or after FRAME the whole RAM and video
+-- RAM are written in the harness format (PR_TRACE_DIR/NAME.state). `control` waits for the frame where
+-- player 1 can be controlled (the DINO_SYNC=control rule of record.lua), `control+N` N game frames later.
+-- Holds and `god` stop at the snapshot unless `keep` is given. `trace N` then records N game frames of
+-- harness records (NAME.mame.trc, the same file as record.sh writes). The key lines after the snapshot are
+-- the input script of the scenario, with frame 0 = the first game frame after the snapshot; they are also
+-- written to NAME.input.txt for re/harness/port.sh. Directives after the snapshot run at their game frame
+-- (the port does not see them). `frames N` does not apply to such a segment (PR_SNAP_MAXF is the limit
+-- for the snapshot). Key lines before the snapshot of a segment WITHOUT `jump` count vblank IRQs from power
+-- on (what record.sh boot scripts count, about 70 fewer than video frames at the stage start), so the
+-- lines of scripts/boot_jack.txt give the state of `DINO_SYNC=control` bit for bit. Needs PR_RECORD_LUA
+-- (record.lua, loaded as a library for its trace writer); PR_ONLY=a,b or * selects segments (* = every
+-- segment that has a snapshot line); PR_TRACE_DIR is the output folder (default: the segment folder),
+-- PR_TRACE_NAME overrides NAME (one segment only).
 
 local cpu = manager.machine.devices[":maincpu"]
 local space = cpu.spaces["program"]
@@ -185,11 +202,14 @@ end
 -- ---------------------------------------------------------------------------------------------
 local COMMANDS = { jump = true, poke = true, hold = true, release = true, spawn = true, hp = true, lives = true,
   score = true, god = true, time = true, killall = true, rank = true, level = true, aggr = true, watch = true,
-  unwatch = true, snap = true, log = true, stop = true, events = true, peek = true, objset = true }
+  unwatch = true, snap = true, log = true, stop = true, events = true, peek = true, objset = true, snapshot = true }
 local keysegs = {}
 local items = {}
 local jump_item = nil
 local maxT = 600
+-- Scenario parts (`snapshot`, `trace N`): lines after the snapshot line go to post_items / postkeys.
+local postkeys, postlines, post_items = {}, {}, {}
+local snap_cmd, trace_n, after_snap = nil, nil, false
 local snaps, every = {}, nil
 local function split(s) local t = {}; for w in s:gmatch("%S+") do t[#t + 1] = w end return t end
 local function num(s)
@@ -213,12 +233,14 @@ local function parse_text(text)
     line = line:gsub("^%s+", ""):gsub("%s+$", "")
     if line ~= "" then
       if line:match("^%d+%s*%-%s*%d+%s*:") or line:match("^%d+%s*:") then
-        parse_keys(line, keysegs)
+        if after_snap then parse_keys(line, postkeys); postlines[#postlines + 1] = line
+        else parse_keys(line, keysegs) end
       else
         local tk = split(line)
         local frame, cmdi = 0, 1
         local first = tk[1]:lower()
         if first == "frames" then maxT = num(tk[2]) or maxT; cmdi = nil
+        elseif first == "trace" then trace_n = num(tk[2]); cmdi = nil
         elseif first == "snaps" then parse_snaps(tk[2] or ""); cmdi = nil
         elseif tonumber(tk[1]) and tk[2] and COMMANDS[tk[2]:lower()] then frame = tonumber(tk[1]); cmdi = 2
         elseif tonumber(tk[1]) and tk[2] and tk[2]:match("^%x+$") and #tk == 4 then
@@ -232,7 +254,14 @@ local function parse_text(text)
             local args = {}
             for i = cmdi + 1, #tk do args[#args + 1] = tk[i] end
             local it = { frame = frame, cmd = cmd, args = args, line = line }
-            if cmd == "jump" then jump_item = it else items[#items + 1] = it end
+            if cmd == "jump" then
+              if after_snap then io.stderr:write("probe.lua: jump after the snapshot ignored: " .. line .. "\n")
+              else jump_item = it end
+            elseif cmd == "snapshot" then
+              if snap_cmd then io.stderr:write("probe.lua: second snapshot line ignored: " .. line .. "\n")
+              else snap_cmd = it; items[#items + 1] = it; after_snap = true end
+            elseif after_snap then post_items[#post_items + 1] = it
+            else items[#items + 1] = it end
           else
             io.stderr:write("probe.lua: cannot read line: " .. line .. "\n")
           end
@@ -268,6 +297,7 @@ end
 
 local function load_segment_text(sg)
   keysegs, items, jump_item = {}, {}, nil
+  postkeys, postlines, post_items, snap_cmd, trace_n, after_snap = {}, {}, {}, nil, nil, false
   maxT = tonumber(env("PR_FRAMES", "600"))
   parse_snaps(env("PR_SNAPS", ""))
   local o = sg.opts or ""
@@ -275,6 +305,7 @@ local function load_segment_text(sg)
     if k == "frames" then maxT = num(v) or maxT elseif k == "snaps" then parse_snaps(v) end
   end
   parse_text(sg.text)
+  after_snap = false
   local pw = env("PR_WATCH", "")
   if pw ~= "" then
     for w in pw:gmatch("[^;]+") do
@@ -289,6 +320,13 @@ local function load_segment_text(sg)
   end
   for i, it in ipairs(items) do it.seq = i end
   table.sort(items, function(a, b) if a.frame ~= b.frame then return a.frame < b.frame end return a.seq < b.seq end)
+  for i, it in ipairs(post_items) do it.seq = i end
+  table.sort(post_items, function(a, b) if a.frame ~= b.frame then return a.frame < b.frame end return a.seq < b.seq end)
+  if trace_n and not snap_cmd then
+    io.stderr:write("probe.lua: `trace` needs a `snapshot` line in segment " .. sg.name .. "; ignored\n")
+    trace_n = nil
+  end
+  if snap_cmd and (trace_n == nil or trace_n < 1) then trace_n = 600 end
 end
 
 local snapcount = 0
@@ -322,12 +360,29 @@ local function raw_in2()
   return (~b) & 0xFF
 end
 local installed = false
+local on_irq = function() end   -- scenario recorder (snapshot and trace), set below
+local irq_n = 0                  -- vblank IRQ ticks since power on (record.lua's `vblank`; fewer than video frames)
+local irq_time = 0
+local want_irq_tap = false      -- only a batch with a `snapshot` line installs the IRQ tap (other runs stay as they were)
 local function install()
   PR_TAPS = {
     space:install_read_tap(0x800000, 0x800001, "pr_in1", function(o, d, m) return (d & ~m) | (raw_in1() & m) end),
     space:install_read_tap(0x800018, 0x800019, "pr_in0", function(o, d, m) return (d & ~m) | ((raw_in0() | 0xFF) & m) end),
     space:install_read_tap(0xF1C000, 0xF1C001, "pr_in2", function(o, d, m) return (d & ~m) | ((raw_in2() | 0xFF00) & m) end),
   }
+  if want_irq_tap then
+    -- The vblank IRQ (0x542) writes the frame flag -$7EAE(a5) = 0xFF0152 at 0x5C8: the game frame boundary of
+    -- re/harness/record.lua (the same tap). Only `snapshot` / `trace` segments use it.
+    PR_TAPS[#PR_TAPS + 1] = space:install_write_tap(0xFF0152, 0xFF0153, "pr_irq", function(offset, data, mask)
+      if offset == 0xFF0152 and (mask & 0xFF00) ~= 0 and (data & 0xFF00) ~= 0 then
+        local tm = manager.machine.time:as_double()
+        if tm < irq_time then irq_n = 0 end       -- the saved power-on state was loaded: a new run from power on
+        irq_time = tm
+        irq_n = irq_n + 1
+        on_irq()
+      end
+    end)
+  end
   installed = true
 end
 
@@ -522,6 +577,11 @@ end
 
 local RANK_LEVEL_TABLE = 0x1860C        -- level = W[0x1860C + 2*(rank*3 + players-1)]
 
+-- Scenario state (`snapshot` / `trace N`, section "Scenarios" below). phase: "" setup, "armed" waiting for the
+-- game frame boundary, "trace" recording, "done" finished.
+local sn = { phase = "", k = 0, lag = 0 }
+local arm_snapshot = function() end
+
 local function exec(it)
   local c, a = it.cmd, it.args
   if c == "poke" then
@@ -602,8 +662,10 @@ local function exec(it)
     take_snap()
   elseif c == "log" then
     log("NOTE", "%s", table.concat(a, " "))
+  elseif c == "snapshot" then
+    arm_snapshot(it)
   elseif c == "stop" then
-    maxT = T
+    if sn.phase == "trace" then log("ERR", "stop: not possible while the trace runs") else maxT = T end
   elseif c == "objset" then
     -- objset SELECTOR FIELD VALUE: write a field of every selected object (A:18 hp 1, E#3 x 400, P2 hp 50)
     local w = make_watch({ "1", a[1] or "", a[2] or "" }, 0)
@@ -936,6 +998,135 @@ local function jump_step()
 end
 
 -- ---------------------------------------------------------------------------------------------
+-- Scenarios: `snapshot` and `trace N` (head of this file; recorded by re/harness/probe/probe_record.sh)
+-- ---------------------------------------------------------------------------------------------
+-- The trace writer is the one of re/harness/record.lua, loaded as a library (DINO_LIB_ONLY).
+local TW = nil
+local function trace_writer()
+  if TW then return TW end
+  local path = env("PR_RECORD_LUA", "re/harness/record.lua")
+  DINO_LIB_ONLY = true
+  local chunk, err = loadfile(path, "t", _ENV)
+  if not chunk then DINO_LIB_ONLY = nil; error("cannot load the trace writer " .. path .. ": " .. tostring(err)) end
+  local ok, lib = pcall(chunk)
+  DINO_LIB_ONLY = nil
+  if not ok then error(lib) end
+  TW = lib
+  return TW
+end
+
+-- A game task (slots 0..14 of the task table at 0xFF0052) is still running or waiting: the game frame did not
+-- finish (slowdown). Same rule as record.lua.
+local function lagging()
+  for t = 0, 14 do
+    local s = r8(0xFF0052 + t * 16)
+    if s == 4 or s == 8 or s == 0xC then return true end
+  end
+  return false
+end
+
+local STATE_CMDS = { poke = true, hold = true, release = true, spawn = true, hp = true, lives = true, score = true,
+  god = true, time = true, killall = true, rank = true, level = true, aggr = true, objset = true }
+
+-- `[FRAME] snapshot [control|control+N] [keep]`: arms the snapshot. It is taken by the vblank IRQ tap, at the
+-- first game frame boundary (not lagging) after the line ran, and after `control` / `control+N` is true.
+arm_snapshot = function(it)
+  sn = { phase = "armed", k = 0, lag = 0, keep = false, when = nil, after = 0 }
+  local desc = {}
+  for _, a in ipairs(it.args) do
+    local al = a:lower()
+    local n = al:match("^control%+(%d+)$")
+    if al == "keep" then sn.keep = true; desc[#desc + 1] = "keep"
+    elseif al == "control" then sn.when = "control"; desc[#desc + 1] = "control"
+    elseif n then sn.when = "control"; sn.after = tonumber(n); desc[#desc + 1] = al
+    else log("ERR", "snapshot: unknown argument %s", a) end
+  end
+  if #items > 0 then log("ERR", "snapshot: %d setup lines have a later frame than the snapshot and do not run", #items) end
+  log("X", "snapshot armed %s (trace %d frames)", table.concat(desc, " "), trace_n)
+end
+
+local function trace_paths()
+  local dir = env("PR_TRACE_DIR", nil) or (OUTDIR .. "/" .. seg.rel:gsub("/$", ""))
+  local name = env("PR_TRACE_NAME", nil) or seg.name
+  return { state = dir .. "/" .. name .. ".state", trace = dir .. "/" .. name .. ".mame.trc",
+    input = dir .. "/" .. name .. ".input.txt" }
+end
+
+-- Directives after the snapshot line, frames counted in game frames from the snapshot.
+local function run_post(k)
+  while #post_items > 0 and post_items[1].frame <= k do
+    local it = table.remove(post_items, 1)
+    it.frame = T or 0                       -- `watch` counts from the video frame it starts at
+    if STATE_CMDS[it.cmd] then log("NOTE", "%s after the snapshot: the port does not run it", it.cmd) end
+    exec(it)
+  end
+end
+
+local function take_snapshot()
+  local W = trace_writer()
+  if not sn.keep then
+    -- the setup helpers end here, like `god off` and `release` (holds are just dropped)
+    local n = #holds
+    for i = 1, 3 do
+      if god[i] and r8(PLAYER[i]) == 2 then w8(PLAYER[i], 1) end
+      if god[i] then n = n + 1 end
+    end
+    holds, god = {}, {}
+    if n > 0 then log("X", "snapshot: %d holds / god modes ended", n) end
+  end
+  sn.paths = trace_paths()
+  local snap = W.snapshot()
+  local fh = assert(io.open(sn.paths.state, "wb"))
+  W.write_header(fh, string.format(',"kind":"state","vblank":%d,"probe_segment":%s', irq_n, W.json_str(seg.name)))
+  W.write_record(fh, -1, 0, irq_n, 0, nil, snap)
+  fh:close()
+  local inf = assert(io.open(sn.paths.input, "w"))
+  inf:write("# probe segment ", seg.name, ": the key lines after the snapshot (frame 0 = first game frame after it)\n")
+  for _, l in ipairs(postlines) do inf:write(l, "\n") end
+  inf:close()
+  sn.fh = assert(io.open(sn.paths.trace, "wb"))
+  W.write_header(sn.fh, string.format(',"kind":"trace","clock":"game","sync_vblank":%d,"frames":%d,"input":%s,"probe_segment":%s',
+    irq_n, trace_n, W.json_str(sn.paths.input), W.json_str(seg.name)))
+  W.write_record(sn.fh, -1, 0, irq_n, 0, nil, snap)
+  sn.prev, sn.phase, sn.k, sn.lag, sn.lagged = snap, "trace", 0, 0, 0
+  log("SNAPSHOT", "state written (video frame %d, IRQ %d, game frame counter %d); tracing %d game frames", F, irq_n, r16(G.frame), trace_n)
+  run_post(0)
+  apply_holds()
+  cur = script_at(postkeys, 0)
+end
+
+local control_gf = nil
+local tap_keys = false      -- key lines before the snapshot (no jump) are set at the IRQ tap, by IRQ count, like record.lua
+local function irq_tap()
+  if tap_keys and (sn.phase == "" or sn.phase == "armed") then cur = script_at(keysegs, irq_n) end
+  if sn.phase == "armed" then
+    if lagging() then return end
+    if sn.when == "control" then
+      if control_gf == nil and controllable() then control_gf = r16(G.frame) end
+      if control_gf == nil or ((r16(G.frame) - control_gf) & 0xFFFF) < sn.after then return end
+    end
+    take_snapshot()
+  elseif sn.phase == "trace" then
+    if lagging() then sn.lag = sn.lag + 1; return end
+    local snap = TW.snapshot()
+    TW.write_record(sn.fh, sn.k, (sn.lag > 0) and 1 or 0, irq_n, sn.lag, sn.prev, snap)
+    sn.prev, sn.lagged, sn.lag, sn.k = snap, sn.lagged + sn.lag, 0, sn.k + 1
+    if sn.k >= trace_n then
+      sn.fh:close(); sn.fh = nil
+      sn.phase, sn.msg = "done", string.format("trace %d frames (lag vblanks %d)", sn.k, sn.lagged)
+      return
+    end
+    run_post(sn.k)
+    apply_holds()
+    cur = script_at(postkeys, sn.k)
+  end
+end
+on_irq = function()
+  local ok, err = pcall(irq_tap)
+  if not ok and not sn.err then sn.err = tostring(err) end
+end
+
+-- ---------------------------------------------------------------------------------------------
 -- Main loop (end of every video frame) and segments
 -- ---------------------------------------------------------------------------------------------
 local lastsig = ""
@@ -945,11 +1136,29 @@ local function log_state()
 end
 
 local segments = split_segments(read_file(env("PR_INPUT", nil)) .. "\n" .. read_file(env("PR_POKES", nil)) .. "\n" .. env("PR_LINES", ""))
+local function has_snapshot(sg)
+  for line in sg.text:gmatch("[^\n]+") do if line:match("^%s*%d*%s*snapshot%f[%W]") then return true end end
+  return false
+end
+do   -- PR_ONLY=a,b (names) or * (every segment that has a snapshot line): run only those segments
+  local only = env("PR_ONLY", "")
+  if only ~= "" then
+    local want, all, kept = {}, false, {}
+    for n in only:gmatch("[^,]+") do if n == "*" then all = true else want[n] = true end end
+    for _, sg in ipairs(segments) do
+      if not sg.single and (want[sg.name] or (all and has_snapshot(sg))) then kept[#kept + 1] = sg end
+    end
+    segments = kept
+  end
+  for _, sg in ipairs(segments) do if has_snapshot(sg) then want_irq_tap = true end end
+end
 local seg_i = 0
 local loading = false
 local prev_time = 0
 local J_end_F = nil
 local summary = nil
+local snap_limit = tonumber(env("PR_SNAP_MAXF", "12000"))   -- a snapshot segment fails when the snapshot is later
+local seg_err = nil          -- setup error of a snapshot segment (bad jump line): the segment ends as FAILED
 
 local function machine_time() return manager.machine.time:as_double() end
 
@@ -963,6 +1172,9 @@ local function begin_segment(i)
   load_segment_text(seg)
   F, T, J_end_F, snapcount, lastsig = 0, nil, nil, 0, ""
   holds, god, watches = {}, {}, {}
+  sn = { phase = "", k = 0, lag = 0 }
+  control_gf, seg_err = nil, nil
+  tap_keys = snap_cmd ~= nil and jump_item == nil
   cur = new_in()
   J = nil
   if jump_item then
@@ -970,6 +1182,7 @@ local function begin_segment(i)
     if J == nil then
       log("ERR", "bad jump line: %s", jump_item.line)
       maxT = 0; T = 0
+      if snap_cmd then seg_err = "bad jump line" end
     end
   end
   if not J then T = 0 end
@@ -978,6 +1191,10 @@ end
 
 local function end_segment(msg)
   log("END", "%s", msg)
+  if sn.fh then sn.fh:close(); sn.fh = nil end
+  if sn.paths and not msg:match("^trace %d+ frames") then   -- never leave a partial scenario behind
+    for _, path in pairs(sn.paths) do os.remove(path) end
+  end
   logf:flush(); logf:close(); logf = nil
   if summary then summary:write(string.format("%s\t%s\n", seg.name, msg)); summary:flush() end
   if seg_i < #segments then
@@ -991,10 +1208,15 @@ end
 local function frame_body()
   if not installed then
     install()
+    if #segments == 0 then
+      io.stderr:write("probe.lua: no segment to run (PR_ONLY=" .. env("PR_ONLY", "") .. ")\n")
+      manager.machine:exit()
+      return
+    end
     if #segments > 1 then
       manager.machine:save("power")        -- state at the end of the first frame
-      summary = io.open(OUTDIR .. "/segments.txt", "w")
     end
+    if #segments > 1 or env("PR_TRACE_DIR", nil) then summary = io.open(OUTDIR .. "/segments.txt", "w") end
     begin_segment(1)
   end
   local tm = machine_time()
@@ -1023,21 +1245,34 @@ local function frame_body()
     if J then log_state(); logf:flush(); return end
     J_end_F = J_end_F or F
   end
+  -- (not before frame 3: the load of the power-on state is noticed by the machine time going back)
+  if seg_err and F > 2 then end_segment("FAILED " .. seg_err); return end
   T = F - (J_end_F or 0)
   log_state()
-  -- directives of this frame
-  while #items > 0 and items[1].frame <= T do
-    local it = table.remove(items, 1)
-    exec(it)
+  -- Once the snapshot is armed no more setup lines run; while the trace runs the vblank IRQ tap (irq_tap) sets
+  -- the input and runs the directives at game frame boundaries.
+  local tracing = sn.phase == "trace" or sn.phase == "done"
+  if not tracing then
+    -- directives of this frame
+    while sn.phase == "" and #items > 0 and items[1].frame <= T do
+      local it = table.remove(items, 1)
+      exec(it)
+    end
+    apply_holds()
   end
-  apply_holds()
   for _, w in ipairs(watches) do
     if T >= w.start and (T - w.start) % w.interval == 0 then sample(w) end
   end
   if snaps[T] or (every and T >= every[2] and T <= every[3] and (T - every[2]) % every[1] == 0) then take_snap() end
-  cur = script_at(keysegs, T)
+  if not tracing and not tap_keys then cur = script_at(keysegs, T) end
   logf:flush()
-  if T >= maxT then end_segment(string.format("frames=%d", T)) end
+  if sn.err then end_segment("FAILED snapshot: " .. sn.err); return end
+  if sn.phase == "done" then end_segment(sn.msg); return end
+  if snap_cmd then
+    if sn.phase ~= "trace" and T >= snap_limit then
+      end_segment(string.format("FAILED snapshot not taken in %d frames", T))
+    end
+  elseif T >= maxT then end_segment(string.format("frames=%d", T)) end
 end
 
 -- A Lua error must not stop a long batch: report it, close the segment and go on with the next one.

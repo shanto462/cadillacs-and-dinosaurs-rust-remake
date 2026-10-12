@@ -551,6 +551,88 @@ and complete batch inventory. G4 uses `flow_play.txt` from
 power on with pictures under `re/out/shots/`. G5 is a tool task: no ported game
 routine and no extracted ROM data is added.
 
+## Probe segments as scenarios (`snapshot`, `trace`, `probe_record.sh`; M3-06)
+
+Any segment of a probe file (`re/harness/probe/probe.lua`, manual: `plan/game/design/capture-recipes.md`) can be
+recorded as a harness scenario. The lines before a `snapshot` line build the scene (`jump`, `poke`, `spawn`,
+`hold`, `god`, `hp`, key lines, ...). At the `snapshot` line the whole RAM and video RAM are saved as a `.state`
+file. `trace N` then records N game frames, and the key lines after the snapshot are the input script. So the
+port can load the state (`--load-state`) and play the same keys (`port.sh`), and `diff.py` compares them like any
+other scenario. One MAME process records all the chosen segments (headless, SDL dummy drivers).
+
+```
+segment fight                        # in a file such as re/out/my_scenarios.txt
+jump 1 0 char=jack                   # boot and start Episode 1 (frame numbers count from the end of the jump)
+god on                               # Jack cannot die while the scene is built
+5 spawn A 20 var=0x0004 x=+0x80      # a Punk walks in
+40 snapshot                          # the setup ends at frame 40; god and holds stop here
+0-9:                                 # key lines after it: frame 0 = the first game frame after the snapshot
+10-19:R
+24-25:A
+trace 240                            # record 240 game frames
+```
+
+```sh
+re/harness/probe/probe_record.sh re/out/my_scenarios.txt fight     # SEGMENT, a,b,c or all; third argument: NAME
+MODE=step re/harness/port.sh re/out/traces/fight.input.txt fight 240
+re/.venv/bin/python -I re/harness/diff.py re/out/traces/fight.mame.trc re/out/traces/fight.step.trc
+```
+
+`probe_record.sh BATCH SEGMENT|a,b,c|all [NAME]` writes, for every segment, into `re/out/traces/`:
+`NAME.state` (the snapshot, record -1 of the trace too), `NAME.mame.trc` (the same trace file as `record.sh`
+writes: snapshot, then N game frames, lag frames flagged) and `NAME.input.txt` (the key lines after the snapshot, in
+the plain script format of `--input-file`). `NAME` is the segment name, so give a segment a name that no hand made
+scenario uses. `all` means every segment that has a `snapshot` line. A segment that fails (bad `jump`, snapshot
+not reached, Lua error) leaves no files and makes the script exit 1. `check.sh` only reads scripts from
+`re/harness/scripts/`, so run `port.sh` and `diff.py` as above. Logs and screenshots go to
+`re/out/probe/BATCH-rec/SEGMENT/`. `PR_SNAPS`, `PR_WATCH` and `watch` lines work as in the probe.
+
+| line | meaning |
+| --- | --- |
+| `[FRAME] snapshot [control\|control+N] [keep]` | Ends the setup. The state is taken at the first game frame boundary (vblank IRQ, not a slowdown frame) at or after FRAME. `control`: wait until player 1 can be controlled (the `DINO_SYNC=control` rule), `control+N`: N game frames later. `keep`: holds and `god` go on during the trace (the port cannot repeat them). Without `keep` they end at the snapshot: `god` like `god off` (`+$00` back to 1; `+$F9` keeps its value), holds are dropped. |
+| `trace N` | Record N game frames after the snapshot (default 600). |
+| key lines `a-b:KEYS` after `snapshot` | The input script. Frame 0 is the first game frame after the snapshot, as in `scripts/*.txt`. Key lines before the snapshot are setup input (see the clock below). |
+| other directives after `snapshot` | Run at their game frame after the snapshot (`watch`, `log`, `snap`, `peek` are fine). A `poke`, `spawn`, `hp` ... changes MAME only: the port does not see it (the log says `NOTE`), so in `step` mode that frame differs. |
+
+Clock. The trace is on the game clock like `record.sh`: one record per finished game frame at the vblank IRQ
+(the write of the frame flag at 0xFF0152). The probe itself runs on video frames, so the setup lines (`N poke`,
+`N snapshot`, `watch`) count video frames after the `jump`. Key lines before the snapshot of a segment **without**
+`jump` count IRQ ticks from power on, the clock of the boot scripts (`boot_jack.txt`): at the start of a stage
+that is about 70 fewer than video frames. This makes the state bit for bit the one `record.sh` makes:
+
+```
+segment eq_stage1_jack               # boot_jack.txt, then the scenario script of stage1_jack.txt
+600-607:C
+700-705:S
+900-905:A
+snapshot control
+0-29:
+30-59:L                              # ... the rest of scripts/stage1_jack.txt
+trace 300
+```
+
+Checked 2026-10-13 (MAME 0.289): this segment gives `eq_stage1_jack.state` and 300 frames equal to the first 300 frames
+of the existing `stage1_jack` reference (every record, all four regions, the vblank and lag fields: 0 differences),
+and `diff.py` against the port's step trace of `stage1_jack` shows the same report as for the reference itself
+(0 ported-class pairs, 0 globals). The recorder `record.sh` with the changed `record.lua` writes the same bytes as before,
+and so do `record.sh --batch` (flow batches) and old probe batches with the changed `probe.lua`.
+
+A `jump` scene is not the same state as `DINO_SYNC=control`, so `jump 1 0 897 char=jack` + `snapshot` does not equal
+`stage1_jack` (897 is the camera X of that frame). Why: `jump` boots on video frames (the attract timers in RAM differ,
+for example `splash_phase`), it ends two game frames after the first controllable frame, its `god` end sets Jack's `+$00`
+to 1 (it is 2 at that frame of the real run), and a CAMX moves the players to CAMX + 0x60 (Jack's X 0x420 becomes 0x3E1).
+It works as a scenario of its own: `jump 1 0 897 char=jack` + `snapshot` + the `stage1_jack` keys + `trace 300` runs in
+`MODE=step` with 0 ported-class pairs and 0 globals.
+A scenario with spawned thugs, `god`, `hp` and a fight (`jump`, `spawn A 20`, `40 snapshot`, 240 frames) also gives 0 ported-class
+pairs; the only global difference is a `poke` placed after the snapshot, as designed.
+
+How it is built: `probe.lua` loads `record.lua` as a library (`DINO_LIB_ONLY`, it then returns its trace writer and
+runs nothing else), so one writer makes both kinds of trace. The IRQ tap exists only when a segment has a `snapshot` line;
+other probe runs and `record.sh --batch` keep exactly the taps they had. `probe_record.sh` passes the paths in
+`PR_RECORD_LUA`, `PR_TRACE_DIR`, `PR_ONLY` (segment names or `*`), `PR_TRACE_NAME` (output name for one segment) and
+`PR_SNAP_MAXF` (a segment fails when its snapshot is later than this many setup frames, default 12000; `frames N` does not
+apply to a scenario).
+
 ## Picture compare (`shotdiff.py`)
 
 Compares MAME probe screenshots with port screenshots of the same frames. Prints the percent
