@@ -309,6 +309,7 @@ impl Body {
         }
         f.u8(0x50, "wall", &mut self.wall);
         f.u8(0x51, "airborne", &mut self.airborne);
+        f.u8(0x52, "b52", &mut self.b52);
         f.u8(0x53, "wading", &mut self.wading);
         f.i16(0x54, "floor", &mut self.floor);
         f.i16(0x56, "floor2", &mut self.floor2);
@@ -426,10 +427,15 @@ impl Enemy {
 }
 
 impl Item {
-    /// Pool E is not ported yet: only the header (and, when loading, the raw bytes).
+    /// Pool E is not ported yet: the header, the fields the obstacle test reads (hit box,
+    /// floor) and, when loading, the raw bytes.
     pub fn trace_visit(&mut self, f: &mut F) {
         self.b.trace_header(f, false);
         self.m.trace_load_all(f, 0xC0);
+        f.u32(0x44, "box_table", &mut self.b.box_table);
+        f.u8(0x48, "body_box", &mut self.b.body_box);
+        f.i16(0x54, "floor", &mut self.b.floor);
+        f.i16(0x56, "floor2", &mut self.b.floor2);
     }
 }
 
@@ -537,7 +543,7 @@ impl Player {
     /// are visited by `Game::trace_player_extras`.
     pub fn trace_visit(&mut self, f: &mut F) {
         self.b.trace_visit(f);
-        f.u8(0x52, "b52", &mut self.b52);
+        f.u16(0x94, "obstacle", &mut self.w94);
         f.u8(0x73, "escape", &mut self.escape);
         f.u8(0x75, "b75", &mut self.b75);
         f.u16(0x76, "w76", &mut self.w76);
@@ -780,6 +786,8 @@ impl Game {
         f.u8(0x04D9, "stage", &mut w.stage);
         f.u8(0x04DC, "vertical_scene", &mut w.vertical_scene);
         f.u8(0x04DD, "scripted", &mut w.scripted);
+        f.u8(0x04F0, "floor_only", &mut w.floor_only);
+        f.u8(0x0506, "no_clamp", &mut w.no_clamp);
         f.u8(0x04EF, "players_minus_one", &mut w.players_minus_one);
         f.u16(0x05EE, "level", &mut w.level);
         f.u16(0x05F0, "rank", &mut w.rank);
@@ -845,6 +853,7 @@ impl Game {
         }
         // Camera (stage port): scroll2 controller G.$73C, scroll3 G.$7DC, scroll1 G.$6C4.
         self.trace_camera(f);
+        self.trace_terrain(f);
         // Sprite list builder state.
         f.u16(n(0x7126), "splash_timer", &mut self.sprites.splash_timer);
         f.u16(n(0x7124), "splash_phase", &mut self.sprites.splash_phase);
@@ -854,6 +863,34 @@ impl Game {
         f.u16(0x044C, "fade_delay", &mut self.fade.delay);
         self.trace_flow(f);
         self.trace_hud(f);
+    }
+
+    /// Terrain collision state (`terrain.rs`): floor list pointer G.$6AC (a ROM address; the port
+    /// keeps the segment index), G.$6B0, and the obstacle lists G.$6A22 / $6A26 with their storage.
+    fn trace_terrain(&mut self, f: &mut F) {
+        let (list, len) = (self.terrain_list_addr(), self.terrain_list_len());
+        let (vertical, scene) = (self.w.vertical_scene != 0, &self.assets.terrain.scene_map);
+        let t = &mut self.terrain;
+        let mut p = list + 12 * t.seg as u32;
+        f.u32(0x06AC, "floor_ptr", &mut p);
+        if f.loading() {
+            t.seg = if list == 0 { 0 } else { (p.wrapping_sub(list) / 12) as usize };
+            t.seg = t.seg.min(len.saturating_sub(1));
+        }
+        f.i16(0x06B0, "floor_base", &mut t.base);
+        if f.loading() && t.scene.is_empty() && vertical {
+            t.scene = scene.clone(); // 0x12C50 drew it when the area started
+        }
+        // The list pointers hold the low word of the address of the stack top.
+        f.u16(0x6A22, "obst_count", &mut t.count);
+        let mut p = 0xEA5Au16.wrapping_sub(2 * t.count);
+        f.u16(0x6A24, "obst_ptr", &mut p);
+        f.u16(0x6A26, "obst_prev_count", &mut t.prev);
+        let mut p = 0xEA5Au16.wrapping_sub(2 * t.prev);
+        f.u16(0x6A28, "obst_prev_ptr", &mut p);
+        for k in 0..super::terrain::OBSTACLE_SLOTS {
+            f.u16(0x6A58 - 2 * k as u32, "obst_slot", &mut t.buf[k]);
+        }
     }
 
     fn trace_camera(&mut self, f: &mut F) {

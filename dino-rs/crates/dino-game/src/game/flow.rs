@@ -324,6 +324,7 @@ impl Game {
             self.flow_player_area_start(i); // 0x4E0A
         }
         // 0x1DA10 (player scripts for the area), 0x49A8.. per-frame lists: player port / main.
+        self.terrain_obstacles_reset(); // 0x4A76
         self.effects = super::Pool::new(super::POOL_C); // 0x4CA4
         self.specials = super::Pool::new(super::POOL_D); // 0x4CCC
         self.spawn_area_reset_objects(); // pools A, B; pool E loop; G.$4F1.. cleared
@@ -599,8 +600,10 @@ impl Game {
 
     /// 0x12BE4, after the next area's map is set up: selects the floor table of the stage and
     /// area (G.$6AC / $6B0, read by the floor collision 0x12C90 / 0x133E0) and, in the vertical
-    /// scene, draws two blocks at 0x91C000 / 0x91C400. Both belong to code not ported yet.
-    pub fn hook_12be4(&mut self) {}
+    /// scene, draws two blocks at 0x91C000 / 0x91C400 (`terrain.rs`).
+    pub fn hook_12be4(&mut self) {
+        self.terrain_area_start();
+    }
 
     /// 0x162AE, before the fade in of the next area: redraw the HUD of the present players.
     pub fn hook_162ae(&mut self) {

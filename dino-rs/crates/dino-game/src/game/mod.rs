@@ -29,6 +29,7 @@ pub mod prop;
 pub mod rank;
 pub mod snd;
 pub mod spawn;
+pub mod terrain;
 pub mod trace;
 pub mod vram;
 
@@ -132,6 +133,11 @@ pub struct World {
     pub vertical_scene: u8,
     /// G.$4DD scripted control of the players.
     pub scripted: u8,
+    /// G.$4F0 players use the floor-only terrain test 0x12D4E (no walls), set by scripted scenes.
+    pub floor_only: u8,
+    /// G.$506 set by scripted scenes (0x1DBB2): the players' screen clamp 0x4FCE is skipped. Also
+    /// tested at 0x1AE8, 0x1C7A, 0x5AAC, 0x191C4, 0x19356 and 0x78FFC (not ported).
+    pub no_clamp: u8,
     /// G.$4D4 stage clear flag, set by camera modes 6 / 0x10 / 0x13.
     pub stage_clear: u8,
     /// G.$4EF active players - 1 (selects the camera push threshold).
@@ -178,6 +184,8 @@ pub struct Game {
     pub effects: Pool<effect::Effect>,
     pub specials: Pool<effect::Special>,
     pub spawn: spawn::Spawn,
+    /// Terrain collision state (floor list pointer, obstacle list).
+    pub terrain: terrain::Terrain,
     pub rank: rank::Rank,
     pub hud: hud::Hud,
     pub flow: flow::Flow,
@@ -207,6 +215,7 @@ impl Game {
             effects: Pool::new(POOL_C),
             specials: Pool::new(POOL_D),
             spawn: Default::default(),
+            terrain: Default::default(),
             rank: Default::default(),
             hud: Default::default(),
             flow: Default::default(),
@@ -292,10 +301,11 @@ impl Game {
         self.pool_b_update(); // 0x23604 props / controllers
         self.pool_c_update(); // 0x237B2 effects
         self.held_players_update(); // 0x188DA
+        self.terrain_obstacles_swap(); // 0xE9B0: this frame's obstacles are the next frame's list
         // 0x670C: not ported yet.
         self.hud_objects_tail(); // 0x100DA score display, 0x1667E low vitality blink
         self.background_update(); // 0x2042E
-        // 0x12C90: not ported yet.
+        self.terrain_advance(); // 0x12C90
     }
 
     /// 0x49C0: add to the draw list if the on-screen flag is set.

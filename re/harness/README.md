@@ -49,12 +49,30 @@ the trace set; `FRAMES` the number of test frames.
 | `stage1_late` | `scripts/stage1_jack.txt` | `control+86` | 600 | the same after the opening scene (fewer unported objects) |
 | `explore` | `scripts/explore.txt` | `control` | 600 | hold right: scrolling, streaming, the first waves, the right wall |
 | `stage1_fight` | `scripts/stage1_fight.txt` | `control+86` | 1400 | walk to the first wave, then 1000 frames of punch chains, jump kicks and steps against up to four thugs |
+| `obstacle` | `scripts/obstacle.txt` | `control+86` | 600 | Jack walks into the first containers (the terrain obstacle test 0x12E9A, wall bit 0x80, +$94) |
 
 ```sh
 DINO_SYNC=control+86 re/harness/record.sh re/harness/scripts/stage1_fight.txt stage1_fight 1400
 for m in run follow step; do MODE=$m re/harness/port.sh re/harness/scripts/stage1_fight.txt stage1_fight 1400; done
 re/.venv/bin/python -I re/harness/diff.py re/out/traces/stage1_fight.mame.trc re/out/traces/stage1_fight.step.trc
 ```
+
+## Checking one routine against the original code
+
+Some routines cannot be reached by a recorded scenario (other stages, rare tiles). For those,
+`re/harness/terrain_oracle.py` runs the original 68000 code in a small interpreter on random
+inputs and a unit test replays them on the port. Example for the terrain collision (0x12CB4 and
+friends, `dino-game/src/game/terrain.rs`):
+
+```sh
+re/.venv/bin/python -I re/harness/terrain_oracle.py re/out/terrain_vectors.txt 1 250000   # about 30 s
+cd dino-rs && cargo test -p dino-game terrain_matches_the_68000_code
+```
+
+The vectors file derives from the ROM and stays in `re/out/` (git-ignored); the test skips itself
+when it is missing. `COVERAGE=1` prints the instructions of the routines that no vector ran,
+`TRACE_VECTOR=n` prints the instruction trace of vector n. The interpreter knows only the opcodes
+of those routines and stops on any other, so reuse it for other routines by extending `CPU`.
 
 ## Reading the report
 

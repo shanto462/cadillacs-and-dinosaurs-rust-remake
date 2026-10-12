@@ -1,7 +1,7 @@
 //! Extracts the player movement and combat tables (`re/specs/player/SPEC.md`).
 
 use crate::rom::Rom;
-use dino_assets::player::{FloorSegment, JumpVector, PlayerData};
+use dino_assets::player::{JumpVector, PlayerData};
 use dino_assets::AttackRecord;
 
 /// 0xA26FC per-character attack table lengths (entries of 8 bytes): the tables are packed one
@@ -39,42 +39,6 @@ fn speed_table(rom: &Rom, p: u32) -> [[i16; 2]; 8] {
     std::array::from_fn(|d| [rom.i16(p + 4 * d as u32), rom.i16(p + 4 * d as u32 + 2)])
 }
 
-/// 0x12C30: floor segment lists per stage and area. The lookup (0x12FE4) scans at most 5
-/// entries from the current pointer and the pointer only advances while the next segment
-/// starts left of the camera, so a list ends at the first segment that reaches X 0x7FFF.
-fn floor_segments(rom: &Rom) -> Vec<Vec<Vec<FloorSegment>>> {
-    (0..8u32)
-        .map(|stage| {
-            let t = 0x12C30 + rom.u16(0x12C30 + 2 * stage) as u32;
-            (0..4u32)
-                .map(|area| {
-                    let a = t.wrapping_add(rom.u16(t + 2 * area) as u32);
-                    if a & 1 != 0 || !(0x13D00..0x14000).contains(&a) {
-                        return Vec::new(); // offsets of areas that do not exist point at garbage
-                    }
-                    let mut v = Vec::new();
-                    for k in 0..64 {
-                        let e = a + 12 * k;
-                        let s = FloorSegment {
-                            slope: rom.i16(e),
-                            x0: rom.i16(e + 2),
-                            x1: rom.i16(e + 4),
-                            base: rom.i16(e + 6),
-                            height: rom.i16(e + 8),
-                            wading: rom.u8(e + 10),
-                        };
-                        v.push(s);
-                        if s.x1 == 0x7FFF {
-                            break;
-                        }
-                    }
-                    v
-                })
-                .collect()
-        })
-        .collect()
-}
-
 pub fn extract(rom: &Rom) -> PlayerData {
     let mut d = PlayerData {
         air_control: std::array::from_fn(|i| [rom.i16(0x1BE66 + 4 * i as u32), rom.i16(0x1BE68 + 4 * i as u32)]),
@@ -110,7 +74,6 @@ pub fn extract(rom: &Rom) -> PlayerData {
         heavy_fall_anim: bytes(rom, 0x1A902),
         heavy_jump_anim: bytes(rom, 0x1B0C6),
         heavy_land_anim: bytes(rom, 0x1B0F2),
-        floor: floor_segments(rom),
         burn_flames: [swords(rom, 0x1C8A6), swords(rom, 0x1C8AC)],
         score_bcd: (0..64u32).map(|k| rom.u32(0x10292 + 4 * k)).collect(),
         held_offsets: (dino_assets::player::HELD_OFFSETS_BASE..0x2D0E0).map(|a| rom.u8(a)).collect(),

@@ -10,6 +10,7 @@ pub mod player;
 pub mod rom;
 pub mod sprites;
 pub mod stage;
+pub mod terrain;
 pub mod text;
 
 use dino_assets::{AssetPack, TILES8_COUNT, TILES32_FIRST};
@@ -50,6 +51,7 @@ pub fn extract_with(rom_path: &Path, extra: &ExtraFrames) -> Result<AssetPack, S
         enemy: enemy::extract(&rom),
         effects: effect::extract(&rom, extra),
         text: text::extract(&rom),
+        terrain: terrain::extract(&rom),
     })
 }
 

@@ -88,6 +88,8 @@ pub struct Body {
     pub wall: u8,
     /// +$51 airborne flag.
     pub airborne: u8,
+    /// +$52 floor type byte (low byte of the flat floor segment's base, 0x12FE4).
+    pub b52: u8,
     /// +$53 wading flag.
     pub wading: u8,
     /// +$54 floor height and +$56 floor offset; the floor is +$54 + +$56.

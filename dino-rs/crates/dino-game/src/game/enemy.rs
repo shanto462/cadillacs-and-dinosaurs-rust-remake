@@ -413,32 +413,21 @@ impl Game {
         }
     }
 
-    /// 0x12CB4 floor collision, floor part only. [U] The wall-push iterations 0x12FE4 / 0x1309C
-    /// and the collision map that sets +$50 / +$54 are not ported (stage topic); +$54 stays as is.
-    pub fn enemy_floor_collision(b: &mut Body) {
-        b.wall = 0;
-        let floor = b.floor.wrapping_add(b.floor2);
-        if b.airborne == 0 {
-            if floor == b.yi() {
-                return;
-            }
-            if floor < b.yi() {
-                b.airborne = 1;
-                return;
-            }
-            b.set_yi(floor);
-        } else if floor > b.yi() {
-            b.set_yi(floor);
-            b.airborne = 0;
+    /// 0x12CB4 terrain collision of an enemy (floor, walls, street edges, obstacles; see
+    /// `terrain.rs`). Obstacle contact (a container in the way) is stored at +$94, bit 7 of
+    /// +$50 tells class 2 to attack it.
+    pub fn enemy_floor_collision(&mut self, e: &mut Enemy) {
+        if let Some(o) = self.terrain_collide(&mut e.b, 0, false) {
+            e.m.sw(OBSTACLE, o);
         }
     }
 
-    /// 0x3140C: floor collision, then stand on the floor.
-    pub fn enemy_snap_to_floor(b: &mut Body) {
-        Self::enemy_floor_collision(b);
-        let f = b.floor.wrapping_add(b.floor2);
-        b.y = (b.y & 0xFFFF) | ((f as i32) << 16);
-        b.airborne = 0;
+    /// 0x3140C: terrain collision, then stand on the floor.
+    pub fn enemy_snap_to_floor(&mut self, e: &mut Enemy) {
+        self.enemy_floor_collision(e);
+        let f = e.b.floor.wrapping_add(e.b.floor2);
+        e.b.y = (e.b.y & 0xFFFF) | ((f as i32) << 16);
+        e.b.airborne = 0;
     }
 
     /// 0x31424: HP from the table by name id and level.
@@ -745,7 +734,7 @@ impl Game {
                 e.m.sb(OBST_T, 0);
                 let t = self.enemy_pick_target(&e.b);
                 e.m.sw(TARGET, t);
-                Self::enemy_snap_to_floor(&mut e.b);
+                self.enemy_snap_to_floor(e);
                 e.m.sb(ATTACKING, 0);
             }
             2 => {
@@ -938,7 +927,7 @@ impl Game {
         match e.b.act {
             0 => {
                 e.b.act += 2;
-                Self::enemy_floor_collision(&mut e.b);
+                self.enemy_floor_collision(e);
                 e.b.y = e.b.y.wrapping_add(0x20 << 16);
                 e.b.airborne = 1;
                 e.b.reaction = 4;
@@ -962,7 +951,7 @@ impl Game {
                         e.b.facing = e.b.facing.wrapping_add(d) & 1;
                     }
                 }
-                Self::enemy_floor_collision(&mut e.b);
+                self.enemy_floor_collision(e);
                 if e.b.airborne == 0 {
                     e.b.airborne = 1;
                     e.b.vy = e.b.vy.wrapping_neg();
@@ -978,7 +967,7 @@ impl Game {
                 if e.b.param_a == 0 {
                     self.enemy_step(&mut e.b);
                 }
-                Self::enemy_floor_collision(&mut e.b);
+                self.enemy_floor_collision(e);
                 if e.b.airborne == 0 {
                     e.m.sb(T80, if e.b.hp == 0 { 0xA } else { 0x14 });
                     self.snd_9796(); // 0x33E16
@@ -1005,7 +994,7 @@ impl Game {
 
     /// 0x33E48 entrance 0xA: drop from 256 px.
     pub fn enemy_c2_entr_drop(&mut self, e: &mut Enemy) {
-        Self::enemy_floor_collision(&mut e.b);
+        self.enemy_floor_collision(e);
         e.b.y = e.b.y.wrapping_add(0x100 << 16);
         e.b.airborne = 1;
         e.b.facing = e.m.b(B5B);
@@ -1045,7 +1034,7 @@ impl Game {
             0x10 => self.enemy_c2_hop(e, h),
             a => panic!("class 2 AI state {a:#x}"),
         }
-        Self::enemy_floor_collision(&mut e.b);
+        self.enemy_floor_collision(e);
         let t = e.m.b(OBST_T).wrapping_sub(1);
         e.m.sb(OBST_T, t);
         if t == 0 {

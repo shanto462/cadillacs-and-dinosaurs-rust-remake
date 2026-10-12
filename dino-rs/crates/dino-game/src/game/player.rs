@@ -13,7 +13,7 @@
 
 use super::body::Body;
 use super::{Game, Handle, Slot, slot_of};
-use dino_assets::player::{FloorSegment, PlayerData};
+use dino_assets::player::PlayerData;
 
 /// Input bits (G.$16..$18, active high).
 pub const RIGHT: u8 = 1;
@@ -28,8 +28,8 @@ pub const JMP: u8 = 0x20;
 #[derive(Clone, Debug, Default)]
 pub struct Player {
     pub b: Body,
-    /// +$52 floor type byte from the floor segment.
-    pub b52: u8,
+    /// +$94 the obstacle (container) the terrain test last ran into (0x12E9A).
+    pub w94: Handle,
     /// +$73 frames until the held enemy escapes (refreshed by attack presses).
     pub escape: u8,
     /// +$75 last enemy frame byte used to place a held player.
@@ -614,10 +614,11 @@ impl Game {
                 // 0x18B4C
                 let cx = self.cam.s2.cam_x;
                 let cy = self.cam.s2.cam_y;
+                self.players[i].b.palette_override = 0;
+                self.players[i].b.airborne = 1;
+                self.player_drop_place(i); // 0x62D6
                 {
                     let p = &mut self.players[i];
-                    p.b.palette_override = 0;
-                    p.b.airborne = 1;
                     p.b.live = 2;
                     Player::set_hi(&mut p.b.x, cx.wrapping_add(0xC0) as i16);
                     Player::set_hi(&mut p.b.z, if self.w.vertical_scene != 0 { 0x30 } else { cy as i16 });
@@ -647,6 +648,52 @@ impl Game {
         // (pool B class 0x48). TODO(effects port).
     }
 
+    /// 0x62D6: place a player that drops in near the camera. The X offset depends on the number
+    /// of players and the player's index (table 0x638C); the floor lookup 0x12FE4 and the terrain
+    /// test 0x12CAC run at that spot. In the vertical scene (G.$4DC) fixed spots are used.
+    fn player_drop_place(&mut self, i: usize) {
+        let t = &self.assets.terrain;
+        let idx = self.players[i].b.who as usize & 3;
+        let vertical = self.w.vertical_scene != 0;
+        let (cx, cy) = (self.cam.s2.cam_x as i16, self.cam.s2.cam_y as i16);
+        if vertical {
+            // 0x6370
+            let p = &mut self.players[i];
+            Player::set_hi(&mut p.b.x, t.drop_x[idx]);
+            Player::set_hi(&mut p.b.z, t.drop_z[idx]);
+            Player::set_hi(&mut p.b.y, 0x100);
+            return;
+        }
+        // 0x62DE: d0 = (players - 1) * 8, d1 = 0 / 2 / 4 by who is present.
+        let n = self.w.players_minus_one as usize;
+        let mut d1 = 0usize;
+        if n != 0 && idx != 0 {
+            if self.players[0].b.live != 0 {
+                d1 = 2;
+                if idx != 1 && self.players[1].b.live != 0 {
+                    d1 = 4;
+                }
+            } else {
+                // 0x631A: `cmpi.w #1,$2(a6)` compares the word (index, character), never 1 here.
+                d1 = 4;
+            }
+        }
+        let x = cx.wrapping_add(t.drop_x[n * 4 + d1 / 2]);
+        let me = Game::player_handle(i);
+        let mut b = std::mem::take(&mut self.players[i].b);
+        Player::set_hi(&mut b.x, x);
+        self.terrain_floor_lookup(&mut b); // 0x12FE4
+        let (y, z) = (b.floor.wrapping_add(0x100), cy.wrapping_sub(b.floor));
+        Player::set_hi(&mut b.y, y);
+        Player::set_hi(&mut b.z, z);
+        if let Some(o) = self.terrain_player(&mut b, me) {
+            self.players[i].w94 = o;
+        }
+        let z = b.zi().wrapping_add(t.drop_z[idx]);
+        Player::set_hi(&mut b.z, z);
+        self.players[i].b = b;
+    }
+
     /// 0x18BD4
     fn player_respawn_wait(&mut self, i: usize) {
         let p = &mut self.players[i];
@@ -655,8 +702,8 @@ impl Game {
             return;
         }
         p.b.airborne = 1;
-        p.b.set_state(0x0200_0000);
-        // 0x62D6: stage helper (not ported).
+        self.player_drop_place(i); // 0x62D6
+        self.players[i].b.set_state(0x0200_0000);
         self.player_drop_entry(i); // 0x1B67C (G.$518 == 0): fall in, state 0x42E
         self.player_count_players(); // 0x655E
         // 0x18C18: spawn pool C class 0x38 (respawn flash). TODO(effects port).
@@ -770,9 +817,14 @@ impl Game {
             6 => self.player_grabbed(i),
             _ => {}
         }
-        // G.$4F0 selects 0x12D4E (no walls); both share the floor part ported here.
-        self.player_floor_and_walls(i); // 0x12CAC
-        self.player_clamp_to_screen(i); // 0x4FCE (skipped when G.$506)
+        if self.w.floor_only == 0 {
+            self.player_floor_and_walls(i); // 0x12CAC
+        } else {
+            self.player_floor_only(i); // 0x12D4E (G.$4F0)
+        }
+        if self.w.no_clamp == 0 {
+            self.player_clamp_to_screen(i); // 0x4FCE (skipped when G.$506)
+        }
     }
 
     /// 0x6AC8 command FSM: down, up, attack while holding up.
@@ -824,106 +876,26 @@ impl Game {
         }
     }
 
-    /// 0x12CAC: floor (0x12FE4) then walls (0x1309C, TODO(main session): needs the scroll2
-    /// collision attributes and table 0x13B0C), then the floor snap.
+    /// 0x12CAC: terrain collision of a player: floor, walls, obstacles, floor snap (0x12CB4) and
+    /// the ceiling test (0x1361E). See `terrain.rs`.
     fn player_floor_and_walls(&mut self, i: usize) {
-        self.players[i].b.wall = 0;
-        self.player_floor_lookup(i); // one pass: the wall test never requests another one yet
-        self.player_floor_snap(i);
+        let me = Game::player_handle(i);
+        let mut b = std::mem::take(&mut self.players[i].b);
+        if let Some(o) = self.terrain_player(&mut b, me) {
+            self.players[i].w94 = o; // move.w a1,$94(a6)
+        }
+        self.players[i].b = b;
     }
 
-    /// 0x12D4E: floor only.
+    /// 0x12D4E: floor only (no walls, no obstacles).
     fn player_floor_only(&mut self, i: usize) {
-        self.players[i].b.wall = 0;
-        self.player_floor_lookup(i);
-        self.player_floor_snap(i);
-    }
-
-    fn player_floor_snap(&mut self, i: usize) {
-        let p = &mut self.players[i];
-        let floor = p.b.floor.wrapping_add(p.b.floor2);
-        if p.b.airborne == 0 {
-            let y = p.b.yi();
-            if floor == y {
-                return;
-            }
-            if floor > y {
-                Player::set_hi(&mut p.b.y, floor);
-                p.b.y &= !0xFFFF; // clr.w $e
-            } else {
-                p.b.airborne = 1;
-            }
-        } else if floor > p.b.yi() {
-            p.b.y = (floor as i32) << 16;
-            p.b.airborne = 0;
-        }
-    }
-
-    /// Index of the floor segment pointer G.$6AC for the current camera X. The original sets
-    /// it at area start (0x12BE4) and advances it one segment per frame (0x12C90) while the next
-    /// segment starts left of the camera; it never moves back.
-    /// TODO(main session): keep the pointer in `World` and call 0x12C90 from `objects_update`.
-    fn player_floor_segments(&self) -> (&'static [FloorSegment], usize) {
-        let st = self.w.stage as usize;
-        let ar = self.cam.s2.area as usize;
-        let segs: &'static [FloorSegment] =
-            self.assets.player.floor.get(st).and_then(|a| a.get(ar)).map(|v| v.as_slice()).unwrap_or(&[]);
-        let cam = self.cam.s2.cam_x as i16;
-        let mut k = 0;
-        while k + 1 < segs.len() && segs[k + 1].x0 < cam {
-            k += 1;
-        }
-        (segs, k)
-    }
-
-    /// 0x12FE4 floor lookup.
-    fn player_floor_lookup(&mut self, i: usize) {
-        if self.w.vertical_scene != 0 {
-            let p = &mut self.players[i];
-            p.b.wading = 0;
-            p.b52 = 0;
-            p.b.floor = 0;
-            return;
-        }
-        let (segs, k) = self.player_floor_segments();
-        if segs.is_empty() {
-            return;
-        }
-        let x = self.players[i].b.xi();
-        let mut s = segs[(k + 4).min(segs.len() - 1)];
-        for j in 0..4 {
-            let e = segs[(k + j).min(segs.len() - 1)];
-            if e.x1 >= x {
-                s = e;
-                break;
-            }
-        }
-        let p = &mut self.players[i];
-        p.b.wading = s.wading;
-        if s.slope == 0 {
-            p.b52 = s.base as u8;
-            p.b.floor = s.height;
-            return;
-        }
-        // 0x13056 slope
-        let d0 = (x.wrapping_sub(s.x0) as u16 >> 2) as i16;
-        let h = if s.height == 0 { d0.wrapping_add(s.base) } else { s.base.wrapping_sub(1).wrapping_sub(d0) };
-        if h < 0 {
-            return;
-        }
-        p.b.floor = h;
-        if p.b.airborne != 0 {
-            if (h as u16) <= (p.b.yi() as u16) {
-                return;
-            }
-            p.b.airborne = 0;
-        }
-        Player::set_hi(&mut p.b.y, h);
+        let mut b = std::mem::take(&mut self.players[i].b);
+        self.terrain_floor_only(&mut b);
+        self.players[i].b = b;
     }
 
     /// 0x4FCE: keep the player on screen (integer words only).
     fn player_clamp_to_screen(&mut self, i: usize) {
-        // G.$506 == 0 assumed (TODO(main session) when that flag exists).
         let (cx, cy) = if self.w.vertical_scene != 0 { (0i16, 0i16) } else { (self.cam.s2.cam_x as i16, self.cam.s2.cam_y as i16) };
         let p = &mut self.players[i];
         let rel = p.b.xi().wrapping_sub(cx).wrapping_sub(0x10);

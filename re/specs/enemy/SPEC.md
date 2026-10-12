@@ -363,7 +363,8 @@ fn register_draw(e) { if near_screen(e) /*0x16FA: X-camX in [-0x100,0x280), Y+Z-
 fn register_hurtable(e) { push(list_6726, e) }                           // 0x4BEA: enemies that players can hit [O]
 fn snap_to_floor(e) { floor_collision(e); e.y = e.w54 + e.w56; e.air = 0 }   // 0x3140C [O]
 // 0x12CB4 floor_collision: probes the stage collision map (stage spec), sets +50 flags, +54/+56, and
-// lands (+51=0, Y=ground) or starts falling (+51=1). [O; map format = stage topic]
+// lands (+51=0, Y=ground) or starts falling (+51=1). [O] Ported as `game/terrain.rs`; the map is the
+// terrain class in bits 10..15 of the scroll2 tile attributes (see the module doc there).
 ```
 
 ---------------------------------------------------------------------------------------------------
@@ -1480,7 +1481,7 @@ Three routines compare ROM words with an offset copy. If the ROM was modified th
 ## 16. Open gaps
 - Per-class AI for the other 30+ enemy classes (Punk/Thug #20, Hammer/Elmer/Wrench #10, Blade/Razor #14, Lash, Bludge, Poacher/Skinner/Gutter, Knife, Mack, Zeke, R Hopper, …) and the bosses Slice, Hogg, Butcher, Morgan, Morgue, Slisaur, Tyrog, Fessenden. They use the same library, census, HP, score and hit system; only their state machines differ. **[U]**
 - Pool B classes in the scripts (#12, #14, #20, #31, #40, #66, #69, #73, #74, #95 …): props, scenery, lighting and event objects. Only #15 (wave controller) and #22 (boss reinforcements) are analysed. **[U]**
-- Exact meaning of terrain flags `+$50` (0x10 hop-down, bit7 obstacle) and of the floor collision map (stage topic). **[I]**
+- Terrain flags `+$50`: the shape handler of the tile under the feet stores its wall bits (low byte of shape word 7: 0x01, 0x04, 0x08, 0x10 hop-down ledge; corner shapes force 0x08), the flag byte of the tile class (table 0x13B0C, 0 or 1) is OR-ed in, and bit 7 means the obstacle test (0x12E9A) found a container in the way (obstacle in `+$94`). The game meaning of each bit per stage is still open. **[I]**
 - Camera modes other than 0 (follow) and 4 (wave lock): table 0x2092E, modes 1, 6, 7, 0x0B, 0x11, 0x12 appear in stage 1. Their exact rules are left to the stage topic. **[U]**
 - The HUD side of the stage time limit (`$4E8`), and whether it is shown. **[U]**
 - The animation frame record bytes `+$2C/+$2D/+$2E` (hold, turn, attack-box mode) are used as described, but the full animation format is the animation topic. **[I]**

@@ -30,7 +30,7 @@ Code: `dino-rs/crates/dino-game/src/game/{enemy.rs, enemy_combat.rs, spawn.rs, r
 - Pool B classes other than 15 are freed at once (props, scenery, B#12/#14/#20/#31/#40/#66/#69/#73/#74).
 - **item.rs**: pool E update is empty; `item_drop_from_enemy` (0x24B36) only clears +$96.
 - `enemy_grabbed` (0x2B35A) releases at once. `enemy_hud_hit` (0x16B36) is ported (HUD ring message, phase 0).
-- Floor collision: floor-only version of 0x12CB4 (no wall push 0x12FE4 / 0x1309C, no +$54 lookup, no obstacle test 0x12E9A): phase 1 task 1.
+- Floor collision: done in phase 1 task 1 (`game/terrain.rs`: 0x12CB4 with floor lookup, walls, street edges and the obstacle test; `enemy_floor_collision` / `enemy_snap_to_floor`).
 - Sounds 0x9796 / 0xA354 / 0x97D2 are issued (`snd.rs`, phase 0); effects 0x606E, 0x92E5E, 0x94338, 0x2AD98 not called.
 - 0x1D95E / 0x1DAC4 (scripted walk to the next area / boss): TEMP fallback in prop.rs gives the camera
   go flag while `lock78 == 1` after a wave ended with type 2/4 (players must walk right themselves).

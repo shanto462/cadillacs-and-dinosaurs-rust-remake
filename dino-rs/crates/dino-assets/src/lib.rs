@@ -15,6 +15,7 @@ pub mod enemy;
 pub mod player;
 pub mod sprites;
 pub mod stage;
+pub mod terrain;
 pub mod text;
 pub use sprites::*;
 pub use stage::StageData;
@@ -56,6 +57,8 @@ pub struct AssetPack {
     pub effects: effect::EffectData,
     /// HUD and flow strings and tables (`text.rs`).
     pub text: text::TextData,
+    /// Terrain collision tables (`terrain.rs`).
+    pub terrain: terrain::TerrainData,
 }
 
 impl AssetPack {

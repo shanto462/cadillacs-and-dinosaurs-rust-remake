@@ -491,7 +491,7 @@ impl Game {
                 if e.b.param_a == 0 {
                     self.enemy_step(&mut e.b);
                 }
-                Self::enemy_floor_collision(&mut e.b);
+                self.enemy_floor_collision(e);
                 if e.b.wall != 0 && e.b.wall & 1 == 0 {
                     return self.enemy_slump_start(e, h);
                 }
@@ -514,7 +514,7 @@ impl Game {
                 if e.b.param_a == 0 {
                     self.enemy_step(&mut e.b);
                 }
-                Self::enemy_floor_collision(&mut e.b);
+                self.enemy_floor_collision(e);
                 if e.b.airborne == 0 {
                     self.enemy_lie_time(e);
                     if e.b.hp == 0 {
@@ -578,7 +578,7 @@ impl Game {
                 if e.b.param_a == 0 {
                     self.enemy_step(&mut e.b);
                 }
-                Self::enemy_floor_collision(&mut e.b);
+                self.enemy_floor_collision(e);
                 if e.b.airborne == 0 {
                     self.enemy_lie_time(e);
                     if e.b.hp == 0 {
@@ -613,7 +613,7 @@ impl Game {
         if e.b.param_a == 0 {
             self.enemy_step(&mut e.b);
         }
-        Self::enemy_floor_collision(&mut e.b);
+        self.enemy_floor_collision(e);
         if e.b.wall != 0 && e.b.wall & 1 == 0 {
             self.enemy_shake_request(e); // 0x2AB8C
             let b = e.b.clone();
@@ -685,7 +685,7 @@ impl Game {
                 if e.b.param_a == 0 {
                     self.enemy_step(&mut e.b);
                 }
-                Self::enemy_floor_collision(&mut e.b);
+                self.enemy_floor_collision(e);
                 if e.b.airborne == 0 {
                     self.enemy_lie_time(e);
                     if e.b.hp == 0 {
@@ -713,7 +713,7 @@ impl Game {
         if e.b.param_a == 0 {
             self.enemy_step(&mut e.b);
         }
-        Self::enemy_floor_collision(&mut e.b);
+        self.enemy_floor_collision(e);
         if e.b.airborne == 0 {
             e.b.palette_override = 0;
             e.b.airborne = 1;
@@ -789,7 +789,7 @@ impl Game {
         if self.w.frame & 1 != 0 {
             // 0x92E5E dust (d0 = 2): effects port.
         }
-        Self::enemy_floor_collision(&mut e.b);
+        self.enemy_floor_collision(e);
         if e.b.wall != 0 && e.b.wall & 1 != 0 {
             return;
         }
@@ -978,7 +978,7 @@ impl Game {
     /// 0x2B35A: held by a player (+$70). Not ported yet: released at once.
     pub fn enemy_grabbed(&mut self, e: &mut Enemy, h: Handle) {
         e.b.wall = 0;
-        Self::enemy_snap_to_floor(&mut e.b);
+        self.enemy_snap_to_floor(e);
         e.b.reaction = 0x20;
         self.enemy_recover(e, h);
     }

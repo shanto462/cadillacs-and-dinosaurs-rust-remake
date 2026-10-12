@@ -263,7 +263,7 @@ if p.airborne == 0 {
     else if p.y_hi < floor { p.y_hi = floor; p.y_lo = 0; }
 } else if p.y_hi < floor { p.y_hi = floor; p.y_lo = 0; p.airborne = 0; }   // landed
 ```
-`0x12CAC` additionally runs up to 5 wall-push iterations (0x12FE4/0x1309C) and sets `$50` [O, details U].
+`0x12CAC` additionally runs up to 5 wall-push iterations (0x12FE4/0x1309C), the obstacle test 0x12E9A and the ceiling test 0x1361E, and sets `$50` [O]. Ported in `game/terrain.rs` (module doc).
 
 `clamp_to_screen` 0x4FCE [O] (G.$744 = camera X, G.$748 = camera Y):
 X is kept in `[camX+0x10, camX+0x170]`; `Z+$54` is kept in `[camY+0x10, camY+0xA0]`

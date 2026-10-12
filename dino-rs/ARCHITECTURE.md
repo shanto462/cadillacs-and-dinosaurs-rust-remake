@@ -70,6 +70,7 @@ Helpers that only need your own object can be methods on your own type or free f
 | camera | `g.cam.s2.cam_x/cam_y` (G.$744/$748), lock state `g.cam.s2.lock78`, release with `g.camera_go()` |
 | palettes | `g.pal` (palette memory), `g.load_obj_palettes()`, fades in `palette.rs` |
 | text layer | `g.vram.scroll1` cells (`Vram::index1(col,row)`) |
+| terrain | `g.terrain_collide(&mut body, handle, is_item)` = 0x12CB4 (enemies, props, items; returns the obstacle for +$94), `terrain_player` = 0x12CAC, `terrain_floor_only` 0x12D4E, `terrain_effect_floor` 0x12DAC, `terrain_collide_free` 0x12E20; take the body out of its slot first (`std::mem::take`) when it lives in `g` |
 
 ## File ownership (parallel work)
 
@@ -78,6 +79,7 @@ session. If the build breaks in a file you do not own, wait and retry instead of
 
 | owner | files |
 | --- | --- |
+| terrain collision (shared, phase 1 task 1) | `game/terrain.rs`, `dino-assets/src/terrain.rs`, `dino-extract/src/terrain.rs`; checked by `re/harness/terrain_oracle.py` |
 | main session | `game/mod.rs`, `body.rs`, `collide.rs`, `combat.rs`, `palette.rs`, `render.rs`, `main.rs`, `input.rs`, `viewer.rs`, both `lib.rs` files, `rom.rs`, `gfx.rs`, `sprites.rs` |
 | stage / camera port | `game/camera.rs`, `game/vram.rs`, `present.rs`, `dino-assets/src/stage.rs`, `dino-extract/src/stage.rs` |
 | player port | `game/player.rs`, `game/player_combat.rs`, `dino-assets/src/player.rs`, `dino-extract/src/player.rs` |

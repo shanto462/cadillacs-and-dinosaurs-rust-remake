@@ -122,6 +122,14 @@ impl HitBoxBank {
         self.read(table + 12 * index as u32)
     }
 
+    /// Like [`single`](Self::single), `None` when the record is outside the bank (a stale or
+    /// cleared object pointer).
+    pub fn try_single(&self, table: u32, index: u8) -> Option<HitBox> {
+        let a = table.checked_add(12 * index as u32)?;
+        let end = self.base as u64 + 2 * self.words.len() as u64;
+        (a >= self.base && (a as u64 + 12) <= end && a % 2 == 0).then(|| self.read(a))
+    }
+
     /// Multi-box table (obj+$4A == 1): table + i16(table + 2*index) -> (count-1, boxes...).
     pub fn multi(&self, table: u32, index: u8) -> Vec<HitBox> {
         let p = table.wrapping_add(self.word(table + 2 * index as u32) as i32 as u32);

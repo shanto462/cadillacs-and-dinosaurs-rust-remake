@@ -17,23 +17,6 @@ pub struct JumpVector {
     pub az: i16,
 }
 
-/// One floor segment (12 bytes, table 0x12C30, read by 0x12FE4).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct FloorSegment {
-    /// +0: 0 = flat floor, else a slope.
-    pub slope: i16,
-    /// +2: first X of the segment (also read by the pointer advance 0x12C90).
-    pub x0: i16,
-    /// +4: last X; the lookup takes the first segment with `x1 >= X`.
-    pub x1: i16,
-    /// +6 word: slope base height (its low byte +7 goes to obj+$52 for flat floors).
-    pub base: i16,
-    /// +8: flat floor height, or slope direction (0 = rising).
-    pub height: i16,
-    /// +$A: wading flag copied to obj+$53.
-    pub wading: u8,
-}
-
 #[derive(Clone, Debug, Default)]
 pub struct PlayerData {
     /// 0x5064: walk / run speed tables, index `class/4*4 + character` (class 0, 4, 8, 12).
@@ -61,8 +44,6 @@ pub struct PlayerData {
     pub command_time: [[u8; 4]; 2],
     /// 0x4E56: stage start positions [stage][area][player] = (x, y, z).
     pub start_pos: Vec<[[[i16; 3]; 3]; 3]>,
-    /// 0x12C30: floor segments [stage][area] (empty for areas that do not exist).
-    pub floor: Vec<Vec<Vec<FloorSegment>>>,
     /// 0xA26FC: attack records per character, indexed by obj+$58 / 2 (real table lengths).
     pub attacks: [Vec<AttackRecord>; 4],
     /// 0xA2EA4: enemy attack records, indexed by the enemy's obj+$58 / 2.

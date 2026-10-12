@@ -15,8 +15,9 @@ Character ids: 0 Jack, 1 Mustapha, 2 Hannah, 3 Mess (SPEC.md has a correction ba
   invulnerability, drop-in state 0x42E).
 - Frame: `players_update` 0x18834, `held_players_update` 0x188DA, `player_frame` 0x18952 (edge detect,
   input lock, dispatch, collision list 0x6718, draw list 0x49CA).
-- Alive 0x18CD4 (all timers), command FSM 0x6AC8 (down, up + attack), floor 0x12FE4 + snap
-  (0x12CAC floor part; flat and slope segments from 0x12C30), screen clamp 0x4FCE, power factor 0x11738.
+- Alive 0x18CD4 (all timers), command FSM 0x6AC8 (down, up + attack), terrain collision 0x12CAC /
+  0x12D4E (floor, walls, obstacles, ceiling: `game/terrain.rs`, phase 1 task 1), the drop-in placement
+  0x62D6 (`player_drop_place`), screen clamp 0x4FCE, power factor 0x11738.
 - Ground: idle 0x19122/0x1916E (double-tap run), walk 0x192B8/0x192DE, jab/punch2/punch3/finisher +
   hit confirm + combo window (0x193CE..0x1965A), combo throw 0x195B2, special 0x1968E/0x196F2 and
   Mustapha's air special 0x1AAE6, Jack dash attack 0x19720, airborne lunge 0x1ABD4, recovery 0x19812,
@@ -46,8 +47,6 @@ Character ids: 0 Jack, 1 Mustapha, 2 Hannah, 3 Mess (SPEC.md has a correction ba
 - Enemy fields not exposed yet: `player_enemy_w84` (+$84) returns 0, `player_enemy_b87` (+$87, guard
   0x10B50) returns 0, `player_g4f3` (G.$4F3) returns 3 (player vs player off), 0x6606 downed claim,
   0x1128E multi-part boss link.
-- Walls 0x1309C (needs scroll2 collision attributes + table 0x13B0C) and 0x12E9A; the floor segment
-  pointer is recomputed from camera X instead of G.$6AC + 0x12C90.
 - Scripted control G.$4DD input (0x1DB5E), vehicle wait G.$505 (state 0x432 waits forever), states
   0x18/0x1A/0x2A/0x2C and air 0x18..0x26/0x34, sound codes (the voice routines 0x95CE..0x9C0C are ported in `snd.rs`; pan and volume are not recorded),
   respawn sparkle 0x958E4, dust 0x92E5E, water ripple 0x60E2, DIP lives (fixed 2).
@@ -58,7 +57,7 @@ Character ids: 0 Jack, 1 Mustapha, 2 Hannah, 3 Mess (SPEC.md has a correction ba
    compare frame by frame against MAME where possible.
 2. Wire the enemy port: replace `player_enemy_w84` / `player_enemy_b87`, call `player_hit_by_enemy`
    from its pass 0x115B0, test grabs and hurt reactions against real enemies.
-3. Ask the main session for a `World` field for G.$6AC (+ call 0x12C90) and port walls 0x1309C.
+3. (done in phase 1 task 1: `Game::terrain`, `terrain.rs`.)
 4. Items: port find_pickup / pickup / weapon states once pool E items expose their type (+$A0).
 5. Scripted control 0x1DB0C/0x1DB5E and the vehicle entrance (G.$505) with the flow port.
 
