@@ -1,0 +1,44 @@
+# name table at 0x17DC2: every string, and whether the id table (0x17D78, 0x27 entries) or the hero table (0x17D70) points to it
+017DC2  '\x06\x01Ä\x00JACK.T'  NOT REFERENCED by the id table
+017DD1  'HANNAH'        hero [2]
+017DDC  'MUSTAPHA'      hero [1]
+017DE7  'MESS'          hero [3]
+017DF2  'FERRIS'        ids 0x0
+017DFD  'GNEISS'        ids 0x1
+017E08  'DRIVER'        ids 0x1a
+017E13  'BOOM !!'       NOT REFERENCED by the id table
+017E1E  'LASH T.'       ids 0xe
+017E29  'TYROG'         ids 0x19,0x1b
+017E34  'TYROG 2'       ids 0x23
+017E3F  'BUTCHER'       ids 0xf
+017E4A  'BLUDGE'        ids 0x10
+017E55  'POACHER J'     ids 0x2
+017E60  'SKINNER'       ids 0x12
+017E6B  'GUTTER'        ids 0x13
+017E76  'HAMMER T.'     ids 0x3,0x1e
+017E81  'BLK ELMER'     ids 0xa,0x1f
+017E8C  'WRENCH T.'     ids 0xb,0x20,0x24
+017E97  'KIMO 2'        NOT REFERENCED by the id table
+017EA2  'BLADE'         ids 0x6,0x1c
+017EAD  'RAZOR'         ids 0x14
+017EB8  'KNIFE 3'       NOT REFERENCED by the id table
+017EC3  'DEVIL'         NOT REFERENCED by the id table
+017ECE  'TYRE'          NOT REFERENCED by the id table
+017ED9  'VICE T.'       ids 0xc
+017EE4  'WALTHER'       ids 0xd
+017EEF  'MACK'          ids 0x11
+017EFA  'PUNK'          ids 0x8,0x1d
+017F05  'THUG'          ids 0x9
+017F10  'MORGAN'        ids 0x15
+017F1B  'MORGUE'        ids 0x16
+017F26  'KNIFE'         ids 0x17
+017F31  'SLICE'         ids 0x5
+017F3C  'HOGG'          ids 0x26
+017F47  'SLISAUR'       ids 0x18
+017F52  'SHIVAT'        ids 0x7
+017F5D  'R HOPPER'      ids 0x4
+017F68  'ZEKE'          ids 0x21
+017F73  'WIDGET'        NOT REFERENCED by the id table
+017F7E  'FESSENDEN'     ids 0x22,0x25
+017F89  ''              NOT REFERENCED by the id table
+017F8A  'í\x05ìp\x00='  NOT REFERENCED by the id table

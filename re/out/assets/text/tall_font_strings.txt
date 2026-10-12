@@ -1,0 +1,255 @@
+# Strings of the tall font (print routine 0x84F72): story panels, profile cards, ending and legal text.
+# Letters A to Z are decoded; <XXX> is a tile code that has no letter (kana or symbol). Pictures: images/wADDRESS.png
+
+00C8AC-00C8D2  (segments at col,row): (53,54)
+        THE SWAMP FOREST
+00C8EA-00C902  (segments at col,row): (56,54)
+        HELL ROAD
+00C91A-00C93A  (segments at col,row): (54,54)
+        JACK'S GARAGE
+00C952-00C978  (segments at col,row): (53,54)
+        VILLAGE OF FLAME
+00C990-00C9B4  (segments at col,row): (53,54)
+        JUNGLE AND MINE
+00C9CC-00C9E4  (segments at col,row): (56,54)
+        THE VAULT
+00C9FC-00CA20  (segments at col,row): (53,54)
+        THE UNDER WORLD
+00E688-00E6B0  (segments at col,row): (4,24)
+        PLEASE HELP US...
+00E74E-00E7DC  (segments at col,row): (8,25)  (28,25)  (8,28)  (33,28)
+        THIS EQUIPMENT LOOKS |  LIKE THE
+        STAFF IN THE UNDERGROUND | RUINS.
+00E878-00E8B0  (segments at col,row): (26,23)  (8,26)
+        AND BEHOLD
+        TRUE GENIUS.
+00F3FC-00F41E  (segments at col,row): (1,13)
+        RAN OUT.      
+07D31C-07D342  (segments at col,row): (53,54)
+        THE SWAMP FOREST
+07D35A-07D372  (segments at col,row): (56,54)
+        HELL ROAD
+07D38A-07D3AA  (segments at col,row): (54,54)
+        JACK'S GARAGE
+07D3C2-07D3E8  (segments at col,row): (53,54)
+        VILLAGE OF FLAME
+07D400-07D424  (segments at col,row): (53,54)
+        JUNGLE AND MINE
+07D43C-07D454  (segments at col,row): (56,54)
+        THE VAULT
+07D46C-07D490  (segments at col,row): (53,54)
+        THE UNDER WORLD
+07E3FC-07E416  (segments at col,row): (0,24)
+        SCIENCE HA
+07E416-07E430  (segments at col,row): (10,24)
+        D PROGRESS
+07E430-07E44A  (segments at col,row): (20,24)
+        ED TO THE 
+07E44A-07E464  (segments at col,row): (30,24)
+        VERGE OF C
+07E464-07E47E  (segments at col,row): (40,24)
+        REATING NE
+07E47E-07E498  (segments at col,row): (50,24)
+        W LIFE.   
+07E498-07E4AA  (segments at col,row): (60,24)
+              
+07E4AA-07E4DE  (segments at col,row): (0,23)  (0,24)
+                  
+                  
+07E4DE-07E4F8  (segments at col,row): (10,24)
+        PERHAPS TH
+07E52C-07E546  (segments at col,row): (40,24)
+        HANGING EV
+07E546-07E560  (segments at col,row): (50,24)
+        OLUTION. B
+07E560-07E57A  (segments at col,row): (60,24)
+        UT NATURE 
+07E57A-07E594  (segments at col,row): (0,24)
+        ATURE TAKE
+07E594-07E5AE  (segments at col,row): (10,24)
+        S CARE OF 
+07E5C8-07E5FC  (segments at col,row): (30,24)  (30,24)
+                   |     THUS "
+07E5FC-07E616  (segments at col,row): (40,24)
+        THE GREAT 
+07E64A-07E664  (segments at col,row): (60,24)
+                  
+07E664-07E67E  (segments at col,row): (0,24)
+                  
+07E67E-07E698  (segments at col,row): (10,24)
+                  
+07E698-07E6B2  (segments at col,row): (20,24)
+                  
+07E6B2-07E6CC  (segments at col,row): (30,24)
+                  
+07E6CC-07E6E6  (segments at col,row): (40,24)
+                  
+07E6E6-07E700  (segments at col,row): (50,24)
+                  
+07E700-07E71A  (segments at col,row): (60,24)
+                  
+07E71A-07E72C  (segments at col,row): (60,24)
+              
+081F2E-081F48  (segments at col,row): (24,11)
+        "SLISAURS"
+081F48-081FB0  (segments at col,row): (24,8)  (24,11)
+                               
+                               
+0872A2-08742A  (segments at col,row): (10,15)  (24,15)  (5,24)  (15,24)  (25,24)  (36,24)  (5,25)  (15,25)  (25,25)  (36,25)  (3,26)  (13,26)  (23,26)  (34,26)
+                       |               
+                   |            |             |            
+                   |            |             |            
+                   |            |             |            
+08742A-0874BE  (segments at col,row): (3,27)  (14,27)  (25,27)  (12,28)  (23,28)
+                    |             |            
+                    |                
+0874BE-08757C  (segments at col,row): (3,25)  (18,25)  (3,26)  (13,26)  (23,26)  (37,26)
+                        |               
+                   |            |                |               
+08757C-0875F2  (segments at col,row): (15,27)  (26,27)  (12,28)  (23,28)
+                    |            
+                    |               
+087A50-087A72  (segments at col,row): (28,26)
+        FATTEN UP THIS
+087AB8-087AD2  (segments at col,row): (13,25)
+        !<18B><1C2><1CA><1AD><1EC><18B><1AD>!?
+087AD2-087AEA  (segments at col,row): (22,25)
+        MUD SWAMP
+087AEA-087B1A  (segments at col,row): (13,25)  (24,25)
+        TOP OF THE | BUILDING
+087B1A-087B44  (segments at col,row): (17,25)  (24,25)
+        IN THE  | BUILDING
+087C1A-087C30  (segments at col,row): (26,28)
+        IS HUGE.
+087D12-087D2E  (segments at col,row): (30,26)
+        INTERFERING
+087D2E-087D58  (segments at col,row): (10,26)
+        WITH OUR BUSINESS.
+087FAC-087FF4  (segments at col,row): (10,26)  (29,26)
+        LOOK THE DINOSAURS  | ARE RUNNING
+088166-0881AC  (segments at col,row): (10,26)  (29,26)
+        BLOCK THE ENTRANCE  | WITH THOSE
+08827A-08829E  (segments at col,row): (26,26)
+        THE INCREDIBLE.
+08833C-088364  (segments at col,row): (16,25)  (26,25)
+        DESERT OF | DEATH
+088364-088384  (segments at col,row): (17,25)
+        IN THE GARAGE
+088398-0883B2  (segments at col,row): (19,25)
+        GREEN PATH
+0883B2-0883C6  (segments at col,row): (20,25)
+        VILLAGE
+0883C6-0883DE  (segments at col,row): (19,25)
+        COAL MANE
+0883DE-0883F0  (segments at col,row): (21,25)
+        JUNGLE
+08840C-088418  (segments at col,row): (28,25)
+        SEA
+08842C-08844C  (segments at col,row): (17,25)
+        COMPUTER ROOM
+08844C-088460  (segments at col,row): (20,25)
+        BIO LAB
+088460-08847C  (segments at col,row): (18,25)
+        UNDERGROUND
+08847C-08848A  (segments at col,row): (22,25)
+        CAVE
+08853E-08854C  (segments at col,row): (3,26)
+            
+0885F0-0887C6  (segments at col,row): (10,15)  (24,15)  (3,23)  (20,23)  (3,24)  (20,24)  (3,25)  (13,25)  (20,25)  (31,25)  (42,25)  (3,26)  (13,26)  (23,26)  (34,26)  (44,26)  (54,26)
+                       |               
+                   |            
+                   |            
+                   |            |             |             |            
+                   |            |             |            |            |           
+0887C6-08881A  (segments at col,row): (13,27)  (20,27)  (12,28)  (15,28)
+                |  
+                    |            
+08D012-08D19A  (segments at col,row): (10,15)  (24,15)  (5,24)  (15,24)  (25,24)  (36,24)  (5,25)  (15,25)  (25,25)  (36,25)  (3,26)  (13,26)  (23,26)  (34,26)
+                       |               
+                   |            |             |            
+                   |            |             |            
+                   |            |             |            
+08D19A-08D22E  (segments at col,row): (3,27)  (14,27)  (25,27)  (12,28)  (23,28)
+                    |             |            
+                    |                
+08D22E-08D2EC  (segments at col,row): (3,25)  (18,25)  (3,26)  (13,26)  (23,26)  (37,26)
+                        |               
+                   |            |                |               
+08D2EC-08D362  (segments at col,row): (15,27)  (26,27)  (12,28)  (23,28)
+                    |            
+                    |               
+098D5C-098D7E  (segments at col,row): (32,26)
+        ATTACK PEOPLE.
+098D7E-098DE2  (segments at col,row): (3,25)  (20,25)  (38,25)
+        THIS MUST BE THE  | BLACK MARKETEER'S  | DOING.
+098E08-098E4A  (segments at col,row): (17,25)  (33,25)
+        FINISH SKINNING  | THAT THING.
+098EB6-098EDA  (segments at col,row): (27,26)
+        TEER'S DO THIS.
+098F4E-098F8A  (segments at col,row): (35,12)  (20,15)
+        MESSING
+        WITH THE BALANCE.
+099D38-099D70  (segments at col,row): (13,27)  (31,27)
+                           |     
+099D70-099E16  (segments at col,row): (7,13)  (15,13)  (23,13)  (31,13)  (7,16)  (15,16)  (23,16)  (28,16)
+                 |          |          |          
+                 |          |       |      
+09B06C-09B078  (segments at col,row): (28,16)
+        !!!
+09B0BC-09B0F8  (segments at col,row): (8,15)  (8,16)  (24,16)
+                
+                 |      
+09B1D0-09B224  (segments at col,row): (26,9)  (40,9)  (26,12)
+        DIPLOMAT AND  | EXPLORER
+        ITEM SKILLED
+09B306-09B342  (segments at col,row): (26,9)  (26,12)
+        ELUSIVE PAST
+        HIGH POWERED
+09BEC4-09BED0  (segments at col,row): (28,16)
+        !!!
+09BF14-09BF50  (segments at col,row): (8,15)  (12,16)  (28,16)
+                
+                 |      
+09CC9C-09CCD4  (segments at col,row): (13,27)  (31,27)
+                           |     
+09CCD4-09CD7A  (segments at col,row): (7,13)  (15,13)  (23,13)  (31,13)  (7,16)  (15,16)  (23,16)  (28,16)
+                 |          |          |          
+                 |          |       |      
+0A4F16-0A4F70  (segments at col,row): (32,8)  (18,11)  (39,11)
+        COMING
+        THE BLACK MARKETEER'S |  DID THIS
+0A4F90-0A5030  (segments at col,row): (18,8)  (37,8)  (18,11)  (37,11)  (18,14)
+        BECAUSE I WOULDN'T | HELP WITH
+        THEIR MASTERS EVIL  | PLAN.
+        HIS NAME IS...
+0A5080-0A50B0  (segments at col,row): (18,14)  (18,17)
+                 
+                 
+0A53C2-0A53DE  (segments at col,row): (18,22)
+                   
+0A53DE-0A53FA  (segments at col,row): (18,22)
+                   
+0A54B0-0A54D8  (segments at col,row): (30,11)
+        LITTLE ADVENTURE.
+0A54DE-0A54FC  (segments at col,row): (18,3)
+        JACK,LOOK...
+0A54FC-0A5520  (segments at col,row): (18,3)
+        MUSTPHA,LOOK...
+0A5520-0A5542  (segments at col,row): (18,3)
+        HANNAH,LOOK...
+0A5542-0A5560  (segments at col,row): (18,3)
+        MESS,LOOK...
+0A5566-0A5598  (segments at col,row): (24,6)  (38,6)
+        HELLO THIS IS  | JACK.
+0A5598-0A55D2  (segments at col,row): (24,6)  (38,6)
+        HELLO THIS IS  | MUSTAPHA.
+0A55D2-0A5608  (segments at col,row): (24,6)  (38,6)
+        HELLO THIS IS  | HANNAH.
+0A5608-0A563A  (segments at col,row): (24,6)  (38,6)
+        HELLO THIS IS  | MESS.
+0A565E-0A56CE  (segments at col,row): (29,3)  (14,6)  (31,6)  (14,9)
+        FAMILIAR.
+        I THINK IT'S THE | GENIUS
+        DR.FESSENDEN.
+0A58D0-0A58F6  (segments at col,row): (31,14)
+        BALANCES ITSELF.

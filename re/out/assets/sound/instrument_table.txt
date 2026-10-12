@@ -1,0 +1,127 @@
+# Instrument table at Z80 0x6E62 (8 bytes): sample index, fine tune, ?, ?, envelope index, ?, ?, ?  (only instruments used by a sequence are listed)
+  0  sample  25  fine   0  env 0x01  raw 19 00 3f 01 01 01 2f 00
+  1  sample  18  fine   0  env 0x01  raw 12 00 3f 01 01 01 2f 00
+  2  sample  21  fine   0  env 0x50  raw 15 00 3f 3a 50 00 2a 00
+  3  sample  27  fine   0  env 0x7f  raw 1b 00 3f 3f 7f 00 00 00
+  4  sample  31  fine   0  env 0x7f  raw 1f 00 3f 3f 7f 00 00 00
+  5  sample  12  fine   0  env 0x7f  raw 0c 00 3f 3f 7f 00 00 00
+  6  sample  32  fine   0  env 0x7f  raw 20 00 3f 3f 7f 00 00 00
+  8  sample   6  fine   0  env 0x7f  raw 06 00 3f 3f 7f 00 00 00
+  9  sample  33  fine   0  env 0x7f  raw 21 00 3f 3f 7f 00 00 00
+ 10  sample  11  fine   0  env 0x7f  raw 0b 00 3f 3f 7f 00 00 00
+ 11  sample  16  fine   0  env 0x7f  raw 10 00 3f 3f 7f 00 00 00
+ 12  sample   2  fine   0  env 0x7e  raw 02 00 3f 39 7e 10 2a 00
+ 13  sample   5  fine   0  env 0x10  raw 05 00 3f 20 10 00 00 00
+ 14  sample   7  fine   0  env 0x2a  raw 07 00 3f 20 2a 15 27 00
+ 16  sample  14  fine   0  env 0x40  raw 0e 00 3f 3e 40 00 40 00
+ 17  sample  22  fine   0  env 0x7f  raw 16 00 3f 3f 7f 00 00 00
+ 18  sample  17  fine   0  env 0x7f  raw 11 00 3f 3f 7f 00 00 00
+ 19  sample  19  fine   0  env 0x7f  raw 13 00 3f 3f 7f 00 00 00
+ 20  sample  10  fine   0  env 0x60  raw 0a 00 3f 3f 60 00 2a 00
+ 21  sample   9  fine   0  env 0x7f  raw 09 00 3f 3f 7f 00 00 00
+ 22  sample  20  fine   0  env 0x7f  raw 14 00 3f 3f 7f 00 00 00
+ 23  sample   1  fine   0  env 0x01  raw 01 00 3f 01 01 01 2f 00
+ 24  sample  15  fine   0  env 0x01  raw 0f 00 3f 01 01 01 2f 00
+ 25  sample  23  fine   0  env 0x7f  raw 17 00 3f 3f 7f 00 00 00
+ 26  sample   4  fine   0  env 0x7f  raw 04 00 3f 3f 7f 00 00 00
+ 27  sample  24  fine   0  env 0x50  raw 18 00 3f 2a 50 00 30 00
+ 28  sample   3  fine   0  env 0x01  raw 03 00 3f 01 01 01 28 00
+ 29  sample   8  fine   0  env 0x7f  raw 08 00 3f 3f 7f 00 00 00
+ 30  sample  26  fine   0  env 0x7f  raw 1a 00 3f 3f 7f 00 00 00
+ 31  sample  30  fine   0  env 0x7f  raw 1e 00 3f 3f 7f 00 00 00
+ 32  sample  13  fine   0  env 0x7f  raw 0d 00 3f 3f 7f 00 00 00
+ 33  sample   0  fine   0  env 0x01  raw 00 00 3f 01 01 01 2f 00
+ 34  sample   7  fine   0  env 0x01  raw 07 00 3f 01 01 01 32 00
+ 35  sample  34  fine   0  env 0x01  raw 22 00 3f 01 01 01 2f 00
+ 36  sample  35  fine   0  env 0x01  raw 23 00 3f 01 01 01 2f 00
+ 37  sample  36  fine   0  env 0x2a  raw 24 00 3f 20 2a 15 27 00
+ 38  sample   2  fine   0  env 0x01  raw 02 00 3f 01 01 01 2c 00
+ 40  sample  37  fine   0  env 0x01  raw 25 00 3f 01 01 01 2f 00
+ 41  sample  38  fine   0  env 0x01  raw 26 00 3f 01 01 01 2f 00
+ 42  sample  39  fine   0  env 0x01  raw 27 00 3f 01 01 01 2f 00
+ 43  sample  40  fine   0  env 0x7f  raw 28 00 3f 3f 7f 00 00 00
+ 44  sample  41  fine   0  env 0x7f  raw 29 00 3f 3f 7f 00 00 00
+ 45  sample  42  fine   0  env 0x7f  raw 2a 00 3f 3f 7f 00 00 00
+ 46  sample  43  fine   0  env 0x7f  raw 2b 00 3f 3f 7f 00 00 00
+ 47  sample  44  fine   0  env 0x7f  raw 2c 00 3f 3f 7f 00 00 00
+ 48  sample  45  fine   0  env 0x7f  raw 2d 00 3f 3f 7f 00 00 00
+ 49  sample  46  fine   0  env 0x7f  raw 2e 00 3f 3f 7f 00 00 00
+ 50  sample  47  fine   0  env 0x7f  raw 2f 00 3f 3f 7f 00 00 00
+ 51  sample  48  fine   0  env 0x7f  raw 30 00 3f 3f 7f 00 00 00
+ 52  sample  49  fine   0  env 0x7f  raw 31 00 3f 3f 7f 00 00 00
+ 53  sample  50  fine   0  env 0x7f  raw 32 00 3f 3f 7f 00 00 00
+ 54  sample  51  fine   0  env 0x7f  raw 33 00 3f 3f 7f 00 00 00
+ 55  sample  52  fine   0  env 0x7f  raw 34 00 3f 3f 7f 00 00 00
+ 56  sample  53  fine   0  env 0x7f  raw 35 00 3f 3f 7f 00 00 00
+ 57  sample  54  fine   0  env 0x7f  raw 36 00 3f 3f 7f 00 00 00
+ 58  sample  55  fine   0  env 0x7f  raw 37 00 3f 3f 7f 00 00 00
+ 59  sample  56  fine   0  env 0x7f  raw 38 00 3f 3f 7f 00 00 00
+ 60  sample  57  fine   0  env 0x7f  raw 39 00 3f 3f 7f 00 00 00
+ 61  sample  58  fine   0  env 0x7f  raw 3a 00 3f 3f 7f 00 00 00
+ 62  sample  59  fine   0  env 0x7f  raw 3b 00 3f 3f 7f 00 00 00
+ 63  sample  60  fine   0  env 0x7f  raw 3c 00 3f 3f 7f 00 00 00
+ 64  sample  61  fine   0  env 0x7f  raw 3d 00 3f 3f 7f 00 00 00
+ 65  sample  62  fine   0  env 0x7f  raw 3e 00 3f 3f 7f 00 00 00
+ 66  sample  63  fine   0  env 0x7f  raw 3f 00 3f 3f 7f 00 00 00
+ 67  sample  64  fine   0  env 0x7f  raw 40 00 3f 3f 7f 00 00 00
+ 68  sample  65  fine   0  env 0x7f  raw 41 00 3f 3f 7f 00 00 00
+ 69  sample  66  fine   0  env 0x7f  raw 42 00 3f 3f 7f 00 00 00
+ 70  sample  67  fine   0  env 0x7f  raw 43 00 3f 3f 7f 00 00 00
+ 71  sample  68  fine   0  env 0x7f  raw 44 00 3f 3f 7f 00 00 00
+ 72  sample  69  fine   0  env 0x7f  raw 45 00 3f 3f 7f 00 00 00
+ 73  sample  70  fine   0  env 0x7f  raw 46 00 3f 3f 7f 00 00 00
+ 74  sample  71  fine   0  env 0x7f  raw 47 00 3f 3f 7f 00 00 00
+ 75  sample  72  fine   0  env 0x7f  raw 48 00 3f 3f 7f 00 00 00
+ 76  sample  73  fine   0  env 0x7f  raw 49 00 3f 3f 7f 00 00 00
+ 77  sample  74  fine   0  env 0x7f  raw 4a 00 3f 3f 7f 00 00 00
+ 78  sample  75  fine   0  env 0x7f  raw 4b 00 3f 3f 7f 00 00 00
+ 79  sample  76  fine   0  env 0x7f  raw 4c 00 3f 3f 7f 00 00 00
+ 80  sample  77  fine   0  env 0x7f  raw 4d 00 3f 3f 7f 00 00 00
+ 81  sample  78  fine   0  env 0x7f  raw 4e 00 3f 3f 7f 00 00 00
+ 82  sample  79  fine   0  env 0x7f  raw 4f 00 3f 3f 7f 00 00 00
+ 83  sample  80  fine   0  env 0x7f  raw 50 00 3f 3f 7f 00 00 00
+ 84  sample  81  fine   0  env 0x7f  raw 51 00 3f 3f 7f 00 00 00
+ 85  sample  82  fine   0  env 0x7f  raw 52 00 3f 3f 7f 00 00 00
+ 86  sample  83  fine   0  env 0x7f  raw 53 00 3f 3f 7f 00 00 00
+ 87  sample  84  fine   0  env 0x7f  raw 54 00 3f 3f 7f 00 00 00
+ 88  sample  85  fine   0  env 0x7f  raw 55 00 3f 3f 7f 00 00 00
+ 89  sample  86  fine   0  env 0x7f  raw 56 00 3f 3f 7f 00 00 00
+ 90  sample  87  fine   0  env 0x7f  raw 57 00 3f 3f 7f 00 00 00
+ 91  sample  88  fine   0  env 0x7f  raw 58 00 3f 3f 7f 00 00 00
+ 92  sample  89  fine   0  env 0x7f  raw 59 00 3f 3f 7f 00 00 00
+ 93  sample  90  fine   0  env 0x7f  raw 5a 00 3f 3f 7f 00 00 00
+ 94  sample  91  fine   0  env 0x7f  raw 5b 00 3f 3f 7f 00 00 00
+ 95  sample  92  fine   0  env 0x7f  raw 5c 00 3f 3f 7f 00 00 00
+ 96  sample  93  fine   0  env 0x7f  raw 5d 00 3f 3f 7f 00 00 00
+ 97  sample  94  fine   0  env 0x7f  raw 5e 00 3f 3f 7f 00 00 00
+ 98  sample  95  fine   0  env 0x7f  raw 5f 00 3f 3f 7f 00 00 00
+ 99  sample  96  fine   0  env 0x7f  raw 60 00 3f 3f 7f 00 00 00
+100  sample  97  fine   0  env 0x7f  raw 61 00 3f 3f 7f 00 00 00
+101  sample  98  fine   0  env 0x7f  raw 62 00 3f 3f 7f 00 00 00
+102  sample  99  fine   0  env 0x7f  raw 63 00 3f 3f 7f 00 00 00
+103  sample 100  fine   0  env 0x7f  raw 64 00 3f 3f 7f 00 00 00
+104  sample 101  fine   0  env 0x7f  raw 65 00 3f 3f 7f 00 00 00
+105  sample 102  fine   0  env 0x7f  raw 66 00 3f 3f 7f 00 00 00
+106  sample 103  fine   0  env 0x7f  raw 67 00 3f 3f 7f 00 00 00
+107  sample 104  fine   0  env 0x7f  raw 68 00 3f 3f 7f 00 00 00
+108  sample 105  fine   0  env 0x7f  raw 69 00 3f 3f 7f 00 00 00
+109  sample 106  fine   0  env 0x7f  raw 6a 00 3f 3f 7f 00 00 00
+110  sample 107  fine   0  env 0x7f  raw 6b 00 3f 3f 7f 00 00 00
+111  sample 108  fine   0  env 0x7f  raw 6c 00 3f 3f 7f 00 00 00
+112  sample 109  fine   0  env 0x7f  raw 6d 00 3f 3f 7f 00 00 00
+113  sample 110  fine   0  env 0x7f  raw 6e 00 3f 3f 7f 00 00 00
+114  sample 111  fine   0  env 0x7f  raw 6f 00 3f 3f 7f 00 00 00
+115  sample 112  fine   0  env 0x7f  raw 70 00 3f 3f 7f 00 00 00
+116  sample 113  fine   0  env 0x7f  raw 71 00 3f 3f 7f 00 00 00
+117  sample 114  fine   0  env 0x7f  raw 72 00 3f 3f 7f 00 00 00
+118  sample 115  fine   0  env 0x7f  raw 73 00 3f 3f 7f 00 00 00
+119  sample 116  fine   0  env 0x7f  raw 74 00 3f 3f 7f 00 00 00
+120  sample 117  fine   0  env 0x7f  raw 75 00 3f 3f 7f 00 00 00
+121  sample 118  fine   0  env 0x7f  raw 76 00 3f 3f 7f 00 00 00
+122  sample 119  fine   0  env 0x7f  raw 77 00 3f 3f 7f 00 00 00
+123  sample 104  fine   0  env 0x50  raw 68 00 3f 3f 50 21 20 00
+124  sample  94  fine   0  env 0x70  raw 5e 00 3f 30 70 20 10 00
+125  sample 120  fine   0  env 0x7f  raw 78 00 3d 3f 7f 20 25 00
+126  sample 121  fine   0  env 0x7f  raw 79 00 3f 3f 7f 00 00 00
+127  sample 122  fine   0  env 0x01  raw 7a 00 3f 01 01 01 2f 00
+129  sample   5  fine   0  env 0x10  raw 05 00 3f 20 10 00 00 00

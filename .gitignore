@@ -1,7 +1,10 @@
-# Never commit the ROM or anything copied out of it (graphics, code, decompiled code, art).
+# Never commit the ROM itself, program images, the Ghidra database or decompiled code.
+# Exception (user decision 2026-10-12, the repo is always private): the asset dump re/out/assets/
+# (pictures, animations, maps, text, samples rendered by re/tools/dump_assets.sh) IS committed.
 *.zip
 re/rom/
-re/out/
+re/out/*
+!re/out/assets/
 re/ghidra/proj/
 re/ghidra/*.elf
 re/ghidra/decomp*
@@ -9,6 +12,7 @@ re/ghidra/log*.txt
 *.npy
 *.png
 *.bin
+!re/out/assets/**
 # Raw disassembly / decompiler dumps of the original program
 re/specs/**/*_dis.txt
 re/specs/enemy/c2.txt

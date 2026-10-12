@@ -1,0 +1,2934 @@
+; Z80 sound driver disassembly (recursive walk, Kabuki decrypted). Opcodes from the opcode image, operands from the data image.
+L0000:
+  0000  f3           di
+  0001  ed 66        im 1
+  0003  31 ff ff     ld sp,$ffff
+  0006  21 00 f0     ld hl,$f000
+  0009  11 01 f0     ld de,$f001
+  000c  01 ff 0f     ld bc,$0fff
+  000f  36 00        ld (hl),$00
+  0011  ed b0        ldir
+  0013  3e 77        ld a,$77
+  0015  32 ff cf     ld ($cfff),a
+  0018  c3 75 00     jp $0075
+
+L0038:
+  0038  f3           di
+  0039  08           ex af,af'
+  003a  d9           exx
+  003b  21 04 f0     ld hl,$f004
+  003e  34           inc (hl)
+  003f  3a fd cf     ld a,($cffd)
+  0042  fe 88        cp $88
+  0044  c2 71 00     jp nz,$0071
+  0047  3a 0f c0     ld a,($c00f)
+  004a  3c           inc a
+  004b  ca 6b 00     jp z,$006b
+  004e  3a 07 f0     ld a,($f007)
+  0051  26 00        ld h,$00
+  0053  6f           ld l,a
+  0054  11 00 f1     ld de,$f100
+  0057  19           add hl,de
+  0058  c6 10        add a,$10
+  005a  32 07 f0     ld ($f007),a
+  005d  eb           ex de,hl
+  005e  21 00 c0     ld hl,$c000
+  0061  01 10 00     ld bc,$0010
+  0064  ed d0        ldir
+L0066:
+  0066  3e ff        ld a,$ff
+  0068  32 0f c0     ld ($c00f),a
+L006b:
+  006b  3a fe cf     ld a,($cffe)
+  006e  32 40 f0     ld ($f040),a
+L0071:
+  0071  08           ex af,af'
+  0072  d9           exx
+  0073  fb           ei
+  0074  c9           ret
+L0075:
+  0075  fb           ei
+  0076  06 04        ld b,$04
+L0078:
+  0078  3e 80        ld a,$80
+  007a  32 03 d0     ld ($d003),a
+  007d  21 05 f0     ld hl,$f005
+  0080  3a 04 f0     ld a,($f004)
+  0083  be           cp (hl)
+  0084  28 f2        jr z,$0078
+  0086  34           inc (hl)
+  0087  10 ef        djnz $0078
+  0089  06 04        ld b,$04
+L008b:
+  008b  3e 00        ld a,$00
+  008d  32 03 d0     ld ($d003),a
+  0090  21 05 f0     ld hl,$f005
+  0093  3a 04 f0     ld a,($f004)
+  0096  be           cp (hl)
+  0097  28 f2        jr z,$008b
+  0099  34           inc (hl)
+  009a  10 ef        djnz $008b
+  009c  3e 80        ld a,$80
+  009e  32 03 d0     ld ($d003),a
+L00a1:
+  00a1  3a ff cf     ld a,($cfff)
+  00a4  fe ff        cp $ff
+  00a6  c2 a1 00     jp nz,$00a1
+  00a9  cd 12 09     call $0912
+  00ac  3a 02 80     ld a,($8002)
+  00af  11 a9 24     ld de,$24a9
+  00b2  26 00        ld h,$00
+  00b4  6f           ld l,a
+  00b5  29           add hl,hl
+  00b6  19           add hl,de
+  00b7  5e           ld e,(hl)
+  00b8  23           inc hl
+  00b9  56           ld d,(hl)
+  00ba  ed 63 16 f0  ld ($f016),de
+L00be:
+  00be  21 05 f0     ld hl,$f005
+  00c1  3a 04 f0     ld a,($f004)
+  00c4  be           cp (hl)
+  00c5  ca be 00     jp z,$00be
+  00c8  34           inc (hl)
+  00c9  cd 7d 01     call $017d
+  00cc  3a 05 f0     ld a,($f005)
+  00cf  e6 03        and $03
+  00d1  c2 be 00     jp nz,$00be
+  00d4  dd 55 00 f2  ld ix,$f200
+  00d8  06 10        ld b,$10
+L00da:
+  00da  c5           push bc
+  00db  3e 10        ld a,$10
+  00dd  90           sub b
+  00de  32 0d f0     ld ($f00d),a
+  00e1  07           rlca
+  00e2  07           rlca
+  00e3  07           rlca
+  00e4  32 0e f0     ld ($f00e),a
+  00e7  af           xor a
+  00e8  32 06 f0     ld ($f006),a
+  00eb  32 20 f0     ld ($f020),a
+  00ee  dd 9a 20     ld a,(ix+32)
+  00f1  b7           or a
+  00f2  ca 1e 01     jp z,$011e
+  00f5  dd 9a 3f     ld a,(ix+63)
+  00f8  b7           or a
+  00f9  28 12        jr z,$010d
+  00fb  dd 2d 3f     dec (ix+63)
+  00fe  c2 1e 01     jp nz,$011e
+  0101  cd 81 09     call $0981
+  0104  dd ce 37     ld e,(ix+55)
+  0107  cd e7 09     call $09e7
+  010a  c3 19 01     jp $0119
+L010d:
+  010d  dd 88 31     ld h,(ix+49)
+  0110  dd 8a 30     ld l,(ix+48)
+  0113  22 10 f0     ld ($f010),hl
+  0116  cd 28 0a     call $0a28
+L0119:
+  0119  21 20 f0     ld hl,$f020
+  011c  36 ff        ld (hl),$ff
+L011e:
+  011e  01 00 04     ld bc,$0400
+  0121  dd 17        add ix,bc
+  0123  dd e1 20     ld a,(ix+32)
+  0126  b7           or a
+  0127  ca 3b 01     jp z,$013b
+  012a  32 06 f0     ld ($f006),a
+  012d  2a 12 f0     ld hl,($f012)
+  0130  ed df 14 f0  ld de,($f014)
+  0134  19           add hl,de
+  0135  22 10 f0     ld ($f010),hl
+  0138  cd 28 0a     call $0a28
+L013b:
+  013b  01 40 fc     ld bc,$fc40
+  013e  dd 05        add ix,bc
+  0140  c1           pop bc
+  0141  10 97        djnz $00da
+  0143  cd 2c 21     call $212c
+  0146  3a 30 f0     ld a,($f030)
+  0149  b7           or a
+  014a  ca 60 01     jp z,$0160
+  014d  2a 33 f0     ld hl,($f033)
+  0150  ed 83 31 f0  ld de,($f031)
+  0154  b7           or a
+  0155  ed c1        sbc hl,de
+  0157  d2 5d 01     jp nc,$015d
+  015a  21 00 00     ld hl,$0000
+L015d:
+  015d  22 33 f0     ld ($f033),hl
+L0160:
+  0160  3a 35 f0     ld a,($f035)
+  0163  b7           or a
+  0164  ca be 00     jp z,$00be
+  0167  2a 38 f0     ld hl,($f038)
+  016a  ed 83 36 f0  ld de,($f036)
+  016e  b7           or a
+  016f  ed 70        sbc hl,de
+  0171  d2 77 01     jp nc,$0177
+  0174  21 00 00     ld hl,$0000
+L0177:
+  0177  22 38 f0     ld ($f038),hl
+  017a  c3 be 00     jp $00be
+L017d:
+  017d  21 07 f0     ld hl,$f007
+  0180  3a 08 f0     ld a,($f008)
+  0183  be           cp (hl)
+  0184  c8           ret z
+  0185  26 00        ld h,$00
+  0187  6f           ld l,a
+  0188  11 00 f1     ld de,$f100
+  018b  19           add hl,de
+  018c  c6 10        add a,$10
+  018e  32 08 f0     ld ($f008),a
+  0191  3e 80        ld a,$80
+  0193  32 03 d0     ld ($d003),a
+  0196  e5           push hl
+  0197  fd 53        pop iy
+  0199  fd a5 00     ld a,(iy+0)
+  019c  3c           inc a
+  019d  ca 82 07     jp z,$0782
+  01a0  21 00 80     ld hl,$8000
+  01a3  56           ld d,(hl)
+  01a4  23           inc hl
+  01a5  5e           ld e,(hl)
+  01a6  fd 95 00     ld h,(iy+0)
+  01a9  fd 45 01     ld l,(iy+1)
+L01ac:
+  01ac  b7           or a
+  01ad  ed d9        sbc hl,de
+  01af  30 fb        jr nc,$01ac
+  01b1  19           add hl,de
+  01b2  29           add hl,hl
+  01b3  29           add hl,hl
+  01b4  11 06 80     ld de,$8006
+  01b7  19           add hl,de
+  01b8  46           ld b,(hl)
+  01b9  23           inc hl
+  01ba  56           ld d,(hl)
+  01bb  23           inc hl
+  01bc  5e           ld e,(hl)
+  01bd  eb           ex de,hl
+  01be  78           ld a,b
+  01bf  b7           or a
+  01c0  20 03        jr nz,$01c5
+  01c2  7c           ld a,h
+  01c3  b5           or l
+  01c4  c8           ret z
+L01c5:
+  01c5  78           ld a,b
+  01c6  32 09 f0     ld ($f009),a
+  01c9  22 0a f0     ld ($f00a),hl
+  01cc  cd bc 09     call $09bc
+  01cf  b7           or a
+  01d0  ca 49 04     jp z,$0449
+  01d3  fe 80        cp $80
+  01d5  d2 f2 04     jp nc,$04f2
+  01d8  32 0c f0     ld ($f00c),a
+  01db  dd e7 00 f2  ld ix,$f200
+  01df  3e 10        ld a,$10
+L01e1:
+  01e1  f5           push af
+  01e2  4f           ld c,a
+  01e3  3e 10        ld a,$10
+  01e5  91           sub c
+  01e6  32 0d f0     ld ($f00d),a
+  01e9  cd bc 09     call $09bc
+  01ec  f5           push af
+  01ed  cd bc 09     call $09bc
+  01f0  5f           ld e,a
+  01f1  f1           pop af
+  01f2  57           ld d,a
+  01f3  b3           or e
+  01f4  ca 46 02     jp z,$0246
+  01f7  3a 0c f0     ld a,($f00c)
+  01fa  dd 3a 32     cp (ix+50)
+  01fd  da 46 02     jp c,$0246
+  0200  e5           push hl
+  0201  c5           push bc
+  0202  d5           push de
+  0203  dd c1        push ix
+  0205  e1           pop hl
+  0206  54           ld d,h
+  0207  5d           ld e,l
+  0208  13           inc de
+  0209  01 3f 00     ld bc,$003f
+  020c  36 00        ld (hl),$00
+  020e  ed 70        ldir
+  0210  d1           pop de
+  0211  3a 09 f0     ld a,($f009)
+  0214  2a 0a f0     ld hl,($f00a)
+  0217  19           add hl,de
+  0218  ce 00        adc a,$00
+  021a  dd c3 02     ld (ix+2),a
+  021d  dd c0 01     ld (ix+1),h
+  0220  dd c1 00     ld (ix+0),l
+  0223  3a 0c f0     ld a,($f00c)
+  0226  dd c3 32     ld (ix+50),a
+  0229  dd 82 20 ff  ld (ix+32),$ff
+  022d  dd 82 17 01  ld (ix+23),$01
+  0231  dd 82 25 05  ld (ix+37),$05
+  0235  cd 51 02     call $0251
+  0238  3a 0d f0     ld a,($f00d)
+  023b  cd 81 09     call $0981
+  023e  dd 8a 37     ld e,(ix+55)
+  0241  cd e7 09     call $09e7
+  0244  c1           pop bc
+  0245  e1           pop hl
+L0246:
+  0246  11 40 00     ld de,$0040
+  0249  dd 02        add ix,de
+  024b  f1           pop af
+  024c  3d           dec a
+  024d  c2 e1 01     jp nz,$01e1
+  0250  c9           ret
+L0251:
+  0251  fd a5 06     ld a,(iy+6)
+  0254  e6 07        and $07
+  0256  3c           inc a
+  0257  dd e7 36     ld (ix+54),a
+  025a  3d           dec a
+  025b  cb ed        sla a
+  025d  26 00        ld h,$00
+  025f  6f           ld l,a
+  0260  11 69 02     ld de,$0269
+  0263  19           add hl,de
+  0264  7e           ld a,(hl)
+  0265  23           inc hl
+  0266  66           ld h,(hl)
+  0267  6f           ld l,a
+  0268  e9           jp (hl)
+
+L0279:
+  0279  dd c5 36 00  ld (ix+54),$00
+  027d  fd aa 07     ld a,(iy+7)
+  0280  fe 21        cp $21
+  0282  38 02        jr c,$0286
+  0284  3e 20        ld a,$20
+L0286:
+  0286  dd d7 37     ld (ix+55),a
+  0289  c9           ret
+L028a:
+  028a  fd dd 09     ld d,(iy+9)
+  028d  fd ad 0a     ld e,(iy+10)
+  0290  fd c5 07     ld a,(iy+7)
+  0293  fe 11        cp $11
+  0295  da a6 02     jp c,$02a6
+  0298  fe 21        cp $21
+  029a  da 9f 02     jp c,$029f
+  029d  3e 20        ld a,$20
+L029f:
+  029f  21 00 00     ld hl,$0000
+  02a2  b7           or a
+  02a3  ed df        sbc hl,de
+  02a5  eb           ex de,hl
+L02a6:
+  02a6  dd d1 3c     ld (ix+60),d
+  02a9  dd d3 3b     ld (ix+59),e
+  02ac  dd d7 37     ld (ix+55),a
+  02af  dd 95 38 00  ld (ix+56),$00
+  02b3  c9           ret
+L02b4:
+  02b4  fd dd 09     ld d,(iy+9)
+  02b7  fd cd 0a     ld e,(iy+10)
+  02ba  fd 9d 07     ld b,(iy+7)
+  02bd  78           ld a,b
+  02be  fe 11        cp $11
+  02c0  da dc 02     jp c,$02dc
+  02c3  fe 21        cp $21
+  02c5  da cb 02     jp c,$02cb
+  02c8  3e 20        ld a,$20
+  02ca  47           ld b,a
+L02cb:
+  02cb  21 00 00     ld hl,$0000
+  02ce  b7           or a
+  02cf  ed 4a        sbc hl,de
+  02d1  eb           ex de,hl
+  02d2  fd 28 08     sub (iy+8)
+  02d5  d2 e6 02     jp nc,$02e6
+  02d8  af           xor a
+  02d9  c3 e6 02     jp $02e6
+L02dc:
+  02dc  fd 2c 08     add a,(iy+8)
+  02df  fe 21        cp $21
+  02e1  da e6 02     jp c,$02e6
+  02e4  3e 20        ld a,$20
+L02e6:
+  02e6  dd 99 3a     ld (ix+58),a
+  02e9  dd d0 37     ld (ix+55),b
+  02ec  dd 18 38 00  ld (ix+56),$00
+  02f0  dd d8 3c     ld (ix+60),d
+  02f3  dd d9 3b     ld (ix+59),e
+  02f6  fd 9a 08     ld a,(iy+8)
+  02f9  dd 99 39     ld (ix+57),a
+  02fc  c9           ret
+L02fd:
+  02fd  fd ac 09     ld d,(iy+9)
+  0300  fd ce 0a     ld e,(iy+10)
+  0303  fd 8c 07     ld b,(iy+7)
+  0306  78           ld a,b
+  0307  fd cd 08     add a,(iy+8)
+  030a  fe 21        cp $21
+  030c  da 11 03     jp c,$0311
+  030f  3e 20        ld a,$20
+L0311:
+  0311  dd a9 3a     ld (ix+58),a
+  0314  dd d0 37     ld (ix+55),b
+  0317  dd 28 38 00  ld (ix+56),$00
+  031b  dd 90 3c     ld (ix+60),d
+  031e  dd d9 3b     ld (ix+59),e
+  0321  c9           ret
+L0322:
+  0322  fd cc 09     ld d,(iy+9)
+  0325  fd ce 0a     ld e,(iy+10)
+  0328  fd 8c 07     ld b,(iy+7)
+  032b  78           ld a,b
+  032c  fe 21        cp $21
+  032e  da 34 03     jp c,$0334
+  0331  3e 20        ld a,$20
+  0333  47           ld b,a
+L0334:
+  0334  21 00 00     ld hl,$0000
+  0337  b7           or a
+  0338  ed dc        sbc hl,de
+  033a  eb           ex de,hl
+  033b  fd 24 08     sub (iy+8)
+  033e  d2 42 03     jp nc,$0342
+  0341  af           xor a
+L0342:
+  0342  dd 66 3a     ld (ix+58),a
+  0345  dd d0 37     ld (ix+55),b
+  0348  dd 24 38 00  ld (ix+56),$00
+  034c  dd 44 3c     ld (ix+60),d
+  034f  dd 8a 3b     ld (ix+59),e
+  0352  c9           ret
+L0353:
+  0353  fd 0a 09     ld d,(iy+9)
+  0356  fd 68 0a     ld e,(iy+10)
+  0359  fd 61 07     ld b,(iy+7)
+  035c  78           ld a,b
+  035d  fd a1 08     add a,(iy+8)
+  0360  fe 21        cp $21
+  0362  da 67 03     jp c,$0367
+  0365  3e 20        ld a,$20
+L0367:
+  0367  dd 66 3a     ld (ix+58),a
+  036a  dd 54 37     ld (ix+55),b
+  036d  dd 60 38 00  ld (ix+56),$00
+  0371  dd 44 3c     ld (ix+60),d
+  0374  dd 46 3b     ld (ix+59),e
+  0377  fd 65 0b     ld h,(iy+11)
+  037a  fd 6d 0c     ld l,(iy+12)
+  037d  dd b8 3e     ld (ix+62),h
+  0380  dd 76 3d     ld (ix+61),l
+  0383  c9           ret
+L0384:
+  0384  fd 71 09     ld d,(iy+9)
+  0387  fd e9 0a     ld e,(iy+10)
+  038a  fd 61 07     ld b,(iy+7)
+  038d  78           ld a,b
+  038e  fe 21        cp $21
+  0390  da 96 03     jp c,$0396
+  0393  3e 20        ld a,$20
+  0395  47           ld b,a
+L0396:
+  0396  21 00 00     ld hl,$0000
+  0399  b7           or a
+  039a  ed 51        sbc hl,de
+  039c  eb           ex de,hl
+  039d  fd e1 08     sub (iy+8)
+  03a0  d2 a4 03     jp nc,$03a4
+  03a3  af           xor a
+L03a4:
+  03a4  dd 72 3a     ld (ix+58),a
+  03a7  dd d6 37     ld (ix+55),b
+  03aa  dd 30 38 00  ld (ix+56),$00
+  03ae  dd 50 3c     ld (ix+60),d
+  03b1  dd 52 3b     ld (ix+59),e
+  03b4  21 00 00     ld hl,$0000
+  03b7  fd 71 0b     ld d,(iy+11)
+  03ba  fd 79 0c     ld e,(iy+12)
+  03bd  b7           or a
+  03be  ed 52        sbc hl,de
+  03c0  dd 44 3e     ld (ix+62),h
+  03c3  dd c1 3d     ld (ix+61),l
+  03c6  c9           ret
+L03c7:
+  03c7  fd 00 09     ld d,(iy+9)
+  03ca  fd 4a 0a     ld e,(iy+10)
+  03cd  fd 62 07     ld b,(iy+7)
+  03d0  78           ld a,b
+  03d1  fd 26 08     add a,(iy+8)
+  03d4  fe 21        cp $21
+  03d6  da db 03     jp c,$03db
+  03d9  3e 20        ld a,$20
+L03db:
+  03db  dd 41 3a     ld (ix+58),a
+  03de  dd 54 37     ld (ix+55),b
+  03e1  dd 42 38 00  ld (ix+56),$00
+  03e5  dd 56 3c     ld (ix+60),d
+  03e8  dd 57 3b     ld (ix+59),e
+  03eb  dd ef        push ix
+  03ed  dd e5        push ix
+  03ef  e1           pop hl
+  03f0  01 40 00     ld bc,$0040
+  03f3  3a 0d f0     ld a,($f00d)
+  03f6  3c           inc a
+  03f7  e6 0f        and $0f
+  03f9  c2 ff 03     jp nz,$03ff
+  03fc  01 40 fc     ld bc,$fc40
+L03ff:
+  03ff  dd 6f        add ix,bc
+  0401  3a 0c f0     ld a,($f00c)
+  0404  dd 9a 32     cp (ix+50)
+  0407  da 46 04     jp c,$0446
+  040a  dd c1        push ix
+  040c  d1           pop de
+  040d  01 40 00     ld bc,$0040
+  0410  ed 94        ldir
+  0412  fd 72 09     ld d,(iy+9)
+  0415  fd ea 0a     ld e,(iy+10)
+  0418  fd 62 07     ld b,(iy+7)
+  041b  78           ld a,b
+  041c  fe 21        cp $21
+  041e  da 24 04     jp c,$0424
+  0421  3e 20        ld a,$20
+  0423  47           ld b,a
+L0424:
+  0424  21 00 00     ld hl,$0000
+  0427  b7           or a
+  0428  ed 76        sbc hl,de
+  042a  eb           ex de,hl
+  042b  fd 69 08     sub (iy+8)
+  042e  d2 32 04     jp nc,$0432
+  0431  af           xor a
+L0432:
+  0432  dd 53 3a     ld (ix+58),a
+  0435  dd 54 37     ld (ix+55),b
+  0438  dd 12 38 00  ld (ix+56),$00
+  043c  dd 56 3c     ld (ix+60),d
+  043f  dd 80 3b     ld (ix+59),e
+  0442  dd 35 3f 04  ld (ix+63),$04
+L0446:
+  0446  dd c6        pop ix
+  0448  c9           ret
+L0449:
+  0449  c5           push bc
+  044a  e5           push hl
+  044b  af           xor a
+  044c  21 00 00     ld hl,$0000
+  044f  22 12 f0     ld ($f012),hl
+  0452  32 1a f0     ld ($f01a),a
+  0455  32 35 f0     ld ($f035),a
+  0458  22 14 f0     ld ($f014),hl
+  045b  22 1b f0     ld ($f01b),hl
+  045e  2a 16 f0     ld hl,($f016)
+  0461  11 fe ff     ld de,$fffe
+  0464  cd cb 29     call $29cb
+  0467  22 18 f0     ld ($f018),hl
+  046a  e1           pop hl
+  046b  c1           pop bc
+  046c  dd 06 00 f6  ld ix,$f600
+  0470  3e 10        ld a,$10
+L0472:
+  0472  f5           push af
+  0473  4f           ld c,a
+  0474  3e 10        ld a,$10
+  0476  91           sub c
+  0477  32 0d f0     ld ($f00d),a
+  047a  cd bc 09     call $09bc
+  047d  f5           push af
+  047e  cd bc 09     call $09bc
+  0481  5f           ld e,a
+  0482  f1           pop af
+  0483  57           ld d,a
+  0484  e5           push hl
+  0485  c5           push bc
+  0486  7a           ld a,d
+  0487  b3           or e
+  0488  c2 99 04     jp nz,$0499
+  048b  dd 8d 20     ld a,(ix+32)
+  048e  dd 35 20 00  ld (ix+32),$00
+  0492  b7           or a
+  0493  c2 ca 04     jp nz,$04ca
+  0496  c3 e5 04     jp $04e5
+L0499:
+  0499  d5           push de
+  049a  dd e0        push ix
+  049c  e1           pop hl
+  049d  54           ld d,h
+  049e  5d           ld e,l
+  049f  13           inc de
+  04a0  01 2f 00     ld bc,$002f
+  04a3  36 00        ld (hl),$00
+  04a5  ed c4        ldir
+  04a7  d1           pop de
+  04a8  3a 09 f0     ld a,($f009)
+  04ab  2a 0a f0     ld hl,($f00a)
+  04ae  19           add hl,de
+  04af  ce 00        adc a,$00
+  04b1  dd 71 02     ld (ix+2),a
+  04b4  dd 74 01     ld (ix+1),h
+  04b7  dd 70 00     ld (ix+0),l
+  04ba  dd 35 20 ff  ld (ix+32),$ff
+  04be  dd 0c 17 01  ld (ix+23),$01
+  04c2  dd 0c 25 05  ld (ix+37),$05
+  04c6  dd 0c 37 10  ld (ix+55),$10
+L04ca:
+  04ca  dd d5        push ix
+  04cc  01 00 fc     ld bc,$fc00
+  04cf  dd 33        add ix,bc
+  04d1  dd 8e 20     ld a,(ix+32)
+  04d4  b7           or a
+  04d5  c2 e3 04     jp nz,$04e3
+  04d8  3a 0d f0     ld a,($f00d)
+  04db  cd 81 09     call $0981
+  04de  1e 10        ld e,$10
+  04e0  cd fe 09     call $09fe
+L04e3:
+  04e3  dd 7e        pop ix
+L04e5:
+  04e5  c1           pop bc
+  04e6  e1           pop hl
+  04e7  11 40 00     ld de,$0040
+  04ea  dd 23        add ix,de
+  04ec  f1           pop af
+  04ed  3d           dec a
+  04ee  c2 72 04     jp nz,$0472
+  04f1  c9           ret
+L04f2:
+  04f2  e6 7f        and $7f
+  04f4  32 0c f0     ld ($f00c),a
+  04f7  cd bc 09     call $09bc
+  04fa  4f           ld c,a
+  04fb  e6 03        and $03
+  04fd  32 0d f0     ld ($f00d),a
+  0500  79           ld a,c
+  0501  0f           rrca
+  0502  0f           rrca
+  0503  0f           rrca
+  0504  e6 60        and $60
+  0506  16 00        ld d,$00
+  0508  5f           ld e,a
+  0509  dd 05 00 fa  ld ix,$fa00
+  050d  dd 23        add ix,de
+  050f  3a 0c f0     ld a,($f00c)
+  0512  dd 5a 12     cp (ix+18)
+  0515  d8           ret c
+  0516  79           ld a,c
+  0517  e6 80        and $80
+  0519  f5           push af
+  051a  cd bc 09     call $09bc
+  051d  f5           push af
+  051e  cd bc 09     call $09bc
+  0521  47           ld b,a
+  0522  f1           pop af
+  0523  4f           ld c,a
+  0524  c5           push bc
+  0525  dd d5        push ix
+  0527  e1           pop hl
+  0528  54           ld d,h
+  0529  5d           ld e,l
+  052a  13           inc de
+  052b  01 1f 00     ld bc,$001f
+  052e  36 00        ld (hl),$00
+  0530  ed 40        ldir
+  0532  c1           pop bc
+  0533  dd c0 00 ff  ld (ix+0),$ff
+  0537  f1           pop af
+  0538  dd 99 01     ld (ix+1),a
+  053b  3a 0c f0     ld a,($f00c)
+  053e  dd 9f 12     ld (ix+18),a
+  0541  fd d6        push iy
+  0543  11 82 6a     ld de,$6a82
+  0546  26 00        ld h,$00
+  0548  68           ld l,b
+  0549  29           add hl,hl
+  054a  29           add hl,hl
+  054b  29           add hl,hl
+  054c  19           add hl,de
+  054d  e5           push hl
+  054e  fd de        pop iy
+  0550  fd a5 00     ld a,(iy+0)
+  0553  dd f6 04     ld (ix+4),a
+  0556  fd b1 03     ld d,(iy+3)
+  0559  fd 25 02     ld e,(iy+2)
+  055c  dd bd 06     ld (ix+6),d
+  055f  dd 79 05     ld (ix+5),e
+  0562  fd 95 05     ld h,(iy+5)
+  0565  fd c1 04     ld l,(iy+4)
+  0568  dd b4 08     ld (ix+8),h
+  056b  dd 73 07     ld (ix+7),l
+  056e  b7           or a
+  056f  ed b9        sbc hl,de
+  0571  dd f0 0a     ld (ix+10),h
+  0574  dd b6 09     ld (ix+9),l
+  0577  dd 71 11     ld (ix+17),h
+  057a  dd b6 10     ld (ix+16),l
+  057d  fd 55        pop iy
+  057f  11 a9 23     ld de,$23a9
+  0582  26 00        ld h,$00
+  0584  69           ld l,c
+  0585  29           add hl,hl
+  0586  19           add hl,de
+  0587  7e           ld a,(hl)
+  0588  dd b7 02     ld (ix+2),a
+  058b  23           inc hl
+  058c  7e           ld a,(hl)
+  058d  dd b7 03     ld (ix+3),a
+  0590  fd b1 06     ld a,(iy+6)
+  0593  e6 07        and $07
+  0595  3c           inc a
+  0596  dd b7 16     ld (ix+22),a
+  0599  3d           dec a
+  059a  cb 17        sla a
+  059c  26 00        ld h,$00
+  059e  6f           ld l,a
+  059f  11 a8 05     ld de,$05a8
+  05a2  19           add hl,de
+  05a3  7e           ld a,(hl)
+  05a4  23           inc hl
+  05a5  66           ld h,(hl)
+  05a6  6f           ld l,a
+  05a7  e9           jp (hl)
+
+L05b8:
+  05b8  dd 35 16 00  ld (ix+22),$00
+  05bc  fd a6 07     ld a,(iy+7)
+  05bf  fe 21        cp $21
+  05c1  38 02        jr c,$05c5
+  05c3  3e 20        ld a,$20
+L05c5:
+  05c5  dd 87 17     ld (ix+23),a
+  05c8  c9           ret
+L05c9:
+  05c9  fd 06 09     ld d,(iy+9)
+  05cc  fd 8a 0a     ld e,(iy+10)
+  05cf  fd 8e 07     ld a,(iy+7)
+  05d2  fe 11        cp $11
+  05d4  da e5 05     jp c,$05e5
+  05d7  fe 21        cp $21
+  05d9  da de 05     jp c,$05de
+  05dc  3e 20        ld a,$20
+L05de:
+  05de  21 00 00     ld hl,$0000
+  05e1  b7           or a
+  05e2  ed a2        sbc hl,de
+  05e4  eb           ex de,hl
+L05e5:
+  05e5  dd e2 1c     ld (ix+28),d
+  05e8  dd a7 1b     ld (ix+27),e
+  05eb  dd 41 17     ld (ix+23),a
+  05ee  dd 06 18 00  ld (ix+24),$00
+  05f2  c9           ret
+L05f3:
+  05f3  fd 09 09     ld d,(iy+9)
+  05f6  fd 8a 0a     ld e,(iy+10)
+  05f9  fd 92 07     ld b,(iy+7)
+  05fc  78           ld a,b
+  05fd  fe 11        cp $11
+  05ff  da 1b 06     jp c,$061b
+  0602  fe 21        cp $21
+  0604  da 0a 06     jp c,$060a
+  0607  3e 20        ld a,$20
+  0609  47           ld b,a
+L060a:
+  060a  21 00 00     ld hl,$0000
+  060d  b7           or a
+  060e  ed a2        sbc hl,de
+  0610  eb           ex de,hl
+  0611  fd e2 08     sub (iy+8)
+  0614  d2 25 06     jp nc,$0625
+  0617  af           xor a
+  0618  c3 25 06     jp $0625
+L061b:
+  061b  fd 6d 08     add a,(iy+8)
+  061e  fe 21        cp $21
+  0620  da 25 06     jp c,$0625
+  0623  3e 20        ld a,$20
+L0625:
+  0625  dd c3 1a     ld (ix+26),a
+  0628  dd 80 17     ld (ix+23),b
+  062b  dd 48 18 00  ld (ix+24),$00
+  062f  dd 03 1c     ld (ix+28),d
+  0632  dd 83 1b     ld (ix+27),e
+  0635  fd ca 08     ld a,(iy+8)
+  0638  dd 93 19     ld (ix+25),a
+  063b  c9           ret
+L063c:
+  063c  fd 9a 09     ld d,(iy+9)
+  063f  fd 25 0a     ld e,(iy+10)
+  0642  fd 91 07     ld b,(iy+7)
+  0645  78           ld a,b
+  0646  fd 51 08     add a,(iy+8)
+  0649  fe 21        cp $21
+  064b  da 50 06     jp c,$0650
+  064e  3e 20        ld a,$20
+L0650:
+  0650  dd b7 1a     ld (ix+26),a
+  0653  dd 9d 17     ld (ix+23),b
+  0656  dd 35 18 00  ld (ix+24),$00
+  065a  dd bd 1c     ld (ix+28),d
+  065d  dd fb 1b     ld (ix+27),e
+  0660  c9           ret
+L0661:
+  0661  fd b1 09     ld d,(iy+9)
+  0664  fd a1 0a     ld e,(iy+10)
+  0667  fd 10 07     ld b,(iy+7)
+  066a  78           ld a,b
+  066b  fe 21        cp $21
+  066d  da 73 06     jp c,$0673
+  0670  3e 20        ld a,$20
+  0672  47           ld b,a
+L0673:
+  0673  21 00 00     ld hl,$0000
+  0676  b7           or a
+  0677  ed 3b        sbc hl,de
+  0679  eb           ex de,hl
+  067a  fd 71 08     sub (iy+8)
+  067d  d2 81 06     jp nc,$0681
+  0680  af           xor a
+L0681:
+  0681  dd b7 1a     ld (ix+26),a
+  0684  dd a4 17     ld (ix+23),b
+  0687  dd a5 18 00  ld (ix+24),$00
+  068b  dd 35 1c     ld (ix+28),d
+  068e  dd a7 1b     ld (ix+27),e
+  0691  c9           ret
+L0692:
+  0692  fd bd 09     ld d,(iy+9)
+  0695  fd b9 0a     ld e,(iy+10)
+  0698  fd 9d 07     ld b,(iy+7)
+  069b  78           ld a,b
+  069c  fd 5d 08     add a,(iy+8)
+  069f  fe 21        cp $21
+  06a1  da a6 06     jp c,$06a6
+  06a4  3e 20        ld a,$20
+L06a6:
+  06a6  dd b7 1a     ld (ix+26),a
+  06a9  dd a4 17     ld (ix+23),b
+  06ac  dd 35 18 00  ld (ix+24),$00
+  06b0  dd a5 1c     ld (ix+28),d
+  06b3  dd a7 1b     ld (ix+27),e
+  06b6  fd 95 0b     ld h,(iy+11)
+  06b9  fd c1 0c     ld l,(iy+12)
+  06bc  dd 84 1e     ld (ix+30),h
+  06bf  dd 85 1d     ld (ix+29),l
+  06c2  c9           ret
+L06c3:
+  06c3  fd 4d 09     ld d,(iy+9)
+  06c6  fd 8a 0a     ld e,(iy+10)
+  06c9  fd 1c 07     ld b,(iy+7)
+  06cc  78           ld a,b
+  06cd  fe 21        cp $21
+  06cf  da d5 06     jp c,$06d5
+  06d2  3e 20        ld a,$20
+  06d4  47           ld b,a
+L06d5:
+  06d5  21 00 00     ld hl,$0000
+  06d8  b7           or a
+  06d9  ed 2c        sbc hl,de
+  06db  eb           ex de,hl
+  06dc  fd 48 08     sub (iy+8)
+  06df  d2 e3 06     jp nc,$06e3
+  06e2  af           xor a
+L06e3:
+  06e3  dd 48 1a     ld (ix+26),a
+  06e6  dd a4 17     ld (ix+23),b
+  06e9  dd 48 18 00  ld (ix+24),$00
+  06ed  dd e8 1c     ld (ix+28),d
+  06f0  dd ad 1b     ld (ix+27),e
+  06f3  21 00 00     ld hl,$0000
+  06f6  fd 88 0b     ld d,(iy+11)
+  06f9  fd 8a 0c     ld e,(iy+12)
+  06fc  b7           or a
+  06fd  ed 38        sbc hl,de
+  06ff  dd d1 1e     ld (ix+30),h
+  0702  dd 91 1d     ld (ix+29),l
+  0705  c9           ret
+L0706:
+  0706  fd b8 09     ld d,(iy+9)
+  0709  fd ba 0a     ld e,(iy+10)
+  070c  fd bc 07     ld b,(iy+7)
+  070f  78           ld a,b
+  0710  fd 7c 08     add a,(iy+8)
+  0713  fe 21        cp $21
+  0715  da 1a 07     jp c,$071a
+  0718  3e 20        ld a,$20
+L071a:
+  071a  dd 99 1a     ld (ix+26),a
+  071d  dd 80 17     ld (ix+23),b
+  0720  dd 18 18 00  ld (ix+24),$00
+  0724  dd 88 1c     ld (ix+28),d
+  0727  dd 08 1b     ld (ix+27),e
+  072a  dd d5        push ix
+  072c  e1           pop hl
+  072d  01 20 00     ld bc,$0020
+  0730  3a 0d f0     ld a,($f00d)
+  0733  3c           inc a
+  0734  fe 03        cp $03
+  0736  c2 3c 07     jp nz,$073c
+  0739  01 c0 ff     ld bc,$ffc0
+L073c:
+  073c  dd 33        add ix,bc
+  073e  3a 0c f0     ld a,($f00c)
+  0741  dd e8 12     cp (ix+18)
+  0744  d8           ret c
+  0745  dd d6        push ix
+  0747  d1           pop de
+  0748  01 20 00     ld bc,$0020
+  074b  ed fb        ldir
+  074d  fd 24 09     ld d,(iy+9)
+  0750  fd 68 0a     ld e,(iy+10)
+  0753  fd 04 07     ld b,(iy+7)
+  0756  78           ld a,b
+  0757  fe 21        cp $21
+  0759  da 5f 07     jp c,$075f
+  075c  3e 20        ld a,$20
+  075e  47           ld b,a
+L075f:
+  075f  21 00 00     ld hl,$0000
+  0762  b7           or a
+  0763  ed 61        sbc hl,de
+  0765  eb           ex de,hl
+  0766  fd a0 08     sub (iy+8)
+  0769  d2 6d 07     jp nc,$076d
+  076c  af           xor a
+L076d:
+  076d  dd e2 1a     ld (ix+26),a
+  0770  dd 75 17     ld (ix+23),b
+  0773  dd 82 18 00  ld (ix+24),$00
+  0777  dd a9 1c     ld (ix+28),d
+  077a  dd 67 1b     ld (ix+27),e
+  077d  dd 88 1f 04  ld (ix+31),$04
+  0781  c9           ret
+L0782:
+  0782  fd 78 01     ld a,(iy+1)
+  0785  fe 0c        cp $0c
+  0787  d0           ret nc
+  0788  cb 12        sla a
+  078a  11 96 07     ld de,$0796
+  078d  26 00        ld h,$00
+  078f  6f           ld l,a
+  0790  19           add hl,de
+  0791  7e           ld a,(hl)
+  0792  23           inc hl
+  0793  66           ld h,(hl)
+  0794  6f           ld l,a
+  0795  e9           jp (hl)
+
+L07ae:
+  07ae  af           xor a
+  07af  32 30 f0     ld ($f030),a
+  07b2  21 00 f2     ld hl,$f200
+  07b5  11 01 f2     ld de,$f201
+  07b8  01 5f 08     ld bc,$085f
+  07bb  36 00        ld (hl),$00
+  07bd  ed c1        ldir
+  07bf  c3 72 09     jp $0972
+L07c2:
+  07c2  af           xor a
+  07c3  32 06 f0     ld ($f006),a
+  07c6  32 20 f0     ld ($f020),a
+  07c9  dd 71 00 f2  ld ix,$f200
+  07cd  3e 10        ld a,$10
+L07cf:
+  07cf  f5           push af
+  07d0  4f           ld c,a
+  07d1  3e 10        ld a,$10
+  07d3  91           sub c
+  07d4  32 0d f0     ld ($f00d),a
+  07d7  07           rlca
+  07d8  07           rlca
+  07d9  07           rlca
+  07da  32 0e f0     ld ($f00e),a
+  07dd  dd ca 20     ld a,(ix+32)
+  07e0  b7           or a
+  07e1  c4 bb 0e     call nz,$0ebb
+  07e4  11 40 00     ld de,$0040
+  07e7  dd 6b        add ix,de
+  07e9  f1           pop af
+  07ea  3d           dec a
+  07eb  c2 cf 07     jp nz,$07cf
+  07ee  c9           ret
+L07ef:
+  07ef  af           xor a
+  07f0  32 06 f0     ld ($f006),a
+  07f3  32 20 f0     ld ($f020),a
+  07f6  06 40        ld b,$40
+  07f8  fd 5a 04     ld c,(iy+4)
+  07fb  cd aa 29     call $29aa
+  07fe  eb           ex de,hl
+  07ff  dd 87 00 f2  ld ix,$f200
+  0803  dd a2        add ix,de
+  0805  fd 5a 04     ld a,(iy+4)
+  0808  32 0d f0     ld ($f00d),a
+  080b  07           rlca
+  080c  07           rlca
+  080d  07           rlca
+  080e  32 0e f0     ld ($f00e),a
+  0811  dd 5a 20     ld a,(ix+32)
+  0814  b7           or a
+  0815  c2 bb 0e     jp nz,$0ebb
+  0818  c9           ret
+L0819:
+  0819  21 00 fa     ld hl,$fa00
+  081c  11 01 fa     ld de,$fa01
+  081f  01 5f 00     ld bc,$005f
+  0822  36 00        ld (hl),$00
+  0824  ed 80        ldir
+  0826  c3 9d 09     jp $099d
+L0829:
+  0829  06 20        ld b,$20
+  082b  fd ac 04     ld c,(iy+4)
+  082e  cd aa 29     call $29aa
+  0831  11 00 fa     ld de,$fa00
+  0834  19           add hl,de
+  0835  54           ld d,h
+  0836  5d           ld e,l
+  0837  13           inc de
+  0838  01 1f 00     ld bc,$001f
+  083b  36 00        ld (hl),$00
+  083d  ed f1        ldir
+  083f  fd 7d 04     ld a,(iy+4)
+  0842  c3 81 09     jp $0981
+L0845:
+  0845  dd 42 00 f6  ld ix,$f600
+  0849  3e 10        ld a,$10
+L084b:
+  084b  f5           push af
+  084c  4f           ld c,a
+  084d  3e 10        ld a,$10
+  084f  91           sub c
+  0850  32 0d f0     ld ($f00d),a
+  0853  dd f5 20     ld a,(ix+32)
+  0856  b7           or a
+  0857  ca 74 08     jp z,$0874
+  085a  dd 35 20 00  ld (ix+32),$00
+  085e  dd c4        push ix
+  0860  01 00 fc     ld bc,$fc00
+  0863  dd 4b        add ix,bc
+  0865  dd f9 20     ld a,(ix+32)
+  0868  b7           or a
+  0869  c2 72 08     jp nz,$0872
+  086c  3a 0d f0     ld a,($f00d)
+  086f  cd 81 09     call $0981
+L0872:
+  0872  dd c6        pop ix
+L0874:
+  0874  11 40 00     ld de,$0040
+  0877  dd 62        add ix,de
+  0879  f1           pop af
+  087a  3d           dec a
+  087b  c2 4b 08     jp nz,$084b
+  087e  c9           ret
+L087f:
+  087f  fd 55 03     ld h,(iy+3)
+  0882  fd 5d 04     ld l,(iy+4)
+  0885  7c           ld a,h
+  0886  b5           or l
+  0887  c2 8e 08     jp nz,$088e
+  088a  32 30 f0     ld ($f030),a
+  088d  c9           ret
+L088e:
+  088e  3a 30 f0     ld a,($f030)
+  0891  b7           or a
+  0892  c0           ret nz
+  0893  3d           dec a
+  0894  32 30 f0     ld ($f030),a
+  0897  22 31 f0     ld ($f031),hl
+  089a  21 ff ff     ld hl,$ffff
+  089d  22 33 f0     ld ($f033),hl
+  08a0  c9           ret
+L08a1:
+  08a1  fd c5 03     ld h,(iy+3)
+  08a4  fd 5d 04     ld l,(iy+4)
+  08a7  7c           ld a,h
+  08a8  b5           or l
+  08a9  c2 b0 08     jp nz,$08b0
+  08ac  32 35 f0     ld ($f035),a
+  08af  c9           ret
+L08b0:
+  08b0  3a 35 f0     ld a,($f035)
+  08b3  b7           or a
+  08b4  c0           ret nz
+  08b5  3d           dec a
+  08b6  32 35 f0     ld ($f035),a
+  08b9  22 36 f0     ld ($f036),hl
+  08bc  21 ff ff     ld hl,$ffff
+  08bf  22 38 f0     ld ($f038),hl
+  08c2  c9           ret
+L08c3:
+  08c3  26 00        ld h,$00
+  08c5  fd da 04     ld l,(iy+4)
+  08c8  11 69 03     ld de,$0369
+  08cb  cd cb 29     call $29cb
+  08ce  65           ld h,l
+  08cf  6a           ld l,d
+  08d0  fd 04 03     inc (iy+3)
+  08d3  c2 dd 08     jp nz,$08dd
+  08d6  eb           ex de,hl
+  08d7  21 00 00     ld hl,$0000
+  08da  b7           or a
+  08db  ed 68        sbc hl,de
+L08dd:
+  08dd  22 14 f0     ld ($f014),hl
+  08e0  c9           ret
+L08e1:
+  08e1  fd 9c 04     ld h,(iy+4)
+  08e4  2e 00        ld l,$00
+  08e6  cb 06        srl h
+  08e8  cb 03        rr l
+  08ea  cb 06        srl h
+  08ec  cb 03        rr l
+  08ee  cb 06        srl h
+  08f0  cb 03        rr l
+  08f2  cb 06        srl h
+  08f4  cb 03        rr l
+  08f6  fd 04 03     inc (iy+3)
+  08f9  c2 03 09     jp nz,$0903
+  08fc  eb           ex de,hl
+  08fd  21 00 00     ld hl,$0000
+  0900  b7           or a
+  0901  ed a8        sbc hl,de
+L0903:
+  0903  22 1b f0     ld ($f01b),hl
+  0906  c9           ret
+L0907:
+  0907  3e ff        ld a,$ff
+  0909  32 41 f0     ld ($f041),a
+  090c  c9           ret
+L090d:
+  090d  af           xor a
+  090e  32 41 f0     ld ($f041),a
+  0911  c9           ret
+L0912:
+  0912  3e de        ld a,$de
+  0914  11 00 00     ld de,$0000
+  0917  cd 13 0a     call $0a13
+  091a  3e df        ld a,$df
+  091c  11 2e 00     ld de,$002e
+  091f  cd 13 0a     call $0a13
+  0922  3e e0        ld a,$e0
+  0924  11 00 00     ld de,$0000
+  0927  cd 13 0a     call $0a13
+  092a  3e e1        ld a,$e1
+  092c  11 30 00     ld de,$0030
+  092f  cd 13 0a     call $0a13
+  0932  3e e4        ld a,$e4
+  0934  11 ff 3f     ld de,$3fff
+  0937  cd 13 0a     call $0a13
+  093a  3e e5        ld a,$e5
+  093c  11 ff 3f     ld de,$3fff
+  093f  cd 13 0a     call $0a13
+  0942  3e e6        ld a,$e6
+  0944  11 ff 3f     ld de,$3fff
+  0947  cd 13 0a     call $0a13
+  094a  3e e7        ld a,$e7
+  094c  11 ff 3f     ld de,$3fff
+  094f  cd 13 0a     call $0a13
+  0952  3e e2        ld a,$e2
+  0954  11 ff ff     ld de,$ffff
+  0957  cd 13 0a     call $0a13
+  095a  3e da        ld a,$da
+  095c  11 b2 0d     ld de,$0db2
+  095f  cd 13 0a     call $0a13
+  0962  3e dc        ld a,$dc
+  0964  11 11 0e     ld de,$0e11
+  0967  cd 13 0a     call $0a13
+  096a  3e e3        ld a,$e3
+  096c  11 39 00     ld de,$0039
+  096f  cd 13 0a     call $0a13
+L0972:
+  0972  21 9d 09     ld hl,$099d
+  0975  e5           push hl
+  0976  06 10        ld b,$10
+L0978:
+  0978  3e 10        ld a,$10
+  097a  90           sub b
+  097b  cd 81 09     call $0981
+  097e  10 f8        djnz $0978
+  0980  c9           ret
+L0981:
+  0981  4f           ld c,a
+  0982  11 00 00     ld de,$0000
+  0985  79           ld a,c
+  0986  c6 ba        add a,$ba
+  0988  cd 13 0a     call $0a13
+  098b  cb 2c        rlc c
+  098d  cb 0e        rlc c
+  098f  cb 0e        rlc c
+  0991  79           ld a,c
+  0992  c6 06        add a,$06
+  0994  cd 13 0a     call $0a13
+  0997  79           ld a,c
+  0998  c6 02        add a,$02
+  099a  c3 13 0a     jp $0a13
+L099d:
+  099d  06 03        ld b,$03
+L099f:
+  099f  3e 03        ld a,$03
+  09a1  90           sub b
+  09a2  cd a8 09     call $09a8
+  09a5  10 f8        djnz $099f
+  09a7  c9           ret
+L09a8:
+  09a8  4f           ld c,a
+  09a9  07           rlca
+  09aa  07           rlca
+  09ab  c6 cd        add a,$cd
+  09ad  11 00 00     ld de,$0000
+  09b0  cd 13 0a     call $0a13
+  09b3  79           ld a,c
+  09b4  c6 d6        add a,$d6
+  09b6  11 01 00     ld de,$0001
+  09b9  c3 13 0a     jp $0a13
+L09bc:
+  09bc  54           ld d,h
+  09bd  5d           ld e,l
+  09be  6c           ld l,h
+  09bf  60           ld h,b
+  09c0  29           add hl,hl
+  09c1  29           add hl,hl
+  09c2  25           dec h
+  09c3  25           dec h
+  09c4  28 03        jr z,$09c9
+  09c6  f2 cf 09     jp p,$09cf
+L09c9:
+  09c9  af           xor a
+  09ca  62           ld h,d
+  09cb  6b           ld l,e
+  09cc  c3 d8 09     jp $09d8
+L09cf:
+  09cf  4c           ld c,h
+  09d0  7a           ld a,d
+  09d1  e6 3f        and $3f
+  09d3  c6 80        add a,$80
+  09d5  67           ld h,a
+  09d6  6b           ld l,e
+  09d7  79           ld a,c
+L09d8:
+  09d8  f6 80        or $80
+  09da  32 03 d0     ld ($d003),a
+  09dd  7e           ld a,(hl)
+  09de  21 01 00     ld hl,$0001
+  09e1  b7           or a
+  09e2  ed aa        adc hl,de
+  09e4  c0           ret nz
+  09e5  04           inc b
+  09e6  c9           ret
+L09e7:
+  09e7  3a 40 f0     ld a,($f040)
+  09ea  b7           or a
+  09eb  c2 f0 09     jp nz,$09f0
+  09ee  1e 10        ld e,$10
+L09f0:
+  09f0  3a 41 f0     ld a,($f041)
+  09f3  b7           or a
+  09f4  ca 07 0a     jp z,$0a07
+  09f7  7b           ld a,e
+  09f8  32 05 c0     ld ($c005),a
+  09fb  c3 07 0a     jp $0a07
+L09fe:
+  09fe  3a 40 f0     ld a,($f040)
+  0a01  b7           or a
+  0a02  c2 07 0a     jp nz,$0a07
+  0a05  1e 10        ld e,$10
+L0a07:
+  0a07  16 00        ld d,$00
+  0a09  21 10 01     ld hl,$0110
+  0a0c  19           add hl,de
+  0a0d  eb           ex de,hl
+  0a0e  3a 0d f0     ld a,($f00d)
+  0a11  c6 80        add a,$80
+L0a13:
+  0a13  f5           push af
+L0a14:
+  0a14  3a 07 d0     ld a,($d007)
+  0a17  07           rlca
+  0a18  30 fa        jr nc,$0a14
+  0a1a  7b           ld a,e
+  0a1b  32 01 d0     ld ($d001),a
+  0a1e  7a           ld a,d
+  0a1f  32 00 d0     ld ($d000),a
+  0a22  f1           pop af
+  0a23  32 02 d0     ld ($d002),a
+  0a26  c9           ret
+
+L0a28:
+  0a28  dd 9a 05     ld a,(ix+5)
+  0a2b  dd 89 04     or (ix+4)
+  0a2e  ca 8b 0a     jp z,$0a8b
+  0a31  ed 3b 10 f0  ld de,($f010)
+  0a35  dd 96 08     ld h,(ix+8)
+  0a38  dd 9e 07     ld l,(ix+7)
+  0a3b  7c           ld a,h
+  0a3c  b5           or l
+  0a3d  28 31        jr z,$0a70
+  0a3f  b7           or a
+  0a40  ed b9        sbc hl,de
+  0a42  28 03        jr z,$0a47
+  0a44  d2 6a 0a     jp nc,$0a6a
+L0a47:
+  0a47  3e 04        ld a,$04
+  0a49  dd f3 25     ld (ix+37),a
+  0a4c  dd 51 23     add a,(ix+35)
+  0a4f  6f           ld l,a
+  0a50  3e 00        ld a,$00
+  0a52  dd 41 24     adc a,(ix+36)
+  0a55  67           ld h,a
+  0a56  6e           ld l,(hl)
+  0a57  26 00        ld h,$00
+  0a59  01 29 26     ld bc,$2629
+  0a5c  29           add hl,hl
+  0a5d  09           add hl,bc
+  0a5e  7e           ld a,(hl)
+  0a5f  dd b7 28     ld (ix+40),a
+  0a62  23           inc hl
+  0a63  7e           ld a,(hl)
+  0a64  dd b7 29     ld (ix+41),a
+  0a67  21 00 00     ld hl,$0000
+L0a6a:
+  0a6a  dd b4 08     ld (ix+8),h
+  0a6d  dd b6 07     ld (ix+7),l
+L0a70:
+  0a70  dd 95 05     ld h,(ix+5)
+  0a73  dd a4 04     ld l,(ix+4)
+  0a76  b7           or a
+  0a77  ed 3d        sbc hl,de
+  0a79  dd b4 05     ld (ix+5),h
+  0a7c  dd 9d 04     ld (ix+4),l
+  0a7f  ca 8b 0a     jp z,$0a8b
+  0a82  da 8b 0a     jp c,$0a8b
+  0a85  7c           ld a,h
+  0a86  fe c1        cp $c1
+  0a88  da 07 10     jp c,$1007
+L0a8b:
+  0a8b  dd 6e 02     ld b,(ix+2)
+  0a8e  dd 95 01     ld h,(ix+1)
+  0a91  dd c1 00     ld l,(ix+0)
+  0a94  54           ld d,h
+  0a95  5d           ld e,l
+  0a96  6c           ld l,h
+  0a97  60           ld h,b
+  0a98  29           add hl,hl
+  0a99  29           add hl,hl
+  0a9a  25           dec h
+  0a9b  25           dec h
+  0a9c  28 03        jr z,$0aa1
+  0a9e  f2 a7 0a     jp p,$0aa7
+L0aa1:
+  0aa1  af           xor a
+  0aa2  62           ld h,d
+  0aa3  6b           ld l,e
+  0aa4  c3 b0 0a     jp $0ab0
+L0aa7:
+  0aa7  4c           ld c,h
+  0aa8  7a           ld a,d
+  0aa9  e6 3f        and $3f
+  0aab  c6 80        add a,$80
+  0aad  67           ld h,a
+  0aae  6b           ld l,e
+  0aaf  79           ld a,c
+L0ab0:
+  0ab0  f6 80        or $80
+  0ab2  32 03 d0     ld ($d003),a
+  0ab5  7e           ld a,(hl)
+  0ab6  21 01 00     ld hl,$0001
+  0ab9  b7           or a
+  0aba  ed a9        adc hl,de
+  0abc  c2 c0 0a     jp nz,$0ac0
+  0abf  04           inc b
+L0ac0:
+  0ac0  dd a4 02     ld (ix+2),b
+  0ac3  dd ca 01     ld (ix+1),h
+  0ac6  dd 85 00     ld (ix+0),l
+  0ac9  fe 20        cp $20
+  0acb  d2 d4 0a     jp nc,$0ad4
+  0ace  cd 76 0c     call $0c76
+  0ad1  c3 8b 0a     jp $0a8b
+L0ad4:
+  0ad4  47           ld b,a
+  0ad5  07           rlca
+  0ad6  07           rlca
+  0ad7  07           rlca
+  0ad8  e6 07        and $07
+  0ada  3d           dec a
+  0adb  16 00        ld d,$00
+  0add  5f           ld e,a
+  0ade  dd 8e 03     ld a,(ix+3)
+  0ae1  e6 30        and $30
+  0ae3  c2 ec 0a     jp nz,$0aec
+  0ae6  21 57 0c     ld hl,$0c57
+  0ae9  c3 fe 0a     jp $0afe
+L0aec:
+  0aec  e6 10        and $10
+  0aee  c2 f7 0a     jp nz,$0af7
+  0af1  21 50 0c     ld hl,$0c50
+  0af4  c3 fe 0a     jp $0afe
+L0af7:
+  0af7  dd 7f 03 a6  res 4,(ix+3)
+  0afb  21 5e 0c     ld hl,$0c5e
+L0afe:
+  0afe  19           add hl,de
+  0aff  66           ld h,(hl)
+  0b00  2e 00        ld l,$00
+  0b02  dd b8 05     ld d,(ix+5)
+  0b05  dd ea 04     ld e,(ix+4)
+  0b08  19           add hl,de
+  0b09  dd c0 05     ld (ix+5),h
+  0b0c  dd 91 04     ld (ix+4),l
+  0b0f  78           ld a,b
+  0b10  e6 1f        and $1f
+  0b12  c8           ret z
+  0b13  47           ld b,a
+  0b14  21 65 0c     ld hl,$0c65
+  0b17  16 00        ld d,$00
+  0b19  dd ca 03     ld a,(ix+3)
+  0b1c  e6 0f        and $0f
+  0b1e  5f           ld e,a
+  0b1f  19           add hl,de
+  0b20  78           ld a,b
+  0b21  86           add a,(hl)
+  0b22  47           ld b,a
+  0b23  3a 06 f0     ld a,($f006)
+  0b26  b7           or a
+  0b27  28 04        jr z,$0b2d
+  0b29  21 1a f0     ld hl,$f01a
+  0b2c  7e           ld a,(hl)
+L0b2d:
+  0b2d  dd ec 09     add a,(ix+9)
+  0b30  80           add a,b
+  0b31  67           ld h,a
+  0b32  2e 00        ld l,$00
+  0b34  16 00        ld d,$00
+  0b36  dd 9a 0a     ld a,(ix+10)
+  0b39  dd ec 0c     add a,(ix+12)
+  0b3c  5f           ld e,a
+  0b3d  cb eb        bit 7,e
+  0b3f  ca 43 0b     jp z,$0b43
+  0b42  15           dec d
+L0b43:
+  0b43  19           add hl,de
+  0b44  7c           ld a,h
+  0b45  fe 62        cp $62
+  0b47  da 4c 0b     jp c,$0b4c
+  0b4a  26 61        ld h,$61
+L0b4c:
+  0b4c  44           ld b,h
+  0b4d  4d           ld c,l
+  0b4e  dd 6c 10     ld a,(ix+16)
+  0b51  e6 7f        and $7f
+  0b53  dd 8e 10     ld (ix+16),a
+  0b56  ca 81 0b     jp z,$0b81
+  0b59  cb 82        sla a
+  0b5b  5f           ld e,a
+  0b5c  16 00        ld d,$00
+  0b5e  dd 6c 15     ld a,(ix+21)
+  0b61  b7           or a
+  0b62  28 1d        jr z,$0b81
+  0b64  bc           cp h
+  0b65  28 1a        jr z,$0b81
+  0b67  da 71 0b     jp c,$0b71
+  0b6a  21 00 00     ld hl,$0000
+  0b6d  b7           or a
+  0b6e  ed 45        sbc hl,de
+  0b70  eb           ex de,hl
+L0b71:
+  0b71  dd 65 11     ld (ix+17),d
+  0b74  dd 67 12     ld (ix+18),e
+  0b77  dd 60 15     ld h,(ix+21)
+  0b7a  dd 68 16     ld l,(ix+22)
+  0b7d  dd b3 10 fe  set 7,(ix+16)
+L0b81:
+  0b81  dd 64 15     ld (ix+21),b
+  0b84  dd 66 16     ld (ix+22),c
+  0b87  dd e4 13     ld (ix+19),h
+  0b8a  dd 76 14     ld (ix+20),l
+  0b8d  dd 5b 03 7e  bit 7,(ix+3)
+  0b91  c2 1c 0c     jp nz,$0c1c
+  0b94  dd cb 17 46  bit 0,(ix+23)
+  0b98  28 10        jr z,$0baa
+  0b9a  dd 5c 17     ld a,(ix+23)
+  0b9d  e6 3f        and $3f
+  0b9f  dd 56 17     ld (ix+23),a
+  0ba2  dd 14 1b 00  ld (ix+27),$00
+  0ba6  dd 14 1a 00  ld (ix+26),$00
+L0baa:
+  0baa  dd 14 25 00  ld (ix+37),$00
+  0bae  dd 50 24     ld h,(ix+36)
+  0bb1  dd 58 23     ld l,(ix+35)
+  0bb4  6e           ld l,(hl)
+  0bb5  26 00        ld h,$00
+  0bb7  29           add hl,hl
+  0bb8  01 a9 25     ld bc,$25a9
+  0bbb  09           add hl,bc
+  0bbc  7e           ld a,(hl)
+  0bbd  dd c6 28     ld (ix+40),a
+  0bc0  dd 63 2a     ld (ix+42),a
+  0bc3  23           inc hl
+  0bc4  7e           ld a,(hl)
+  0bc5  dd c3 29     ld (ix+41),a
+  0bc8  dd 63 2b     ld (ix+43),a
+  0bcb  3a 20 f0     ld a,($f020)
+  0bce  b7           or a
+  0bcf  20 52        jr nz,$0c23
+  0bd1  3a 0e f0     ld a,($f00e)
+  0bd4  47           ld b,a
+  0bd5  3e 02        ld a,$02
+  0bd7  80           add a,b
+  0bd8  11 00 00     ld de,$0000
+  0bdb  cd 13 0a     call $0a13
+  0bde  3e 93        ld a,$93
+  0be0  11 ff 27     ld de,$27ff
+  0be3  cd 13 0a     call $0a13
+  0be6  3e d9        ld a,$d9
+  0be8  11 ff 07     ld de,$07ff
+  0beb  cd 13 0a     call $0a13
+  0bee  26 00        ld h,$00
+  0bf0  dd 7a 0f     ld l,(ix+15)
+  0bf3  11 a9 23     ld de,$23a9
+  0bf6  29           add hl,hl
+  0bf7  19           add hl,de
+  0bf8  7e           ld a,(hl)
+  0bf9  23           inc hl
+  0bfa  66           ld h,(hl)
+  0bfb  6f           ld l,a
+  0bfc  29           add hl,hl
+  0bfd  29           add hl,hl
+  0bfe  eb           ex de,hl
+  0bff  3a 0d f0     ld a,($f00d)
+  0c02  c6 ba        add a,$ba
+  0c04  cd 13 0a     call $0a13
+  0c07  3e 01        ld a,$01
+  0c09  80           add a,b
+  0c0a  dd 56 22     ld d,(ix+34)
+  0c0d  dd ce 21     ld e,(ix+33)
+  0c10  cd 13 0a     call $0a13
+  0c13  3e 03        ld a,$03
+  0c15  80           add a,b
+  0c16  11 00 80     ld de,$8000
+  0c19  cd 13 0a     call $0a13
+L0c1c:
+  0c1c  dd 12 33 00  ld (ix+51),$00
+  0c20  cd c2 12     call $12c2
+L0c23:
+  0c23  dd 5a 03     ld a,(ix+3)
+  0c26  47           ld b,a
+  0c27  e6 7f        and $7f
+  0c29  4f           ld c,a
+  0c2a  78           ld a,b
+  0c2b  e6 40        and $40
+  0c2d  07           rlca
+  0c2e  b1           or c
+  0c2f  dd 53 03     ld (ix+3),a
+  0c32  07           rlca
+  0c33  30 06        jr nc,$0c3b
+  0c35  21 00 00     ld hl,$0000
+  0c38  c3 49 0c     jp $0c49
+L0c3b:
+  0c3b  dd bb 05     ld h,(ix+5)
+  0c3e  dd 7a 04     ld l,(ix+4)
+  0c41  dd 55 06     ld d,(ix+6)
+  0c44  1e 00        ld e,$00
+  0c46  cd cb 29     call $29cb
+L0c49:
+  0c49  dd d4 08     ld (ix+8),h
+  0c4c  dd 64 07     ld (ix+7),l
+  0c4f  c9           ret
+
+L0c76:
+  0c76  cb 21        sla a
+  0c78  11 84 0c     ld de,$0c84
+  0c7b  26 00        ld h,$00
+  0c7d  6f           ld l,a
+  0c7e  19           add hl,de
+  0c7f  7e           ld a,(hl)
+  0c80  23           inc hl
+  0c81  66           ld h,(hl)
+  0c82  6f           ld l,a
+  0c83  e9           jp (hl)
+
+L0cc2:
+  0cc2  3e 20        ld a,$20
+  0cc4  dd 4a 03     xor (ix+3)
+  0cc7  dd a9 03     ld (ix+3),a
+  0cca  c9           ret
+L0ccb:
+  0ccb  3e 40        ld a,$40
+  0ccd  dd 4a 03     xor (ix+3)
+  0cd0  dd a9 03     ld (ix+3),a
+  0cd3  c9           ret
+L0cd4:
+  0cd4  dd df 03 e6  set 4,(ix+3)
+  0cd8  c9           ret
+L0cd9:
+  0cd9  3e 08        ld a,$08
+  0cdb  dd 80 03     xor (ix+3)
+  0cde  dd a9 03     ld (ix+3),a
+  0ce1  c9           ret
+L0ce2:
+  0ce2  cd c7 0f     call $0fc7
+  0ce5  f5           push af
+  0ce6  cd c7 0f     call $0fc7
+  0ce9  6f           ld l,a
+  0cea  f1           pop af
+  0ceb  67           ld h,a
+  0cec  3a 06 f0     ld a,($f006)
+  0cef  b7           or a
+  0cf0  20 07        jr nz,$0cf9
+  0cf2  dd a0 31     ld (ix+49),h
+  0cf5  dd c1 30     ld (ix+48),l
+  0cf8  c9           ret
+L0cf9:
+  0cf9  22 12 f0     ld ($f012),hl
+  0cfc  c9           ret
+L0cfd:
+  0cfd  cd c7 0f     call $0fc7
+  0d00  dd 99 06     ld (ix+6),a
+  0d03  c9           ret
+L0d04:
+  0d04  cd c7 0f     call $0fc7
+  0d07  11 a9 23     ld de,$23a9
+  0d0a  26 00        ld h,$00
+  0d0c  6f           ld l,a
+  0d0d  29           add hl,hl
+  0d0e  19           add hl,de
+  0d0f  7e           ld a,(hl)
+  0d10  dd 99 0d     ld (ix+13),a
+  0d13  23           inc hl
+  0d14  7e           ld a,(hl)
+  0d15  dd 99 0e     ld (ix+14),a
+  0d18  c9           ret
+L0d19:
+  0d19  cd c7 0f     call $0fc7
+  0d1c  26 00        ld h,$00
+  0d1e  6f           ld l,a
+  0d1f  29           add hl,hl
+  0d20  29           add hl,hl
+  0d21  29           add hl,hl
+  0d22  11 62 6e     ld de,$6e62
+  0d25  19           add hl,de
+  0d26  7e           ld a,(hl)
+  0d27  3c           inc a
+  0d28  dd 5a 20     cp (ix+32)
+  0d2b  28 0c        jr z,$0d39
+  0d2d  dd c9 20     ld (ix+32),a
+  0d30  3d           dec a
+  0d31  5f           ld e,a
+  0d32  3a 20 f0     ld a,($f020)
+  0d35  b7           or a
+  0d36  cc 5e 0d     call z,$0d5e
+L0d39:
+  0d39  e5           push hl
+  0d3a  fd f5        pop iy
+  0d3c  fd aa 01     ld a,(iy+1)
+  0d3f  dd b7 0c     ld (ix+12),a
+  0d42  23           inc hl
+  0d43  23           inc hl
+  0d44  dd b4 24     ld (ix+36),h
+  0d47  dd b6 23     ld (ix+35),l
+  0d4a  26 00        ld h,$00
+  0d4c  fd 85 04     ld l,(iy+4)
+  0d4f  29           add hl,hl
+  0d50  11 a9 24     ld de,$24a9
+  0d53  19           add hl,de
+  0d54  7e           ld a,(hl)
+  0d55  dd b7 26     ld (ix+38),a
+  0d58  23           inc hl
+  0d59  7e           ld a,(hl)
+  0d5a  dd b7 27     ld (ix+39),a
+  0d5d  c9           ret
+L0d5e:
+  0d5e  16 00        ld d,$00
+  0d60  eb           ex de,hl
+  0d61  29           add hl,hl
+  0d62  29           add hl,hl
+  0d63  29           add hl,hl
+  0d64  eb           ex de,hl
+  0d65  fd 12 82 6a  ld iy,$6a82
+  0d69  fd 4a        add iy,de
+  0d6b  3a 0e f0     ld a,($f00e)
+  0d6e  47           ld b,a
+  0d6f  3e 02        ld a,$02
+  0d71  80           add a,b
+  0d72  11 00 00     ld de,$0000
+  0d75  cd 13 0a     call $0a13
+  0d78  3e 01        ld a,$01
+  0d7a  80           add a,b
+  0d7b  fd e4 02     ld d,(iy+2)
+  0d7e  fd 8a 01     ld e,(iy+1)
+  0d81  dd b1 22     ld (ix+34),d
+  0d84  dd b3 21     ld (ix+33),e
+  0d87  cd 13 0a     call $0a13
+  0d8a  3e 05        ld a,$05
+  0d8c  80           add a,b
+  0d8d  fd 35 06     ld d,(iy+6)
+  0d90  fd 85 05     ld e,(iy+5)
+  0d93  cd 13 0a     call $0a13
+  0d96  e5           push hl
+  0d97  eb           ex de,hl
+  0d98  fd a5 04     ld d,(iy+4)
+  0d9b  fd 92 03     ld e,(iy+3)
+  0d9e  b7           or a
+  0d9f  ed a1        sbc hl,de
+  0da1  eb           ex de,hl
+  0da2  e1           pop hl
+  0da3  3e 04        ld a,$04
+  0da5  80           add a,b
+  0da6  cd 13 0a     call $0a13
+  0da9  3a 0d f0     ld a,($f00d)
+  0dac  3d           dec a
+  0dad  07           rlca
+  0dae  07           rlca
+  0daf  07           rlca
+  0db0  e6 78        and $78
+  0db2  16 80        ld d,$80
+  0db4  fd 85 00     ld e,(iy+0)
+  0db7  cd 13 0a     call $0a13
+  0dba  fd 95 07     ld a,(iy+7)
+  0dbd  dd a3 0b     ld (ix+11),a
+  0dc0  c9           ret
+L0dc1:
+  0dc1  cd c7 0f     call $0fc7
+  0dc4  47           ld b,a
+  0dc5  dd aa 03     ld a,(ix+3)
+  0dc8  e6 f8        and $f8
+  0dca  b0           or b
+  0dcb  dd a0 03     ld (ix+3),a
+  0dce  c9           ret
+L0dcf:
+  0dcf  cd c7 0f     call $0fc7
+  0dd2  47           ld b,a
+  0dd3  3a 06 f0     ld a,($f006)
+  0dd6  b7           or a
+  0dd7  c8           ret z
+  0dd8  78           ld a,b
+  0dd9  32 1a f0     ld ($f01a),a
+  0ddc  c9           ret
+L0ddd:
+  0ddd  cd c7 0f     call $0fc7
+  0de0  dd a3 09     ld (ix+9),a
+  0de3  c9           ret
+L0de4:
+  0de4  cd c7 0f     call $0fc7
+  0de7  dd 41 0a     ld (ix+10),a
+  0dea  c9           ret
+L0deb:
+  0deb  cd c7 0f     call $0fc7
+  0dee  e6 7f        and $7f
+  0df0  dd a3 10     ld (ix+16),a
+  0df3  c9           ret
+L0df4:
+  0df4  11 2c 00     ld de,$002c
+  0df7  c3 09 0e     jp $0e09
+L0dfa:
+  0dfa  11 2d 00     ld de,$002d
+  0dfd  c3 09 0e     jp $0e09
+L0e00:
+  0e00  11 2e 00     ld de,$002e
+  0e03  c3 09 0e     jp $0e09
+L0e06:
+  0e06  11 2f 00     ld de,$002f
+L0e09:
+  0e09  dd d5        push ix
+  0e0b  e1           pop hl
+  0e0c  19           add hl,de
+  0e0d  e5           push hl
+  0e0e  cd c7 0f     call $0fc7
+  0e11  47           ld b,a
+  0e12  e1           pop hl
+  0e13  7e           ld a,(hl)
+  0e14  b7           or a
+  0e15  c2 1c 0e     jp nz,$0e1c
+  0e18  70           ld (hl),b
+  0e19  c3 80 0e     jp $0e80
+L0e1c:
+  0e1c  35           dec (hl)
+  0e1d  c2 80 0e     jp nz,$0e80
+  0e20  af           xor a
+  0e21  11 02 00     ld de,$0002
+  0e24  dd 96 01     ld h,(ix+1)
+  0e27  dd 4c 00     ld l,(ix+0)
+  0e2a  19           add hl,de
+  0e2b  dd 1e 02     adc a,(ix+2)
+  0e2e  dd 93 02     ld (ix+2),a
+  0e31  dd c0 01     ld (ix+1),h
+  0e34  dd 91 00     ld (ix+0),l
+  0e37  c9           ret
+L0e38:
+  0e38  11 2c 00     ld de,$002c
+  0e3b  c3 4d 0e     jp $0e4d
+L0e3e:
+  0e3e  11 2d 00     ld de,$002d
+  0e41  c3 4d 0e     jp $0e4d
+L0e44:
+  0e44  11 2e 00     ld de,$002e
+  0e47  c3 4d 0e     jp $0e4d
+L0e4a:
+  0e4a  11 2f 00     ld de,$002f
+L0e4d:
+  0e4d  dd 76        push ix
+  0e4f  e1           pop hl
+  0e50  19           add hl,de
+  0e51  7e           ld a,(hl)
+  0e52  3d           dec a
+  0e53  28 18        jr z,$0e6d
+  0e55  af           xor a
+  0e56  11 03 00     ld de,$0003
+  0e59  dd 35 01     ld h,(ix+1)
+  0e5c  dd 85 00     ld l,(ix+0)
+  0e5f  19           add hl,de
+  0e60  dd 4d 02     adc a,(ix+2)
+  0e63  dd 50 02     ld (ix+2),a
+  0e66  dd b4 01     ld (ix+1),h
+  0e69  dd d6 00     ld (ix+0),l
+  0e6c  c9           ret
+L0e6d:
+  0e6d  77           ld (hl),a
+  0e6e  21 80 0e     ld hl,$0e80
+  0e71  e5           push hl
+L0e72:
+  0e72  cd c7 0f     call $0fc7
+  0e75  47           ld b,a
+  0e76  dd a5 03     ld a,(ix+3)
+  0e79  e6 97        and $97
+  0e7b  b0           or b
+  0e7c  dd bb 03     ld (ix+3),a
+  0e7f  c9           ret
+L0e80:
+  0e80  cd c7 0f     call $0fc7
+  0e83  f5           push af
+  0e84  cd c7 0f     call $0fc7
+  0e87  6f           ld l,a
+  0e88  f1           pop af
+  0e89  67           ld h,a
+  0e8a  af           xor a
+  0e8b  cb d5        bit 7,h
+  0e8d  28 01        jr z,$0e90
+  0e8f  3d           dec a
+L0e90:
+  0e90  dd a5 01     ld d,(ix+1)
+  0e93  dd 15 00     ld e,(ix+0)
+  0e96  19           add hl,de
+  0e97  dd 0f 02     adc a,(ix+2)
+  0e9a  dd b7 02     ld (ix+2),a
+  0e9d  dd e4 01     ld (ix+1),h
+  0ea0  dd b6 00     ld (ix+0),l
+  0ea3  c9           ret
+L0ea4:
+  0ea4  e1           pop hl
+  0ea5  3a 06 f0     ld a,($f006)
+  0ea8  b7           or a
+  0ea9  ca bb 0e     jp z,$0ebb
+  0eac  dd 35 20 00  ld (ix+32),$00
+  0eb0  3a 20 f0     ld a,($f020)
+  0eb3  b7           or a
+  0eb4  c0           ret nz
+  0eb5  3a 0d f0     ld a,($f00d)
+  0eb8  c3 81 09     jp $0981
+L0ebb:
+  0ebb  dd 95 20 00  ld (ix+32),$00
+  0ebf  dd c9 32 00  ld (ix+50),$00
+  0ec3  3a 0d f0     ld a,($f00d)
+  0ec6  cd 81 09     call $0981
+  0ec9  dd 61        push ix
+  0ecb  01 00 04     ld bc,$0400
+  0ece  dd 17        add ix,bc
+  0ed0  dd aa 20     ld a,(ix+32)
+  0ed3  b7           or a
+  0ed4  ca 3e 0f     jp z,$0f3e
+  0ed7  3d           dec a
+  0ed8  5f           ld e,a
+  0ed9  cd 5e 0d     call $0d5e
+  0edc  dd ae 37     ld e,(ix+55)
+  0edf  cd fe 09     call $09fe
+  0ee2  dd df 03 7e  bit 7,(ix+3)
+  0ee6  c2 f0 0e     jp nz,$0ef0
+  0ee9  dd 48 33 ff  ld (ix+51),$ff
+  0eed  c3 3e 0f     jp $0f3e
+L0ef0:
+  0ef0  3e 93        ld a,$93
+  0ef2  11 ff 27     ld de,$27ff
+  0ef5  cd 13 0a     call $0a13
+  0ef8  3e d9        ld a,$d9
+  0efa  11 ff 07     ld de,$07ff
+  0efd  cd 13 0a     call $0a13
+  0f00  26 00        ld h,$00
+  0f02  dd 9e 0f     ld l,(ix+15)
+  0f05  11 a9 23     ld de,$23a9
+  0f08  29           add hl,hl
+  0f09  19           add hl,de
+  0f0a  7e           ld a,(hl)
+  0f0b  23           inc hl
+  0f0c  66           ld h,(hl)
+  0f0d  6f           ld l,a
+  0f0e  29           add hl,hl
+  0f0f  29           add hl,hl
+  0f10  eb           ex de,hl
+  0f11  3a 0d f0     ld a,($f00d)
+  0f14  c6 ba        add a,$ba
+  0f16  cd 13 0a     call $0a13
+  0f19  3a 0e f0     ld a,($f00e)
+  0f1c  47           ld b,a
+  0f1d  3e 01        ld a,$01
+  0f1f  80           add a,b
+  0f20  dd 88 22     ld d,(ix+34)
+  0f23  dd 80 21     ld e,(ix+33)
+  0f26  cd 13 0a     call $0a13
+  0f29  3e 03        ld a,$03
+  0f2b  80           add a,b
+  0f2c  11 00 80     ld de,$8000
+  0f2f  cd 13 0a     call $0a13
+  0f32  3e ff        ld a,$ff
+  0f34  32 06 f0     ld ($f006),a
+  0f37  cd cc 12     call $12cc
+  0f3a  af           xor a
+  0f3b  32 06 f0     ld ($f006),a
+L0f3e:
+  0f3e  dd d1        pop ix
+  0f40  c9           ret
+L0f41:
+  0f41  cd c7 0f     call $0fc7
+  0f44  47           ld b,a
+  0f45  3a 06 f0     ld a,($f006)
+  0f48  b7           or a
+  0f49  c8           ret z
+  0f4a  dd 70 37     ld (ix+55),b
+  0f4d  3a 20 f0     ld a,($f020)
+  0f50  b7           or a
+  0f51  c0           ret nz
+  0f52  58           ld e,b
+  0f53  c3 fe 09     jp $09fe
+L0f56:
+  0f56  cd c7 0f     call $0fc7
+  0f59  dd 66 0f     ld (ix+15),a
+  0f5c  c9           ret
+L0f5d:
+  0f5d  cd c7 0f     call $0fc7
+  0f60  6f           ld l,a
+  0f61  3a 06 f0     ld a,($f006)
+  0f64  b7           or a
+  0f65  c8           ret z
+  0f66  11 a9 24     ld de,$24a9
+  0f69  26 00        ld h,$00
+  0f6b  29           add hl,hl
+  0f6c  19           add hl,de
+  0f6d  5e           ld e,(hl)
+  0f6e  23           inc hl
+  0f6f  56           ld d,(hl)
+  0f70  2a 16 f0     ld hl,($f016)
+  0f73  cd cb 29     call $29cb
+  0f76  22 18 f0     ld ($f018),hl
+  0f79  c9           ret
+L0f7a:
+  0f7a  cd c7 0f     call $0fc7
+  0f7d  26 00        ld h,$00
+  0f7f  6f           ld l,a
+  0f80  29           add hl,hl
+  0f81  11 a9 27     ld de,$27a9
+  0f84  19           add hl,de
+  0f85  7e           ld a,(hl)
+  0f86  dd 56 1c     ld (ix+28),a
+  0f89  23           inc hl
+  0f8a  7e           ld a,(hl)
+  0f8b  dd 56 1d     ld (ix+29),a
+  0f8e  c9           ret
+L0f8f:
+  0f8f  cd c7 0f     call $0fc7
+  0f92  26 00        ld h,$00
+  0f94  6f           ld l,a
+  0f95  29           add hl,hl
+  0f96  11 a9 28     ld de,$28a9
+  0f99  19           add hl,de
+  0f9a  7e           ld a,(hl)
+  0f9b  dd 96 1e     ld (ix+30),a
+  0f9e  23           inc hl
+  0f9f  7e           ld a,(hl)
+  0fa0  dd 56 1f     ld (ix+31),a
+  0fa3  c9           ret
+L0fa4:
+  0fa4  cd c7 0f     call $0fc7
+  0fa7  26 00        ld h,$00
+  0fa9  6f           ld l,a
+  0faa  29           add hl,hl
+  0fab  11 a9 26     ld de,$26a9
+  0fae  19           add hl,de
+  0faf  7e           ld a,(hl)
+  0fb0  dd 56 18     ld (ix+24),a
+  0fb3  23           inc hl
+  0fb4  7e           ld a,(hl)
+  0fb5  dd c6 19     ld (ix+25),a
+  0fb8  c9           ret
+L0fb9:
+  0fb9  cd c7 0f     call $0fc7
+  0fbc  dd df 17 86  res 0,(ix+23)
+  0fc0  dd a2 17     or (ix+23)
+  0fc3  dd 63 17     ld (ix+23),a
+  0fc6  c9           ret
+L0fc7:
+  0fc7  dd 26 02     ld b,(ix+2)
+  0fca  dd 42 01     ld h,(ix+1)
+  0fcd  dd 2a 00     ld l,(ix+0)
+  0fd0  54           ld d,h
+  0fd1  5d           ld e,l
+  0fd2  6c           ld l,h
+  0fd3  60           ld h,b
+  0fd4  29           add hl,hl
+  0fd5  29           add hl,hl
+  0fd6  25           dec h
+  0fd7  25           dec h
+  0fd8  28 03        jr z,$0fdd
+  0fda  f2 e3 0f     jp p,$0fe3
+L0fdd:
+  0fdd  af           xor a
+  0fde  62           ld h,d
+  0fdf  6b           ld l,e
+  0fe0  c3 ec 0f     jp $0fec
+L0fe3:
+  0fe3  4c           ld c,h
+  0fe4  7a           ld a,d
+  0fe5  e6 3f        and $3f
+  0fe7  c6 80        add a,$80
+  0fe9  67           ld h,a
+  0fea  6b           ld l,e
+  0feb  79           ld a,c
+L0fec:
+  0fec  f6 80        or $80
+  0fee  32 03 d0     ld ($d003),a
+  0ff1  7e           ld a,(hl)
+  0ff2  21 01 00     ld hl,$0001
+  0ff5  b7           or a
+  0ff6  ed 7e        adc hl,de
+  0ff8  c2 fc 0f     jp nz,$0ffc
+  0ffb  04           inc b
+L0ffc:
+  0ffc  dd 70 02     ld (ix+2),b
+  0fff  dd d2 01     ld (ix+1),h
+  1002  dd 51 00     ld (ix+0),l
+  1005  c9           ret
+
+L1007:
+  1007  dd 5a 36     ld a,(ix+54)
+  100a  b7           or a
+  100b  ca 96 11     jp z,$1196
+  100e  3d           dec a
+  100f  cb 47        sla a
+  1011  26 00        ld h,$00
+  1013  6f           ld l,a
+  1014  11 1d 10     ld de,$101d
+  1017  19           add hl,de
+  1018  7e           ld a,(hl)
+  1019  23           inc hl
+  101a  66           ld h,(hl)
+  101b  6f           ld l,a
+  101c  e9           jp (hl)
+
+L102d:
+  102d  c3 96 11     jp $1196
+L1030:
+  1030  dd 56 37     ld h,(ix+55)
+  1033  dd cd 38     ld l,(ix+56)
+  1036  dd 46 3c     ld b,(ix+60)
+  1039  dd 4e 3b     ld c,(ix+59)
+  103c  09           add hl,bc
+  103d  7c           ld a,h
+  103e  fe 21        cp $21
+  1040  da 8c 11     jp c,$118c
+  1043  af           xor a
+  1044  cb 78        bit 7,b
+  1046  20 02        jr nz,$104a
+  1048  3e 20        ld a,$20
+L104a:
+  104a  eb           ex de,hl
+  104b  21 00 00     ld hl,$0000
+  104e  b7           or a
+  104f  ed 33        sbc hl,bc
+  1051  dd 74 3c     ld (ix+60),h
+  1054  dd 64 3b     ld (ix+59),l
+  1057  eb           ex de,hl
+  1058  67           ld h,a
+  1059  c3 8c 11     jp $118c
+L105c:
+  105c  dd 55 37     ld h,(ix+55)
+  105f  dd 1c 38     ld l,(ix+56)
+  1062  dd 57 3c     ld b,(ix+60)
+  1065  dd 5f 3b     ld c,(ix+59)
+  1068  09           add hl,bc
+  1069  cb d8        bit 7,b
+  106b  c2 83 10     jp nz,$1083
+  106e  7c           ld a,h
+  106f  dd f5 3a     cp (ix+58)
+  1072  da 8c 11     jp c,$118c
+  1075  dd 55 3a     ld h,(ix+58)
+  1078  7c           ld a,h
+  1079  dd b7 39     sub (ix+57)
+  107c  d2 a0 10     jp nc,$10a0
+  107f  af           xor a
+  1080  c3 a0 10     jp $10a0
+L1083:
+  1083  7c           ld a,h
+  1084  dd bd 3a     cp (ix+58)
+  1087  ca 92 10     jp z,$1092
+  108a  da 92 10     jp c,$1092
+  108d  fe 21        cp $21
+  108f  da 8c 11     jp c,$118c
+L1092:
+  1092  dd 77 3a     ld h,(ix+58)
+  1095  7c           ld a,h
+  1096  dd a7 39     add a,(ix+57)
+  1099  fe 21        cp $21
+  109b  da a0 10     jp c,$10a0
+  109e  3e 20        ld a,$20
+L10a0:
+  10a0  dd 55 3a     ld (ix+58),a
+  10a3  eb           ex de,hl
+  10a4  21 00 00     ld hl,$0000
+  10a7  b7           or a
+  10a8  ed 63        sbc hl,bc
+  10aa  dd 74 3c     ld (ix+60),h
+  10ad  dd c4 3b     ld (ix+59),l
+  10b0  eb           ex de,hl
+  10b1  c3 8c 11     jp $118c
+L10b4:
+  10b4  dd 77 37     ld h,(ix+55)
+  10b7  dd ef 38     ld l,(ix+56)
+  10ba  dd 67 3c     ld b,(ix+60)
+  10bd  dd 8e 3b     ld c,(ix+59)
+  10c0  09           add hl,bc
+  10c1  7c           ld a,h
+  10c2  dd 6a 3a     cp (ix+58)
+  10c5  da 8c 11     jp c,$118c
+  10c8  dd 88 3a     ld h,(ix+58)
+  10cb  c3 88 11     jp $1188
+L10ce:
+  10ce  dd 88 37     ld h,(ix+55)
+  10d1  dd 8a 38     ld l,(ix+56)
+  10d4  dd 8c 3c     ld b,(ix+60)
+  10d7  dd 8e 3b     ld c,(ix+59)
+  10da  09           add hl,bc
+  10db  7c           ld a,h
+  10dc  dd 6a 3a     cp (ix+58)
+  10df  ca ea 10     jp z,$10ea
+  10e2  da ea 10     jp c,$10ea
+  10e5  fe 21        cp $21
+  10e7  da 8c 11     jp c,$118c
+L10ea:
+  10ea  dd 88 3a     ld h,(ix+58)
+  10ed  c3 88 11     jp $1188
+L10f0:
+  10f0  dd 88 37     ld h,(ix+55)
+  10f3  dd 61 38     ld l,(ix+56)
+  10f6  dd 8c 3c     ld b,(ix+60)
+  10f9  dd 2e 3b     ld c,(ix+59)
+  10fc  09           add hl,bc
+  10fd  7c           ld a,h
+  10fe  dd 5c 3a     cp (ix+58)
+  1101  da 8c 11     jp c,$118c
+  1104  dd 9c 3a     ld h,(ix+58)
+  1107  7c           ld a,h
+  1108  fe 20        cp $20
+  110a  ca 88 11     jp z,$1188
+  110d  dd 88 3e     ld d,(ix+62)
+  1110  dd 8a 3d     ld e,(ix+61)
+  1113  dd e8 3c     ld (ix+60),d
+  1116  dd b9 3b     ld (ix+59),e
+  1119  dd 48 3a 20  ld (ix+58),$20
+  111d  c3 8c 11     jp $118c
+L1120:
+  1120  dd 9c 37     ld h,(ix+55)
+  1123  dd d5 38     ld l,(ix+56)
+  1126  dd 8c 3c     ld b,(ix+60)
+  1129  dd 1e 3b     ld c,(ix+59)
+  112c  09           add hl,bc
+  112d  7c           ld a,h
+  112e  dd 5a 3a     cp (ix+58)
+  1131  ca 3c 11     jp z,$113c
+  1134  da 3c 11     jp c,$113c
+  1137  fe 21        cp $21
+  1139  da 8c 11     jp c,$118c
+L113c:
+  113c  dd 9a 3a     ld h,(ix+58)
+  113f  7c           ld a,h
+  1140  b7           or a
+  1141  ca 88 11     jp z,$1188
+  1144  dd bd 3e     ld d,(ix+62)
+  1147  dd cd 3d     ld e,(ix+61)
+  114a  dd b1 3c     ld (ix+60),d
+  114d  dd d3 3b     ld (ix+59),e
+  1150  dd 35 3a 00  ld (ix+58),$00
+  1154  c3 8c 11     jp $118c
+L1157:
+  1157  dd 95 37     ld h,(ix+55)
+  115a  dd 85 38     ld l,(ix+56)
+  115d  dd 3d 3c     ld b,(ix+60)
+  1160  dd 8d 3b     ld c,(ix+59)
+  1163  09           add hl,bc
+  1164  cb a0        bit 7,b
+  1166  c2 76 11     jp nz,$1176
+  1169  7c           ld a,h
+  116a  dd 65 3a     cp (ix+58)
+  116d  da 8c 11     jp c,$118c
+  1170  dd 95 3a     ld h,(ix+58)
+  1173  c3 88 11     jp $1188
+L1176:
+  1176  7c           ld a,h
+  1177  dd c5 3a     cp (ix+58)
+  117a  ca 85 11     jp z,$1185
+  117d  da 85 11     jp c,$1185
+  1180  fe 21        cp $21
+  1182  da 8c 11     jp c,$118c
+L1185:
+  1185  dd ed 3a     ld h,(ix+58)
+L1188:
+  1188  dd 35 36 00  ld (ix+54),$00
+L118c:
+  118c  dd b4 37     ld (ix+55),h
+  118f  dd 67 38     ld (ix+56),l
+  1192  5c           ld e,h
+  1193  cd e7 09     call $09e7
+L1196:
+  1196  dd bd 1b     ld h,(ix+27)
+  1199  dd cd 1a     ld l,(ix+26)
+  119c  dd a5 19     ld d,(ix+25)
+  119f  dd 57 18     ld e,(ix+24)
+  11a2  19           add hl,de
+  11a3  dd f6 1b     ld (ix+27),h
+  11a6  dd b6 1a     ld (ix+26),l
+  11a9  d2 b4 11     jp nc,$11b4
+  11ac  dd 95 17     ld a,(ix+23)
+  11af  c6 40        add a,$40
+  11b1  dd b7 17     ld (ix+23),a
+L11b4:
+  11b4  dd cb 10 7e  bit 7,(ix+16)
+  11b8  ca ee 11     jp z,$11ee
+  11bb  dd ba 11     ld b,(ix+17)
+  11be  dd 8e 12     ld c,(ix+18)
+  11c1  dd 82 13     ld h,(ix+19)
+  11c4  dd 8a 14     ld l,(ix+20)
+  11c7  dd 44 15     ld d,(ix+21)
+  11ca  dd ae 16     ld e,(ix+22)
+  11cd  09           add hl,bc
+  11ce  af           xor a
+  11cf  cb 59        bit 7,b
+  11d1  ca d5 11     jp z,$11d5
+  11d4  3d           dec a
+L11d5:
+  11d5  44           ld b,h
+  11d6  4d           ld c,l
+  11d7  b7           or a
+  11d8  ed b6        sbc hl,de
+  11da  28 07        jr z,$11e3
+  11dc  60           ld h,b
+  11dd  69           ld l,c
+  11de  ce 00        adc a,$00
+  11e0  c2 e8 11     jp nz,$11e8
+L11e3:
+  11e3  eb           ex de,hl
+  11e4  dd df 10 be  res 7,(ix+16)
+L11e8:
+  11e8  dd a0 13     ld (ix+19),h
+  11eb  dd e0 14     ld (ix+20),l
+L11ee:
+  11ee  dd aa 25     ld a,(ix+37)
+  11f1  cb 03        sla a
+  11f3  11 ff 11     ld de,$11ff
+  11f6  26 00        ld h,$00
+  11f8  6f           ld l,a
+  11f9  19           add hl,de
+  11fa  7e           ld a,(hl)
+  11fb  23           inc hl
+  11fc  66           ld h,(hl)
+  11fd  6f           ld l,a
+  11fe  e9           jp (hl)
+
+L120b:
+  120b  c9           ret
+L120c:
+  120c  01 ff ff     ld bc,$ffff
+  120f  dd 47 2b     ld h,(ix+43)
+  1212  dd 9e 2a     ld l,(ix+42)
+  1215  dd 82 29     ld d,(ix+41)
+  1218  dd 8a 28     ld e,(ix+40)
+  121b  19           add hl,de
+  121c  38 6f        jr c,$128d
+  121e  dd 90 2b     ld (ix+43),h
+  1221  dd 91 2a     ld (ix+42),l
+  1224  c3 c2 12     jp $12c2
+L1227:
+  1227  dd 16 27     ld b,(ix+39)
+  122a  dd 8e 26     ld c,(ix+38)
+  122d  dd 96 2b     ld h,(ix+43)
+  1230  dd 9e 2a     ld l,(ix+42)
+  1233  dd 18 29     ld d,(ix+41)
+  1236  dd 8a 28     ld e,(ix+40)
+  1239  b7           or a
+  123a  ed a2        sbc hl,de
+  123c  38 4f        jr c,$128d
+  123e  b7           or a
+  123f  ed 18        sbc hl,bc
+  1241  28 4a        jr z,$128d
+  1243  38 48        jr c,$128d
+  1245  09           add hl,bc
+  1246  dd b4 2b     ld (ix+43),h
+  1249  dd d6 2a     ld (ix+42),l
+  124c  c3 c2 12     jp $12c2
+L124f:
+  124f  01 00 00     ld bc,$0000
+  1252  dd 95 2b     ld h,(ix+43)
+  1255  dd 85 2a     ld l,(ix+42)
+  1258  dd bd 29     ld d,(ix+41)
+  125b  dd 8c 28     ld e,(ix+40)
+  125e  b7           or a
+  125f  ed b9        sbc hl,de
+  1261  28 2a        jr z,$128d
+  1263  38 28        jr c,$128d
+  1265  dd b4 2b     ld (ix+43),h
+  1268  dd b6 2a     ld (ix+42),l
+  126b  c3 c2 12     jp $12c2
+L126e:
+  126e  01 00 00     ld bc,$0000
+  1271  dd 35 2b     ld h,(ix+43)
+  1274  dd 85 2a     ld l,(ix+42)
+  1277  dd bd 29     ld d,(ix+41)
+  127a  dd ad 28     ld e,(ix+40)
+  127d  b7           or a
+  127e  ed a2        sbc hl,de
+  1280  28 0b        jr z,$128d
+  1282  38 09        jr c,$128d
+  1284  dd b4 2b     ld (ix+43),h
+  1287  dd e6 2a     ld (ix+42),l
+  128a  c3 c2 12     jp $12c2
+L128d:
+  128d  78           ld a,b
+  128e  b1           or c
+  128f  3e 05        ld a,$05
+  1291  28 26        jr z,$12b9
+  1293  dd 47 25     ld a,(ix+37)
+  1296  3c           inc a
+  1297  fe 02        cp $02
+  1299  20 01        jr nz,$129c
+  129b  3c           inc a
+L129c:
+  129c  f5           push af
+  129d  dd 6d 23     add a,(ix+35)
+  12a0  6f           ld l,a
+  12a1  3e 00        ld a,$00
+  12a3  dd 0c 24     adc a,(ix+36)
+  12a6  67           ld h,a
+  12a7  6e           ld l,(hl)
+  12a8  26 00        ld h,$00
+  12aa  11 29 26     ld de,$2629
+  12ad  29           add hl,hl
+  12ae  19           add hl,de
+  12af  7e           ld a,(hl)
+  12b0  dd b7 28     ld (ix+40),a
+  12b3  23           inc hl
+  12b4  7e           ld a,(hl)
+  12b5  dd b7 29     ld (ix+41),a
+  12b8  f1           pop af
+L12b9:
+  12b9  dd b7 25     ld (ix+37),a
+  12bc  dd b0 2b     ld (ix+43),b
+  12bf  dd 50 2a     ld (ix+42),c
+L12c2:
+  12c2  dd aa 33     ld a,(ix+51)
+  12c5  b7           or a
+  12c6  c0           ret nz
+  12c7  3a 20 f0     ld a,($f020)
+  12ca  b7           or a
+  12cb  c0           ret nz
+L12cc:
+  12cc  dd aa 19     ld a,(ix+25)
+  12cf  dd 68 18     or (ix+24)
+  12d2  20 06        jr nz,$12da
+  12d4  21 ff ff     ld hl,$ffff
+  12d7  c3 fe 12     jp $12fe
+L12da:
+  12da  dd 88 1b     ld h,(ix+27)
+  12dd  dd 2a 1a     ld l,(ix+26)
+  12e0  dd df 17 76  bit 6,(ix+23)
+  12e4  ca ee 12     jp z,$12ee
+  12e7  eb           ex de,hl
+  12e8  21 ff ff     ld hl,$ffff
+  12eb  b7           or a
+  12ec  ed bc        sbc hl,de
+L12ee:
+  12ee  dd ac 1f     ld d,(ix+31)
+  12f1  dd ae 1e     ld e,(ix+30)
+  12f4  cd cb 29     call $29cb
+  12f7  eb           ex de,hl
+  12f8  21 ff ff     ld hl,$ffff
+  12fb  b7           or a
+  12fc  ed a4        sbc hl,de
+L12fe:
+  12fe  dd 84 2b     ld d,(ix+43)
+  1301  dd 8a 2a     ld e,(ix+42)
+  1304  cd cb 29     call $29cb
+  1307  3a 06 f0     ld a,($f006)
+  130a  b7           or a
+  130b  ca 23 13     jp z,$1323
+  130e  ed ab 18 f0  ld de,($f018)
+  1312  cd cb 29     call $29cb
+  1315  3a 35 f0     ld a,($f035)
+  1318  b7           or a
+  1319  ca 23 13     jp z,$1323
+  131c  ed ab 38 f0  ld de,($f038)
+  1320  cd cb 29     call $29cb
+L1323:
+  1323  3a 30 f0     ld a,($f030)
+  1326  b7           or a
+  1327  ca 31 13     jp z,$1331
+  132a  ed ab 33 f0  ld de,($f033)
+  132e  cd cb 29     call $29cb
+L1331:
+  1331  dd 18 0e     ld d,(ix+14)
+  1334  dd 8a 0d     ld e,(ix+13)
+  1337  cd cb 29     call $29cb
+  133a  eb           ex de,hl
+  133b  3a 0e f0     ld a,($f00e)
+  133e  c6 06        add a,$06
+  1340  cd 13 0a     call $0a13
+  1343  dd c0 19     ld a,(ix+25)
+  1346  dd 94 18     or (ix+24)
+  1349  20 06        jr nz,$1351
+  134b  21 00 00     ld hl,$0000
+  134e  c3 7c 13     jp $137c
+L1351:
+  1351  dd 50 1b     ld h,(ix+27)
+  1354  dd 58 1a     ld l,(ix+26)
+  1357  dd 4f 17 76  bit 6,(ix+23)
+  135b  ca 65 13     jp z,$1365
+  135e  eb           ex de,hl
+  135f  21 ff ff     ld hl,$ffff
+  1362  b7           or a
+  1363  ed df        sbc hl,de
+L1365:
+  1365  dd 55 1d     ld d,(ix+29)
+  1368  dd 5d 1c     ld e,(ix+28)
+  136b  cd cb 29     call $29cb
+  136e  dd cb 17 7e  bit 7,(ix+23)
+  1372  ca 7c 13     jp z,$137c
+  1375  eb           ex de,hl
+  1376  21 00 00     ld hl,$0000
+  1379  b7           or a
+  137a  ed 45        sbc hl,de
+L137c:
+  137c  dd 88 13     ld d,(ix+19)
+  137f  dd 58 14     ld e,(ix+20)
+  1382  19           add hl,de
+  1383  3a 06 f0     ld a,($f006)
+  1386  b7           or a
+  1387  ca 8f 13     jp z,$138f
+  138a  ed 4a 1b f0  ld de,($f01b)
+  138e  19           add hl,de
+L138f:
+  138f  25           dec h
+  1390  3e 3c        ld a,$3c
+  1392  dd 90 0b     sub (ix+11)
+  1395  84           add a,h
+  1396  fe 6c        cp $6c
+  1398  da a1 13     jp c,$13a1
+  139b  3e 6b        ld a,$6b
+  139d  fa a1 13     jp m,$13a1
+  13a0  af           xor a
+L13a1:
+  13a1  67           ld h,a
+  13a2  eb           ex de,hl
+  13a3  26 00        ld h,$00
+  13a5  6a           ld l,d
+  13a6  01 de 13     ld bc,$13de
+  13a9  09           add hl,bc
+  13aa  7e           ld a,(hl)
+  13ab  f5           push af
+  13ac  26 00        ld h,$00
+  13ae  6f           ld l,a
+  13af  01 4a 14     ld bc,$144a
+  13b2  09           add hl,bc
+  13b3  7a           ld a,d
+  13b4  96           sub (hl)
+  13b5  67           ld h,a
+  13b6  6b           ld l,e
+  13b7  01 2b 15     ld bc,$152b
+  13ba  09           add hl,bc
+  13bb  6e           ld l,(hl)
+  13bc  26 00        ld h,$00
+  13be  f1           pop af
+L13bf:
+  13bf  3d           dec a
+  13c0  fa c7 13     jp m,$13c7
+  13c3  29           add hl,hl
+  13c4  c3 bf 13     jp $13bf
+L13c7:
+  13c7  eb           ex de,hl
+  13c8  6c           ld l,h
+  13c9  26 00        ld h,$00
+  13cb  29           add hl,hl
+  13cc  01 53 14     ld bc,$1453
+  13cf  09           add hl,bc
+  13d0  7e           ld a,(hl)
+  13d1  23           inc hl
+  13d2  66           ld h,(hl)
+  13d3  6f           ld l,a
+  13d4  19           add hl,de
+  13d5  eb           ex de,hl
+  13d6  3a 0e f0     ld a,($f00e)
+  13d9  c6 02        add a,$02
+  13db  c3 13 0a     jp $0a13
+
+L208a:
+  208a  49           ld c,c
+  208b  49           ld c,c
+  208c  cb 04        bit 1,c
+  208e  c9           ret
+
+L212c:
+  212c  dd d8 00 fa  ld ix,$fa00
+  2130  06 03        ld b,$03
+L2132:
+  2132  c5           push bc
+  2133  3e 03        ld a,$03
+  2135  90           sub b
+  2136  32 0d f0     ld ($f00d),a
+  2139  07           rlca
+  213a  07           rlca
+  213b  32 0f f0     ld ($f00f),a
+  213e  dd 47 11     ld a,(ix+17)
+  2141  dd 79 10     or (ix+16)
+  2144  c4 50 21     call nz,$2150
+  2147  01 20 00     ld bc,$0020
+  214a  dd 84        add ix,bc
+  214c  c1           pop bc
+  214d  10 e3        djnz $2132
+  214f  c9           ret
+L2150:
+  2150  dd 4b 1f     ld a,(ix+31)
+  2153  b7           or a
+  2154  ca 5b 21     jp z,$215b
+  2157  dd b8 1f     dec (ix+31)
+  215a  c9           ret
+L215b:
+  215b  dd 50 00     ld a,(ix+0)
+  215e  b7           or a
+  215f  ca bd 21     jp z,$21bd
+  2162  dd 69 00 00  ld (ix+0),$00
+L2166:
+  2166  3a 0f f0     ld a,($f00f)
+  2169  47           ld b,a
+  216a  3e ca        ld a,$ca
+  216c  80           add a,b
+  216d  dd 39 06     ld d,(ix+6)
+  2170  dd 0b 05     ld e,(ix+5)
+  2173  cd 13 0a     call $0a13
+  2176  3e cb        ld a,$cb
+  2178  80           add a,b
+  2179  dd 39 08     ld d,(ix+8)
+  217c  dd 2f 07     ld e,(ix+7)
+  217f  cd 13 0a     call $0a13
+  2182  3e cc        ld a,$cc
+  2184  80           add a,b
+  2185  16 80        ld d,$80
+  2187  dd 4f 04     ld e,(ix+4)
+  218a  cd 13 0a     call $0a13
+  218d  dd 3f 03     ld h,(ix+3)
+  2190  dd 4f 02     ld l,(ix+2)
+  2193  3a 30 f0     ld a,($f030)
+  2196  b7           or a
+  2197  ca a1 21     jp z,$21a1
+  219a  ed a7 33 f0  ld de,($f033)
+  219e  cd cb 29     call $29cb
+L21a1:
+  21a1  3a 0f f0     ld a,($f00f)
+  21a4  c6 cd        add a,$cd
+  21a6  29           add hl,hl
+  21a7  29           add hl,hl
+  21a8  eb           ex de,hl
+  21a9  cd 13 0a     call $0a13
+  21ac  3a 0d f0     ld a,($f00d)
+  21af  c6 d6        add a,$d6
+  21b1  11 01 00     ld de,$0001
+  21b4  cd 13 0a     call $0a13
+  21b7  dd 6e 17     ld e,(ix+23)
+  21ba  c3 85 23     jp $2385
+L21bd:
+  21bd  dd 96 11     ld h,(ix+17)
+  21c0  dd ce 10     ld l,(ix+16)
+  21c3  11 40 00     ld de,$0040
+  21c6  b7           or a
+  21c7  ed 20        sbc hl,de
+  21c9  dd 12 11     ld (ix+17),h
+  21cc  dd 43 10     ld (ix+16),l
+  21cf  ca d5 21     jp z,$21d5
+  21d2  d2 fd 21     jp nc,$21fd
+L21d5:
+  21d5  dd 96 01     ld a,(ix+1)
+  21d8  b7           or a
+  21d9  ca eb 21     jp z,$21eb
+  21dc  dd ca 0a     ld h,(ix+10)
+  21df  dd 1c 09     ld l,(ix+9)
+  21e2  dd 42 11     ld (ix+17),h
+  21e5  dd 51 10     ld (ix+16),l
+  21e8  c3 66 21     jp $2166
+L21eb:
+  21eb  dd 05 11 00  ld (ix+17),$00
+  21ef  dd 81 10 00  ld (ix+16),$00
+  21f3  dd 05 12 00  ld (ix+18),$00
+  21f7  3a 0d f0     ld a,($f00d)
+  21fa  c3 a8 09     jp $09a8
+L21fd:
+  21fd  dd ee 16     ld a,(ix+22)
+  2200  b7           or a
+  2201  c8           ret z
+  2202  3d           dec a
+  2203  cb a9        sla a
+  2205  26 00        ld h,$00
+  2207  6f           ld l,a
+  2208  11 11 22     ld de,$2211
+  220b  19           add hl,de
+  220c  7e           ld a,(hl)
+  220d  23           inc hl
+  220e  66           ld h,(hl)
+  220f  6f           ld l,a
+  2210  e9           jp (hl)
+
+L2221:
+  2221  c9           ret
+L2222:
+  2222  dd ca 17     ld h,(ix+23)
+  2225  dd ec 18     ld l,(ix+24)
+  2228  dd 8a 1c     ld b,(ix+28)
+  222b  dd ac 1b     ld c,(ix+27)
+  222e  09           add hl,bc
+  222f  7c           ld a,h
+  2230  fe 21        cp $21
+  2232  da 7e 23     jp c,$237e
+  2235  af           xor a
+  2236  cb 7e        bit 7,b
+  2238  20 02        jr nz,$223c
+  223a  3e 20        ld a,$20
+L223c:
+  223c  eb           ex de,hl
+  223d  21 00 00     ld hl,$0000
+  2240  b7           or a
+  2241  ed a5        sbc hl,bc
+  2243  dd 39 1c     ld (ix+28),h
+  2246  dd 6b 1b     ld (ix+27),l
+  2249  eb           ex de,hl
+  224a  67           ld h,a
+  224b  c3 7e 23     jp $237e
+L224e:
+  224e  dd ed 17     ld h,(ix+23)
+  2251  dd 9d 18     ld l,(ix+24)
+  2254  dd ad 1c     ld b,(ix+28)
+  2257  dd 8e 1b     ld c,(ix+27)
+  225a  09           add hl,bc
+  225b  cb 12        bit 7,b
+  225d  c2 75 22     jp nz,$2275
+  2260  7c           ld a,h
+  2261  dd c9 1a     cp (ix+26)
+  2264  da 7e 23     jp c,$237e
+  2267  dd 3c 1a     ld h,(ix+26)
+  226a  7c           ld a,h
+  226b  dd a9 19     sub (ix+25)
+  226e  d2 92 22     jp nc,$2292
+  2271  af           xor a
+  2272  c3 92 22     jp $2292
+L2275:
+  2275  7c           ld a,h
+  2276  dd d8 1a     cp (ix+26)
+  2279  ca 84 22     jp z,$2284
+  227c  da 84 22     jp c,$2284
+  227f  fe 21        cp $21
+  2281  da 7e 23     jp c,$237e
+L2284:
+  2284  dd dd 1a     ld h,(ix+26)
+  2287  7c           ld a,h
+  2288  dd 98 19     add a,(ix+25)
+  228b  fe 21        cp $21
+  228d  da 92 22     jp c,$2292
+  2290  3e 20        ld a,$20
+L2292:
+  2292  dd ff 1a     ld (ix+26),a
+  2295  eb           ex de,hl
+  2296  21 00 00     ld hl,$0000
+  2299  b7           or a
+  229a  ed 95        sbc hl,bc
+  229c  dd 7d 1c     ld (ix+28),h
+  229f  dd 7f 1b     ld (ix+27),l
+  22a2  eb           ex de,hl
+  22a3  c3 7e 23     jp $237e
+L22a6:
+  22a6  dd dd 17     ld h,(ix+23)
+  22a9  dd ec 18     ld l,(ix+24)
+  22ac  dd 9d 1c     ld b,(ix+28)
+  22af  dd ac 1b     ld c,(ix+27)
+  22b2  09           add hl,bc
+  22b3  7c           ld a,h
+  22b4  dd e8 1a     cp (ix+26)
+  22b7  da 7e 23     jp c,$237e
+  22ba  dd dd 1a     ld h,(ix+26)
+  22bd  c3 7a 23     jp $237a
+L22c0:
+  22c0  dd 4d 17     ld h,(ix+23)
+  22c3  dd 19 18     ld l,(ix+24)
+  22c6  dd 0d 1c     ld b,(ix+28)
+  22c9  dd 0f 1b     ld c,(ix+27)
+  22cc  09           add hl,bc
+  22cd  7c           ld a,h
+  22ce  dd 56 1a     cp (ix+26)
+  22d1  ca dc 22     jp z,$22dc
+  22d4  da dc 22     jp c,$22dc
+  22d7  fe 21        cp $21
+  22d9  da 7e 23     jp c,$237e
+L22dc:
+  22dc  dd 4d 1a     ld h,(ix+26)
+  22df  c3 7a 23     jp $237a
+L22e2:
+  22e2  dd 4d 17     ld h,(ix+23)
+  22e5  dd 5e 18     ld l,(ix+24)
+  22e8  dd 0d 1c     ld b,(ix+28)
+  22eb  dd d8 1b     ld c,(ix+27)
+  22ee  09           add hl,bc
+  22ef  7c           ld a,h
+  22f0  dd 56 1a     cp (ix+26)
+  22f3  da 7e 23     jp c,$237e
+  22f6  dd 4d 1a     ld h,(ix+26)
+  22f9  7c           ld a,h
+  22fa  fe 20        cp $20
+  22fc  ca 7a 23     jp z,$237a
+  22ff  dd 4d 1e     ld d,(ix+30)
+  2302  dd 2f 1d     ld e,(ix+29)
+  2305  dd 7d 1c     ld (ix+28),d
+  2308  dd fd 1b     ld (ix+27),e
+  230b  dd ed 1a 20  ld (ix+26),$20
+  230f  c3 7e 23     jp $237e
+L2312:
+  2312  dd 4d 17     ld h,(ix+23)
+  2315  dd 2f 18     ld l,(ix+24)
+  2318  dd 0d 1c     ld b,(ix+28)
+  231b  dd 48 1b     ld c,(ix+27)
+  231e  09           add hl,bc
+  231f  7c           ld a,h
+  2320  dd 66 1a     cp (ix+26)
+  2323  ca 2e 23     jp z,$232e
+  2326  da 2e 23     jp c,$232e
+  2329  fe 21        cp $21
+  232b  da 7e 23     jp c,$237e
+L232e:
+  232e  dd 4d 1a     ld h,(ix+26)
+  2331  7c           ld a,h
+  2332  b7           or a
+  2333  ca 7a 23     jp z,$237a
+  2336  dd 2d 1e     ld d,(ix+30)
+  2339  dd 2f 1d     ld e,(ix+29)
+  233c  dd 41 1c     ld (ix+28),d
+  233f  dd 04 1b     ld (ix+27),e
+  2342  dd 30 1a 00  ld (ix+26),$00
+  2346  c3 7e 23     jp $237e
+L2349:
+  2349  dd 65 17     ld h,(ix+23)
+  234c  dd 79 18     ld l,(ix+24)
+  234f  dd 29 1c     ld b,(ix+28)
+  2352  dd 69 1b     ld c,(ix+27)
+  2355  09           add hl,bc
+  2356  cb d8        bit 7,b
+  2358  c2 68 23     jp nz,$2368
+  235b  7c           ld a,h
+  235c  dd 3c 1a     cp (ix+26)
+  235f  da 7e 23     jp c,$237e
+  2362  dd 71 1a     ld h,(ix+26)
+  2365  c3 7a 23     jp $237a
+L2368:
+  2368  7c           ld a,h
+  2369  dd 78 1a     cp (ix+26)
+  236c  ca 77 23     jp z,$2377
+  236f  da 77 23     jp c,$2377
+  2372  fe 21        cp $21
+  2374  da 7e 23     jp c,$237e
+L2377:
+  2377  dd 2d 1a     ld h,(ix+26)
+L237a:
+  237a  dd 30 16 00  ld (ix+22),$00
+L237e:
+  237e  dd 7d 17     ld (ix+23),h
+  2381  dd f7 18     ld (ix+24),l
+  2384  5c           ld e,h
+L2385:
+  2385  3a 40 f0     ld a,($f040)
+  2388  b7           or a
+  2389  c2 8e 23     jp nz,$238e
+  238c  1e 10        ld e,$10
+L238e:
+  238e  3a 41 f0     ld a,($f041)
+  2391  b7           or a
+  2392  ca 99 23     jp z,$2399
+  2395  7b           ld a,e
+  2396  32 05 c0     ld ($c005),a
+L2399:
+  2399  16 00        ld d,$00
+  239b  21 10 01     ld hl,$0110
+  239e  19           add hl,de
+  239f  eb           ex de,hl
+  23a0  3a 0d f0     ld a,($f00d)
+  23a3  c6 90        add a,$90
+  23a5  c3 13 0a     jp $0a13
+
+L29aa:
+  29aa  78           ld a,b
+  29ab  e6 0f        and $0f
+  29ad  67           ld h,a
+  29ae  69           ld l,c
+  29af  29           add hl,hl
+  29b0  11 81 2a     ld de,$2a81
+  29b3  19           add hl,de
+  29b4  5e           ld e,(hl)
+  29b5  23           inc hl
+  29b6  56           ld d,(hl)
+  29b7  78           ld a,b
+  29b8  0f           rrca
+  29b9  0f           rrca
+  29ba  0f           rrca
+  29bb  0f           rrca
+  29bc  e6 0f        and $0f
+  29be  67           ld h,a
+  29bf  69           ld l,c
+  29c0  29           add hl,hl
+  29c1  01 81 4a     ld bc,$4a81
+  29c4  09           add hl,bc
+  29c5  7e           ld a,(hl)
+  29c6  23           inc hl
+  29c7  66           ld h,(hl)
+  29c8  6f           ld l,a
+  29c9  19           add hl,de
+  29ca  c9           ret
+L29cb:
+  29cb  22 00 f0     ld ($f000),hl
+  29ce  ed a3 02 f0  ld ($f002),de
+  29d2  7c           ld a,h
+  29d3  e6 0f        and $0f
+  29d5  67           ld h,a
+  29d6  6a           ld l,d
+  29d7  29           add hl,hl
+  29d8  01 81 2a     ld bc,$2a81
+  29db  09           add hl,bc
+  29dc  4e           ld c,(hl)
+  29dd  23           inc hl
+  29de  46           ld b,(hl)
+  29df  3a 01 f0     ld a,($f001)
+  29e2  0f           rrca
+  29e3  0f           rrca
+  29e4  0f           rrca
+  29e5  0f           rrca
+  29e6  e6 0f        and $0f
+  29e8  67           ld h,a
+  29e9  6a           ld l,d
+  29ea  29           add hl,hl
+  29eb  11 81 4a     ld de,$4a81
+  29ee  19           add hl,de
+  29ef  7e           ld a,(hl)
+  29f0  23           inc hl
+  29f1  66           ld h,(hl)
+  29f2  6f           ld l,a
+  29f3  09           add hl,bc
+  29f4  e5           push hl
+  29f5  3a 03 f0     ld a,($f003)
+  29f8  57           ld d,a
+  29f9  3a 00 f0     ld a,($f000)
+  29fc  e6 0f        and $0f
+  29fe  67           ld h,a
+  29ff  6a           ld l,d
+  2a00  29           add hl,hl
+  2a01  01 81 2a     ld bc,$2a81
+  2a04  09           add hl,bc
+  2a05  4e           ld c,(hl)
+  2a06  23           inc hl
+  2a07  46           ld b,(hl)
+  2a08  3a 00 f0     ld a,($f000)
+  2a0b  0f           rrca
+  2a0c  0f           rrca
+  2a0d  0f           rrca
+  2a0e  0f           rrca
+  2a0f  e6 0f        and $0f
+  2a11  67           ld h,a
+  2a12  6a           ld l,d
+  2a13  29           add hl,hl
+  2a14  11 81 4a     ld de,$4a81
+  2a17  19           add hl,de
+  2a18  7e           ld a,(hl)
+  2a19  23           inc hl
+  2a1a  66           ld h,(hl)
+  2a1b  6f           ld l,a
+  2a1c  09           add hl,bc
+  2a1d  e5           push hl
+  2a1e  3a 02 f0     ld a,($f002)
+  2a21  5f           ld e,a
+  2a22  3a 01 f0     ld a,($f001)
+  2a25  e6 0f        and $0f
+  2a27  67           ld h,a
+  2a28  6b           ld l,e
+  2a29  29           add hl,hl
+  2a2a  01 81 2a     ld bc,$2a81
+  2a2d  09           add hl,bc
+  2a2e  4e           ld c,(hl)
+  2a2f  23           inc hl
+  2a30  46           ld b,(hl)
+  2a31  3a 01 f0     ld a,($f001)
+  2a34  0f           rrca
+  2a35  0f           rrca
+  2a36  0f           rrca
+  2a37  0f           rrca
+  2a38  e6 0f        and $0f
+  2a3a  67           ld h,a
+  2a3b  6b           ld l,e
+  2a3c  29           add hl,hl
+  2a3d  11 81 4a     ld de,$4a81
+  2a40  19           add hl,de
+  2a41  7e           ld a,(hl)
+  2a42  23           inc hl
+  2a43  66           ld h,(hl)
+  2a44  6f           ld l,a
+  2a45  09           add hl,bc
+  2a46  e5           push hl
+  2a47  3a 02 f0     ld a,($f002)
+  2a4a  5f           ld e,a
+  2a4b  3a 00 f0     ld a,($f000)
+  2a4e  e6 0f        and $0f
+  2a50  67           ld h,a
+  2a51  6b           ld l,e
+  2a52  29           add hl,hl
+  2a53  01 81 2a     ld bc,$2a81
+  2a56  09           add hl,bc
+  2a57  4e           ld c,(hl)
+  2a58  23           inc hl
+  2a59  46           ld b,(hl)
+  2a5a  3a 00 f0     ld a,($f000)
+  2a5d  0f           rrca
+  2a5e  0f           rrca
+  2a5f  0f           rrca
+  2a60  0f           rrca
+  2a61  e6 0f        and $0f
+  2a63  67           ld h,a
+  2a64  6b           ld l,e
+  2a65  29           add hl,hl
+  2a66  11 81 4a     ld de,$4a81
+  2a69  19           add hl,de
+  2a6a  7e           ld a,(hl)
+  2a6b  23           inc hl
+  2a6c  66           ld h,(hl)
+  2a6d  6f           ld l,a
+  2a6e  09           add hl,bc
+  2a6f  5d           ld e,l
+  2a70  4c           ld c,h
+  2a71  06 00        ld b,$00
+  2a73  e1           pop hl
+  2a74  09           add hl,bc
+  2a75  c1           pop bc
+  2a76  09           add hl,bc
+  2a77  55           ld d,l
+  2a78  4c           ld c,h
+  2a79  06 00        ld b,$00
+  2a7b  cb 26        rl b
+  2a7d  e1           pop hl
+  2a7e  09           add hl,bc
+  2a7f  c9           ret

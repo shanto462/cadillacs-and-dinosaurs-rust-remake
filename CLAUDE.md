@@ -1,8 +1,11 @@
 # roms: Cadillacs and Dinosaurs reverse engineering + Rust port
 
-- `dino.zip` is the user's ROM (MAME set "dino"). Never commit it or anything derived from it
-  (extracted files, program/graphics images, Ghidra database, decompiled C, raw disassembly dumps,
-  screenshots of game art). `.gitignore` covers these; keep it that way.
+- `dino.zip` is the user's ROM (MAME set "dino"). Never commit it, program/graphics images, the Ghidra
+  database, decompiled C or raw disassembly dumps, and never paste ROM bytes or tables into source
+  files (code reads the zip at run time through `dino-extract`). `.gitignore` covers these.
+- Exception (user decision 2026-10-12, the repo is always private): the rendered asset dump
+  `re/out/assets/` (made by `re/tools/dump_assets.sh`, browse `re/out/assets/index.html`) IS committed,
+  so nobody has to extract it again. Re-run the dump and commit when the dump tool changes.
 - `re/`: reverse-engineering workspace. Start with `re/README.md` and `re/specs/CONTEXT.md`;
   topic specs are in `re/specs/{anim,stage,player,enemy}/SPEC.md`. Decompiled C: `re/ghidra/decomp.c`.
 - `dino-rs/`: the Rust port (native logic, no emulation). Read `dino-rs/ARCHITECTURE.md` before

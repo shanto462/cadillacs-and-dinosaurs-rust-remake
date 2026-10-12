@@ -1,0 +1,264 @@
+# Sound command table of the Z80 driver (re/specs/sound/SPEC.md section 5). code, header address, type, priority, voices, length, who sends it
+# Full sequences: sound_sequences.txt. Audio of music and composed effects comes with our own sound driver (milestone M4); the raw samples are in samples/.
+000  hdr 00841D  music  prio  -  voices 14   14.98 s loops  samples [4, 9, 10, 12, 13, 15, 18, 19, 20, 23, 26, 27, 30]  | A100, B96, code at 0x1dc2e, code at 0x99da, code at 0x9a22, code at 0x9a70, code at 0x9ad2, code at 0x9b42, code at 0x9c58, code at 0x9cc8, code at 0x9d2c, code at 0x9df0, code at 0x9e54, code at 0x9fa6, code at 0xa490, code at 0xa57e, code at 0xae12
+001  hdr 0086A6  music  prio  -  voices 13   54.46 s loops  samples [3, 16]  | start of Episode 1, code at 0xacca
+002  hdr 0087E0  music  prio  -  voices 13  240.65 s loops  samples [2, 7, 9, 17, 19, 23, 25, 26, 27, 30]  | Episode 1 area 0, code at 0x1e2f0
+003  hdr 00992A  music  prio  -  voices 16  109.33 s loops  samples [9, 10, 13, 15, 17, 19, 21, 23, 24, 26, 27, 30]  | Episode 1 area 1, Episode 2 area 2, Episode 6 area 0
+004  hdr 009F32  music  prio  -  voices 12   97.58 s loops  samples [2, 9, 10, 17, 18, 19, 23, 24, 25, 27, 35]  | Episode 1 area 2, Episode 7 area 0
+005  hdr 00A72B  music  prio  -  voices 16  177.06 s loops  samples [0, 1, 2, 4, 6, 7, 9, 12, 13, 15, 17, 19, 20, 23, 24, 26, 27, 30, 32, 33]  | Episode 2 area 0, Episode 6 area 1
+006  hdr 00B909  music  prio  -  voices 14   76.13 s loops  samples [0, 1, 3, 6, 9, 10, 11, 13, 19, 23, 25, 26, 30, 33]  | Episode 2 area 1, Episode 6 area 2, Episode 7 area 3
+007  hdr 00C22F  music  prio  -  voices 14  124.75 s loops  samples [2, 4, 7, 8, 9, 13, 17, 20, 23, 24, 25, 26, 27, 30]  | Episode 3 area 0
+008  hdr 00CC4D  music  prio  -  voices 12   79.44 s loops  samples [2, 7, 9, 13, 17, 19, 23, 25, 26, 27, 30]  | Episode 3 area 1, Episode 7 area 1, code at 0xa5c4
+009  hdr 00D2D8  music  prio  -  voices 14  131.47 s loops  samples [2, 7, 8, 9, 13, 14, 15, 17, 19, 21, 23, 24, 26, 27, 30]  | Episode 4 area 0, Episode 8 area 1
+00A  hdr 00E041  music  prio  -  voices 15  138.60 s loops  samples [2, 7, 9, 13, 15, 17, 20, 21, 22, 23, 24, 26, 27, 30]  | Episode 4 area 1, Episode 5 area 1
+00B  hdr 00EB4E  music  prio  -  voices 15   82.30 s loops  samples [9, 10, 15, 17, 18, 19, 21, 23, 24, 26, 27, 30]  | Episode 4 area 2, Episode 7 area 2
+00C  hdr 00EF6B  music  prio  -  voices 12  190.75 s loops  samples [2, 5, 9, 13, 18, 19, 22, 23, 24, 25, 26, 27, 30, 33]  | Episode 8 area 0
+00D  hdr 00FCF1  music  prio  -  voices 13  105.51 s loops  samples [2, 3, 5, 9, 13, 19, 22, 23, 25, 26, 27, 30, 122]  | Episode 8 area 2
+00E  hdr 0104D6  music  prio  -  voices 10   82.80 s loops  samples [2, 3, 7, 9, 10, 13, 15, 17, 20, 23, 24, 26, 27, 30]  | boss of Episode 1, boss of Episode 5, A18 Vice T./Walther, A36 Morgan
+00F  hdr 010B1F  music  prio  -  voices 13   88.64 s loops  samples [3, 9, 13, 15, 17, 18, 19, 20, 21, 23, 24, 26, 27, 30]  | boss of Episode 2, boss of Episode 6, final boss, second form, A04 Tyrog, A61 Butcher, A94 Fessenden
+010  hdr 0111E9  music  prio  -  voices 10  112.74 s loops  samples [2, 3, 7, 9, 10, 15, 17, 19, 20, 21, 23, 24, 27, 30]  | boss of Episode 3, A31 Hogg, A96
+011  hdr 0118C1  music  prio  -  voices 14  166.39 s loops  samples [2, 7, 9, 10, 12, 15, 17, 19, 20, 23, 27, 30]  | boss of Episode 4, boss of Episode 7, A25 Slice, B33
+012  hdr 011EF5  music  prio  -  voices 15   94.82 s loops  samples [3, 9, 13, 15, 17, 18, 19, 20, 21, 23, 24, 26, 27, 30, 99, 105]  | boss of Episode 8, A84 Fessenden
+013  hdr 012837  music  prio  -  voices 14   14.70 s loops  samples [3, 9, 15, 17, 18, 20, 23, 27]  | code at 0x9a964, code at 0xd8ea, code at 0xddce
+014  hdr 0129B6  music  prio  -  voices 13    7.18 s        samples [5, 9, 13, 15, 17, 19, 23, 26, 27, 30]  | code at 0xd980, code at 0xde6e
+015  hdr 012B5E  music  prio  -  voices 11   19.48 s loops  samples [3, 9, 10, 15, 17, 18, 19, 23, 27]  | code at 0xdab6, code at 0xdf20
+016  hdr 012D52  music  prio  -  voices 12   14.15 s loops  samples [3, 9, 15, 17, 18, 19, 21, 23, 27]  | code at 0xdbb4
+017  hdr 012EBD  music  prio  -  voices 10  130.19 s loops  samples [2, 7, 9, 13, 16, 22, 23, 25, 26, 27, 30]  | Episode 5 area 0
+018  hdr 013C9B  music  prio  -  voices 12    6.44 s        samples [9, 10, 13, 15, 17, 20, 23, 25, 26, 27, 30]  | code at 0x1e24c
+019  hdr 013F39  music  prio  -  voices 15  107.55 s        samples [0, 3, 7, 9, 13, 15, 16, 17, 18, 19, 20, 23, 25, 26, 27, 30, 35, 120]  | B81
+01A  hdr 0150C7  music  prio  -  voices 13  240.65 s loops  samples [2, 7, 9, 17, 19, 23, 25, 26, 27, 30]  | B81
+01B  hdr 016211  music  prio  -  voices 13   31.13 s loops  samples [9, 10, 15, 17, 18, 20, 23, 24, 27, 36]  | code at 0xeb20
+01C  hdr 01642A  music  prio  -  voices 13   25.63 s loops  samples [9, 10, 15, 17, 18, 20, 23, 24, 27]  | code at 0xf47c
+01D  hdr 0165D9  music  prio  -  voices 12    6.12 s        samples [2, 9, 10, 15, 20, 23, 24, 27]  | code at 0xedb4
+01E  hdr 016758  music  prio  -  voices 14    3.89 s        samples [9, 13, 15, 17, 20, 23, 24, 26, 27, 30]  | 
+01F  hdr 0168E9  music  prio  -  voices 13   29.40 s loops  samples [9, 10, 15, 19, 20, 23, 24, 31]  | code at 0xedfc
+020  hdr 016AD9  music  prio  -  voices  9    9.23 s loops  samples [2, 3, 6, 15]  | A18 Vice T./Walther, A45
+021  hdr 016BD8  music  prio  -  voices 10    7.24 s loops  samples [3, 18, 19, 24, 27, 32]  | A05, B79
+022  hdr 016D14  music  prio  -  voices 12   35.19 s        samples [23, 27, 34]  | Episode 8 area 3, A94 Fessenden
+023  hdr 016F39  music  prio  -  voices  8   27.98 s loops  samples [3, 9, 15, 17, 19]  | A25 Slice, B30, code at 0x1e674
+024  hdr 017054  music  prio  -  voices 13   29.96 s loops  samples [3, 9, 13, 15, 18, 19, 20, 23, 26, 27, 30]  | code at 0x988e2
+025  hdr 0172B0  music  prio  -  voices 16    6.06 s        samples [9, 10, 15, 17, 20, 23, 24, 26, 27, 30]  | code at 0x98af0
+026  hdr 0174C5  music  prio  -  voices  9    5.55 s        samples [5]  | 
+027  -
+028  -
+029  -
+02A  -
+02B  -
+02C  hdr 0175A6  sfx    prio  7  voices  1    0.48 s        samples [59]  | 
+02D  hdr 0175E3  sfx    prio  7  voices  1    0.48 s        samples [57]  | 
+02E  hdr 017620  sfx    prio  7  voices  1    0.48 s        samples [63]  | 
+02F  hdr 01765D  sfx    prio  7  voices  1    0.72 s        samples [65]  | 
+030  hdr 01769C  sfx    prio 10  voices  2    1.81 s        samples [96]  | code at 0x9d348, code at 0x9d598
+031  hdr 0176F0  sfx    prio  5  voices  4    0.48 s        samples [24]  | code at 0x9d168
+032  hdr 01776B  sfx    prio  5  voices  4    0.32 s        samples [7]  | code at 0xb222
+033  hdr 0177EB  sfx    prio  5  voices  4    0.57 s        samples [5]  | code at 0xb19c
+034  hdr 017880  sfx    prio  5  voices  3    0.34 s        samples [10]  | B31
+035  hdr 0178F8  sfx    prio  5  voices  3    0.40 s        samples [24]  | code at 0x7ef6, code at 0xf460
+036  hdr 01796B  sfx    prio  7  voices  1    1.61 s        samples [96]  | A22
+037  hdr 0179A8  sfx    prio  7  voices  1    0.72 s        samples [84]  | B12, B44
+038  hdr 0179E7  sfx    prio  3  voices  1    0.13 s        samples [73]  | 
+039  hdr 017A24  sfx    prio  5  voices  1    0.15 s        samples [110]  | hit sound id 1 (routine 0x962A, alternates with the other code of the pair)
+03A  hdr 017A63  sfx    prio  5  voices  1    0.18 s        samples [98]  | hit sound id 2 (routine 0x962A, alternates with the other code of the pair)
+03B  hdr 017AA0  sfx    prio  5  voices  1    0.27 s        samples [90]  | hit sound id 3 (routine 0x962A, alternates with the other code of the pair), A18 Vice T./Walther, A55 Ferris/Gneiss
+03C  hdr 017ADF  sfx    prio  7  voices  1    0.26 s        samples [61]  | 
+03D  hdr 017B1C  sfx    prio  7  voices  1    0.26 s        samples [66]  | 
+03E  hdr 017B59  sfx    prio  6  voices  1    0.40 s        samples [121]  | B20
+03F  hdr 017B98  sfx    prio  5  voices  4    0.30 s        samples [24]  | 
+040  hdr 017C16  sfx    prio  7  voices  1    0.83 s        samples [56]  | 
+041  hdr 017C53  sfx    prio  7  voices  1    1.21 s        samples [38]  | 
+042  hdr 017C90  sfx    prio  7  voices  1    1.28 s        samples [89, 92]  | 
+043  hdr 017CD3  sfx    prio  7  voices  1    0.90 s        samples [53]  | 
+044  hdr 017D12  sfx    prio  7  voices  1    0.67 s        samples [100]  | 
+045  hdr 017D4F  sfx    prio  7  voices  1    1.12 s        samples [41]  | 
+046  hdr 017D8E  sfx    prio  7  voices  1    0.34 s        samples [49]  | hit sound id 7 (routine 0x962A, alternates with the other code of the pair)
+047  hdr 017DCB  sfx    prio  7  voices  1    0.24 s        samples [113]  | hit sound id 8 (routine 0x962A, alternates with the other code of the pair)
+048  hdr 017E08  sfx    prio  7  voices  1    0.83 s        samples [50]  | 
+049  hdr 017E45  sfx    prio  5  voices  5    0.80 s        samples [18]  | B23, code at 0xbc2e, code at 0xbd84, code at 0xbeb0, code at 0xbfac, code at 0xc334
+04A  hdr 017EDF  sfx    prio  5  voices  5    1.28 s        samples [21]  | code at 0xa4fe
+04B  hdr 017FB8  sfx    prio  7  voices  1    1.25 s        samples [37]  | 
+04C  hdr 017FF5  sfx    prio  7  voices  1    1.16 s        samples [40]  | 
+04D  hdr 018032  sfx    prio  7  voices  1    1.07 s        samples [46]  | 
+04E  hdr 01806F  sfx    prio  7  voices  1    1.32 s        samples [48, 51]  | 
+04F  hdr 0180B7  sfx    prio  7  voices  1    0.24 s        samples [45]  | 
+050  hdr 0180F4  sfx    prio  7  voices  1    0.61 s        samples [68]  | 
+051  hdr 018131  sfx    prio  7  voices  1    0.22 s        samples [60]  | 
+052  hdr 01816E  sfx    prio  7  voices  1    0.38 s        samples [52]  | hit sound id 9 (routine 0x962A, alternates with the other code of the pair)
+053  hdr 0181AB  sfx    prio  7  voices  1    0.24 s        samples [47]  | 
+054  hdr 0181E8  sfx    prio  7  voices  1    0.58 s        samples [87]  | 
+055  hdr 018225  sfx    prio  7  voices  1    0.35 s        samples [55]  | 
+056  hdr 018262  sfx    prio  7  voices  1    1.04 s        samples [39]  | 
+057  hdr 01829F  sfx    prio  3  voices  1    0.26 s        samples [43]  | 
+058  hdr 0182DC  sfx    prio  7  voices  2    4.42 s        samples [44]  | code at 0x9810
+059  hdr 01834C  sfx    prio  4  voices  1    0.77 s        samples [62]  | code at 0xa318
+05A  hdr 018389  sfx    prio  4  voices  1    0.79 s        samples [58]  | code at 0xa05e
+05B  hdr 0183C6  sfx    prio  3  voices  1    0.75 s        samples [54]  | 
+05C  hdr 018403  sfx    prio  5  voices  1    0.24 s        samples [76]  | code at 0xa124
+05D  hdr 018440  sfx    prio  7  voices  1    0.54 s        samples [82]  | 
+05E  hdr 01847D  sfx    prio  5  voices  1    0.42 s        samples [93]  | hit sound id 6 (routine 0x962A, alternates with the other code of the pair)
+05F  hdr 0184BA  sfx    prio  5  voices  1    0.34 s        samples [104]  | hit sound id 11 (routine 0x962A, alternates with the other code of the pair), hit sound id 11 (routine 0x962A, alternates with the other code of the pair), A05, code at 0xa0f6
+060  hdr 0184F9  sfx    prio  5  voices  1    0.88 s        samples [96]  | code at 0xa0c8
+061  hdr 018539  sfx    prio  5  voices  1    3.77 s        samples [80]  | A11, A46, code at 0x9946a, code at 0x9c3ce
+062  hdr 0185A1  sfx    prio  7  voices  1    0.26 s        samples [101]  | 
+063  hdr 0185E0  sfx    prio  5  voices  1    0.34 s        samples [104]  | hit sound id 4 (routine 0x962A, alternates with the other code of the pair)
+064  hdr 01861D  sfx    prio  5  voices  1    0.13 s        samples [73]  | 
+065  hdr 01865A  sfx    prio  5  voices  1    0.29 s        samples [91]  | 
+066  hdr 018697  sfx    prio  5  voices  1    0.60 s        samples [99]  | hit sound id 5 (routine 0x962A, alternates with the other code of the pair), hit sound id 5 (routine 0x962A, alternates with the other code of the pair), A42, code at 0x9f50
+067  hdr 0186D4  sfx    prio  7  voices  1    0.53 s        samples [78]  | 
+068  hdr 018713  sfx    prio  7  voices  1    0.58 s        samples [107]  | 
+069  hdr 018750  sfx    prio  7  voices  1    0.54 s        samples [105]  | code at 0xa21a
+06A  hdr 01878D  sfx    prio  3  voices  1    0.74 s        samples [102]  | 
+06B  hdr 0187CA  sfx    prio  5  voices  1    0.75 s        samples [88]  | 
+06C  hdr 018807  sfx    prio  3  voices  1    0.53 s        samples [111]  | 
+06D  hdr 018844  sfx    prio  5  voices  1    3.77 s        samples [74]  | B61
+06E  hdr 0188AC  sfx    prio  3  voices  1    0.64 s        samples [108]  | 
+06F  hdr 0188E9  sfx    prio  3  voices  1    0.53 s        samples [81]  | 
+070  hdr 018928  sfx    prio  5  voices  1   10.28 s loops  samples [77]  | code at 0xa4ba
+071  hdr 018970  sfx    prio  3  voices  1    0.19 s        samples [112]  | 
+072  hdr 0189AD  sfx    prio  3  voices  1    0.43 s        samples [94]  | 
+073  hdr 0189EA  sfx    prio  5  voices  1    0.42 s        samples [94]  | A12
+074  hdr 018A27  sfx    prio  3  voices  1    0.67 s        samples [106]  | 
+075  hdr 018A66  sfx    prio  5  voices  1    0.56 s        samples [97]  | code at 0x9bca, code at 0xa350
+076  hdr 018AA3  sfx    prio  5  voices  1    0.54 s        samples [97]  | hit sound id 10 (routine 0x962A, alternates with the other code of the pair), hit sound id 10 (routine 0x962A, alternates with the other code of the pair), code at 0xa2b2, code at 0xa2ea
+077  hdr 018AE2  sfx    prio  3  voices  1    1.25 s        samples [69]  | code at 0xa284
+078  hdr 018B25  sfx    prio  5  voices  1    3.77 s        samples [71]  | B80, code at 0x9b816
+079  hdr 018B8D  sfx    prio  4  voices  1    1.04 s        samples [42]  | A45, A72 Tyrog, C06, code at 0xa392
+07A  hdr 018BCA  sfx    prio  3  voices  1    0.96 s        samples [118]  | 
+07B  hdr 018C07  sfx    prio  5  voices  1    0.21 s        samples [109]  | 
+07C  hdr 018C44  sfx    prio  7  voices  1    0.72 s        samples [67]  | 
+07D  hdr 018C81  sfx    prio  7  voices  1    0.74 s        samples [64]  | 
+07E  hdr 018CBE  sfx    prio  3  voices  1    0.15 s        samples [72]  | 
+07F  hdr 018CFB  sfx    prio  5  voices  1    1.45 s        samples [95]  | 
+080  hdr 018D38  sfx    prio  7  voices  1    1.45 s        samples [95]  | code at 0xa4ae
+081  hdr 018D77  sfx    prio  5  voices  1    0.67 s        samples [103]  | 
+082  hdr 018DB4  sfx    prio  5  voices  1    1.56 s        samples [83]  | 
+083  hdr 018DF1  sfx    prio  5  voices  1    0.77 s        samples [86]  | 
+084  hdr 018E2E  sfx    prio  5  voices  1    5.14 s loops  samples [70]  | 
+085  hdr 018E70  sfx    prio  5  voices  1   10.28 s loops  samples [75]  | 
+086  hdr 018EBA  sfx    prio  5  voices  1   10.92 s loops  samples [85]  | code at 0x21106
+087  hdr 018F02  sfx    prio  5  voices  1    1.33 s        samples [79]  | code at 0x20c2c, code at 0x210ac, code at 0x2119c, code at 0x22a24
+088  hdr 018F41  sfx    prio  3  voices  1    0.91 s        samples [114]  | B14, code at 0x9ed4
+089  hdr 018F80  sfx    prio  5  voices  1    1.21 s        samples [116]  | code at 0xa3c2
+08A  hdr 018FBF  sfx    prio  3  voices  1    0.46 s        samples [115]  | code at 0x9f0a
+08B  hdr 018FFE  sfx    prio  3  voices  1    0.37 s        samples [117]  | 
+08C  hdr 01903B  sfx    prio  3  voices  1    0.43 s        samples [119]  | 
+08D  hdr 019078  sfx    prio  5  voices  1    4.66 s        samples [70]  | B56
+08E  hdr 0190E0  sfx    prio  5  voices  1    4.10 s        samples [75]  | B62
+08F  hdr 01916C  sfx    prio  5  voices  1    1.45 s        samples [95]  | code at 0xa4c6
+090  hdr 0191AB  sfx    prio  3  voices  1    1.45 s        samples [95]  | code at 0xa160
+091  hdr 0191E8  sfx    prio  5  voices  1    2.32 s        samples [77]  | 
+092  -
+093  -
+094  -
+095  -
+096  -
+097  -
+098  -
+099  -
+09A  -
+09B  -
+09C  -
+09D  -
+09E  -
+09F  -
+0A0  hdr 019266  sfx    prio  7  voices  1    0.48 s        samples [59]  | 
+0A1  hdr 0192A3  sfx    prio  7  voices  1    0.48 s        samples [59]  | 
+0A2  hdr 0192E0  sfx    prio  7  voices  1    0.48 s        samples [57]  | 
+0A3  hdr 01931D  sfx    prio  7  voices  1    0.48 s        samples [57]  | 
+0A4  hdr 01935A  sfx    prio  7  voices  1    0.48 s        samples [63]  | 
+0A5  hdr 019397  sfx    prio  7  voices  1    0.48 s        samples [63]  | 
+0A6  hdr 0193D4  sfx    prio  7  voices  1    0.72 s        samples [65]  | 
+0A7  hdr 019413  sfx    prio  7  voices  1    0.72 s        samples [65]  | 
+0A8  hdr 019452  sfx    prio  3  voices  1    0.13 s        samples [73]  | 
+0A9  hdr 01948F  sfx    prio  5  voices  1    0.15 s        samples [110]  | hit sound id 1 (routine 0x962A, alternates with the other code of the pair)
+0AA  hdr 0194CE  sfx    prio  5  voices  1    0.18 s        samples [98]  | hit sound id 2 (routine 0x962A, alternates with the other code of the pair)
+0AB  hdr 01950B  sfx    prio  5  voices  1    0.27 s        samples [90]  | hit sound id 3 (routine 0x962A, alternates with the other code of the pair), C06, code at 0xa1d8
+0AC  hdr 01954A  sfx    prio  7  voices  1    0.26 s        samples [61]  | 
+0AD  hdr 019587  sfx    prio  7  voices  1    0.26 s        samples [61]  | 
+0AE  hdr 0195C4  sfx    prio  7  voices  1    0.26 s        samples [66]  | 
+0AF  hdr 019601  sfx    prio  7  voices  1    0.26 s        samples [66]  | 
+0B0  hdr 01963E  sfx    prio  7  voices  1    0.83 s        samples [56]  | 
+0B1  hdr 01967B  sfx    prio  7  voices  1    0.83 s        samples [56]  | 
+0B2  hdr 0196B8  sfx    prio  7  voices  1    1.21 s        samples [38]  | 
+0B3  hdr 0196F5  sfx    prio  7  voices  1    1.21 s        samples [38]  | 
+0B4  hdr 019732  sfx    prio  7  voices  1    1.28 s        samples [89, 92]  | 
+0B5  hdr 019775  sfx    prio  7  voices  1    1.28 s        samples [89, 92]  | 
+0B6  hdr 0197B8  sfx    prio  7  voices  1    0.90 s        samples [53]  | 
+0B7  hdr 0197F7  sfx    prio  7  voices  1    0.90 s        samples [53]  | 
+0B8  hdr 019836  sfx    prio  7  voices  1    0.67 s        samples [100]  | 
+0B9  hdr 019873  sfx    prio  7  voices  1    0.67 s        samples [100]  | 
+0BA  hdr 0198B0  sfx    prio  7  voices  1    1.12 s        samples [41]  | 
+0BB  hdr 0198EF  sfx    prio  7  voices  1    1.12 s        samples [41]  | A90
+0BC  hdr 01992E  sfx    prio  7  voices  1    0.34 s        samples [49]  | hit sound id 7 (routine 0x962A, alternates with the other code of the pair)
+0BD  hdr 01996B  sfx    prio  7  voices  1    0.34 s        samples [49]  | 
+0BE  hdr 0199A8  sfx    prio  7  voices  1    0.24 s        samples [113]  | hit sound id 8 (routine 0x962A, alternates with the other code of the pair)
+0BF  hdr 0199E5  sfx    prio  7  voices  1    0.24 s        samples [113]  | 
+0C0  hdr 019A22  sfx    prio  7  voices  1    0.83 s        samples [50]  | 
+0C1  hdr 019A5F  sfx    prio  7  voices  1    0.83 s        samples [50]  | 
+0C2  hdr 019A9C  sfx    prio  7  voices  1    1.25 s        samples [37]  | 
+0C3  hdr 019AD9  sfx    prio  7  voices  1    1.25 s        samples [37]  | 
+0C4  hdr 019B16  sfx    prio  7  voices  1    1.16 s        samples [40]  | 
+0C5  hdr 019B53  sfx    prio  7  voices  1    1.16 s        samples [40]  | 
+0C6  hdr 019B90  sfx    prio  7  voices  1    1.07 s        samples [46]  | 
+0C7  hdr 019BCD  sfx    prio  7  voices  1    1.07 s        samples [46]  | 
+0C8  hdr 019C0A  sfx    prio  7  voices  1    1.32 s        samples [48, 51]  | 
+0C9  hdr 019C52  sfx    prio  7  voices  1    1.32 s        samples [48, 51]  | 
+0CA  hdr 019C9A  sfx    prio  7  voices  1    0.24 s        samples [45]  | 
+0CB  hdr 019CD7  sfx    prio  7  voices  1    0.24 s        samples [45]  | 
+0CC  hdr 019D14  sfx    prio  7  voices  1    0.61 s        samples [68]  | 
+0CD  hdr 019D51  sfx    prio  7  voices  1    0.61 s        samples [68]  | 
+0CE  hdr 019D8E  sfx    prio  7  voices  1    0.22 s        samples [60]  | 
+0CF  hdr 019DCB  sfx    prio  7  voices  1    0.22 s        samples [60]  | 
+0D0  hdr 019E08  sfx    prio  7  voices  1    0.38 s        samples [52]  | hit sound id 9 (routine 0x962A, alternates with the other code of the pair)
+0D1  hdr 019E45  sfx    prio  7  voices  1    0.38 s        samples [52]  | 
+0D2  hdr 019E82  sfx    prio  7  voices  1    0.24 s        samples [47]  | 
+0D3  hdr 019EBF  sfx    prio  7  voices  1    0.24 s        samples [47]  | 
+0D4  hdr 019EFC  sfx    prio  7  voices  1    0.58 s        samples [87]  | 
+0D5  hdr 019F39  sfx    prio  7  voices  1    0.58 s        samples [87]  | 
+0D6  hdr 019F76  sfx    prio  7  voices  1    0.35 s        samples [55]  | 
+0D7  hdr 019FB3  sfx    prio  7  voices  1    0.35 s        samples [55]  | 
+0D8  hdr 019FF0  sfx    prio  7  voices  1    1.04 s        samples [39]  | 
+0D9  hdr 01A02D  sfx    prio  7  voices  1    1.04 s        samples [39]  | 
+0DA  hdr 01A06A  sfx    prio  7  voices  1    0.54 s        samples [82]  | 
+0DB  hdr 01A0A7  sfx    prio  7  voices  1    0.54 s        samples [82]  | 
+0DC  hdr 01A0E4  sfx    prio  5  voices  1    0.54 s        samples [82]  | code at 0x9dfc
+0DD  hdr 01A121  sfx    prio  3  voices  1    0.42 s        samples [93]  | hit sound id 6 (routine 0x962A, alternates with the other code of the pair)
+0DE  hdr 01A15E  sfx    prio  7  voices  1    0.26 s        samples [101]  | 
+0DF  hdr 01A19D  sfx    prio  7  voices  1    0.26 s        samples [101]  | 
+0E0  hdr 01A1DC  sfx    prio  5  voices  1    0.26 s        samples [101]  | 
+0E1  hdr 01A21B  sfx    prio  5  voices  1    0.26 s        samples [101]  | code at 0x9c6e
+0E2  hdr 01A25A  sfx    prio  5  voices  1    0.34 s        samples [104]  | hit sound id 4 (routine 0x962A, alternates with the other code of the pair)
+0E3  hdr 01A297  sfx    prio  5  voices  1    0.13 s        samples [73]  | code at 0x9d94
+0E4  hdr 01A2D4  sfx    prio  5  voices  1    0.29 s        samples [91]  | 
+0E5  hdr 01A311  sfx    prio  7  voices  1    0.53 s        samples [78]  | 
+0E6  hdr 01A350  sfx    prio  7  voices  1    0.53 s        samples [78]  | code at 0xec6e
+0E7  hdr 01A38F  sfx    prio  5  voices  1    0.53 s        samples [78]  | code at 0x9d38
+0E8  hdr 01A3CE  sfx    prio  7  voices  1    0.58 s        samples [107]  | 
+0E9  hdr 01A40B  sfx    prio  7  voices  1    0.58 s        samples [107]  | 
+0EA  hdr 01A448  sfx    prio  4  voices  1    0.58 s        samples [107]  | code at 0x9cd0
+0EB  hdr 01A485  sfx    prio  7  voices  1    0.54 s        samples [105]  | 
+0EC  hdr 01A4C2  sfx    prio  7  voices  1    0.54 s        samples [105]  | 
+0ED  hdr 01A4FF  sfx    prio  3  voices  1    0.74 s        samples [102]  | 
+0EE  hdr 01A53C  sfx    prio  3  voices  1    0.74 s        samples [102]  | 
+0EF  hdr 01A579  sfx    prio  5  voices  1    0.74 s        samples [102]  | 
+0F0  hdr 01A5B6  sfx    prio  5  voices  1    0.74 s        samples [102]  | code at 0x9b58
+0F1  hdr 01A5F3  sfx    prio  5  voices  1    0.75 s        samples [88]  | 
+0F2  hdr 01A630  sfx    prio  3  voices  1    0.53 s        samples [111]  | code at 0x9b9a
+0F3  hdr 01A66D  sfx    prio  3  voices  1    0.53 s        samples [111]  | 
+0F4  hdr 01A6AA  sfx    prio  5  voices  1    0.53 s        samples [111]  | 
+0F5  hdr 01A6E7  sfx    prio  3  voices  1    0.64 s        samples [108]  | code at 0x9ff0
+0F6  hdr 01A724  sfx    prio  3  voices  1    0.53 s        samples [81]  | code at 0x9e9a
+0F7  hdr 01A763  sfx    prio  3  voices  1    0.19 s        samples [112]  | code at 0x9c08
+0F8  hdr 01A7A0  sfx    prio  3  voices  1    0.43 s        samples [94]  | code at 0x97ce
+0F9  hdr 01A7DD  sfx    prio  5  voices  1    0.42 s        samples [94]  | code at 0xa09a
+0FA  hdr 01A81A  sfx    prio  3  voices  1    0.67 s        samples [106]  | code at 0xa030
+0FB  hdr 01A859  sfx    prio  5  voices  1    0.96 s        samples [118]  | code at 0xa19c
+0FC  hdr 01A896  sfx    prio  5  voices  1    0.21 s        samples [109]  | 
+0FD  hdr 01A8D3  sfx    prio  7  voices  1    0.72 s        samples [67]  | 
+0FE  hdr 01A910  sfx    prio  7  voices  1    0.72 s        samples [67]  | 
+0FF  hdr 01A94D  sfx    prio  7  voices  1    0.74 s        samples [64]  | 
+100  hdr 01A98A  sfx    prio  7  voices  1    0.74 s        samples [64]  | 
+101  hdr 01A9C7  sfx    prio  3  voices  1    0.15 s        samples [72]  | code at 0xa256
+102  hdr 01AA04  sfx    prio  7  voices  1    0.67 s        samples [103]  | 
+103  hdr 01AA41  sfx    prio  7  voices  1    0.67 s        samples [103]  | 
+104  hdr 01AA7E  sfx    prio  3  voices  1    0.37 s        samples [117]  | code at 0xa400
+105  hdr 01AABB  sfx    prio  3  voices  1    0.43 s        samples [119]  | code at 0xa43e
