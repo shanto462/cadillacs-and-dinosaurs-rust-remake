@@ -152,7 +152,7 @@ STUB (empty named function), MISSING (no code), UNKNOWN (original not understood
 | W18 | Screen shake on stomps, landings, the lift (0x222D6) | st 6.7 | STUB | struct and logic are documented |
 | W19 | Tile animation (water, fire) and palette cycling objects | st 2.5, 2.6 | PARTIAL | |
 | W20 | Suits of armor in the Episode 1 hall hide items | W:aqm | UNKNOWN | probably container variant 0xA |
-| W21 | Lab tanks (01, 02, 03) open and release Bludge, Hopper, Tyrog 2 (Episode 8) | M card, W:aqm, U (2026-10-12: "last episode, from background dinosaurs, 1, 3, 5, 7 these breaks and comes out, in the beginning of the stage") | MISSING | pool B 44 (three tank objects in the scripts of area 0 at X 0x30, 0x150, 0x5D0). **User:** at the start of Episode 8 the dinosaurs in the background tanks numbered 1, 3, 5 and 7 break their tanks and come out. D3e part 3 must walk Episode 8 area 0 in natural play and list every tank (number, X, which creature, what triggers the break, timing, the glass break art and sound, what the creature does after) and D3d covers any boss among them |
+| W21 | Lab tanks (01, 02, 03) open and release Bludge, Hopper, Tyrog 2 (Episode 8) | M card, W:aqm, U (2026-10-12: "last episode, from background dinosaurs, 1, 3, 5, 7 these breaks and comes out, in the beginning of the stage") | MISSING | pool B 44 (three tank objects in the scripts of area 0 at X 0x30, 0x150, 0x5D0). **User:** at the start of Episode 8 the dinosaurs in the background tanks numbered 1, 3, 5 and 7 break their tanks and come out. **D3d (MAME and code):** only cylinders 01, 03, 04 and 11 open, releasing a Bludge, a Rock Hopper, a Bludge and Tyrog 2. D3e part 3 must walk Episode 8 area 0 in natural play and list every tank (number, X, which creature, what triggers the break, timing, the glass break art and sound, what the creature does after) and D3d covers any boss among them |
 | W22 | Garage props (Episode 4), doors, gates | stage scripts | MISSING | pool B 0, 1, 59 |
 | W23 | The "GO" burst arrow at the right edge and the idle hint after 600 f | M, en 8.3, ph1 | MISSING | pool B 20 is the hint |
 | W24 | Pool B classes with unknown role: 59 distinct in the scripts, 57 not ported | stage scripts | MISSING | D3 list |
@@ -613,3 +613,30 @@ Source: `plan/game/sources/claude-doc-deep-dive-supplement-2.md`. The scene-by-s
 | IT28 | The Episode 2 treasures are drawn behind the foreground trunks; the hero at depth 16 is half hidden too | M e2_diamond | UNKNOWN | port draw order not checked |
 | IT29 | **Port bug:** the extracted drop table ends at 0xB7312 (enemy row 0x2F); Episode 1 wave 4 uses enemy row 0x30, so a kill panics the port | R `dino-extract/src/enemy.rs`; stage_scripts | BUG | task IT-P1 |
 | IT30 | The Episode 5 area 0 drum for 3 players (X 0x2D0, trigger 0x80) is past the far window when it fires and is freed at once (derived, not seen) | R; M despawn_x | DONE (data driven) | A26 |
+
+### From `design/D3d-bosses-2.md` (D3d bosses part 2), 22 rows
+
+| ID | Mechanic | Source | Port | Notes |
+| --- | --- | --- | --- | --- |
+| BT01 | Slisaur starter (pool B 33): 2 Slisaurs, 3 when `G.$4EF != 0`; the last one's hit calls `0xACEE`; the starter sums their HP and asks the controller every 300 frames | R 0x818E4, 0x81A7A; M s7-1p-a, s7-2p-a | MISSING | D3d |
+| BT02 | Slisaur class 71: gate table 0x5DB0E, combo table 0x5DB8E, dash ramp 0x5DD1C, attacks 0x36 and 0x37, HP index 0 | R 0x5DD58..; M sl-dmg-1p | MISSING | D3d |
+| BT03 | Slisaur blades (class 19, shared with Slice) and the afterimage (pool C 27, 6 steps of 6 frames, palettes 0x9D to 0x8B) | R 0x9639E; M sl-fine | MISSING | D3c, D3d |
+| BT04 | Lab tank breakers (pool B 44): four records (cylinders 01, 03, 04, 11), 3 frame event, shards, tile rewrite, recolour and sound 0x37 for the Hopper and Tyrog 2 tanks | R 0x83BB0, 0x83C36; M k8-walk, k8-fine | MISSING | D3d |
+| BT05 | Episode 5 scene: class 35 walks, shoots the villager (class 45) with four class 59 var 5 bullets, rewrites its class to 36 at t = 662 | R 0x513DA, 0x51658; M m5-scene | MISSING | D3d |
+| BT06 | Morgan (class 36): gate 0x73B14, actions 0x73B54 and 0x73C54, kite, hop, throws (class 68 var 2, 3, 4), grenades (class 26 var 0), Uzi burst, 0 points, Uzi drop | R 0x51692; M m5-dmg, m5-uzi | MISSING | D3d |
+| BT07 | Morgue (class 40): moves 0x40, 0x6C, 0x4B, 0x41 (charge 7 px per frame), 0x42, 0x2B, 0x31, 0x4A; the roar (40 frames, 5 sparks) then the charge; gate 0x73D54; 30,000 and `0xACEE` | R 0x53E08; M m5-b, m5-morgue-dmg, m5-morgue-kill | MISSING | D3d |
+| BT08 | Tyrog crate scene: pool B 79, class 75 var 0 (320 frames), 1, 4, class 76 jump and puffs, class 4 var 0x200 at t = 648 | R 0x8A3D0, 0x5E702, 0x5EC26; M ty-full-a | MISSING | D3d |
+| BT09 | Tyrog (class 4): three forms by `+26` high byte, HP index 6 halved at every init, music only for var 2, tables 0x74542 to 0x74802, actions 2, 3, 4, 6, 7, recover entry 0x36E7C with the wake-up claw | R 0x36A64; M ty-full-c, ty4-v*-dmg | MISSING | D3d |
+| BT10 | Tyrog chest blades (class 74, attached child, 20 HP, low box, one hit tick) and fire (class 26 var 3 flat fireball, var 4 lava rock on a cross of five spots) | R 0x5E4F4, 0x4D59E..; M ty4-v2-dmg | MISSING | D3d |
+| BT11 | Tyrog host (class 72): 30 frame intro, punch, jump, caption 0x5A, transformation anim 0x22 or 0x23, rewrite to class 4; 450 HP, poise 1, killable for 100,000 and `0xACEE` | R 0x5DD58; M ty-host, ty-full-c | MISSING | D3d |
+| BT12 | Tyrog chain by class word rewrites 4 var 2, 72 var 1, 4 var 1, 72 var 0, 4 var 0; forms 2 and 1 give no score; the ROM checksum call at 1 in 16 | R 0x38DAC, 0x5E076, 0x5A454 | MISSING | D3d |
+| BT13 | Tyrog 2 (class 91): fight 3 tables, 300 HP at every level, counted by the census, 1,000 points, no `0xACEE`, no music | R 0x654E2; M ty91-dmg | MISSING | D3d |
+| BT14 | Fessenden form 1 (class 94): human intro 276 frames then music 0x0F, Morgue moves with gate 0x74A42 and action table 0x74A82, no helpers, 8,000 points, no `0xACEE` | R 0x67D2C; M f94-intro, f94-dmg | MISSING | D3d |
+| BT15 | Fessenden death scene: 232 frame fall, five captions (0x3D, 0x3E, 0x40, 0x41, 0x42), growth anims 0x15, 0x18, 0x1D, class 84 made 1,224 frames after HP 0 with full HP | R 0x6967E..0x698E8; M f94-trans | MISSING | D3d |
+| BT16 | Fessenden form 2 (class 84 + parts 85 to 89): five parts from the sorted slots, parts mirror the body's HP and hit id, 13 actions, 16 frame gate by level, picker table 0x64E20 by 48 px classes | R 0x6173E, 0x62CFE, 0x62C62; M f84-trace | MISSING | D3d |
+| BT17 | Class 84 counter reaction: against hero moves 0x14, 0x02, 0x13, 0x15 with HP fraction masks (12, 15, 22, 27 in 32) it dodges or strikes with the arm | R 0x6314E, 0x6326E, 0x6504A, 0x6505A | MISSING | D3d |
+| BT18 | Class 84 heads: bite 0x5E, fire volleys with class 95 variants 0 to 8 chosen by the target distance, jaw grab (0x64 once, 0x65 N times by level 2 to 5) | R 0x63E30, 0x64210, 0x69C74, 0x650DA | MISSING | D3d |
+| BT19 | Class 84 poise: poise 10 reset at each hit, guard counter `+BD` (2), only hits in phases 4, 6, 10, 12 cost a point; knock down at 0 | R 0x63460, 0x6350C; M f84-rapid | MISSING | D3d |
+| BT20 | Last boss end: `0xACEE` at HP 0 (stage index 7 sets `G.$4D7`, `G.$4DB`), 1,000 points at +368 frames, dying steps at 2498, 2673, 3033, 3105, 3286, `+A6 = 1` and the hidden body, tally at +1,800, ending mode 0x1C after 3,600 more frames | R 0x63538, 0xACEE; M f84-kill | MISSING | D3d, D4c |
+| BT21 | Boss HP tables by band and player count for index 0, 4, 5, 6, 8, 9 (and Tyrog halved), HUD scale 100 | R 0x31E14 | PARTIAL (rows in `boss_hp`) | D3d |
+| BT22 | Boss target rule: fewest attackers, ties to the later player (the supplement's rearmost) | R 0x32032 | DONE (D3a) | D3d |
