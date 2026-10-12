@@ -27,6 +27,7 @@ pub mod player;
 pub mod player_combat;
 pub mod prop;
 pub mod rank;
+pub mod snd;
 pub mod spawn;
 pub mod trace;
 pub mod vram;
@@ -152,6 +153,9 @@ pub struct World {
     /// G.$5EE level (difficulty row, 0..31) and G.$5F0 rank.
     pub level: u16,
     pub rank: u16,
+    /// G.$43A toggle bits of the alternating sound codes (`snd.rs`), G.$43C of the hit sounds.
+    pub snd_toggle: u8,
+    pub snd_hit_toggle: u16,
     /// Sound requests made this frame (sound ids as the original passes them to the sound queue).
     pub sounds: Vec<u16>,
 }
@@ -179,6 +183,9 @@ pub struct Game {
     pub flow: flow::Flow,
     /// Harness only (`trace.rs`): frame pointers a loaded snapshot had that the port cannot map.
     pub trace_unmapped: trace::Unmapped,
+    /// Harness only (`--load-state`): objects of classes the port does not run yet are kept as
+    /// the snapshot had them (see [`Game::trace_hold`]) instead of being freed.
+    pub hold_unported: bool,
 }
 
 impl Game {
@@ -204,6 +211,7 @@ impl Game {
             hud: Default::default(),
             flow: Default::default(),
             trace_unmapped: Default::default(),
+            hold_unported: false,
         }
     }
 
@@ -251,9 +259,14 @@ impl Game {
     /// One video frame: the in-game task (0xAAF6), then the other tasks in slot order.
     pub fn tick(&mut self) {
         self.w.sounds.clear();
+        let in_game = self.flow.in_game != 0;
         self.flow_frame();
         self.run_fade_task();
-        self.w.frame = self.w.frame.wrapping_add(1);
+        if !in_game {
+            // Outside the game task (attract, title: not ported yet) every frame counts.
+            // In game, `flow_game_task` increments G.$0000 before the mode runs (0xA914).
+            self.w.frame = self.w.frame.wrapping_add(1);
+        }
     }
 
     /// 0xAAF6 game_frame: the in-game per-frame order.
@@ -315,6 +328,7 @@ impl Game {
             self.draw_object(key as u16, cam); // 0x141F8
         }
         self.shadow_pass(&list, cam); // 0x14EC0
+        self.sprites.cur_src = 0;
         self.draw_list = list;
         self.draw_list.clear();
     }

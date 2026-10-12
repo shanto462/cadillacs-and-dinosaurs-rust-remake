@@ -7,19 +7,24 @@ use super::{Game, Handle};
 
 /// Per-frame object lists, keyed by the RAM address of the original count word
 /// (e.g. 0x6718 = collision list of players, pointer $6720, storage 0xE72E).
+///
+/// The original's lists are stacks that grow downwards (`move.w a6,-(a4)`, e.g. 0x4BEA) and every
+/// pass walks them from the top pointer upwards (`movea.w $6726(a5),a1 ... (a1)+`), so the object
+/// pushed last is visited first. `get` returns the list in that visiting order.
 #[derive(Default)]
 pub struct Lists {
     lists: Vec<(u16, Vec<Handle>)>,
 }
 
 impl Lists {
+    /// The list in the order the original's passes visit it: newest push first.
     pub fn get(&self, id: u16) -> &[Handle] {
         self.lists.iter().find(|(k, _)| *k == id).map(|(_, v)| v.as_slice()).unwrap_or(&[])
     }
 
     pub fn push(&mut self, id: u16, h: Handle) {
         match self.lists.iter_mut().find(|(k, _)| *k == id) {
-            Some((_, v)) => v.push(h),
+            Some((_, v)) => v.insert(0, h),
             None => self.lists.push((id, vec![h])),
         }
     }
@@ -34,8 +39,10 @@ impl Lists {
     pub fn copy(&mut self, from: u16, to: u16) {
         let v = self.get(from).to_vec();
         self.clear(to);
-        for h in v {
-            self.push(to, h);
+        if let Some((_, l)) = self.lists.iter_mut().find(|(k, _)| *k == to) {
+            *l = v;
+        } else {
+            self.lists.push((to, v));
         }
     }
 
@@ -80,5 +87,24 @@ impl Game {
         for id in [0x6B64, 0x6AC2, 0x6AFC, 0x6B30] {
             self.combat.clear(id);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The passes visit the newest push first (the original's lists are downward stacks).
+    #[test]
+    fn lists_are_visited_newest_first() {
+        let mut l = Lists::default();
+        for h in [0xC8F4, 0xC9D4, 0xCAB4] {
+            l.push(0x671E, h);
+        }
+        assert_eq!(l.get(0x671E), &[0xCAB4, 0xC9D4, 0xC8F4]);
+        l.copy(0x671E, 0x69BA);
+        assert_eq!(l.get(0x69BA), l.get(0x671E));
+        l.clear(0x671E);
+        assert!(l.get(0x671E).is_empty());
     }
 }

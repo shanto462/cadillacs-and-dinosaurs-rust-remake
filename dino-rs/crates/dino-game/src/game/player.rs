@@ -69,6 +69,8 @@ pub struct Player {
     pub combo_t: u8,
     /// +$AF wall contact latch (wall jump).
     pub wall_latch: u8,
+    /// +$118 voice bank (0xA502): selects the sound codes of the voice routines.
+    pub voice: u8,
     /// +$B2 combo hit count, +$B3 post-whiff movement lock.
     pub combo: u8,
     pub lock: u8,
@@ -211,9 +213,9 @@ impl Game {
         p.b.serial = serial;
     }
 
-    /// Sound routines are recorded by their routine address (audio is not ported).
-    fn player_sfx(&mut self, routine: u32) {
-        self.sound(routine as u16);
+    /// Player voice / effect routines 0x95CE..0x9C0C (`snd.rs`): `i` is the player (a6).
+    fn player_sfx(&mut self, i: usize, routine: u32) {
+        self.snd_player(i, routine);
     }
 
     /// 0x192A2: face the held left/right direction (right wins when both are held).
@@ -340,7 +342,7 @@ impl Game {
         }
         if self.fx_spawn_water_splash(Game::player_handle(i)) {
             self.players[i].b83 = 1;
-            self.player_sfx(0x9AF4);
+            self.player_sfx(i, 0x9AF4);
         }
     }
 
@@ -455,7 +457,7 @@ impl Game {
         // The inputs are copied with interrupts masked (trap #12) into $77A4..$77A6.
         let snap = self.w.input;
         // 0x9A146 demo input record / playback (when G.$4CC == 0): not ported.
-        // 0xA502 sets each player's voice bank +$118 from the player mix (sound only).
+        self.snd_update_voice_banks(); // 0xA502
         for i in 0..3 {
             let p = &self.players[i];
             if p.b.live != 0 && p.b.kind != 0xE {
@@ -1116,7 +1118,7 @@ impl Game {
                 p.set_b80(t);
                 if t == 0xFF {
                     p.set_b80(0x18);
-                    self.player_sfx(0x9B60);
+                    self.player_sfx(i, 0x9B60);
                 }
             }
         }
@@ -1167,7 +1169,7 @@ impl Game {
         let p = &mut self.players[i];
         p.combo = 0;
         p.dtap = 0;
-        self.player_sfx(0x95CE);
+        self.player_sfx(i, 0x95CE);
     }
 
     /// 0x19416 jab.
@@ -1255,7 +1257,7 @@ impl Game {
         self.players[i].b.set_state(0x0200_0008);
         self.player_new_attack(i, 0);
         self.players[i].atk_buf = 0;
-        self.player_sfx(0x95CE);
+        self.player_sfx(i, 0x95CE);
         self.player_punch2(i);
     }
 
@@ -1284,7 +1286,7 @@ impl Game {
         self.players[i].b.set_state(0x0200_000A);
         self.player_new_attack(i, 2);
         self.players[i].atk_buf = 0;
-        self.player_sfx(0x99E8);
+        self.player_sfx(i, 0x99E8);
         self.player_punch3(i);
     }
 
@@ -1325,7 +1327,7 @@ impl Game {
         self.players[i].b.set_state(0x0200_000C);
         self.player_new_attack(i, 4);
         self.players[i].atk_buf = 0;
-        self.player_sfx(0x9A36);
+        self.player_sfx(i, 0x9A36);
         self.player_finisher(i);
     }
 
@@ -1349,7 +1351,7 @@ impl Game {
             p.special_budget = 0x14;
             // G.$4D5 == 0: 0x16446 HP bar redraw (HUD port reads +$6C).
         }
-        self.player_sfx(0x992C);
+        self.player_sfx(i, 0x992C);
         self.players[i].action = 0x11;
         if self.players[i].b.id == 1 {
             return self.player_air_special_entry(i); // 0x1AAE6 (Mustapha)
@@ -1382,7 +1384,7 @@ impl Game {
 
     /// 0x19720 dash attack entry (run + attack).
     fn player_dash_attack_entry(&mut self, i: usize) {
-        self.player_sfx(0x9984);
+        self.player_sfx(i, 0x9984);
         {
             let p = &mut self.players[i];
             p.action = 0x13;
@@ -1494,7 +1496,7 @@ impl Game {
         }
         self.player_panim(i, 1, 0xE);
         self.player_face_input(i);
-        self.player_sfx(0x9A36);
+        self.player_sfx(i, 0x9A36);
         self.player_command_move(i);
     }
 
@@ -1680,7 +1682,7 @@ impl Game {
                     if self.players[i].b.airborne == 0 {
                         // 0x19E62 state 0x26 (G.$755C = 3: screen shake, enemy port)
                         self.players[i].b.set_state(0x0200_0026);
-                        self.player_sfx(0x9B9E);
+                        self.player_sfx(i, 0x9B9E);
                         self.player_panim(i, 1, 0xF);
                         if self.player_pstep(i) {
                             self.player_idle_entry(i);
@@ -1785,7 +1787,7 @@ impl Game {
                     p.set_b80(t);
                     if t == 0xFF {
                         p.set_b80(0x14);
-                        self.player_sfx(0x9B60);
+                        self.player_sfx(i, 0x9B60);
                     }
                     // stage 1 area 1: 0x60E2 water ripples (effects TODO)
                 }
@@ -1794,7 +1796,7 @@ impl Game {
                 p.set_b80(t);
                 if t == 0xFF {
                     p.set_b80(0x0C);
-                    self.player_sfx(0x9BCE);
+                    self.player_sfx(i, 0x9BCE);
                 }
             }
         }
@@ -2000,7 +2002,7 @@ impl Game {
     fn player_landing_entry(&mut self, i: usize) {
         self.player_panim(i, 0, 6);
         self.players[i].b.set_state(0x0200_0404);
-        self.player_sfx(0x9C0C);
+        self.player_sfx(i, 0x9C0C);
         self.player_landing(i);
     }
 
@@ -2046,7 +2048,7 @@ impl Game {
                 let p = &mut self.players[i];
                 p.b.vy = 0;
                 p.b.ay = 0;
-                self.player_sfx(0x9C0C);
+                self.player_sfx(i, 0x9C0C);
                 return self.player_idle_entry(i);
             }
         }
@@ -2134,7 +2136,7 @@ impl Game {
                 // 0x1BD56 dive landing
                 self.player_panim(i, 0, 0x1E);
                 self.players[i].b.set_state(0x0200_0436);
-                self.player_sfx(0x9C0C);
+                self.player_sfx(i, 0x9C0C);
                 if self.player_pstep(i) {
                     self.player_idle_entry(i);
                 }
@@ -2458,7 +2460,7 @@ impl Game {
                 let p = &mut self.players[i];
                 p.b.vy = 0;
                 p.b.ay = 0;
-                self.player_sfx(0x9C0C);
+                self.player_sfx(i, 0x9C0C);
                 return self.player_idle_entry(i);
             }
         }
@@ -2519,7 +2521,7 @@ impl Game {
                 return self.player_knockdown(i, if anim == 0 { 4 } else { 6 });
             }
             self.player_panim(i, 2, anim);
-            self.player_sfx(0x98CC);
+            self.player_sfx(i, 0x98CC);
             // 0x16B18(2) face icon, 0x16446 HP bar: HUD port reads +$6C / +$6E.
             let p = &mut self.players[i];
             p.action = 0x20;
@@ -2539,7 +2541,7 @@ impl Game {
                 return self.player_knockdown_behind_entry(i);
             }
             self.player_panim(i, 2, 6);
-            self.player_sfx(0x98CC);
+            self.player_sfx(i, 0x98CC);
             let p = &mut self.players[i];
             p.action = 0x20;
             p.b.step = 2;
@@ -2559,7 +2561,7 @@ impl Game {
             self.players[i].b.set_state(0x0400_0000);
             return self.player_dead(i);
         }
-        // 0x183E4 rank adjustment (enemy / rank port).
+        self.rank_event_183e4(); // 0x1C0F4 / 0x1F276
         if self.players[i].b.reaction == 4 {
             self.players[i].b.live = 2;
             self.player_set_invuln(i, 0);
@@ -2677,7 +2679,7 @@ impl Game {
                 if self.players[i].b.hp == 0 {
                     self.player_kd_vec(i, base + 1, true);
                     self.players[i].slow = 2;
-                    self.player_sfx(0x986C);
+                    self.player_sfx(i, 0x986C);
                 }
                 self.player_kd_common(i);
                 self.player_kd_air1(i, kind);
@@ -2730,7 +2732,7 @@ impl Game {
         self.player_pmove(i);
         self.players[i].b.step += 2;
         self.player_pstep(i);
-        self.player_sfx(0x9796);
+        self.player_sfx(i, 0x9796);
     }
 
     /// 0x1C302 / 0x1C514 second flight, then lie.
@@ -2754,7 +2756,7 @@ impl Game {
             p.b.facing ^= 1;
             p.b.live = 1;
         }
-        self.player_sfx(0x9796);
+        self.player_sfx(i, 0x9796);
         self.players[i].b.step += 2;
     }
 
@@ -2804,7 +2806,7 @@ impl Game {
                     p.b.vy = 0x540;
                     p.b.ay = -0x4A;
                     p.slow = 2;
-                    self.player_sfx(0x986C);
+                    self.player_sfx(i, 0x986C);
                 }
                 self.player_kd_common(i);
                 self.player_kb_air1(i);
@@ -2820,7 +2822,7 @@ impl Game {
                 self.player_floor_and_walls(i);
                 if self.players[i].b.airborne == 0 {
                     self.player_lie_setup(i);
-                    self.player_sfx(0x9796);
+                    self.player_sfx(i, 0x9796);
                     self.players[i].b.step += 2;
                     self.player_panim(i, 2, 9);
                 }
@@ -2869,7 +2871,7 @@ impl Game {
         self.player_pmove(i);
         self.player_pstep(i);
         self.players[i].b.step += 2;
-        self.player_sfx(0x9796);
+        self.player_sfx(i, 0x9796);
     }
 
     /// 0x1C56E thrown (reaction 8).
@@ -2896,7 +2898,7 @@ impl Game {
                     p.b.vy = 0x500;
                     p.b.ay = -0x40;
                     p.slow = 2;
-                    self.player_sfx(0x986C);
+                    self.player_sfx(i, 0x986C);
                 }
                 self.player_kd_common(i);
                 self.player_thrown_air1(i);
@@ -2913,7 +2915,7 @@ impl Game {
                 self.player_floor_and_walls(i);
                 if self.players[i].b.airborne == 0 {
                     self.player_lie_setup(i);
-                    self.player_sfx(0x9796);
+                    self.player_sfx(i, 0x9796);
                     self.players[i].b.step += 2;
                 }
             }
@@ -2944,7 +2946,7 @@ impl Game {
         self.player_pmove(i);
         self.players[i].b.step += 2;
         self.player_pstep(i);
-        self.player_sfx(0x9796);
+        self.player_sfx(i, 0x9796);
     }
 
     /// 0x1C6E4 burn knockdown (reactions 0x0A / 0x0C).
@@ -2966,7 +2968,7 @@ impl Game {
                 if self.players[i].b.hp == 0 {
                     self.player_kd_vec(i, 5, true);
                     self.players[i].slow = 2;
-                    self.player_sfx(0x986C);
+                    self.player_sfx(i, 0x986C);
                 }
                 let p = &mut self.players[i];
                 p.b.vz = 0;
@@ -2985,7 +2987,7 @@ impl Game {
                 p.b83 = 0;
                 p.b.reaction = 4;
                 p.b.stun = 10;
-                self.player_sfx(0x9796);
+                self.player_sfx(i, 0x9796);
                 self.players[i].b.step += 2;
                 self.player_kd_air1(i, 4); // bra 0x1C290 (this frame only)
             }
@@ -3013,7 +3015,7 @@ impl Game {
                 p.b.step += 2;
                 p.b.palette_override = 0;
                 self.player_pstep(i);
-                self.player_sfx(0x9796);
+                self.player_sfx(i, 0x9796);
             }
             4 => self.player_kd_air2(i, 4),
             _ => {
@@ -3068,7 +3070,7 @@ impl Game {
                 p.b.ay = 0;
                 p.b.vz = 0;
                 p.b.az = 0;
-                self.player_sfx(0x98CC);
+                self.player_sfx(i, 0x98CC);
                 let p = &mut self.players[i];
                 p.action = 0x20;
                 p.b.step = 2;
@@ -3117,7 +3119,7 @@ impl Game {
         let p = &mut self.players[i];
         p.b.palette_override = 0;
         p.b.facing = (p.b.vx < 0) as u8;
-        self.player_sfx(0x9796);
+        self.player_sfx(i, 0x9796);
         self.player_wall_hit(i);
     }
 
@@ -3159,7 +3161,7 @@ impl Game {
                     return self.player_knockdown(i, 4);
                 }
                 self.player_panim(i, 2, 0xA);
-                self.player_sfx(0x98CC);
+                self.player_sfx(i, 0x98CC);
                 let p = &mut self.players[i];
                 p.action = 0x22;
                 p.b.step = 2;

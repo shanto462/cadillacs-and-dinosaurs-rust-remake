@@ -2,7 +2,8 @@
 //!
 //! Usage: `cargo run -p dino-game -- [--rom path/to/dino.zip] [--stage N] [--chars 0,2]
 //!         [--input SCRIPT | --input-file PATH] [--viewer] [--view char,set,anim]
-//!         [--screenshot out.png --frames N] [--load-state FILE] [--trace FILE --frames N]`
+//!         [--screenshot out.png --frames N] [--load-state FILE] [--trace FILE --frames N]
+//!         [--step-from MAME.trc] [--follow-rng MAME.trc]`
 //! See `input.rs` for keys and the input script format, `harness.rs` and `re/harness/README.md`
 //! for `--load-state` (start from a MAME snapshot) and `--trace` (headless run for the diff).
 
@@ -41,6 +42,8 @@ struct Args {
     script: Option<input::Script>,
     trace: Option<String>,
     load_state: Option<String>,
+    step_from: Option<String>,
+    follow_rng: Option<String>,
 }
 
 fn args() -> Args {
@@ -66,11 +69,20 @@ fn args() -> Args {
         },
         trace: value("--trace"),
         load_state: value("--load-state"),
+        step_from: value("--step-from"),
+        follow_rng: value("--follow-rng"),
     }
 }
 
-fn load_assets() -> &'static dino_assets::AssetPack {
-    match Rom::locate().and_then(|p| dino_extract::extract(&p)) {
+/// Extracts the assets. With `--load-state`, the frame records the snapshot's objects point at
+/// are decoded too (`harness::scan_frames`), so the game never needs to read ROM bytes itself.
+fn load_assets(load_state: Option<&str>, step_from: Option<&str>) -> &'static dino_assets::AssetPack {
+    let extra = step_from
+        .map(|p| harness::scan_frames(p, true))
+        .or_else(|| load_state.map(|p| harness::scan_frames(p, false)))
+        .and_then(|r| r.ok())
+        .unwrap_or_default();
+    match Rom::locate().and_then(|p| dino_extract::extract_with(&p, &extra)) {
         Ok(a) => Box::leak(Box::new(a)),
         Err(e) => {
             eprintln!("error: {e}");
@@ -84,7 +96,10 @@ fn main() {
     if let Some(trace) = &args.trace {
         // Headless harness run: no window.
         let frames = std::env::args().any(|a| a == "--frames").then_some(args.frames).unwrap_or(600);
-        let r = harness::run(load_assets(), trace, args.load_state.as_deref(), args.stage, &args.chars, args.script.as_ref(), frames);
+        let assets = load_assets(args.load_state.as_deref(), args.step_from.as_deref());
+        let (load, step) = (args.load_state.as_deref(), args.step_from.as_deref());
+        let follow = args.follow_rng.as_deref();
+        let r = harness::run(assets, trace, load, step, follow, args.stage, &args.chars, args.script.as_ref(), frames);
         if let Err(e) = r {
             eprintln!("error: {e}");
             std::process::exit(1);
@@ -95,7 +110,7 @@ fn main() {
 }
 
 async fn windowed(args: Args) {
-    let assets = load_assets();
+    let assets = load_assets(args.load_state.as_deref(), None);
     let mut gpu = Gpu::new(assets);
 
     let mut viewer = args.viewer.then(|| viewer::Viewer::new(assets, args.view));

@@ -243,6 +243,20 @@ impl Game {
         }
     }
 
+    /// 0x183E4: a player recovered from a hit (0x1C0F4 / 0x1F276): the rank drops by table[0x187D8]
+    /// (not below 0), then a cooldown of table[0x187DA] frames in G.$604 keeps it from dropping
+    /// again; the level follows (0x18592).
+    pub fn rank_event_183e4(&mut self) {
+        if self.rank.freeze != 0 || self.rank.w604 != 0 {
+            return;
+        }
+        let t = &self.assets.enemy.t;
+        let r = (self.w.rank as i16).wrapping_sub(t.u16(0x187D8, 0) as i16);
+        self.w.rank = if r < 0 { 0 } else { r as u16 };
+        self.rank.w604 = t.u16(0x187DA, 0);
+        self.rank_compute_level();
+    }
+
     /// 0x1842C: rank speed - 1.
     pub fn rank_event_1842c(&mut self) {
         let d = self.assets.enemy.t.i16(0x187DE, 0);

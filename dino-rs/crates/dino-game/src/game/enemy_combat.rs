@@ -116,7 +116,7 @@ impl Game {
             }
         }
         if r.sound != 0 {
-            self.sound(r.sound as u16); // 0x962A
+            self.snd_hit(r.sound); // 0x962A
         }
         if (ab.who as i8) >= 0 {
             self.enemy_hit_score(ab.who, r.score);
@@ -149,7 +149,7 @@ impl Game {
         e.b.step = 0;
         e.b.hitstop = r.hit_stop;
         if r.sound != 0 {
-            self.sound(r.sound as u16);
+            self.snd_hit(r.sound); // 0x962A
         }
         if (ab.who as i8) >= 0 {
             self.enemy_hit_score(ab.who, r.score);
@@ -320,8 +320,23 @@ impl Game {
 
     // ------------------------------------------------------------------ hit reaction 0x2A606
 
-    /// 0x16B36: enemy HP bar request for the HUD. TODO(HUD port).
-    fn enemy_hud_hit(&mut self, _b: &Body, _k: u8) {}
+    /// 0x16B36: enemy HP bar request for the HUD: appends a message (`kind` in the high byte, the
+    /// name id +$3, HP bar +$6A, HP before the hit +$6E, HP +$6C, the object address) to the ring
+    /// of the credited player (+$2, none when negative) unless that ring slot is still in use.
+    /// `h` is a pool A object (its address was loaded with `movea.w`, so the long is sign extended).
+    fn enemy_hud_hit(&mut self, h: Handle, b: &Body, kind: u8) {
+        if (b.who as i8) < 0 || b.who > 2 {
+            return;
+        }
+        let i = b.who as usize;
+        let w = self.hud.ring_w[i];
+        let m = &mut self.hud.rings[i][(w >> 4) as usize];
+        if (m[0] as i16) >= 0 {
+            return; // the slot is still unread: the request is dropped
+        }
+        *m = [(kind as u16) << 8 | b.id as u16, b.hp_bar, b.hp_prev, b.hp, 0xFFFF, h, m[6], m[7]];
+        self.hud.ring_w[i] = w.wrapping_add(0x10);
+    }
 
     /// 0x2B49A: start hit animation `n` from the type's hit table (L[0x2E68C + +$84]).
     fn enemy_hit_anim(&self, e: &mut Enemy, n: u16) {
@@ -432,7 +447,7 @@ impl Game {
                 return self.enemy_knockdown(e, h, heavy);
             }
             let b = e.b.clone();
-            self.enemy_hud_hit(&b, 0);
+            self.enemy_hud_hit(h, &b, 0);
             self.enemy_hit_anim(e, anim);
             self.enemy_counter_delay(e);
             e.b.step += 2;
@@ -452,12 +467,12 @@ impl Game {
         match e.b.step {
             0 => {
                 let b = e.b.clone();
-                self.enemy_hud_hit(&b, 0);
+                self.enemy_hud_hit(h, &b, 0);
                 self.enemy_hit_anim(e, if ty == 4 { 2 } else { 3 });
                 self.enemy_launch(e, base);
                 if e.b.hp == 0 {
                     self.enemy_launch(e, base + 8);
-                    // 0xA354 / 0x97D2 death voice (sound ids not ported)
+                    self.snd_enemy_death(e.b.b63); // 0x2A748 / 0x2A752 (type 6: 0x2A8D2 / 0x2A8DC)
                     self.item_drop_from_enemy(e);
                 }
                 e.b.vz = 0;
@@ -488,7 +503,7 @@ impl Game {
                     let ay = t.i16(a, 2);
                     e.b.ay = ay.wrapping_add(ay);
                     e.b.step += 2;
-                    // 0x9796 landing sound
+                    self.snd_9796(); // 0x2A7E8 (type 6: 0x2A972)
                     self.enemy_step(&mut e.b);
                 }
             }
@@ -505,6 +520,7 @@ impl Game {
                     if e.b.hp == 0 {
                         e.m.sb(T80, 1);
                     }
+                    self.snd_9796(); // 0x2A832
                     e.b.step += 2;
                 }
             }
@@ -548,7 +564,9 @@ impl Game {
                 e.b.ay = tt.i16(rec, 6);
                 e.b.vz = 0;
                 e.b.az = 0;
-                // death voice when HP 0 (sound not ported)
+                if e.b.hp == 0 {
+                    self.snd_enemy_death(e.b.b63); // 0x2AAD6 / 0x2AAE0
+                }
                 e.b.step += 2;
                 self.enemy_thrown_fly(e, h);
             }
@@ -567,6 +585,7 @@ impl Game {
                         e.m.sb(T80, 0xA);
                         self.item_drop_from_enemy(e);
                     }
+                    self.snd_9796(); // 0x2ABE4
                     e.b.step += 2;
                 }
             }
@@ -596,9 +615,9 @@ impl Game {
         }
         Self::enemy_floor_collision(&mut e.b);
         if e.b.wall != 0 && e.b.wall & 1 == 0 {
-            // G.$755C screen shake: 0x2AB8C (player port / camera).
+            self.enemy_shake_request(e); // 0x2AB8C
             let b = e.b.clone();
-            self.enemy_hud_hit(&b, 0);
+            self.enemy_hud_hit(h, &b, 0);
             if e.b.hp == 0 {
                 self.item_drop_from_enemy(e);
             }
@@ -609,9 +628,18 @@ impl Game {
             e.b.ay = e.b.ay.wrapping_add(e.b.ay);
             e.b.step += 2;
             self.enemy_step(&mut e.b);
+            self.enemy_shake_request(e); // 0x2AB8C
+            self.snd_9796(); // 0x2AB7C
             let b = e.b.clone();
-            self.enemy_hud_hit(&b, 0);
+            self.enemy_hud_hit(h, &b, 0);
         }
+    }
+
+    /// 0x2AB8C: screen shake request G.$755C = 1 (3 when the thrower is Mess, id 3).
+    fn enemy_shake_request(&mut self, e: &Enemy) {
+        let a = e.b.attacker;
+        let big = slot_of(a).is_some() && self.body(a).id == 3;
+        self.cam.shake_req = if big { 3 } else { 1 };
     }
 
     /// 0x2AC02: burn knockdown (types 0xA / 0xC).
@@ -622,18 +650,21 @@ impl Game {
                 if e.b.hp == 0 && (e.m.b(ATTACKING) as i8) >= 0 && e.b.reaction == 0xC {
                     // Charred death (0x93D48 effect, frame list 0x2AC1C, 0x9A84): effects port.
                     let b = e.b.clone();
-                    self.enemy_hud_hit(&b, 0);
+                    self.enemy_hud_hit(h, &b, 0);
                     self.item_drop_from_enemy(e);
                     return self.enemy_getup_or_die(e, h);
                 }
                 let b = e.b.clone();
-                self.enemy_hud_hit(&b, 0);
+                self.enemy_hud_hit(h, &b, 0);
                 self.enemy_hit_anim(e, 7);
                 e.b.palette_override = 0x84;
                 self.enemy_launch(e, 0x2CBD0);
                 if e.b.hp == 0 {
                     self.enemy_launch(e, 0x2CBD8);
                     self.item_drop_from_enemy(e);
+                    if (e.b.b63 as i8) > 0 {
+                        self.sound(0x58); // 0x2ACE0: 0x97D2 (the original drops the item twice around it)
+                    }
                 }
                 e.b.vz = 0;
                 e.b.az = 0;
@@ -692,6 +723,7 @@ impl Game {
             let ay = t.i16(a, 2);
             e.b.ay = ay.wrapping_add(ay);
             e.b.step += 2;
+            self.snd_9796(); // 0x2AD74
             self.enemy_step(&mut e.b);
         }
     }
@@ -713,7 +745,7 @@ impl Game {
                     return self.enemy_knockdown(e, h, heavy);
                 }
                 let b = e.b.clone();
-                self.enemy_hud_hit(&b, 0);
+                self.enemy_hud_hit(h, &b, 0);
                 self.enemy_hit_anim(e, if first == 0x0E { 0 } else { 1 });
                 self.enemy_counter_delay(e);
                 let k = (e.b.act - first) as u32 / 2;
@@ -898,7 +930,7 @@ impl Game {
         e.m.sb(T80, 0x1E);
         self.enemy_hit_anim(e, 6);
         e.b.facing = (e.b.vx < 0) as u8;
-        // 0x9796 landing sound
+        self.snd_9796(); // 0x2B2E0
         self.enemy_slump(e, h);
     }
 

@@ -17,5 +17,15 @@ impl Game {
     }
 
     /// 0x233C6 pool E update.
-    pub fn pool_e_update(&mut self) {}
+    pub fn pool_e_update(&mut self) {
+        // Not ported: items stay as they are. Harness: they keep their draw state (`trace_hold`).
+        if self.hold_unported {
+            for i in 0..self.items.slots.len() {
+                if self.items.slots[i].b.live != 0 {
+                    let (h, b) = (self.items.handle(i), self.items.slots[i].b.clone());
+                    self.trace_hold(h, &b);
+                }
+            }
+        }
+    }
 }

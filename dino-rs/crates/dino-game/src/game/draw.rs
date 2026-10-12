@@ -26,6 +26,9 @@ pub struct ObjEntry {
     pub attr: u16,
     /// Not in the original entry: white hit flash amount for the renderer.
     pub flash: u8,
+    /// Not in the original entry: handle of the object that drew it (harness: which entries come
+    /// from classes the port does not run). 0 = none.
+    pub src: Handle,
 }
 
 /// Camera base used by the draw code: $69B6 = camera X - 0x40, $69B8 = camera Y.
@@ -62,12 +65,14 @@ pub struct SpriteList {
     pub splash_timer: u16,
     /// -$7124(a5): splash animation phase 0, 4, 8, 12.
     pub splash_phase: u16,
+    /// Handle of the object being drawn (stored into `ObjEntry::src`).
+    pub cur_src: Handle,
 }
 
 impl Default for SpriteList {
     fn default() -> SpriteList {
         // 0x49A8 draw list reset: -$7126 = 1.
-        SpriteList { entries: Vec::new(), debug_boxes: false, debug_rects: Vec::new(), splash_timer: 1, splash_phase: 0 }
+        SpriteList { entries: Vec::new(), debug_boxes: false, debug_rects: Vec::new(), splash_timer: 1, splash_phase: 0, cur_src: 0 }
     }
 }
 
@@ -184,7 +189,7 @@ impl SpriteList {
         if x > 0x1C0 || (x <= 0x40 && (width(attr) as u16) < (0x40i16.wrapping_sub(x)) as u16) {
             return;
         }
-        self.entries.push(ObjEntry { x, y, code, attr, flash });
+        self.entries.push(ObjEntry { x, y, code, attr, flash, src: self.cur_src });
     }
 
     /// 0x147FE: frames that are raw sprite lists (obj+$25 bit 6, 8-byte records).
@@ -301,6 +306,7 @@ impl Game {
 
     /// 0x141F8: draw one object of the sorted draw list.
     pub fn draw_object(&mut self, h: Handle, cam: DrawCamera) {
+        self.sprites.cur_src = h;
         let fr = self.draw_frames();
         let (sub, kind, p, flags) = {
             let b = self.body(h);
@@ -368,6 +374,7 @@ impl Game {
     pub fn shadow_pass(&mut self, list: &[u32], cam: DrawCamera) {
         let fx = &self.assets.effects;
         for &key in list {
+            self.sprites.cur_src = key as u16;
             let b = self.body(key as u16).clone();
             if b.draw_flags & 0x10 != 0 {
                 continue;

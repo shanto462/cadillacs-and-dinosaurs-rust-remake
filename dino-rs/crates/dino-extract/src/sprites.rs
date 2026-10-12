@@ -30,7 +30,7 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x2EA94, // name 0x1A
 ];
 
-pub fn extract(rom: &Rom) -> SpriteData {
+pub fn extract(rom: &Rom, extra: &crate::ExtraFrames) -> SpriteData {
     let mut data = SpriteData { compositions: compositions(rom), ..Default::default() };
     let mut walker = FrameWalker { rom, data: &mut data };
 
@@ -43,6 +43,12 @@ pub fn extract(rom: &Rom) -> SpriteData {
     }
     for &table in OBJECT_ANIM_TABLES {
         walker.table(table, 10);
+    }
+    // On demand (harness): frame records of objects whose animation table is not registered yet.
+    for &addr in &extra.sprite {
+        if addr % 2 == 0 && (addr as usize) + 16 < rom.program.len() {
+            walker.walk(addr, 10);
+        }
     }
 
     for ch in 0..4 {

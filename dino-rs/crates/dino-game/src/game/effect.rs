@@ -206,7 +206,10 @@ impl Game {
                             eprintln!("effect class {other:#x} is not ported yet (freed)");
                         }
                     }
-                    self.fx_free(i);
+                    let (h, b) = (self.effects.handle(i), self.effects.slots[i].b.clone());
+                    if !self.trace_hold(h, &b) {
+                        self.fx_free(i);
+                    }
                 }
             }
         }

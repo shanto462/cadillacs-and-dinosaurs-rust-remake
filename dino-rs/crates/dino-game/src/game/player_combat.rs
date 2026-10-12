@@ -230,7 +230,7 @@ impl Game {
                 vp.b.hitstop = rec.hit_stop;
                 self.players[ai].b.hitstop = rec.hit_stop;
                 if rec.sound != 0 {
-                    self.sound(rec.sound as u16);
+                    self.snd_hit(rec.sound); // 0x962A
                 }
                 self.players[vi].b.b9a = rec.b7;
                 self.spawn_hit_spark(a, v, ha, hb, rec.spark);
@@ -393,9 +393,12 @@ impl Game {
         eb.hitstop = rec.hit_stop;
         eb.b9a = rec.b7;
         self.players[i].b.hitstop = rec.hit_stop;
-        // enemy +$7A = 0 (enemy port field)
+        // 0x10A2C: clr.b $7A(a3), the enemy's decision wait (pool A only).
+        if let Some(Slot::Enemy(ei)) = slot_of(e) {
+            self.enemies.slots[ei].m.sb(super::enemy::off::WAIT, 0);
+        }
         if rec.sound != 0 {
-            self.sound(rec.sound as u16);
+            self.snd_hit(rec.sound); // 0x962A
         }
         self.player_add_score(i, rec.score);
         self.spawn_hit_spark(me, e, ha, hb, rec.spark);
@@ -485,7 +488,7 @@ impl Game {
         eb.step = 0;
         eb.b9a = rec.spark; // quirk: byte 6 here (byte 7 in the normal hit path)
         if rec.sound != 0 {
-            self.sound(rec.sound as u16);
+            self.snd_hit(rec.sound); // 0x962A
         }
         self.player_add_score(i, rec.score);
     }
@@ -522,7 +525,7 @@ impl Game {
             pl.b75 = 0xFF;
             self.body_mut(e).hitstop = rec.hit_stop;
             if rec.sound != 0 {
-                self.sound(rec.sound as u16);
+                self.snd_hit(rec.sound); // 0x962A
             }
             self.players[p].b.b9a = rec.spark;
             if let Some((ha, hb)) = boxes {
@@ -562,7 +565,7 @@ impl Game {
         pl.b.b9a = rec.b7;
         self.body_mut(e).hitstop = rec.hit_stop;
         if rec.sound != 0 {
-            self.sound(rec.sound as u16);
+            self.snd_hit(rec.sound); // 0x962A
         }
         if let Some((ha, hb)) = boxes {
             self.spawn_hit_spark(e, me, ha, hb, rec.spark);

@@ -20,7 +20,8 @@ pub struct AreaMap {
     /// Width and height in screens of 256x256 px (0 = no map / keep the previous one).
     pub w: u8,
     pub h: u8,
-    /// Screen ids, column-major, bottom row first: index = sx * h + sy.
+    /// Screen ids, column-major, bottom row first: index = sx * h + sy. Followed by a few more ROM
+    /// words: the streaming code reads past the end of the array (rows above the map).
     pub screens: Vec<u16>,
     pub init_x: u16,
     pub init_y: u16,

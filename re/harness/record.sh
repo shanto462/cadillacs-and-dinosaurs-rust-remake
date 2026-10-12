@@ -3,8 +3,9 @@
 #   re/harness/record.sh TEST_SCRIPT [NAME] [FRAMES]
 # Writes re/out/traces/NAME.state (RAM at the sync point) and re/out/traces/NAME.mame.trc.
 # NAME defaults to the script file name without .txt, FRAMES to 600.
-# Optional environment: DINO_BOOT (boot script, default scripts/boot_jack.txt), DINO_SYNC,
-# DINO_SNAP_EVERY (PNG every N frames into re/out/mame/snap/dino/). See README.md.
+# Optional environment: DINO_BOOT (boot script, default scripts/boot_jack.txt), DINO_SYNC
+# (control, control+N or vblank:N), DINO_SNAP_EVERY (PNG every N frames into re/out/mame/snap/dino/).
+# MAME's own files (cfg, nvram, screenshots, record.log) go to re/out/mame/. See README.md.
 set -e
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 SCRIPT=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")

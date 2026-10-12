@@ -40,7 +40,7 @@ const SPARK_JITTER: u32 = 0x9248A;
 const COMP_EXTRA: u32 = 0x11D220;
 const COMP_COUNT_PTR: u32 = 0x0FFFF8;
 
-pub fn extract(rom: &Rom) -> EffectData {
+pub fn extract(rom: &Rom, extra: &crate::ExtraFrames) -> EffectData {
     let mut d = EffectData::default();
     let n_comps = rom.u16(COMP_COUNT_PTR) as u32;
     let mut w = Walker { rom, d: &mut d, n_comps };
@@ -52,6 +52,17 @@ pub fn extract(rom: &Rom) -> EffectData {
     }
     for &a in RAW_LISTS {
         w.raw(a);
+    }
+    // On demand (harness): records that only a snapshot's objects point at.
+    for &a in &extra.effect {
+        if w.chain_valid(a, 10) {
+            w.walk(a);
+        }
+    }
+    for &a in &extra.raw {
+        if w.chain_valid(a, 8) {
+            w.raw(a);
+        }
     }
 
     d.shadows = (0..8).map(|i| shadow_list(rom, rom.u32(SHADOW_TABLE + 4 * i))).collect();
@@ -104,6 +115,38 @@ struct Walker<'a> {
 }
 
 impl Walker<'_> {
+    /// True when every record reachable from `start` (`stride` 10 or 8 bytes) looks like frame
+    /// data. Only used for on-demand addresses; the registered tables are known to be good.
+    fn chain_valid(&self, start: u32, stride: u32) -> bool {
+        let len = self.rom.program.len() as u32;
+        let mut seen = Vec::new();
+        let mut p = start;
+        while !seen.contains(&p) && !self.d.frame_by_addr.contains_key(&p) && !self.d.raw_by_addr.contains_key(&p) {
+            if p % 2 != 0 || p + stride + 2 > len {
+                return false;
+            }
+            let ok = if stride == 8 {
+                let list = self.rom.u32(p);
+                list % 2 == 0 && list + 4 <= len && list + 4 + 8 * self.rom.u16(list + 2) as u32 <= len
+            } else {
+                let (w0, w1) = (self.rom.u16(p), self.rom.u16(p + 2));
+                let comp = |w: u16| w % 4 == 0 && ((w / 4) as u32) < self.n_comps;
+                if w0 & 0x8000 != 0 {
+                    let q = (p + 2).wrapping_add(self.rom.i16(p + 2) as i32 as u32);
+                    q + 2 < len && self.rom.u16(q) < 64
+                } else {
+                    comp(w0) && (w1 & 0x8000 != 0 || comp(w1))
+                }
+            };
+            if !ok {
+                return false;
+            }
+            seen.push(p);
+            p = self.next_addr(p, stride);
+        }
+        true
+    }
+
     fn table(&mut self, table: u32) {
         let mut first = u32::MAX;
         let mut offs = Vec::new();
@@ -243,7 +286,7 @@ mod tests {
             return;
         }
         let rom = Rom::load(path).unwrap();
-        let d = extract(&rom);
+        let d = extract(&rom, &crate::ExtraFrames::default());
         // Hit spark table: 27 ids, id 0 = 3 frames 0x15F4 / 0x15F8 / 0x15FC.
         assert_eq!(d.tables[&0x924F6].len(), 27);
         let f = d.frame(d.anim(0x924F6, 0));

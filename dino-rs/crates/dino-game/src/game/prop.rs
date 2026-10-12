@@ -33,7 +33,7 @@ impl Game {
             let mut p = std::mem::take(&mut self.props.slots[i]);
             match p.b.k20 / 4 {
                 15 => self.prop_wave(&mut p, h, i),
-                _ => self.prop_unported(&mut p, i),
+                _ => self.prop_unported(&mut p, h, i),
             }
             self.props.slots[i] = p;
         }
@@ -41,7 +41,10 @@ impl Game {
     }
 
     /// Classes not ported yet (props, scenery, event objects): freed at once.
-    fn prop_unported(&mut self, p: &mut Prop, i: usize) {
+    fn prop_unported(&mut self, p: &mut Prop, h: Handle, i: usize) {
+        if self.trace_hold(h, &p.b) {
+            return; // harness: kept as the snapshot had it
+        }
         self.prop_free(p, i);
     }
 

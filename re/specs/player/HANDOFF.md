@@ -49,7 +49,7 @@ Character ids: 0 Jack, 1 Mustapha, 2 Hannah, 3 Mess (SPEC.md has a correction ba
 - Walls 0x1309C (needs scroll2 collision attributes + table 0x13B0C) and 0x12E9A; the floor segment
   pointer is recomputed from camera X instead of G.$6AC + 0x12C90.
 - Scripted control G.$4DD input (0x1DB5E), vehicle wait G.$505 (state 0x432 waits forever), states
-  0x18/0x1A/0x2A/0x2C and air 0x18..0x26/0x34, sound ids (sounds are recorded by routine address),
+  0x18/0x1A/0x2A/0x2C and air 0x18..0x26/0x34, sound codes (the voice routines 0x95CE..0x9C0C are ported in `snd.rs`; pan and volume are not recorded),
   respawn sparkle 0x958E4, dust 0x92E5E, water ripple 0x60E2, DIP lives (fixed 2).
 
 ## Next steps (in order)

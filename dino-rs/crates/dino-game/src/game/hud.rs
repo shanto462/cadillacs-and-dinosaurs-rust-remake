@@ -524,7 +524,7 @@ impl Game {
         let (b4cf, b4e6) = (self.flow.b4cf(), self.flow.b4e6);
         self.rank_event_1843c(lives, b4cf, b4e6);
         // 0xA4CA: "extra life" sound, panned by the player's screen X.
-        self.sound(0xA4CA);
+        self.snd_extra_life();
         self.hud_player_block(i);
     }
 

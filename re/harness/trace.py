@@ -18,7 +18,11 @@ The first record holds every block. A reader keeps one image per region and appl
 
 MAME regions: ram (0xFF0000, 64 KB), gfx (0x900000, 192 KB), cpsa, cpsb.
 Port regions: ram + ram_mask (which bytes the port models), gfx + gfx_mask (tilemaps and palette),
-obj (the sprite list built this frame, 8 bytes per entry, ends with attr 0xFF00).
+obj (the sprite list built this frame, 8 bytes per entry, ends with attr 0xFF00), obj_src (u16 per
+sprite entry: handle of the object that drew it, 0 = none).
+Port header extras: "pools" (kind, base, stride, count), "ported" (classes the port runs, per kind),
+"fields" (per kind: [offset, size, name]), "globals" ([address, size, name]), "warnings", "mode"
+("run" or "step"), "follow_rng".
 """
 
 import json

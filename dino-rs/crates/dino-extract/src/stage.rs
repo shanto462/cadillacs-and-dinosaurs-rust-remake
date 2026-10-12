@@ -17,7 +17,11 @@ const SCROLL3_SCREEN_COUNT: u32 = 128;
 fn area_map(rom: &Rom, hdr: u32) -> AreaMap {
     let (w, h) = (rom.u8(hdr), rom.u8(hdr + 1));
     let ptr = rom.u32(hdr + 2);
-    let screens = if w == 0 { Vec::new() } else { (0..w as u32 * h as u32).map(|i| rom.u16(ptr + 2 * i)).collect() };
+    // The streaming code indexes the screen ids by (x >> 8) * h + (y >> 8) without a range check, and
+    // asks for rows above the map (camera Y small, the column starts 0x180 above the camera): it
+    // reads the ROM words that follow the array. Keep some of them so the port reads the same ids.
+    const PAST_END: u32 = 32;
+    let screens = if w == 0 { Vec::new() } else { (0..w as u32 * h as u32 + PAST_END).map(|i| rom.u16(ptr + 2 * i)).collect() };
     AreaMap { rom_addr: hdr, w, h, screens, init_x: rom.u16(hdr + 6), init_y: rom.u16(hdr + 8) }
 }
 

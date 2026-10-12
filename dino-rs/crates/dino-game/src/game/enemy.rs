@@ -150,7 +150,10 @@ impl Game {
     }
 
     /// Classes not ported yet: freed at once so waves and thresholds keep working.
-    pub fn enemy_class_unported(&mut self, e: &mut Enemy, _h: Handle, i: usize) {
+    pub fn enemy_class_unported(&mut self, e: &mut Enemy, h: Handle, i: usize) {
+        if self.trace_hold(h, &e.b) {
+            return; // harness: kept as the snapshot had it
+        }
         eprintln!("pool A class {:#x} not ported (freed)", e.b.k20 / 4);
         self.enemy_free_pool_a(e, i);
     }
@@ -158,6 +161,9 @@ impl Game {
     /// Classes 49 / 50 (parallax birds and similar scenery, +$7D = 0xFF): not ported yet;
     /// they never affect gameplay, so they are freed.
     pub fn enemy_class_scenery(&mut self, e: &mut Enemy, h: Handle) {
+        if self.trace_hold(h, &e.b) {
+            return;
+        }
         let i = self.enemy_index(h);
         self.enemy_free_pool_a(e, i);
     }
@@ -962,7 +968,7 @@ impl Game {
                     e.b.vy = e.b.vy.wrapping_neg();
                     e.b.ay = e.b.ay.wrapping_add(e.b.ay);
                     e.b.act += 2;
-                    // 0x9796 landing sound (not ported)
+                    self.snd_9796(); // 0x33DCE
                     self.enemy_step(&mut e.b);
                 }
             }
@@ -975,6 +981,7 @@ impl Game {
                 Self::enemy_floor_collision(&mut e.b);
                 if e.b.airborne == 0 {
                     e.m.sb(T80, if e.b.hp == 0 { 0xA } else { 0x14 });
+                    self.snd_9796(); // 0x33E16
                     e.b.act += 2;
                 }
             }
@@ -1120,7 +1127,9 @@ impl Game {
     pub fn enemy_c2_approach(&mut self, e: &mut Enemy, h: Handle) {
         let t = e.m.w(TARGET);
         let tb = self.body(t);
-        if tb.live == 0 || tb.sub == 2 {
+        // 0x33FB8: `cmpi.b #$2,$5(a6)` tests the enemy's own sub state (always 0 on this path),
+        // not the target's (0x34398 tests $5(a0)). Quirk kept.
+        if tb.live == 0 || e.b.sub == 2 {
             return self.enemy_c2_retarget_any(e, h);
         }
         if self.enemy_c2_bump_player(e) {

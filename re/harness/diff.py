@@ -9,7 +9,11 @@ Report:
      (object handle and kind, field offset and name, MAME value, port value);
   2. a summary per field: frames with a difference, first frame, first values;
   3. video and sound: tilemap cells, palette words, sprite list entries, sound requests;
-  4. "not modeled": bytes that change in MAME but that the port does not trace (per object kind
+  4. by object class: which object classes the differing fields belong to, with the handler
+     address from the original's dispatch table (needs the program image, --rom-image) and whether
+     the port runs that class. Differences of a class the port does not run are "unported": the
+     class is a task, not a bug. They are held frozen at the snapshot state (Game::trace_hold).
+  5. "not modeled": bytes that change in MAME but that the port does not trace (per object kind
      and offset, and the busiest global addresses). These are not counted as differences.
 
 Frame -1 is the sync state: MAME's snapshot against the port right after --load-state. A
@@ -24,8 +28,10 @@ Keys: "<kind>.<field>" for objects (kinds: player enemy prop item effect special
 """
 
 import argparse
+import difflib
 import fnmatch
 import os
+import struct
 import sys
 from collections import defaultdict
 
@@ -35,6 +41,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import trace as T  # noqa: E402
 
 RAM = 0xFF0000
+
+# Class dispatch tables of the original (u32 handler per class): kind -> (table address, entries,
+# index shift). Pool A / B / E tables are indexed by +$20 (class * 4); pool C by +$20 too.
+HANDLERS = {"enemy": (0x2346C, 102), "prop": (0x2362E, 97), "item": (0x233F0, 12), "effect": (0x237E6, 42)}
 
 
 class Field:
@@ -108,6 +118,34 @@ class Allow:
 LAYERS = [("scroll1", 0x8000), ("scroll2", 0xC000), ("scroll3", 0x10000)]
 
 
+def sprite_diff(sm, sp, src, owner):
+    """Compares two sprite lists. `src[k]` = handle of the object that drew port entry k, and
+    `owner(handle)` says whether that object's class is "ported" or "unported" (or "none").
+    Returns (counts, first) where counts maps a category to the number of entries and `first` is
+    a description of the first entry that is not explained by an unported object:
+      unported     entries of the port that differ and come from an unported object
+      ported_same  ... from a ported object whose fields differ too (a consequence of that)
+      ported       ... from a ported object whose fields do not differ, or from no object (a draw bug?)
+      mame_only entries that only MAME has (the port drew fewer entries)"""
+    counts = defaultdict(int)
+    first = None
+    h = lambda e: "x %04X y %04X code %04X attr %04X" % e  # noqa: E731
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(None, sm, sp, autojunk=False).get_opcodes():
+        if tag == "equal":
+            continue
+        for j in range(j1, j2):
+            cat = owner(src[j] if j < len(src) else 0)
+            counts[cat if cat in ("unported", "ported_same") else "ported"] += 1
+            if cat not in ("unported", "ported_same") and first is None:
+                first = f"port entry {j} ({h(sp[j])}) drawn by {src[j]:04X} ({cat})" + (f", MAME has {h(sm[i1 + j - j1])}" if i1 + j - j1 < i2 else ", MAME has none")
+        if i2 - i1 > j2 - j1:
+            n = (i2 - i1) - (j2 - j1)
+            counts["mame_only"] += n
+            if first is None:
+                first = f"MAME has {n} entries the port lacks, starting at MAME entry {i1 + (j2 - j1)} ({h(sm[i1 + (j2 - j1)])})"
+    return counts, first
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("mame")
@@ -117,6 +155,9 @@ def main():
     ap.add_argument("--from", dest="start", type=int, default=-1, help="first frame to compare")
     ap.add_argument("--first", type=int, default=40, help="fields listed for the first differing frame")
     ap.add_argument("--field", help="print this field (key pattern) every frame it differs")
+    ap.add_argument("--at", type=int, action="append", default=[], help="list every difference at this frame (repeatable)")
+    ap.add_argument("--rom-image", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "out", "dino_68k.bin"),
+                    help="68000 program image, only used to print handler addresses (optional)")
     args = ap.parse_args()
 
     tm, tp = T.Trace(args.mame), T.Trace(args.port)
@@ -126,6 +167,24 @@ def main():
     fields, index, obj_of, slots = build_fields(hdr)
     strides = {p["kind"]: p["stride"] for p in hdr["pools"]}
     allow = Allow(args.allow)
+    ported = hdr.get("ported", {})
+    image = open(args.rom_image, "rb").read() if os.path.exists(args.rom_image) else None
+
+    def handler(kind, cls):
+        if image is None or kind not in HANDLERS:
+            return "?"
+        base, n = HANDLERS[kind]
+        if cls >= n:
+            return "?"
+        a = struct.unpack_from(">I", image, base + 4 * cls)[0]
+        return f"{a:#07x}" if a else "null"
+
+    pool_list = [(p["kind"], p["base"] - RAM, p["stride"], p["count"]) for p in hdr["pools"]]
+    sound_kinds = {"mame_only": [0, None], "other": [0, None]}
+    unported_diff_frames = set()  # frames with a difference in an object of an unported class
+    sprite_cats = defaultdict(int)    # category -> differing entries (all frames)
+    sprite_frames = defaultdict(int)  # category -> frames
+    by_class = {}  # (kind, class) -> {"slots": set, "objframes": set, "first": frame, "fields": {name: first frame}}
 
     per_field = {}  # key -> [frames, first frame, label, mame, port]
     first_frame = None
@@ -137,6 +196,7 @@ def main():
     prev_ram = None
     frames = 0
     watch = []
+    at_lists = {}
 
     for rm, rp in zip(tm.records(), tp.records()):
         if rm.frame != rp.frame:
@@ -163,6 +223,7 @@ def main():
         pram, pmask = rp.images["ram"], rp.images["ram_mask"].astype(bool)
 
         frame_diffs = []
+        diff_handles = set()  # handles of the objects with a field difference in this frame
         idx = np.nonzero(pmask & (pram != mram))[0]
         seen = set()
         for o in idx:
@@ -179,6 +240,22 @@ def main():
             if allow.ok(key, f):
                 allowed[key] += 1
                 continue
+            sid = int(obj_of[o])
+            if sid >= 0:
+                kind, slot_i, sbase = slots[sid]
+                diff_handles.add(sbase - RAM)
+                if mram[sbase - RAM] != 0:
+                    cls, side = value(mram, sbase + 0x20, 2) // 4, "MAME"
+                else:
+                    cls, side = value(pram, sbase + 0x20, 2) // 4, "port only"
+                if kind != "player" and cls not in ported.get(kind, []):
+                    unported_diff_frames.add(f)
+                bc = by_class.setdefault((kind, cls), {"slots": set(), "objframes": set(), "first": f, "fields": {}, "port_only": 0})
+                bc["slots"].add(slot_i)
+                bc["objframes"].add((slot_i, f))
+                bc["fields"].setdefault(key.split(".", 1)[1], f)
+                if side == "port only":
+                    bc["port_only"] += 1
             frame_diffs.append((addr, label, fmt(mv, size), fmt(pv, size)))
             e = per_field.get(key)
             if e is None:
@@ -223,19 +300,36 @@ def main():
         sm = T.mame_sprite_list(mram, mgfx)
         sp = T.sprite_entries(rp.images["obj"])
         if f >= 0 and sm != sp:
+            src = [(int(rp.images["obj_src"][2 * k]) << 8) | int(rp.images["obj_src"][2 * k + 1]) for k in range(len(sp))] if "obj_src" in rp.images else [0] * len(sp)
+
+            def owner(handle, pram=pram):
+                for kind, base, stride, n in pool_list:
+                    if base <= handle < base + stride * n and (handle - base) % stride == 0:
+                        cls = value(pram, RAM + handle + 0x20, 2) // 4
+                        if kind == "player" or cls in ported.get(kind, []):
+                            return "ported_same" if handle in diff_handles else "ported"
+                        return "unported"
+                return "none"
+
+            counts, first = sprite_diff(sm, sp, src, owner)
+            if counts.get("mame_only") and f in unported_diff_frames:
+                # Entries only MAME has, in a frame where an unported object differs: its shadow
+                # or its new / bigger picture (the port holds that object frozen). Not a bug.
+                counts["unported"] += counts.pop("mame_only")
+                if first is not None and first.startswith("MAME has"):
+                    first = None
             if allow.ok("sprites", f):
                 allowed["sprites"] += 1
             else:
-                k = next((i for i in range(min(len(sm), len(sp))) if sm[i] != sp[i]), min(len(sm), len(sp)))
-                em = sm[k] if k < len(sm) else None
-                ep = sp[k] if k < len(sp) else None
-                h = lambda e: "end" if e is None else "x %04X y %04X code %04X attr %04X" % e  # noqa: E731
-                desc = f"MAME {len(sm)} entries, port {len(sp)}; first difference at entry {k}: MAME {h(em)} | port {h(ep)}"
-                frame_diffs.append((0x1020000, "sprites", desc, ""))
                 v = video["sprites"]
-                v[0] += 1
-                if v[1] is None:
-                    v[1], v[2] = f, desc
+                for cat, n in counts.items():
+                    sprite_cats[cat] += n
+                    sprite_frames[cat] += 1
+                if first is not None:
+                    frame_diffs.append((0x1020000, "sprites", f"MAME {len(sm)} entries, port {len(sp)}; {first}", ""))
+                    v[0] += 1
+                    if v[1] is None:
+                        v[1], v[2] = f, f"MAME {len(sm)} entries, port {len(sp)}; {first}"
         if f >= 0:
             cm = [c for c, _, _ in sounds_m]
             cp = list(rp.extra.get("snd", []))
@@ -244,12 +338,24 @@ def main():
                     allowed["sounds"] += 1
                 else:
                     desc = "MAME [" + " ".join(f"{c:04X}" for c in cm) + "] port [" + " ".join(f"{c:04X}" for c in cp) + "]"
-                    frame_diffs.append((0x1030000, "sounds", desc, ""))
-                    v = video["sounds"]
-                    v[0] += 1
-                    if v[1] is None:
-                        v[1], v[2] = f, desc
+                    it = iter(cm)
+                    if len(cm) > len(cp) and all(c in it for c in cp):
+                        # Every request of the port is there; MAME has more: callers the port lacks.
+                        sound_kinds["mame_only"][0] += 1
+                        if sound_kinds["mame_only"][1] is None:
+                            sound_kinds["mame_only"][1] = (f, desc)
+                    else:
+                        sound_kinds["other"][0] += 1
+                        if sound_kinds["other"][1] is None:
+                            sound_kinds["other"][1] = (f, desc)
+                        frame_diffs.append((0x1030000, "sounds", desc, ""))
+                        v = video["sounds"]
+                        v[0] += 1
+                        if v[1] is None:
+                            v[1], v[2] = f, desc
 
+        if f in args.at:
+            at_lists[f] = sorted(frame_diffs)
         if frame_diffs and first_frame is None:
             first_frame = f
             first_list = sorted(frame_diffs)
@@ -273,11 +379,35 @@ def main():
                 print(f"  {label}: MAME {a}  port {b}")
         if len(first_list) > args.first:
             print(f"  ... {len(first_list) - args.first} more")
+    for f, lst in sorted(at_lists.items()):
+        print(f"\nDIFFERENCES AT FRAME {f} ({len(lst)} items)")
+        for addr, label, a, b in lst:
+            print(f"  {label}: {a}" if b == "" and addr >= 0x1000000 else f"  {label}: MAME {a}  port {b}")
     if per_field:
         print(f"\nFIELDS WITH DIFFERENCES ({len(per_field)}): frames differing, first frame, first values")
         for key, e in sorted(per_field.items(), key=lambda kv: (kv[1][1], kv[0])):
             print(f"  {key:32s} {e[0]:5d} frames, first {e[1]:5d}  {e[2]}: MAME {e[3]} port {e[4]}")
+    if by_class:
+        print("\nDIFFERENCES BY OBJECT CLASS (object-frames with a difference, first frame, fields with first frame)")
+        for (kind, cls), bc in sorted(by_class.items(), key=lambda kv: (kv[0][0], kv[0][1])):
+            status = "ported" if cls in ported.get(kind, []) else "NOT PORTED"
+            if kind == "player":
+                status = "ported"
+            flds = " ".join(f"{n}@{fr}" for n, fr in sorted(bc["fields"].items(), key=lambda x: (x[1], x[0])))
+            slots_txt = ",".join(str(x) for x in sorted(bc["slots"]))
+            extra = f" (slot freed in MAME, live in port: {bc['port_only']} fields)" if bc["port_only"] else ""
+            print(f"  {kind} class {cls:#04x} handler {handler(kind, cls)} [{status}] slots {slots_txt}: {len(bc['objframes'])} object-frames, first {bc['first']}{extra}")
+            print(f"      {flds}")
     vids = [(k, v) for k, v in video.items() if v[0]]
+    if sprite_cats:
+        print("\nSPRITE LIST DIFFERENCES: entries that differ, by source (the port tags each entry with the object that drew it)")
+        print(f"  from unported classes: {sprite_cats['unported']} entries in {sprite_frames['unported']} frames (held frozen, expected)")
+        print(f"  from ported classes whose fields differ too (a consequence of that): {sprite_cats['ported_same']} entries in {sprite_frames['ported_same']} frames")
+        print(f"  from ported classes whose fields do not differ, or no object (draw bug?): {sprite_cats['ported']} entries in {sprite_frames['ported']} frames")
+        print(f"  only in MAME (the port drew fewer): {sprite_cats['mame_only']} entries in {sprite_frames['mame_only']} frames")
+    if sound_kinds["mame_only"][0]:
+        n, (fr, desc) = sound_kinds["mame_only"]
+        print(f"\nSOUND REQUESTS only MAME has (every request of the port is there; callers the port lacks): {n} frames, first {fr}: {desc}")
     if vids:
         print("\nVIDEO AND SOUND: frames differing, first frame")
         for k, v in vids:
@@ -321,7 +451,16 @@ def main():
             for a, b in runs[:60]
         )
         print(f"  globals: {len(glob)} bytes in {len(runs)} runs: {names}{' ...' if len(runs) > 60 else ''}")
+    n_port = n_unp = 0
+    for (kind, cls), bc in by_class.items():
+        if kind == "player" or cls in ported.get(kind, []):
+            n_port += len(bc["fields"])
+        else:
+            n_unp += len(bc["fields"])
+    n_glob = sum(1 for k in per_field if k.startswith("global."))
     print(f"\nSUMMARY: {len(per_field)} fields and {len(vids)} video/sound items differ; first difference at frame {first_frame}")
+    print(f"  object fields of ported classes: {n_port} (class, field) pairs; of unported classes: {n_unp}; globals: {n_glob}")
+    print("  ported-class and global differences need a cause each; unported-class differences are tasks (the class is not ported)")
     return 0 if first_frame is None else 1
 
 

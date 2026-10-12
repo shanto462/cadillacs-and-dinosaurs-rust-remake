@@ -223,6 +223,10 @@ impl Game {
             return;
         }
         self.flow.wait = self.flow.speed & 0xF;
+        // 0xA914..: the frame counters G.$0000 and G.$4DA are incremented before the mode runs,
+        // so everything that reads G.$0000 in a game frame (parity tests, spark jitter, ...) sees
+        // the new value.
+        self.w.frame = self.w.frame.wrapping_add(1);
         self.flow.frame = self.flow.frame.wrapping_add(1);
         match self.flow.mode {
             0x00 => self.flow_mode_init(),

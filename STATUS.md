@@ -17,6 +17,7 @@ loading assets from the user's own `dino.zip`. Rules and file ownership: `dino-r
 | Enemies, spawn scripts, waves and camera locks, items, rank, stage 1 boss | In progress | `re/specs/enemy/HANDOFF.md` |
 | HUD, stage start/clear, continue, character select, title | In progress | `re/specs/flow/HANDOFF.md` |
 | Input (keyboard for 3 players, coins/starts, gamepads, scripted input) | Done | `dino-rs/crates/dino-game/src/input.rs` |
+| Exactness harness (MAME reference traces, port traces, diff, step mode) | Done | `re/harness/README.md`, `plan/phase-00-exactness-harness.md` |
 | Sound (Kabuki-decrypted Z80 driver, QSound mixer, cpal output) | In progress | `re/specs/sound/HANDOFF.md` |
 | Stages 2-8 enemy classes and bosses | Not started | `re/specs/enemy/SPEC.md` section 3.2 lists the classes |
 

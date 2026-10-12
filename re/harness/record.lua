@@ -8,6 +8,7 @@
 --   DINO_TRACE   output trace file (format: README.md, reader: trace.py)
 --   DINO_STATE   output snapshot file (all RAM at the sync point, for the port's --load-state)
 --   DINO_SYNC    "control" (default): first frame where player 1 can be controlled in a stage;
+--                "control+N": N game frames after that (the frame counter G.$0000 counts them);
 --                "vblank:N": sync at vblank N
 --   DINO_MAX_VBLANKS  give up after this many vblanks without reaching the sync point (default 30000)
 --   DINO_SNAP_EVERY   also save a PNG screenshot every N test frames (0 = never)
@@ -238,9 +239,16 @@ local function p1_controllable()
     and space:read_u8(P1 + 0x11A) == 0
 end
 
+local control_frame = nil  -- G.$0000 when player 1 first could be controlled ("control+N")
+
 local function sync_now(vblank)
   if cfg.sync == "control" then return p1_controllable() end
-  local n = cfg.sync:match("^vblank:(%d+)$")
+  local n = cfg.sync:match("^control%+(%d+)$")
+  if n then
+    if control_frame == nil and p1_controllable() then control_frame = space:read_u16(0xFF8000) end
+    return control_frame ~= nil and ((space:read_u16(0xFF8000) - control_frame) & 0xFFFF) >= tonumber(n)
+  end
+  n = cfg.sync:match("^vblank:(%d+)$")
   if n then return vblank >= tonumber(n) end
   error("bad DINO_SYNC " .. cfg.sync)
 end

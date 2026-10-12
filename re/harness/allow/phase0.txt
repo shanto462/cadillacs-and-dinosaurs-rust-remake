@@ -1,0 +1,7 @@
+# Approved known differences of phase 0 (re/harness/diff.py --allow re/harness/allow/phase0.txt).
+# One rule per line: a key pattern (fnmatch) and an optional frame range, then a "# reason".
+#   enemy.x 100-200      # example only
+#
+# None approved. Every difference of the stage 1 comparison is either a class or routine the port
+# does not have yet (a task in plan/phase-01-stage1-complete.md, not an approved difference) or was
+# fixed. See the Status section of plan/phase-00-exactness-harness.md for the list.

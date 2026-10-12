@@ -49,6 +49,10 @@ pub trait Visit {
     fn all(&self) -> bool {
         false
     }
+    /// Load side: the raw bytes of an object that the port keeps as a byte array (the part of
+    /// an enemy / prop / item beyond the modeled header), so stale bytes of the original are
+    /// kept too. The other visitors ignore it.
+    fn raw_bytes(&mut self, _addr: u32, _out: &mut [u8]) {}
     fn error(&mut self, _msg: String) {}
     /// Trace side: the original value of a frame pointer the port could not map at load time,
     /// while the object still shows the frame id it got then.
@@ -97,6 +101,10 @@ impl<'a> F<'a> {
     pub fn i32(&mut self, off: u32, name: &'static str, x: &mut i32) {
         *x = self.raw(off, 4, name, *x as u32) as i32;
     }
+    /// Load side only: copies `out.len()` bytes at `off` from the dump into `out`.
+    pub fn raw_bytes(&mut self, off: u32, out: &mut [u8]) {
+        self.v.raw_bytes(self.base.wrapping_add(off) & 0xFF_FFFF, out);
+    }
     pub fn loading(&self) -> bool {
         self.v.loading()
     }
@@ -116,7 +124,9 @@ impl<'a> F<'a> {
                 Some(n) => *id = n,
                 None => {
                     self.v.frame_unmapped(field, *id, a);
-                    if live {
+                    // 0 (no frame) and RAM pointers (lists an object builds itself) are not ROM
+                    // records: they are kept verbatim, with no warning.
+                    if live && (0x1000..0x18_0000).contains(&a) {
                         self.v.error(format!("{field:#08x} {name}: no extracted frame record at {a:#x}"));
                     }
                 }
@@ -222,6 +232,12 @@ impl Visit for Load<'_> {
     }
     fn loading(&self) -> bool {
         true
+    }
+    fn raw_bytes(&mut self, addr: u32, out: &mut [u8]) {
+        if addr >= RAM && addr as usize + out.len() <= RAM as usize + 0x10000 {
+            let o = (addr - RAM) as usize;
+            out.copy_from_slice(&self.ram[o..o + out.len()]);
+        }
     }
     fn error(&mut self, msg: String) {
         self.errors.push(msg);
@@ -392,17 +408,28 @@ impl Ram {
     }
 }
 
+impl Ram {
+    /// Load side: the whole byte array of an object of `len` bytes (stale bytes included).
+    pub fn trace_load_all(&mut self, f: &mut F, len: usize) {
+        if f.loading() {
+            f.raw_bytes(0, &mut self.0[..len]);
+        }
+    }
+}
+
 impl Enemy {
     pub fn trace_visit(&mut self, f: &mut F) {
+        self.m.trace_load_all(f, 0xE0);
         self.b.trace_visit(f);
         self.m.trace_list(f, ENEMY_RAW);
     }
 }
 
 impl Item {
-    /// Pool E is not ported yet: only the header.
+    /// Pool E is not ported yet: only the header (and, when loading, the raw bytes).
     pub fn trace_visit(&mut self, f: &mut F) {
         self.b.trace_header(f, false);
+        self.m.trace_load_all(f, 0xC0);
     }
 }
 
@@ -411,6 +438,7 @@ impl Prop {
     /// group / record indexes (+$A0 / +$A2); the original keeps a ROM pointer at +$A0.
     pub fn trace_visit(&mut self, f: &mut F, stage: u8) {
         self.b.trace_header(f, false);
+        self.m.trace_load_all(f, 0xC0);
         if f.all() || self.b.k20 == 15 * 4 {
             let mut t = self.m.w(0x80);
             f.u16(0x80, "wave_timer", &mut t);
@@ -420,17 +448,26 @@ impl Prop {
             self.m.sw(0xA6, n);
             let waves = &f.assets.enemy.stages[stage as usize].waves;
             if let Some(w) = waves.get(self.b.var26 as usize) {
-                let (g, r) = (self.m.w(0xA0) as usize, self.m.w(0xA2) as usize);
-                let mut p = wave_ptr(w, g, r, self.b.sub);
-                let old = p;
-                f.u32(0xA0, "wave_ptr", &mut p);
-                if f.loading() && p != old {
-                    match wave_pos(w, p) {
-                        Some((g, r)) => {
-                            self.m.sw(0xA0, g as u16);
-                            self.m.sw(0xA2, r as u16);
+                if self.b.mode == 0 && !f.all() {
+                    // A new controller: 0x7B34A (mode 0) has not run yet, so +$A0 still holds
+                    // stale bytes. Keep them as they are.
+                    let mut p = self.m.l(0xA0);
+                    f.u32(0xA0, "wave_ptr", &mut p);
+                    self.m.sl(0xA0, p);
+                } else {
+                    let (g, r) = (self.m.w(0xA0) as usize, self.m.w(0xA2) as usize);
+                    let mut p = wave_ptr(w, g, r, self.b.sub);
+                    f.u32(0xA0, "wave_ptr", &mut p);
+                    if f.loading() {
+                        match wave_pos(w, p) {
+                            Some((g, r)) => {
+                                self.m.sw(0xA0, g as u16);
+                                self.m.sw(0xA2, r as u16);
+                            }
+                            // (a free slot keeps stale bytes: no warning for those)
+                            None if self.b.live != 0 => f.v.error(format!("wave controller: pointer {p:#x} not in wave {:#x}", w.addr)),
+                            None => {}
                         }
-                        None => f.v.error(format!("wave controller: pointer {p:#x} not in wave {:#x}", w.addr)),
                     }
                 }
             }
@@ -574,6 +611,7 @@ impl Player {
         f.u8(0x11B, "b11b", &mut self.b11b);
         f.u8(0x11C, "b11c", &mut self.b11c);
         f.u8(0x11D, "b11d", &mut self.b11d);
+        f.u8(0x118, "voice", &mut self.voice);
     }
 }
 
@@ -591,6 +629,19 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
     ("special", POOL_D),
 ];
 
+/// Object classes (`+$20 / 4`) the port runs, per pool kind; every other live class is held as the
+/// snapshot had it (`Game::trace_hold`). The diff tool marks differences of other classes as
+/// "unported". Keep in sync with the dispatch in `enemies_update`, `pool_b_update`,
+/// `pool_c_update`, `pool_e_update`.
+pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
+    ("player", &[0]),
+    ("enemy", &[2]),
+    ("prop", &[15]),
+    ("item", &[]),
+    ("effect", &[0x04 / 4, 0x10 / 4, 0x20 / 4, 0x68 / 4]),
+    ("special", &[]),
+];
+
 /// Free list stacks: (count G.x, pointer G.x, stack end G.x) for pools E, B, A, C, D.
 const FREE_LISTS: [(u32, u32, u32); 5] =
     [(0x65F4, 0x65FE, 0x6638), (0x65F6, 0x6600, 0x6668), (0x65F8, 0x6602, 0x6698), (0x65FA, 0x6604, 0x66F8), (0x65FC, 0x6606, 0x6718)];
@@ -600,6 +651,7 @@ impl Game {
     pub fn trace_visit(&mut self, v: &mut dyn Visit) {
         let a = self.assets;
         let names_only = v.all();
+        let loading = v.loading();
         for i in 0..3 {
             let base = obj(Game::player_handle(i));
             let mut f = F::new(v, base, a);
@@ -612,7 +664,9 @@ impl Game {
                 for i in 0..$pool.slots.len() {
                     let base = obj($pool.handle(i));
                     let mut f = F::new(v, base, a);
-                    if $pool.slots[i].b.live == 0 && !names_only {
+                    // Free slots: only +$00 when tracing (the rest is stale memory that the port does
+                    // not keep identical). When loading, the stale bytes of the dump are taken too.
+                    if $pool.slots[i].b.live == 0 && !names_only && !loading {
                         f.u8(0, "live", &mut $pool.slots[i].b.live);
                     } else {
                         $pool.slots[i].$visit(&mut f $(, $arg)*);
@@ -756,6 +810,8 @@ impl Game {
         }
         // Enemy-side globals (spawn.rs).
         let s = &mut self.spawn.g;
+        f.u8(0x043A, "snd_toggle", &mut self.w.snd_toggle);
+        f.u16(0x043C, "snd_hit_toggle", &mut self.w.snd_hit_toggle);
         f.u8(0x04F3, "alive", &mut s.alive);
         f.u8(0x04FB, "alive_run", &mut s.alive_run);
         f.u8(0x050E, "kill_all", &mut s.kill_all);
@@ -1091,6 +1147,16 @@ impl Game {
         v
     }
 
+    /// For each entry of the sprite list: the handle of the object that drew it (u16, big endian,
+    /// 0 = none), so the diff tool can tell entries of unported classes from the rest.
+    pub fn trace_obj_src(&self) -> Vec<u8> {
+        let mut v = vec![0u8; 0x200];
+        for (k, e) in self.sprites.entries.iter().take(255).enumerate() {
+            v[2 * k..2 * k + 2].copy_from_slice(&e.src.to_be_bytes());
+        }
+        v
+    }
+
     /// Field names for the trace header: per object kind (offset, size, name) and globals.
     pub fn trace_names(&mut self) -> (Vec<(&'static str, Vec<(u32, u8, &'static str)>)>, Vec<(u32, u8, &'static str)>) {
         let a = self.assets;
@@ -1124,6 +1190,25 @@ impl Game {
         self.trace_free_lists(&mut n);
         self.trace_globals(&mut n);
         (kinds, n.list)
+    }
+}
+
+impl Game {
+    /// Harness only. An object of a class the port does not run yet (an "unported" class) is not
+    /// freed when the game was loaded from a snapshot: it stays as MAME had it, so its position
+    /// and draw state show up in the trace and the free lists stay equal. It does not move or
+    /// animate (that is the missing port). It still goes into the draw list if the snapshot had
+    /// it on screen and its frame record is known. Returns false when the game was not loaded
+    /// from a snapshot (the caller then frees the object, as the normal game does).
+    /// `b` is the object's header (callers that took the object out of its slot pass their copy).
+    pub fn trace_hold(&mut self, h: u16, b: &Body) -> bool {
+        if !self.hold_unported {
+            return false;
+        }
+        if b.visible != 0 && !self.trace_unmapped.contains_key(&(obj(h) + 0x28)) {
+            self.draw_list.push(((b.zi() as u16 as u32) << 16) | h as u32); // 0x49C0
+        }
+        true
     }
 }
 

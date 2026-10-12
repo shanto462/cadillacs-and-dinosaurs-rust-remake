@@ -33,8 +33,8 @@ limitation. Phase 0 builds the tools for this.
 
 | # | Phase | Depends on | Status |
 | --- | --- | --- | --- |
-| 0 | [Exactness harness: MAME reference traces, port traces, diff tool](phase-00-exactness-harness.md) | MAME CLI | Next |
-| 1 | [Stage 1 complete: items, weapons, all stage 1 enemies, Vice T., stage clear](phase-01-stage1-complete.md) | 0 | Pending |
+| 0 | [Exactness harness: MAME reference traces, port traces, diff tool](phase-00-exactness-harness.md) | MAME CLI | Done |
+| 1 | [Stage 1 complete: terrain collision, items, weapons, all stage 1 enemies, Vice T., stage clear](phase-01-stage1-complete.md) | 0 | Next |
 | 2 | [Front end and game flow: attract, title, coins, select, join, continue, game over, high scores](phase-02-front-end-and-flow.md) | 0 | Pending |
 | 3 | [Sound: Z80 driver port, QSound mixer, audio output](phase-03-sound.md) | 0 | Pending (reverse engineering done) |
 | 4 | [Background and camera extras: shake, desert road, elevator, tile and palette animation](phase-04-background-extras.md) | 0 | Pending |
