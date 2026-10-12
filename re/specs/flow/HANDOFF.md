@@ -305,3 +305,12 @@ one). `Game::tick` ends with `cam.latch_scroll()`, `sprites.latch()` and `pal.la
 the shown sprite list (`SpriteList::submit`) and `shown_words()`. 0xAE0 (`SpriteList::wipe`) blanks the sprites from the next
 frame. Checked against MAME pictures of the attract loop (71 profile frames, the title, stage 1): pixel exact except the frames
 where the first run of the profile cards does two passes in one frame (its sprites and fade appear a frame early in MAME).
+
+## M1-08 story slides (2026-10-13)
+
+`game/flow/slides.rs` ports the slide script 0x988C0 (5 slides, 8 x 6 and 4 x 3 blocks, tall font captions,
+4 fades, the hard cut, the 49-frame pan, music 0x24 / 0x25, layer control changes), 1779 frames from call to
+return. No objects (B91 / B92 are not used) and no rand(). Test `story_slides_run_like_the_original` compares
+both slide runs of `attract3` record by record. The ranking test still injects G.$14 where the demo (4) and
+movie (2) stubs return; M1-09 to M1-12 remove those. Details and the D4d corrections: the module doc and
+`plan/game/design/D5-errata.md`.

@@ -14,9 +14,9 @@
 //! | 8 | 0x97D42 | ranking only (not reachable) |
 //! | 0xA | 0x97DBE | state = 0 (not reachable) |
 //!
-//! The title is real (`boot.rs`), and so are the profile cards (0x9A7E6, `profiles.rs`, M1-05) and the
-//! ranking (0x1516C through 0x983D8, `ranking.rs`, M1-07). The demo (0x99E88, M1-12), the story slides (0x988C0,
-//! M1-08) and the opening movie (0x9BF50, M1-09) are stubs: a blank screen with a label that lasts
+//! The title is real (`boot.rs`), and so are the profile cards (0x9A7E6, `profiles.rs`, M1-05), the ranking
+//! (0x1516C through 0x983D8, `ranking.rs`, M1-07) and the story slides (0x988C0, `slides.rs`, M1-08). The demo
+//! (0x99E88, M1-12) and the opening movie (0x9BF50, M1-09) are stubs: a blank screen with a label that lasts
 //! exactly as long as the real screen did in the MAME recording `attract3.mame.trc`, so the state byte
 //! changes at the same frames (video frames 2744, 6874, 9311, 13411, 15848, 19979, 22416, 26516, 28953).
 //! The lengths are measured, not computed: the original takes a few frames more or less on some passes
@@ -47,9 +47,9 @@ pub enum Stub {
 /// `flow_attract_clear_step`); the middle of the range that the cycle count allows is used.
 const CLEAR3_FIRST: usize = 3000;
 /// The demo with its last picture and the fade (1200 game frames, 5 frames of setup, 100 frozen,
-/// 16 of fade), the story slides and the opening movie (to the end of the routine).
+/// 16 of fade) and the opening movie (to the end of the routine). The story slides are real
+/// (`slides.rs`, 1779 frames from the call to the return).
 const DEMO_FRAMES: u16 = 1325;
-const SLIDES_FRAMES: u16 = 1779;
 const MOVIE_FRAMES: u16 = 1745;
 
 impl Game {
@@ -189,6 +189,9 @@ impl Game {
                 self.flow_warning_picture();
                 self.flow.front.demo_counter = self.flow.front.demo_counter.wrapping_add(1);
                 self.flow_attract_stub(Stub::Demo, "DEMO");
+                // the demo sets the layer control of a game screen (G.$28 = 0x12D6 in all of its runs); the
+                // slides that follow it do not set it before slide 4 (M1-12 plays the demo itself)
+                self.w.layer_ctrl = 0x12D6;
                 self.flow_attract_wait(DEMO_FRAMES, st::DEMO_END);
             }
         }
@@ -216,10 +219,10 @@ impl Game {
     pub(super) fn flow_attract_demo_end(&mut self) {
         self.flow.front.stub = Stub::None;
         if self.flow.front.attract_state & 0x3E == 2 {
-            // 0x97CD6: kill the blink task (slot 0x20), then the story slides 0x988C0
+            // 0x97CD6: kill the blink task (slot 0x20), then the story slides 0x988C0 (`slides.rs`);
+            // they return in `st::SLIDES_END`
             self.flow.front.blink.kill();
-            self.flow_attract_stub(Stub::Slides, "STORY SLIDES");
-            self.flow_attract_wait(SLIDES_FRAMES, st::SLIDES_END);
+            self.flow_slides_start();
         } else {
             // 0x97D2A: clear all layers, the ranking
             self.flow_attract_clear();

@@ -262,6 +262,12 @@ impl Game {
                         return;
                     }
                 }
+                s if super::slides::sst::owns(s) => {
+                    self.flow_slides_script(); // the story slides (`slides.rs`)
+                    if self.flow.front.task.sleeping() > 0 {
+                        return;
+                    }
+                }
                 s if super::ranking::rst::owns(s) => {
                     self.flow_ranking_script(); // the ranking screen (`ranking.rs`)
                     if self.flow.front.task.sleeping() > 0 {

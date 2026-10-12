@@ -542,9 +542,11 @@ fn profile_cards_run_like_the_original() {
 /// (set 4 and the fade of the title after it), the sprite list (the Cadillac with its two heroes, the clouds),
 /// the layer control, the sound codes (the stop code, the music 0x80 at the second frame, the ambient 0x70 when the
 /// car has arrived), the six scroll shadows (the desert goes by, 8 and 4 pixels a frame), the wait counter G.$7018
-/// and the random number state G.$14 (one per hero a frame, the clouds) equal the recording. The slides and the
-/// demo before three of the runs are stubs that play none of their random numbers, so the state G.$14 is set to
-/// the recording's value in the frame the routine is called.
+/// and the random number state G.$14 (one per hero a frame, the clouds) equal the recording. The demo (4 runs) and
+/// the opening movie (2 runs) are stubs that play none of their random numbers, so the state G.$14 is set to the
+/// recording's value in the frame each of them returns (M1-12 and M1-11 remove this). The story slides and the
+/// profile cards draw their own (the slides none, see `story_slides_run_like_the_original`), so no ranking needs
+/// the state set in its own frame.
 #[test]
 fn ranking_runs_like_the_original() {
     let Some(a) = assets() else { return };
@@ -565,7 +567,11 @@ fn ranking_runs_like_the_original() {
         28528 + 423,
         |_| [0; 3],
         |k, g, prev| {
-            if runs.iter().any(|&(s, _)| s as i32 == k) {
+            // the demo (M1-12) and the opening movie (M1-09 to M1-11) are stubs that play none of their random
+            // numbers: the state they leave is set from the recording in the frame the stub returns (the frame the
+            // story slides start or the clear before the ranking of state 6, and the frame the movie returns).
+            // The slides and the profile cards play theirs.
+            if [4668, 11239, 13409, 17773, 24344, 26514].contains(&k) {
                 g.w.rng = ram16(prev, 0xFF8014);
             }
         },
@@ -597,6 +603,92 @@ fn ranking_runs_like_the_original() {
         assert!(bad.is_empty(), "ranking run {from}: {} records differ, first {:?}", bad.len(), &bad[..bad.len().min(3)]);
     }
     assert_eq!(returned, runs.map(|(s, l)| s + l), "the routine returns after 422 and then 423 frames");
+}
+
+/// A8 (M1-08), the five story slides: the whole routine 0x988C0 in the two runs it has in `attract3.mame.trc`
+/// (called at the records 4668 and 17773, the frame the demo's fade ends; the demo is a stub, so the screen before
+/// the first full picture, the two records of the clear, is not compared). From the record two frames after
+/// the call (the palettes and the first pictures) to the one before the ranking starts, every record equals the
+/// recording: the three tilemaps (the pictures, the hard cut, the two fades, the blank, the captions of the tall
+/// font), the four palette banks (the fades step 16 times), the sprite list (none: 0xAE0 blanks it and the routine
+/// builds none), the layer control (0x12D6, 0x1396 in slide 4, 0x12D6), the sound codes (the music 0x24 and 0x25,
+/// the stop code of the state routine), the six scroll shadows (scroll3 X 0x180 and the pan of 49 frames), the attract
+/// state byte. The routine is 1779 frames long (the stub it replaces had the same length) and returns in the record
+/// the stop code is queued (6447 and 19552).
+#[test]
+fn story_slides_run_like_the_original() {
+    let Some(a) = assets() else { return };
+    let trace = "../../../re/out/traces/attract3.mame.trc";
+    if !Path::new(trace).exists() {
+        eprintln!("mame_check: {trace} is missing, skipped");
+        return;
+    }
+    let runs = [4668usize, 17773];
+    let mut returned = Vec::new();
+    let mut was_up = false;
+    // the random number state G.$14 (port, MAME) in the first and the last record that is compared
+    let mut rng = std::collections::BTreeMap::new();
+    let (_, rows) = compare_power_on_with(a, trace, 19554, |_| [0; 3], |_, _, _| {}, |k, g, ram, _| {
+        let up = g.flow.front.stub == super::attract::Stub::Slides;
+        if was_up && !up {
+            returned.push(k as usize);
+        }
+        was_up = up;
+        if runs.iter().any(|&s| k as usize == s + 2 || k as usize == s + 1780) {
+            rng.insert(k as usize, (g.w.rng, ram16(ram, 0xFF8014)));
+        }
+    });
+    assert_eq!(returned, runs.map(|s| s + 1779), "the routine is 1779 frames long");
+    for s in runs {
+        let bad: Vec<(usize, &Differences)> = rows
+            .iter()
+            .enumerate()
+            .take(s + 1781)
+            .skip(s + 2)
+            .filter(|(_, d)| d.s1 + d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some() || d.sounds.is_some() || d.cams.is_some() || d.state.is_some())
+            .collect();
+        assert!(bad.is_empty(), "slides run {s}: {} records differ, first {:?}", bad.len(), &bad[..bad.len().min(3)]);
+        // the slides draw no random number (neither does the recording): G.$14 is the same in both ends of the run
+        let (first, last) = (rng[&(s + 2)], rng[&(s + 1780)]);
+        assert_eq!((first.0, first.1), (last.0, last.1), "slides run {s}: the random number state changed: {first:04X?} {last:04X?}");
+    }
+}
+
+/// The wait counter G.$4F6 through the story slides with free play on (`m108_free`: G.$46B poked to 1 at power frame
+/// 100 as in `m104_free`, 6700 records: `DINO_CLOCK=video DINO_BOOT=re/harness/scripts/attract.txt DINO_SYNC=vblank:1
+/// DINO_POKES=re/harness/pokes/freeplay_power.txt re/harness/record.sh re/harness/scripts/attract.txt m108_free 6700`):
+/// the counter counts a frame at a time while the system task runs and misses the frames in
+/// which the attract task is busy past the end of the video frame (`front.sys_skip`). The demo before the slides is
+/// a stub that does not reset the counter as the original's RAM clear does, so the counts since the start of the
+/// slides are compared: they are equal in every record from the call of the routine (4668) to the start of
+/// the ranking (6450) and its first frames (6458). The last clear of the routine misses two counts (it is followed by
+/// the clear of the state routine without a break), the clears before it one each.
+#[test]
+fn story_slides_wait_counter_matches_mame() {
+    let Some(a) = assets() else { return };
+    let trace = "../../../re/out/traces/m108_free.mame.trc";
+    if !Path::new(trace).exists() {
+        eprintln!("mame_check: {trace} is missing (see the doc of this test), skipped");
+        return;
+    }
+    let s = 4668usize;
+    let mut series = Vec::new();
+    compare_power_on_with(a, trace, 6458, |_| [0; 3], |k, g, _| {
+        if k == 99 {
+            g.flow.front.sys.free_play = true; // the poke
+        }
+    }, |k, g, ram, _| {
+        if k as usize >= s {
+            series.push((k as usize, ram16(ram, 0xFF84F6), g.rank.w4f6));
+        }
+    });
+    let (m0, p0) = (series[0].1, series[0].2);
+    let bad: Vec<_> = series.iter().filter(|&&(_, m, p)| m.wrapping_sub(m0) != p.wrapping_sub(p0)).take(4).collect();
+    assert!(bad.is_empty(), "the counts since record {s} differ (record, MAME, port): {bad:?}");
+    // 1790 frames, 10 passes missed: one at each of the first five clears, two at the last one, three round the
+    // start of the ranking
+    let counted = series.last().unwrap().1.wrapping_sub(m0);
+    assert_eq!(counted as usize, 6458 - s - 10, "the counts of 1790 frames");
 }
 
 /// Diagnostic for M1-07: for each ranking run of `attract3.mame.trc` the number of writes of the draw

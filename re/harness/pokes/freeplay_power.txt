@@ -1,0 +1,2 @@
+# Timed pokes for a power-on recording (DINO_POKES, frame hexaddr size value): free play on (G.$46B = 1) at power frame 100.
+100 FF846B 1 1

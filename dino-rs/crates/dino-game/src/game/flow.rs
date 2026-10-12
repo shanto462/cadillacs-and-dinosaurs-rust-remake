@@ -35,6 +35,8 @@ pub mod profiles;
 pub mod ranking;
 #[path = "flow/scene.rs"]
 pub mod scene;
+#[path = "flow/slides.rs"]
+pub mod slides;
 #[path = "flow/text.rs"]
 pub mod text;
 
