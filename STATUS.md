@@ -40,7 +40,8 @@ every phase: the port must match the original frame by frame (checked with the p
 | D1 Research: story, 8 episodes, attract, mechanics list | Done (2026-10-12), `plan/game/` |
 | T0 MAME probe tool and 104 capture recipes | Done (2026-10-12), `re/harness/probe/`, `plan/game/design/capture-recipes.md` |
 | X0 Asset dump (no emulator) and catalog | Done (2026-10-12), `re/out/assets/` (committed), `plan/game/design/asset-catalog.md` |
-| D4d Front end and story | Running |
+| D4d Front end and story | Done (2026-10-12) |
+| D3b Dinosaurs and flyers | Running |
 | D3e Pool B inventory and area walk, part 1 (Episodes 1 and 2) | Done (2026-10-12) |
 | D4c Camera, bounds, transitions, scripted scenes | Running |
 | D2a Player moves | Done (2026-10-12), `plan/game/design/D2a-player-moves.md` |
