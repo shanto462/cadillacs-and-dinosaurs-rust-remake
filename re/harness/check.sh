@@ -9,6 +9,8 @@ case "$NAME" in
   explore) S=explore; F=600 ;;
   stage1_fight) S=stage1_fight; F=1400 ;;
   obstacle) S=obstacle; F=600 ;;
+  mp2|mp3) S=mp_walk; F=300 ;;
+  mp_join) S=mp_join; F=300 ;;
   melee*) S=melee; F=820 ;;
   armed) S=armed; F=1000 ;;
   grabs_*|grabs) S=grabs; F=1200 ;;

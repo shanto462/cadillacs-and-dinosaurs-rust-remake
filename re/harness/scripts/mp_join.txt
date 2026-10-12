@@ -1,0 +1,9 @@
+# 300 frames from control+86 with boot_jack.txt.
+# P1 plays first. P2 uses its own coin slot, opens the join strip, then picks Hannah.
+0-29:1R
+40-47:2C
+90-95:2S
+130-135:2A   # confirm after the strip's initial 20-frame input lock
+200-239:1R2R
+260-279:1L2L
+280-299:

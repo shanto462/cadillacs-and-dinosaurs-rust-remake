@@ -46,13 +46,13 @@ every phase: the port must match the original frame by frame (checked with the p
 | D3b Dinosaurs and flyers | Done (2026-10-12) |
 | D2b Player state rules (HP, lives, respawn, invulnerability, damage, score) | Done (2026-10-12) |
 | D3a Human enemies (incl. poachers waking dinosaurs) | Done (2026-10-12) |
-| D3d Bosses part 2 (Morgan / Morgue, Tyrog, Slisaurs, Fessenden) | Paused (Slisaurs, tanks, Morgan written), resumes 00:35 |
+| D3d Bosses part 2 (Morgan / Morgue, Tyrog, Slisaurs, Fessenden) | Paused (Slisaurs, tanks, Morgan written), running again |
 | D2c Weapons and multiplayer | Done (2026-10-12) |
 | D3c Bosses part 1 (Vice T., Butcher, Hogg and the car, Slice) | Done (2026-10-12) |
-| D4a Items and drops | Paused (sections 0-5 written), resumes 00:35 |
-| D4b Time, rank and score | Running (agy) |
-| D4e Sound cues | Running (grok) |
-| Harness: 2 and 3 players, mid-game join | Running (codex) |
+| D4a Items and drops | Paused (sections 0-5 written), running again |
+| D4b Time, rank and score | Done (agy, reviewed) |
+| D4e Sound cues | Done (grok, reviewed) |
+| Harness: 2 and 3 players, mid-game join | Done (codex): mp2 / mp3 match MAME (0 pairs); the join needs the join task ported |
 | D2a Player moves | Done (2026-10-12), `plan/game/design/D2a-player-moves.md` |
 | D3e parts 2-3, D3f | Pending (at most 2 agents at a time) |
 | D5 Merge into the final build plan | Pending |

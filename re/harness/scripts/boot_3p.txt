@@ -1,0 +1,14 @@
+# Power on in the factory three-player, separate-coin-slot cabinet mode.
+# P1 Jack, P2 Mustapha, P3 Mess. Frames are vblanks counted from power on.
+600-607:1C
+640-647:2C
+680-687:3C
+700-705:1S
+740-745:2S   # join while character select is open
+780-785:3S
+# Cursors start on Jack, Hannah, Mustapha. Move P3 before P2 to free Mustapha.
+800-803:1L   # Jack -> Mess
+820-823:1R   # Mess -> Jack
+840-843:3R   # Mustapha -> Mess
+860-863:2R   # Hannah -> Mustapha
+900-905:1A2A3A

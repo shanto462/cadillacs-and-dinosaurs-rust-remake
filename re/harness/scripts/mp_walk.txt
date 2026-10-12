@@ -1,0 +1,8 @@
+# 300 frames from control, with boot_2p.txt or boot_3p.txt.
+# Let the opening finish, then walk every player in short bouts.
+0-89:
+90-119:1R2R3R
+140-159:1U2D3U
+180-209:1L2L3L
+230-249:1D2U3D
+250-299:

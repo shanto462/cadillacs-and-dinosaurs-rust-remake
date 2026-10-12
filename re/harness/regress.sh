@@ -6,7 +6,7 @@
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 C14="c14a c14b c14c c14d c14e c14f c14g c14h c15a"
 for ch in hannah mustapha mess; do for s in c14a c14b c14c c14d c14e c14f c14g c14h; do C14="$C14 ${s}_$ch"; done; done
-LIST=${*:-"stage1_jack stage1_late explore stage1_fight obstacle melee armed grabs grabs2 grabs3 intro c10a c10b c10c c20a c20b $C14"}
+LIST=${*:-"stage1_jack stage1_late explore stage1_fight obstacle mp2 mp3 mp_join melee armed grabs grabs2 grabs3 intro c10a c10b c10c c20a c20b $C14"}
 for n in $LIST; do
   [ -f "$ROOT/re/out/traces/$n.mame.trc" ] || { echo "$n: no recording"; continue; }
   case $n in

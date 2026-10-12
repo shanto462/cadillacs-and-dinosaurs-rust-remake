@@ -263,6 +263,44 @@ Keep presses 2 frames long and 8 frames apart for combos. A script should cover 
 `scripts/boot_jack.txt` is the boot script (frames are vblanks from power on): coin at 600, start at
 700, accept the first character at 900.
 
+### Two and three players
+
+The factory cabinet has three separate coin slots. `boot_2p.txt` selects P1 Jack (id 0) and P2
+Hannah (id 2); `boot_3p.txt` selects P1 Jack, P2 Mustapha (id 1), and P3 Mess (id 3). They coin each
+slot, start the extra players while select is open, move every cursor, then confirm every player
+with attack. Initial cursors are Jack, Hannah, Mustapha; left/right skip occupied heroes.
+
+From the repo root, record these three 300-frame scenarios (all MAME runs are headless):
+
+```sh
+DINO_BOOT=re/harness/scripts/boot_2p.txt re/harness/record.sh re/harness/scripts/mp_walk.txt mp2 300
+DINO_BOOT=re/harness/scripts/boot_3p.txt re/harness/record.sh re/harness/scripts/mp_walk.txt mp3 300
+DINO_BOOT=re/harness/scripts/boot_jack.txt DINO_SYNC=control+86 re/harness/record.sh re/harness/scripts/mp_join.txt mp_join 300
+MODE=step re/harness/port.sh re/harness/scripts/mp_walk.txt mp2 300
+MODE=step re/harness/port.sh re/harness/scripts/mp_walk.txt mp3 300
+MODE=step re/harness/port.sh re/harness/scripts/mp_join.txt mp_join 300
+for name in mp2 mp3 mp_join; do
+    re/.venv/bin/python -I re/harness/diff.py re/out/traces/$name.mame.trc re/out/traces/$name.step.trc
+done
+```
+
+`mp_walk.txt` waits for the opening to finish, then walks all players, including different vertical
+directions. `mp_join.txt` starts with Jack playing, coins P2 at frame 40, starts P2 at 90, and confirms
+Hannah with attack at 130. **Coin and start alone leave P2 in the hero strip.** The earlier failed
+400-frame join recording did accept both inputs, but never confirmed the hero; automatic selection
+needs 441 frames after the request. A separate attack or start edge confirms after the strip's first
+20 frames. No parser or input-port mapping change is needed.
+
+Verified step results: `mp2` and `mp3` each have **0 ported-class pairs and 0 global differences**;
+their MAME and port traces keep the expected 2 / 3 live players and hero ids for all 301 records
+(sync plus 300 frames). `mp_join` has **37 ported-class pairs and 15 global fields differing**.
+MAME makes P2 live at frame 130, but the port's join task is still empty
+(`dino-rs/crates/dino-game/src/game/flow/join.rs:23`; coin handling is also a stub in
+`flow/front.rs:28`). Step mode loads that joined player from the next MAME state; it does not prove
+the join transition is ported. All three complete without a panic. Unported objects and video/sound
+still differ. `re/harness/regress.sh mp2 mp3 mp_join` reruns these comparisons; they are also in its
+default list. Traces and diff reports stay under ignored `re/out/traces/`.
+
 ## Trace format
 
 `re/harness/trace.py` documents it and reads it. A trace is a header (JSON) and one record per frame;
