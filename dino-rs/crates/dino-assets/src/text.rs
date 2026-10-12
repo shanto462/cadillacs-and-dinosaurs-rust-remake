@@ -99,6 +99,8 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x9B5C, 0x03, "player voice codes by +$118 (0x9AF4)"),
     (0x9C72, 0x03, "player voice codes by +$118 (0x9C0C)"),
     (0xA53A, 0x20, "voice bank +$118 of players 1..3 by player mix (0xA502)"),
+    (0xA582, 0x20, "area music id by stage and area (0xA55A)"),
+    (0xA5C8, 0x0A, "alternate music id by stage (0xA55A)"),
     (0x24016, 0x0C, "food icon tiles (0x23FEA)"),
     (0x240A0, 0x23C, "food strings: GOOD, names, points (0x24026)"),
     (0x243FE, 0x0C, "treasure icon tiles (0x243D0)"),
