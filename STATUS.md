@@ -41,8 +41,9 @@ every phase: the port must match the original frame by frame (checked with the p
 | T0 MAME probe tool and 104 capture recipes | Done (2026-10-12), `re/harness/probe/`, `plan/game/design/capture-recipes.md` |
 | X0 Asset dump (no emulator) and catalog | Done (2026-10-12), `re/out/assets/` (committed), `plan/game/design/asset-catalog.md` |
 | D4d Front end and story | Running |
-| D3e Pool B inventory and area walk, part 1 (Episodes 1 and 2) | Running |
-| D2a Player moves | Running |
+| D3e Pool B inventory and area walk, part 1 (Episodes 1 and 2) | Done (2026-10-12) |
+| D4c Camera, bounds, transitions, scripted scenes | Running |
+| D2a Player moves | Done (2026-10-12), `plan/game/design/D2a-player-moves.md` |
 | D4c, D3b, D2b, D2c, D3a, D3c, D3d, D3e parts 2-3, D3f, D4a, D4b, D4e | Pending (at most 2 agents at a time) |
 | D5 Merge into the final build plan | Pending |
 
