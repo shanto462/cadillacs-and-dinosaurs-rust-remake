@@ -20,6 +20,8 @@ cd "$ROOT"
 export DINO_BOOT=${DINO_BOOT:-$ROOT/re/harness/scripts/boot_jack.txt}
 export DINO_INPUT=$SCRIPT DINO_FRAMES=$FRAMES
 export DINO_TRACE=$OUT/$NAME.mame.trc DINO_STATE=$OUT/$NAME.state
+# No Dock icon or focus change on macOS: SDL with dummy drivers never registers MAME as a GUI app.
+export SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy
 mame dino -rompath ".;re/mame/roms" -video none -sound none -nothrottle \
   -cfg_directory "$MAMEDIR/cfg" -nvram_directory "$MAMEDIR/nvram" \
   -snapshot_directory "$MAMEDIR/snap" -diff_directory "$MAMEDIR/diff" \
