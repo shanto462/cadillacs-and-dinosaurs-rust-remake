@@ -152,7 +152,7 @@ STUB (empty named function), MISSING (no code), UNKNOWN (original not understood
 | W18 | Screen shake on stomps, landings, the lift (0x222D6) | st 6.7 | STUB | struct and logic are documented |
 | W19 | Tile animation (water, fire) and palette cycling objects | st 2.5, 2.6 | PARTIAL | |
 | W20 | Suits of armor in the Episode 1 hall hide items | W:aqm | UNKNOWN | probably container variant 0xA |
-| W21 | Lab tanks (01, 02, 03) open and release Bludge, Hopper, Tyrog 2 (Episode 8) | M card, W:aqm | MISSING | pool B 44 |
+| W21 | Lab tanks (01, 02, 03) open and release Bludge, Hopper, Tyrog 2 (Episode 8) | M card, W:aqm, U (2026-10-12: "last episode, from background dinosaurs, 1, 3, 5, 7 these breaks and comes out, in the beginning of the stage") | MISSING | pool B 44 (three tank objects in the scripts of area 0 at X 0x30, 0x150, 0x5D0). **User:** at the start of Episode 8 the dinosaurs in the background tanks numbered 1, 3, 5 and 7 break their tanks and come out. D3e part 3 must walk Episode 8 area 0 in natural play and list every tank (number, X, which creature, what triggers the break, timing, the glass break art and sound, what the creature does after) and D3d covers any boss among them |
 | W22 | Garage props (Episode 4), doors, gates | stage scripts | MISSING | pool B 0, 1, 59 |
 | W23 | The "GO" burst arrow at the right edge and the idle hint after 600 f | M, en 8.3, ph1 | MISSING | pool B 20 is the hint |
 | W24 | Pool B classes with unknown role: 59 distinct in the scripts, 57 not ported | stage scripts | MISSING | D3 list |
