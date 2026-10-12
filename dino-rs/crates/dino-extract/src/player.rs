@@ -117,8 +117,10 @@ pub fn extract(rom: &Rom) -> PlayerData {
         ..Default::default()
     };
     for k in 0..16u32 {
-        d.speed[k as usize] = speed_table(rom, rom.u32(0x5064 + 4 * k));
-        d.speed_heavy[k as usize] = speed_table(rom, rom.u32(0x50A4 + 4 * k));
+        d.speed_ptr[k as usize] = rom.u32(0x5064 + 4 * k);
+        d.speed_heavy_ptr[k as usize] = rom.u32(0x50A4 + 4 * k);
+        d.speed[k as usize] = speed_table(rom, d.speed_ptr[k as usize]);
+        d.speed_heavy[k as usize] = speed_table(rom, d.speed_heavy_ptr[k as usize]);
         let t = rom.u32(0x53A2 + 4 * k);
         d.jump[k as usize] = std::array::from_fn(|i| {
             let [vx, ax, vy, ay, vz, az] = swords(rom, t + 12 * i as u32);

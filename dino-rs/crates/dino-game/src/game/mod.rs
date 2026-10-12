@@ -28,6 +28,7 @@ pub mod player_combat;
 pub mod prop;
 pub mod rank;
 pub mod spawn;
+pub mod trace;
 pub mod vram;
 
 use body::Body;
@@ -176,6 +177,8 @@ pub struct Game {
     pub rank: rank::Rank,
     pub hud: hud::Hud,
     pub flow: flow::Flow,
+    /// Harness only (`trace.rs`): frame pointers a loaded snapshot had that the port cannot map.
+    pub trace_unmapped: trace::Unmapped,
 }
 
 impl Game {
@@ -200,6 +203,7 @@ impl Game {
             rank: Default::default(),
             hud: Default::default(),
             flow: Default::default(),
+            trace_unmapped: Default::default(),
         }
     }
 

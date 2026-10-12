@@ -1,0 +1,28 @@
+# Phase 0 comparison: stage 1, player 1 = Jack, from the first controllable frame (sync point).
+# Frames are game frames after the sync point (600 in total). The moves that need no enemy come
+# first (the camera does not scroll, so no enemy spawns); then Jack walks right into the thugs.
+0-29:          # stand
+30-59:L        # walk left
+60-89:U        # walk up (away from the screen)
+90-119:D       # walk down
+125-126:A      # punch chain: five presses, 8 frames apart
+133-134:A
+141-142:A
+149-150:A
+157-158:A
+180-182:J      # jump straight up
+230-232:J      # jump, then attack in the air
+238-239:A
+280-282:LJ     # jump to the left
+330-331:L      # double tap left: run left
+334-370:L
+380-381:R      # double tap right: run right
+384-420:R
+421-520:R      # walk right into the thugs (a grab on contact)
+521-522:A      # knee while holding
+529-530:A
+537-538:LA     # throw
+560-561:A      # punches
+570-571:A
+580-581:A
+590-591:A

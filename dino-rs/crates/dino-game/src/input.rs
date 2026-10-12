@@ -14,8 +14,12 @@
 //! Gamepads: the first three pads drive players 1-3. D-pad or left stick moves, South (A / Cross)
 //! attacks, East (B / Circle) jumps, Start = start, Select / Back = coin.
 //!
-//! Script (`--input`): `start-end:KEYS,...` per frame for player 1, KEYS from U D L R A J,
-//! plus S (start 1) and C (coin 1). Example: `--input 0-40:R,41-45:A,46-50:,51-55:A`.
+//! Script (`--input`): `start-end:KEYS,...` per frame, KEYS from U D L R A J, plus S (start)
+//! and C (coin). Keys go to player 1; the digits 1, 2, 3 select the player for the keys that
+//! follow (`0-9:R2L3AS` = P1 right, P2 left, P3 attack and start 3). Example:
+//! `--input 0-40:R,41-45:A,46-50:,51-55:A`. `--input-file PATH` reads the same format from a
+//! file, where new lines also separate segments and `#` starts a comment (the harness scripts
+//! in `re/harness/scripts/` use it; MAME's `re/harness/record.lua` reads the same format).
 
 use gilrs::{Axis, Button, Gilrs};
 use macroquad::prelude::*;
@@ -42,21 +46,26 @@ pub struct Script {
 impl Script {
     pub fn parse(text: &str) -> Script {
         let mut segments = Vec::new();
-        for part in text.split(',').filter(|p| !p.is_empty()) {
+        let text: String = text.lines().map(|l| l.split('#').next().unwrap_or("")).collect::<Vec<_>>().join("\n");
+        for part in text.split([',', '\n']).map(str::trim).filter(|p| !p.is_empty()) {
             let (range, keys) = part.split_once(':').unwrap_or((part, ""));
             let (a, b) = range.split_once('-').unwrap_or((range, range));
             let (Ok(a), Ok(b)) = (a.trim().parse(), b.trim().parse()) else { continue };
             let mut f = Frame::default();
+            let mut p = 0;
             for c in keys.chars() {
                 match c.to_ascii_uppercase() {
-                    'R' => f.players[0] |= RIGHT,
-                    'L' => f.players[0] |= LEFT,
-                    'D' => f.players[0] |= DOWN,
-                    'U' => f.players[0] |= UP,
-                    'A' => f.players[0] |= ATTACK,
-                    'J' => f.players[0] |= JUMP,
-                    'S' => f.system |= 1,
-                    'C' => f.coins |= 1,
+                    '1' => p = 0,
+                    '2' => p = 1,
+                    '3' => p = 2,
+                    'R' => f.players[p] |= RIGHT,
+                    'L' => f.players[p] |= LEFT,
+                    'D' => f.players[p] |= DOWN,
+                    'U' => f.players[p] |= UP,
+                    'A' => f.players[p] |= ATTACK,
+                    'J' => f.players[p] |= JUMP,
+                    'S' => f.system |= 1 << p,
+                    'C' => f.coins |= 1 << p,
                     _ => {}
                 }
             }
@@ -65,11 +74,17 @@ impl Script {
         Script { segments }
     }
 
+    pub fn load(path: &str) -> Result<Script, String> {
+        std::fs::read_to_string(path).map(|t| Script::parse(&t)).map_err(|e| format!("{path}: {e}"))
+    }
+
     pub fn at(&self, frame: u32) -> Frame {
         let mut out = Frame::default();
         for (a, b, f) in &self.segments {
             if frame >= *a && frame <= *b {
-                out.players[0] |= f.players[0];
+                for p in 0..3 {
+                    out.players[p] |= f.players[p];
+                }
                 out.system |= f.system;
                 out.coins |= f.coins;
             }
@@ -146,5 +161,21 @@ impl Inputs {
             }
         }
         f
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn script_players_and_comments() {
+        let s = Script::parse("0-9:R2L3AS # comment\n10:C,\n 12-13:J");
+        let f = s.at(5);
+        assert_eq!(f.players, [RIGHT, LEFT, ATTACK]);
+        assert_eq!(f.system, 4);
+        assert_eq!(s.at(10).coins, 1);
+        assert_eq!(s.at(12).players[0], JUMP);
+        assert_eq!(s.at(11).players, [0, 0, 0]);
     }
 }

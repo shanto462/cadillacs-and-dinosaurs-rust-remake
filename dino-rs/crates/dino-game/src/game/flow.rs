@@ -196,7 +196,8 @@ impl Game {
     /// The flow-owned part of the player init 0x4D46 / 0x4D5E / 0x4D76 (0x4D8E clears the
     /// object, HP 100, rank 0x33) and 0x4DD6 (extra lives from the settings).
     pub fn flow_player_init(&mut self, i: usize) {
-        self.hud.stats[i] = super::hud::Stats { rank: 0x33, ..Default::default() };
+        self.hud.stats[i] = super::hud::Stats::default();
+        self.players[i].b10a = 0x33;
         let b = &mut self.players[i].b;
         b.hp = 100;
         b.hp_prev = 100;
@@ -208,7 +209,7 @@ impl Game {
     /// 0x4DD6: extra lives = settings C bits 0-1; also G.$4E6.
     pub fn flow_lives_init(&mut self, i: usize) {
         let n = self.flow.dip.dip_c & 3;
-        self.hud.stats[i].lives = n;
+        self.players[i].lives = n;
         self.flow.b4e6 = n;
     }
 

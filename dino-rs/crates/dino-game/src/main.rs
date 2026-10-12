@@ -1,10 +1,13 @@
 //! dino-game: native Rust port of the game logic, rendered on the GPU.
 //!
 //! Usage: `cargo run -p dino-game -- [--rom path/to/dino.zip] [--stage N] [--chars 0,2]
-//!         [--input SCRIPT] [--viewer] [--view char,set,anim] [--screenshot out.png --frames N]`
-//! See `input.rs` for keys and the input script format.
+//!         [--input SCRIPT | --input-file PATH] [--viewer] [--view char,set,anim]
+//!         [--screenshot out.png --frames N] [--load-state FILE] [--trace FILE --frames N]`
+//! See `input.rs` for keys and the input script format, `harness.rs` and `re/harness/README.md`
+//! for `--load-state` (start from a MAME snapshot) and `--trace` (headless run for the diff).
 
 mod game;
+mod harness;
 mod input;
 mod present;
 mod render;
@@ -36,6 +39,8 @@ struct Args {
     stage: u8,
     chars: Vec<u8>,
     script: Option<input::Script>,
+    trace: Option<String>,
+    load_state: Option<String>,
 }
 
 fn args() -> Args {
@@ -52,26 +57,60 @@ fn args() -> Args {
         view,
         stage: value("--stage").and_then(|v| v.parse().ok()).unwrap_or(0),
         chars: value("--chars").map(|v| v.split(',').filter_map(|c| c.parse().ok()).collect()).unwrap_or(vec![0]),
-        script: value("--input").map(|v| input::Script::parse(&v)),
+        script: match value("--input-file") {
+            Some(p) => Some(input::Script::load(&p).unwrap_or_else(|e| {
+                eprintln!("error: {e}");
+                std::process::exit(1);
+            })),
+            None => value("--input").map(|v| input::Script::parse(&v)),
+        },
+        trace: value("--trace"),
+        load_state: value("--load-state"),
     }
 }
 
-#[macroquad::main(window_conf)]
-async fn main() {
-    let args = args();
-    let assets = match Rom::locate().and_then(|p| dino_extract::extract(&p)) {
-        Ok(a) => &*Box::leak(Box::new(a)),
+fn load_assets() -> &'static dino_assets::AssetPack {
+    match Rom::locate().and_then(|p| dino_extract::extract(&p)) {
+        Ok(a) => Box::leak(Box::new(a)),
         Err(e) => {
             eprintln!("error: {e}");
             std::process::exit(1);
         }
-    };
+    }
+}
+
+fn main() {
+    let args = args();
+    if let Some(trace) = &args.trace {
+        // Headless harness run: no window.
+        let frames = std::env::args().any(|a| a == "--frames").then_some(args.frames).unwrap_or(600);
+        let r = harness::run(load_assets(), trace, args.load_state.as_deref(), args.stage, &args.chars, args.script.as_ref(), frames);
+        if let Err(e) = r {
+            eprintln!("error: {e}");
+            std::process::exit(1);
+        }
+        return;
+    }
+    macroquad::Window::from_config(window_conf(), windowed(args));
+}
+
+async fn windowed(args: Args) {
+    let assets = load_assets();
     let mut gpu = Gpu::new(assets);
 
     let mut viewer = args.viewer.then(|| viewer::Viewer::new(assets, args.view));
     let mut inputs = input::Inputs::new();
     let mut game = game::Game::new(assets);
-    game.start_stage(args.stage, &args.chars);
+    match &args.load_state {
+        Some(p) => match harness::load_state(&mut game, p) {
+            Ok(warnings) => warnings.iter().for_each(|w| eprintln!("load-state: {w}")),
+            Err(e) => {
+                eprintln!("error: {e}");
+                std::process::exit(1);
+            }
+        },
+        None => game.start_stage(args.stage, &args.chars),
+    }
     let mut tick_no = 0u32;
     if viewer.is_some() {
         gpu.upload_palettes(&viewer::Viewer::palettes(assets).words);
@@ -97,12 +136,14 @@ async fn main() {
                     let mut f = inputs.poll();
                     if let Some(script) = &args.script {
                         let s = script.at(tick_no);
-                        f.players[0] |= s.players[0];
+                        for p in 0..3 {
+                            f.players[p] |= s.players[p];
+                        }
                         f.system |= s.system;
                         f.coins |= s.coins;
                     }
                     game.w.input = f.players;
-                    game.w.system = f.system;
+                    game.w.system = f.system | 0x08; // 0x738 quirk, see harness.rs
                     game.w.coins = f.coins;
                     game.tick();
                     tick_no += 1;

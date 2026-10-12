@@ -1,0 +1,5 @@
+# Power on to stage 1 with player 1 as Jack (used by record.sh before the sync point).
+# Frames are vblanks counted from power on.
+600-607:C   # coin 1
+700-705:S   # start 1
+900-905:A   # choose the character under the cursor (Jack is the first position)

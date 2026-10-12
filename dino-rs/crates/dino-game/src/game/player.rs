@@ -227,16 +227,27 @@ impl Game {
 
     /// 0x5036: select the walk / run speed table (class 0, 4, 8, 12). The table is kept as the
     /// address of its pointer slot (0x5064 + 4 * index, 0x50A4.. while carrying 0x20A).
+    /// 0x5036: +$64 = long at 0x5064 (0x50A4 while carrying object 0x20A) + class + $20, i.e.
+    /// the ROM pointer of the speed table, as the original stores it.
     fn player_set_speed_class(&mut self, i: usize, class: u16) {
+        let pd = &self.assets.player;
         let p = &mut self.players[i];
-        let idx = (class.wrapping_add(p.b.k20) / 4) as u32 & 15;
-        p.b.speed_table = if p.item_type == 0x20A { 0x50A4 } else { 0x5064 } + 4 * idx;
+        // ext.w d0; add d0,d0; add d0,d0; add $20,d0: entry = class + character.
+        let idx = (class.wrapping_mul(4).wrapping_add(p.b.k20) / 4) as usize & 15;
+        p.b.speed_table = if p.item_type == 0x20A { pd.speed_heavy_ptr[idx] } else { pd.speed_ptr[idx] };
     }
 
+    /// Entry `off` (byte offset / 4) of the speed table at +$64.
     fn player_speed_entry(&self, i: usize, off: u8) -> [i16; 2] {
         let t = self.players[i].b.speed_table;
-        let idx = ((t & 0x3F) / 4) as usize & 15;
-        let tab = if t >= 0x50A4 { &self.player_pd().speed_heavy[idx] } else { &self.player_pd().speed[idx] };
+        let pd = self.player_pd();
+        let tab = match pd.speed_ptr.iter().position(|&p| p == t) {
+            Some(k) => &pd.speed[k],
+            None => {
+                let k = pd.speed_heavy_ptr.iter().position(|&p| p == t).unwrap_or_else(|| panic!("player speed table {t:#x} unknown"));
+                &pd.speed_heavy[k]
+            }
+        };
         tab[(off as usize / 4) & 7]
     }
 
@@ -299,7 +310,8 @@ impl Game {
     /// 0x5364: jump vector by class (0 standing, 4 running, 8 wall, 12 heavy) and direction $22.
     fn player_set_jump_velocity(&mut self, i: usize, class: u16) {
         let p = &mut self.players[i];
-        let k = (class.wrapping_add(p.b.k20) / 4) as usize & 15;
+        // add d0,d0; add d0,d0; add $20,d0 (0x5364): entry = class + character.
+        let k = (class.wrapping_mul(4).wrapping_add(p.b.k20) / 4) as usize & 15;
         let d = p.b.dir;
         let e = if (d as i8) < 0 { 0 } else { (d as usize / 4) + 1 };
         let v = self.assets.player.jump[k][e.min(8)];
@@ -417,8 +429,8 @@ impl Game {
         p.b.live = 1;
         self.players[i] = p;
         self.player_power_factor(i); // 0x11738 (jsr at 0x4DBA)
-        // 0x4DD6: lives from the DIP switches (G.$777C & 3). TODO(flow port): real DIP value.
-        self.players[i].lives = 2;
+        // 0x4DD6: lives from the settings (G.$777C & 3).
+        self.flow_lives_init(i);
         self.player_start_position(i);
     }
 

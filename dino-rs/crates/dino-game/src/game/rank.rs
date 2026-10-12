@@ -23,13 +23,11 @@ pub struct Rank {
     /// +$10 / +$14 pending rank-downs and their 1200-frame timer.
     pub downs: u16,
     pub downs_t: u16,
-    /// +$16 cleared at area start (no reader found).
-    pub w16: u16,
     /// +$18 G.$604, +$1A G.$606 countdowns; +$1C G.$608 calm period (aggression held at 0).
     pub w604: u16,
     pub w606: u16,
     pub calm: u16,
-    /// G.$602 rank system freeze.
+    /// +$16 = G.$602 rank system freeze (tested by 0x186CC; cleared at game and area start).
     pub freeze: u16,
     /// G.$4F6 frames waited at the title with credits (written by the system task 0x1827A).
     pub w4f6: u16,
@@ -58,7 +56,7 @@ impl Game {
         self.rank.ups_t = 0;
         self.rank.downs = 0;
         self.rank.downs_t = 0;
-        self.rank.w16 = 0;
+        self.rank.freeze = 0;
         let w = self.rank.w4f6;
         // 0x17FA8: bands at 720 / 3600 / 10800 frames (unsigned compares).
         let band = if w < t.u16(0x180B4, 0) {
@@ -102,7 +100,7 @@ impl Game {
         let r = &mut self.rank;
         r.force_x = 0;
         r.force_val = 0;
-        r.w16 = 0;
+        r.freeze = 0;
         r.w604 = 0;
         r.w606 = 0;
         r.calm = 0;

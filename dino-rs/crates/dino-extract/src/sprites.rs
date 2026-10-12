@@ -25,6 +25,9 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x34892, // enemy family init 0x3388A, variant 0 (palette 13)
     0x34B90, // same family, palette 14
     0x34E7C, // same family, palette 26
+    0x2E7BC, // hit reactions (table 0x2E68C by +$84) of the class 2 variants: name 0
+    0x2E928, // name 1
+    0x2EA94, // name 0x1A
 ];
 
 pub fn extract(rom: &Rom) -> SpriteData {

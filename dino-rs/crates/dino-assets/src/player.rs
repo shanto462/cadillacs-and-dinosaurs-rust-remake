@@ -41,6 +41,9 @@ pub struct PlayerData {
     pub speed: [[[i16; 2]; 8]; 16],
     /// 0x50A4: the same while carrying object 0x20A.
     pub speed_heavy: [[[i16; 2]; 8]; 16],
+    /// The ROM pointers in those two tables (what 0x5036 stores in obj+$64).
+    pub speed_ptr: [u32; 16],
+    pub speed_heavy_ptr: [u32; 16],
     /// 0x53A2: jump vectors, index `class/4*4 + character`, then entry 0 = no direction,
     /// 1..8 = U, UR, R, DR, D, DL, L, UL.
     pub jump: [[JumpVector; 9]; 16],

@@ -14,7 +14,8 @@
 //! * `hud_add_score` (0x10036): add a BCD score value to the player credited by `who` (+$02).
 //! * `hud_life_bar(i)` (0x16446): redraw player i's vitality bar after its HP changed.
 //! * `g.hud.boss` (G.-$70BC): a boss sets it to its own handle; the idle HUD then shows its bar.
-//! * `g.hud.stats[i]`: the player fields the HUD and flow own (score, lives, rank, extend).
+//! * Score, lives, high score place: `g.players[i]` (+$100, +$A3, +$10A); `g.hud.stats[i]`
+//!   keeps +$110 and +$114.
 
 use super::vram::PaletteRam;
 use super::{Game, Handle, Slot, slot_of};
@@ -22,22 +23,13 @@ use super::{Game, Handle, Slot, slot_of};
 /// Scroll1 VRAM base address.
 const S1: u32 = 0x908000;
 
-/// Player fields used by the HUD and the flow, kept here (the original stores them in the
-/// player object at the given offsets).
+/// Player fields only the HUD and the flow use, kept here (the original stores them in the
+/// player object at the given offsets). Score (+$100), lives (+$A3), high score place (+$10A),
+/// extra life given (+$10E) and +$11C are fields of `Player` (one copy, as in the original).
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Stats {
-    /// +$100 score, 8 BCD digits.
-    pub score: u32,
     /// +$110 score when the extra-life check last ran (0x6B98).
     pub score_prev: u32,
-    /// +$A3 extra lives.
-    pub lives: u8,
-    /// +$10A place in the high score table (0x33 = not placed; shown when <= 10).
-    pub rank: u8,
-    /// +$10E extra life given (once per player), +$11C set to 0xF0 with it. The player state
-    /// code reads both [U what for].
-    pub extend: u8,
-    pub b11c: u8,
     /// +$114 low vitality blink active.
     pub low_hp: u8,
 }
@@ -444,9 +436,9 @@ impl Game {
             return;
         }
         let i = (who as usize).min(2); // 0x10046: 0 -> P1, 1 -> P2, anything else -> P3
-        let s = &mut self.hud.stats[i];
-        let (v, carry) = bcd_add32(s.score, value);
-        s.score = if carry { 0x9999_9999 } else { v };
+        let p = &mut self.players[i];
+        let (v, carry) = bcd_add32(p.score, value);
+        p.score = if carry { 0x9999_9999 } else { v };
         self.hud.score_dirty = true;
         self.hud.score_dirty_p[i] = true;
     }
@@ -486,7 +478,7 @@ impl Game {
         let n = if self.hud_two_players() { 2 } else { 3 };
         for i in 0..n {
             if self.hud.score_dirty_p[i] {
-                self.hud_draw_score(self.hud_score_pos(i), self.hud.stats[i].score);
+                self.hud_draw_score(self.hud_score_pos(i), self.players[i].score);
                 self.hud.score_dirty_p[i] = false;
                 self.hud_extend_check(i);
             }
@@ -500,7 +492,7 @@ impl Game {
         let n = if self.hud_two_players() { 2 } else { 3 };
         for i in 0..n {
             if self.players[i].b.live != 0 {
-                self.hud_draw_score(self.hud_score_pos(i), self.hud.stats[i].score);
+                self.hud_draw_score(self.hud_score_pos(i), self.players[i].score);
                 self.hud_extend_check(i);
             }
         }
@@ -510,10 +502,10 @@ impl Game {
     /// (once per player: +$10E).
     fn hud_extend_check(&mut self, i: usize) {
         let t = &self.assets.text;
-        let s = self.hud.stats[i];
-        let prev = s.score_prev;
-        self.hud.stats[i].score_prev = s.score;
-        if s.extend != 0 {
+        let prev = self.hud.stats[i].score_prev;
+        let score = self.players[i].score;
+        self.hud.stats[i].score_prev = score;
+        if self.players[i].b10e != 0 {
             return;
         }
         let list = 0x6BFE + t.u16(0x6BFE, self.flow.extend_sel() as u32) as u32;
@@ -521,13 +513,13 @@ impl Game {
         while prev >= t.u32(list, 4 * k) {
             k += 1;
         }
-        if s.score < t.u32(list, 4 * k) {
+        if score < t.u32(list, 4 * k) {
             return;
         }
-        let st = &mut self.hud.stats[i];
-        st.extend = 1;
-        st.b11c = 0xF0;
-        st.lives = st.lives.wrapping_add(1);
+        let p = &mut self.players[i];
+        p.b10e = 1;
+        p.b11c = 0xF0;
+        p.lives = p.lives.wrapping_add(1);
         let lives = self.hud_lives_sum();
         let (b4cf, b4e6) = (self.flow.b4cf(), self.flow.b4e6);
         self.rank_event_1843c(lives, b4cf, b4e6);
@@ -538,7 +530,7 @@ impl Game {
 
     /// Sum of +$A3 of the present players (0x1843C).
     pub fn hud_lives_sum(&self) -> u8 {
-        (0..3).filter(|&i| self.players[i].b.live != 0).fold(0u8, |a, i| a.wrapping_add(self.hud.stats[i].lives))
+        (0..3).filter(|&i| self.players[i].b.live != 0).fold(0u8, |a, i| a.wrapping_add(self.players[i].lives))
     }
 
     // ---------------------------------------------------------------- rank ("1ST" ... "10TH")
@@ -557,7 +549,7 @@ impl Game {
         let t = &self.assets.text;
         let mut a = t.u32(0x15ACE, if self.hud_two_players() { 0xC } else { 0 } + 4 * i as u32);
         self.hud_rank_compute(i);
-        let r = self.hud.stats[i].rank;
+        let r = self.players[i].b10a;
         if (r as i8) > 10 {
             for _ in 0..4 {
                 self.hud_put(a, 0x20, 0x180);
@@ -585,22 +577,22 @@ impl Game {
     /// one place down for each present player with a higher score.
     fn hud_rank_compute(&mut self, i: usize) {
         loop {
-            let r = self.hud.stats[i].rank as i8;
+            let r = self.players[i].b10a as i8;
             let k = r.wrapping_sub(2);
             if k < 0 {
                 break;
             }
             let e = self.hud.hiscores.get(k as usize).map(|e| e.score).unwrap_or(0);
-            if (self.hud.stats[i].score as i32) < (e as i32) {
+            if (self.players[i].score as i32) < (e as i32) {
                 break;
             }
-            self.hud.stats[i].rank = (r - 1) as u8;
+            self.players[i].b10a = (r - 1) as u8;
         }
-        let me = self.hud.stats[i].score as i32;
+        let me = self.players[i].score as i32;
         // Table 0x15A98: the two other players, in index order.
         for o in (0..3).filter(|&o| o != i) {
-            if self.players[o].b.live != 0 && me < self.hud.stats[o].score as i32 && (self.hud.stats[i].rank as i8) <= 0x32 {
-                self.hud.stats[i].rank += 1;
+            if self.players[o].b.live != 0 && me < self.players[o].score as i32 && (self.players[i].b10a as i8) <= 0x32 {
+                self.players[i].b10a += 1;
             }
         }
     }
@@ -630,7 +622,7 @@ impl Game {
         self.hud_put(a, 0x3D, 0x180);
         a += 0x80;
         // 0x163E4 lives: the count is the tile code.
-        self.hud_put(a, self.hud.stats[i].lives as u16, 0x180);
+        self.hud_put(a, self.players[i].lives as u16, 0x180);
         a -= 0x7C;
         // 0x163F4 name (no attribute byte in these strings).
         let name = self.assets.text.table_string(0x1641E, chr);

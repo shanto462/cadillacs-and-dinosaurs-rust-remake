@@ -135,12 +135,21 @@ impl Game {
 
     /// 0xFFC8: add score `table[off]` to player `i` (byte offset `off` from attack byte 5).
     pub fn player_add_score(&mut self, i: usize, off: u8) {
-        // Scripted scenes with G.$4DE == 1 give no score (G.$4DE: flow port).
+        // No score in a scripted scene of kind 1 (G.$4DD, G.$4DE), nor for +$02 < 0.
+        if self.w.scripted != 0 && self.spawn.g.b4de == 1 {
+            return;
+        }
+        let who = self.players[i].b.who;
+        if (who as i8) < 0 {
+            return;
+        }
+        // HUD redraw flags: -$7133 / -$7132 / -$7131 by +$02, then -$7134.
+        self.hud.score_dirty_p[(who as usize).min(2)] = true;
+        self.hud.score_dirty = true;
         let k = (off as i8 as isize + 4) / 4 - 1;
         let Some(&v) = (k >= 0).then(|| self.assets.player.score_bcd.get(k as usize)).flatten() else { return };
         let p = &mut self.players[i];
         p.score = bcd_add(p.score, v);
-        // HUD redraw flags -$7131..-$7134 (HUD port reads +$100 every frame).
     }
 
     /// Enemy +$87 custom hit handler flag. TODO(enemy port): read `Enemy` once the field exists.

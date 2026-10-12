@@ -604,6 +604,9 @@ impl Game {
         let i = p as usize & 3;
         let i = if i == 3 { 0 } else { i }; // table 0x2B002 maps index 3 to P1
         self.players[i].score = bcd_add_long(self.players[i].score, v);
+        // HUD redraw flags (-$7134 and the player's -$7133 / -$7132 / -$7131).
+        self.hud.score_dirty = true;
+        self.hud.score_dirty_p[i] = true;
     }
 
     // ------------------------------------------------------------------ kill-all, dying

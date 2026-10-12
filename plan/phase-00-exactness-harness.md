@@ -5,8 +5,13 @@ later phase.
 
 ## Needs
 
-- MAME command-line build with Lua scripting (Homebrew `mame`, 0.289). The installed MAME4mac app
-  is a GUI port and cannot run scripts headless.
+- MAME command-line build with Lua scripting (Homebrew `mame`, 0.289, installed 2026-10-12).
+  Decision: the installed MAME4mac app ignores command-line options (checked: `-listroms` and
+  `-autoboot_script` do nothing), so it cannot record traces headless. MAME4mac stays the tool for
+  playing the original by hand next to the port; the CLI MAME records the reference traces.
+- The user's set lacks 6 small PLD dumps and the QSound DSP ROM that MAME 0.289 requires; zero-filled
+  placeholders of the right size live in `re/mame/roms/` (git-ignored). MAME warns and runs. MAME's
+  audio is not authentic with the placeholder DSP ROM; traces of game state are not affected.
 - The user's `dino.zip` (MAME set "dino").
 
 ## Tasks

@@ -43,6 +43,7 @@ pub fn extract(rom: &Rom) -> StageData {
             .collect();
         // Camera events (0x2099A): stage 2 uses its own table at 0x22B9E.
         let mut ev = if stage == 2 { 0x22B9E } else { 0x21B2A + rom.u16(0x21B2A + stage * 2) as u32 };
+        let camera_events_addr = ev;
         let mut camera_events = Vec::new();
         loop {
             let x = rom.u16(ev);
@@ -80,7 +81,7 @@ pub fn extract(rom: &Rom) -> StageData {
                 }
             })
             .collect();
-        data.stages.push(Stage { scroll2_screen_words: screens, scroll2_blocks: blocks, camera_events, areas });
+        data.stages.push(Stage { scroll2_screen_words: screens, scroll2_blocks: blocks, camera_events, camera_events_addr, areas });
     }
     data
 }

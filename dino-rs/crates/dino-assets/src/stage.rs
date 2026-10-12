@@ -66,6 +66,8 @@ pub struct Stage {
     /// Scroll2 blocks: 4 cells each, column-major [(c0,r0), (c0,r1), (c1,r0), (c1,r1)].
     pub scroll2_blocks: Vec<[Cell; 4]>,
     pub camera_events: Vec<CameraEvent>,
+    /// ROM address of `camera_events[0]` (the scroll2 controller's +$56 points into this table).
+    pub camera_events_addr: u32,
     pub areas: Vec<Area>,
 }
 

@@ -68,9 +68,11 @@ Handlers (table 0x237E6) and spawn sites found (`site -> spawner routine <- call
 
 ## Next steps
 
-1. Read the per-group specs and draft Rust that background agents were writing when the session
-   stopped: `<scratchpad>/fxspec/group_a..g.md/.rs` (scratchpad of this session; API they target:
-   `fxspec/api.md`). Check each against the disassembly before using it.
+1. Analyse the classes above. Seven background analysis agents (groups A-G, split as in the list
+   above, pool D with G) were stopped at wrap-up before writing any spec; only scratch notes exist
+   in `<scratchpad>/fxspec/` (`api.md` = the Rust API the drafts should target, `spawn_sites.txt`,
+   `work/`). Restart that analysis (one agent per group, specs + draft Rust into a scratch folder),
+   then check each draft against the disassembly before porting.
 2. Infrastructure the drafts expect (not written yet): `Effect.ext: [u8; 0x80]` with
    `u8/w/iw/l` accessors (move the current `owner58/owner_class/w5c/owner60/off_x/off_y` fields
    into it), `fx_load_full/fx_start_full/fx_tick_full` (0x1236/0x120E/0x121E on effect frames),
