@@ -3696,7 +3696,14 @@ impl Game {
             p.lives -= 1;
             p.b.live = 1;
             p.b.set_state(0);
-            // 0x184E2 rank adjust (enemy / rank port).
+            // 0x1BFEC: 0x184E2 reads +$A3, so the spent life is put back for that call.
+            p.lives = p.lives.wrapping_add(1);
+            let player_a3 = p.lives;
+            let lives = self.hud_lives_sum();
+            let (b4cf, b4e6) = (self.flow.b4cf(), self.flow.b4e6);
+            self.rank_event_continue(player_a3, lives, b4cf, b4e6); // 0x1BFF0
+            self.players[i].lives = self.players[i].lives.wrapping_sub(1); // 0x1BFF6
+            let p = &mut self.players[i];
             let facing = p.b.facing;
             p.b.set_state(0x0002_0000); // 0x4DE8
             p.b.hp = 100;
@@ -3709,7 +3716,11 @@ impl Game {
             let p = &mut self.players[i];
             p.b.live = 0;
             self.player_count_players();
-            // 0x184E2, 0x1842C: rank and continue handling (flow port).
+            let player_a3 = self.players[i].lives;
+            let lives = self.hud_lives_sum();
+            let (b4cf, b4e6) = (self.flow.b4cf(), self.flow.b4e6);
+            self.rank_event_continue(player_a3, lives, b4cf, b4e6); // 0x1C020
+            self.rank_event_1842c(); // 0x1C026
         }
     }
 

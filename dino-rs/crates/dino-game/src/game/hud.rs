@@ -522,7 +522,7 @@ impl Game {
         p.lives = p.lives.wrapping_add(1);
         let lives = self.hud_lives_sum();
         let (b4cf, b4e6) = (self.flow.b4cf(), self.flow.b4e6);
-        self.rank_event_1843c(lives, b4cf, b4e6);
+        self.rank_event_1843c(lives, b4cf, b4e6); // 0x6BDC
         // 0xA4CA: "extra life" sound, panned by the player's screen X.
         self.snd_extra_life();
         self.hud_player_block(i);
