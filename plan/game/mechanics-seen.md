@@ -274,3 +274,38 @@ STUB (empty named function), MISSING (no code), UNKNOWN (original not understood
 | P59 | The hero can be chosen at three moments only: select, join strip, continue strip | M, R | STUB | 6.5 (answers P41) (was P45 in D4d-front-end-and-story.md)|
 | F41 | Story panels: Episodes 4 and 7 show the first unused hero as the speaker, Episodes 4 and 5 use the first player's hero name, Episode 6 shows the first player's portrait (blank for Hannah alone); attack skips any panel | M: d4d-b21, R: 0xE034, 0xE0AA, 0xDFCC | MISSING | 9.3 |
 | P60 | The continue screen keeps the level frozen and restores it after a continue (about 41 frames after the press) | M: d4d-b3/k-coin-late | MISSING | 6.3 (was P46 in D4d-front-end-and-story.md)|
+
+### From `design/D4c-camera-flow-transitions.md` (D4c camera, bounds, transitions), 30 rows
+
+| ID | Mechanic | Source | Port | Notes |
+| --- | --- | --- | --- | --- |
+| T01 | Stage 2 (Episode 3) has its own camera controller 0x22398 and mode table 0x2250A; its 10 events at X 0x300 to 0x2D00 are locks (mode 2), mode 8 is the car drive | R 0x22398, 0x2250A, 0x22B9E; M e3footn, car1 | MISSING | the port runs the standard table for it: wrong |
+| T02 | Camera never leaves the leftmost player behind; an idle hero holds the camera; push line 0xC0 (1P) or 0xE8 (2P, 3P) unless the event has its own | R 0x20A22; M lag2, lag3 | DONE | |
+| T03 | Hero clamp: X in [camX + 0x10, camX + 0x16F], screen depth Z + floor - camY in [0x10, 0x9F], skipped while `G.$506 != 0` | R 0x4FCE; M clampR, d*_*_* | DONE | |
+| T04 | Walkable depth per area is 64 px in most areas (screen band 16 to 79), 95 to 114 px in the garage, sewers, cave and yard; table in 3.2 | M d4c-b2/d* | DONE (terrain) | test values for terrain |
+| T05 | Drop in position: X = camX + 96 (1P), 64 and 128 (2P), 48, 96, 144 (3P); Z = camY - floor + 32, 48, 64; height floor + 0x100 | R 0x62D6, 0x638C | DONE | |
+| T06 | Wave lock ends: type 0 sets `go` at once, type 2 starts the area end script (0x1D95E), type 4 the boss area script (0x1DAC4); 30 frame delay at the end; all heroes must be in the normal ground state | R 0x7B464 | DONE except the scripts | |
+| T07 | The area end script releases the wave lock with its own first GO record (96 frames after the wave end when no items lie around, up to 440 with items or containers) | M e1a0, l_e1a0_k2 | MISSING | |
+| T08 | Scripted control: 26 scripts, 41 actions, 3 entry points, table 0x1E6FC | R 0x1DB5E and 5.4, 5.5 | MISSING | |
+| T09 | Scripted heroes cannot be hurt (enemy attack passes off), cannot pick up when `G.$506 = 1`, drop a carried barrel | R 0x10546, 0x191C4 | DONE (readers), no setter | |
+| T10 | Item waits (actions 0x2A, 0x38): the pad works for 120 to 240 frames after a wave end and after a boss death | R 0x1DE6C, 0x1DE86 | MISSING | |
+| T11 | Fade = 16 steps of 1 vblank at area end (out) and start (in); mode 0x12 is a hard cut with 2 to 4 black frames; sub-area switch has no fade | R spec 2.4; M e4a0n, n1a1, e2a0n | DONE / PARTIAL | |
+| T12 | Sub-area switch (camera mode 8) resets stage time, floor, spawn lists, player count, creates the music object class 96; it never places the heroes and never runs a start script | R 0x20E78, 0xAAE2, 0xACE0, 0x9236C | PARTIAL | corrects D3e (class 96 is not created at every area start) |
+| T13 | Area start (0xAA0E): place heroes (0x4E0A), start script (0x1DA10), pools, items leave, rank, time, floor, spawn lists | R 0xAA0E | PARTIAL | |
+| T14 | GO burst (class 20): 3 blinks of 30 frames on, 5 off, sound 0x3E; forced at the start of area end scripts; idle hint 180 frames after a lock ended (camera moved < 0x80), then every 600 + 105 frames | R 0x7BB68; M go1, go2 | MISSING | no GO at the end of a wave |
+| T15 | Openings: control after 648 (Ep 1), 573 (Ep 2), 321 (Ep 3, 5 to 8), 894 (Ep 4) game frames; the map card is the first 255 | M o1 to o8 | MISSING | |
+| T16 | Episode 1 opening pans the camera at 3 px per frame while the heroes stand at X 0x420, 0x410, 0x400; clamp off | M o1, o1p3 | MISSING | |
+| T17 | Episodes 2 and 4 start with the heroes riding the Cadillac (state 0x432) and jumping out | M o2, o4 | MISSING | |
+| T18 | Episode 4 opening waits for `G.$4FC` to clear (set at the start, cleared at gf 888) | M o4 | MISSING | |
+| T19 | Boss death chain: 0xACEE, slow motion, class 22 calls 0x1D95E, `G.$4E3` after the script, tally, story panel, next opening; 94 + 278 + 951 game frames on Vice | M b1c | PARTIAL | |
+| T20 | Walk off after a boss: wait for items, barrier, pose (sound 0x18), hold right 300 with clamp off (not Episode 1 and 8) | R scripts 3, 12, 20, 24 | MISSING | |
+| T21 | Car section: radio makes car (HP 120) at 16, stops at 105, heroes jump aboard 284 to 332, `G.$518 = 1` and camera mode 8 at 364, 11 px per frame, clock frozen, ends when the car's HP is 0 (camera mode 3 at that X) | M car1, car3 | MISSING | |
+| T22 | Camera mode 8 chase: camX += clamp(car X - (camX + 0xC0), 8, 20) | R 0x22A68 | MISSING | |
+| T23 | Lift ride restarts from rest after every lock (sound 0x86, shake 2, acceleration 6/256 per frame squared up to 6 px per frame); stops at Y 0x3000, 0x1E00, 0x1400, 0x800; end at 0 | R 0x210E0; M e7a1n | PARTIAL | |
+| T24 | Row scroll words equal the formula of the stage spec (verified at 3 camera positions) | M rows_* | MISSING | |
+| T25 | Screen shake: offsets -s, +s (3), -(s-1) (3), ... +1 (3), length 6 s - 2 frames; 29 requesters, strengths 1 to 4 | R 0x222D6; M shake1 to 4 | STUB | |
+| T26 | Stage clock and rank are frozen while `G.$4DD != 0` or `G.$4D5 = 1` and in car mode | M e4a0n, car2 | DONE (`rank.rs`) | |
+| T27 | `G.$4D4` (stage clear flag) revives a hero in the death sequence with 1 HP | R 0x1BF82 | MISSING | [I] |
+| T28 | Probe limit: `jump N A X` keeps wave controllers before X; stale controller can send `go` | M hallwin, e1a1n | n/a | |
+| T29 | Original hang (game frame counter stops) with kill-all held in Episode 7 | M e7a1, l_e7a2_k19 | n/a | investigate |
+| T30 | Ep 8 area 3 start row of table 0x4E56 is missing; a sub-area never uses it | R 0x4E56, 0x4FCE | n/a | |

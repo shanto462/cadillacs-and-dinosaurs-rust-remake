@@ -43,7 +43,8 @@ every phase: the port must match the original frame by frame (checked with the p
 | D4d Front end and story | Done (2026-10-12) |
 | D3b Dinosaurs and flyers | Running |
 | D3e Pool B inventory and area walk, part 1 (Episodes 1 and 2) | Done (2026-10-12) |
-| D4c Camera, bounds, transitions, scripted scenes | Running |
+| D4c Camera, bounds, transitions, scripted scenes | Done (2026-10-12) |
+| D2b Player state rules (HP, lives, respawn, invulnerability, damage, score) | Running |
 | D2a Player moves | Done (2026-10-12), `plan/game/design/D2a-player-moves.md` |
 | D4c, D3b, D2b, D2c, D3a, D3c, D3d, D3e parts 2-3, D3f, D4a, D4b, D4e | Pending (at most 2 agents at a time) |
 | D5 Merge into the final build plan | Pending |
