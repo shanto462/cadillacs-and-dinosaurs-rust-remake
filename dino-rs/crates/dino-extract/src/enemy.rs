@@ -142,9 +142,9 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x2E724, 0xA0, "grabbed animation tables by +$84"),
     (0x2D0E0, 0x15AC, "grabbed enemy placement (0x2B35A): 4 pointers by the player's +$20, each a word table by the enemy's +$84 / 2 whose rows (dx, dy, animation, facing; 8 bytes) are indexed by the player's frame attach index"),
     // drops and items
-    (0xB64D2, 0xE40, "drop rows: fallback 0xB64D2, containers 0xB64F2, enemies 0xB6D12"),
+    (0xB64D2, 0xFA0, "drop rows: fallback 0xB64D2, containers 0xB64F2, enemies 0xB6D12 (rows 0..0x3A; Episode 1 wave 4 uses 0x30, D4a IT-P1)"),
     (0x28B10, 0x48, "food heal and score offset"),
-    (0x2A164, 0x10, "treasure score offsets"),
+    (0x2A164, 0x11, "treasure score offsets (index 0..16: treasure 17 reads index 16, D4a IT-P1)"),
     // pool E: containers, hand positions, guns
     (0x29860, 0x0E, "container thrown attack id by variant"),
     (0x2986E, 0xF0, "container throw velocities: table of 4 pointers, then 4 x 7 records (vx, ax, vy, ay)"),
