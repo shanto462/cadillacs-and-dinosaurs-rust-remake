@@ -33,8 +33,9 @@ phase: the port must match the original frame by frame (checked with the phase 0
 | 1 Terrain collision | Done (2026-10-12), 0 differences against the 68000 code |
 | 2 Items (pool E) | Done (2026-10-12), no item differences in step runs |
 | 3 Weapons and pickup (player side) | Done (2026-10-12), no player or item differences in 15 step runs |
-| 3b Enemy grab (enemy_grabbed 0x2B35A) | In progress |
-| 4-9 Enemies, Vice T., join prompts, leftovers, stage flow, exactness pass | Pending |
+| 3b Enemy grab (enemy_grabbed 0x2B35A), throw into enemies | Done (2026-10-12), grab differences gone |
+| 4 Remaining stage 1 enemies and props | In progress |
+| 5-9 Vice T., join prompts, leftovers, stage flow, exactness pass | Pending |
 
 ## Next steps (in order)
 

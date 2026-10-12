@@ -23,13 +23,22 @@ Code: `dino-rs/crates/dino-game/src/game/{enemy.rs, enemy_combat.rs, spawn.rs, r
 - **enemy_combat.rs**: pass 0x10F96 -> 0x11008 player hits enemy (with 0x2BA2A damage scaling),
   pass 0x115B0 loop + box test (call to the player port commented), hit reaction 0x2A606 types
   0/2/4/6/8/A/C/E..18/1A/1C, get-up / dizzy 0x2AF86..0x2B2B6, wall slump, recover 0x2B54E.
+- **Held enemy (phase 1 task 3b)**: `enemy_grabbed` 0x2B35A (sub 6): act 0 queues the HUD bar (0x16B36, kind 1) and
+  falls into act 2, act 2 puts the enemy into the holder's hand (table 0x2D0E0 by the holder's `+$20`, the enemy's
+  `+$84 / 2` and the holder's attach row `(+$60 high byte) & 0x3F`: dx, dy, animation of the table 0x2E724, facing),
+  act 4 only checks; the holder must be in mode 2 / sub 4 with frame class 0xC, else the release (floor snap,
+  reaction 0x20, 0x2B54E). A knee gives act 0 or 2 (the reaction byte of the attack record), a throw sub 2 act 8
+  (the player port). Pass 0x1185A (`pass_1185a`): a thrown or fallen body (list 0x6B30) hurts the other enemies
+  (frame class 0 / 2 / 4, attack record 0x11, state 0x02020400, spark 0). The grabbed animation tables
+  0x30B64 / 0x30BB0 / 0x30BFC are registered (`OBJECT_ANIM_TABLES`). Checked with the `grabs`, `grabs2` and `grabs3`
+  scenarios of all four characters (README).
 
 ## Stubbed (TODO markers in the code)
 - Pool A classes other than 2 are freed at once (`enemy_class_unported`); scenery 49/50 freed.
   `enemy_recover_other` (0x2B56C for other classes) only resets to state 0.
 - Pool B classes other than 15 are freed at once (props, scenery, B#12/#14/#20/#31/#40/#66/#69/#73/#74).
 - **item.rs**: done in phase 1 task 2 (see `plan/phase-01-stage1-complete.md`); only class 6 (0x29B06, glow of weapon type 11), the RADIO event 0x8BD24 and the dust trail 0x92E5E are missing.
-- `enemy_grabbed` (0x2B35A) releases at once. `enemy_hud_hit` (0x16B36) is ported (HUD ring message, phase 0).
+- `enemy_hud_hit` (0x16B36) is ported (HUD ring message, phase 0; `enemy_hud_request` is the call for the player port). `enemy_grabbed` is ported (phase 1 task 3b, see Ported).
 - Floor collision: done in phase 1 task 1 (`game/terrain.rs`: 0x12CB4 with floor lookup, walls, street edges and the obstacle test; `enemy_floor_collision` / `enemy_snap_to_floor`).
 - Sounds 0x9796 / 0xA354 / 0x97D2 are issued (`snd.rs`, phase 0); effects 0x606E, 0x92E5E, 0x94338, 0x2AD98 not called.
 - 0x1D95E / 0x1DAC4 (scripted walk to the next area / boss): TEMP fallback in prop.rs gives the camera

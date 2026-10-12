@@ -1103,4 +1103,17 @@ mod tests {
         g.item_give_bazooka(0);
         assert_eq!(g.players[0].item, 0);
     }
+
+    /// 0x1D188 and friends read the level with `move.b $5ee(a5)`: the high byte of the word.
+    #[test]
+    fn the_level_band_of_the_lie_and_dizzy_tables_is_the_high_byte() {
+        let mut g = game();
+        for level in [0u16, 0xA, 0x1F] {
+            g.w.level = level;
+            assert_eq!(g.player_level_band(), 0, "level {level}: rows 8, 16 and 24 are never read");
+        }
+        g.w.level = 0x1800; // never happens in the game
+        assert_eq!(g.player_level_band(), 0x18);
+    }
 }
+

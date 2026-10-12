@@ -73,6 +73,7 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x2CB80, 0x20, "weapon break masks"),
     (0x2E68C, 0xA0, "hit animation tables by +$84"),
     (0x2E724, 0xA0, "grabbed animation tables by +$84"),
+    (0x2D0E0, 0x15AC, "grabbed enemy placement (0x2B35A): 4 pointers by the player's +$20, each a word table by the enemy's +$84 / 2 whose rows (dx, dy, animation, facing; 8 bytes) are indexed by the player's frame attach index"),
     // drops and items
     (0xB64D2, 0xE40, "drop rows: fallback 0xB64D2, containers 0xB64F2, enemies 0xB6D12"),
     (0x28B10, 0x48, "food heal and score offset"),

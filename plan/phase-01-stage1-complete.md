@@ -127,6 +127,43 @@ no difference. Add the class to `PORTED_CLASSES` in `dino-game/src/game/trace.rs
    does not); enemy class 2 hit-reaction details (frame 609 of `armed`: `+$76` of an attacking thug is 0x57B6 in MAME;
    a thug killed in a hurt reaction by a fire bomb explosion starts no death animation in the port, seen when
    the bomb of `melee` is thrown to the right, not kept as a scenario).
+3b. **Enemy grab (enemy area, with fixes on the player side). DONE (2026-10-12).** Ported in
+   `dino-game/src/game/enemy_combat.rs` (tables through `dino-extract/src/enemy.rs`):
+   - `enemy_grabbed` 0x2B35A (sub 6; act 0: HUD bar request 0x16B36 kind 1 and on as act 2; act 2: while the holder is
+     in mode 2 / sub 4 / frame class 0xC the enemy goes into its hand: table 0x2D0E0 by the holder's `+$20`, the
+     enemy's `+$84 / 2` and the attach row `(+$60 high byte) & 0x3F` = (dx, dy, animation of the table 0x2E724,
+     facing), X / Y / Z are word writes (fractions stay), dx negated and facing flipped when the holder faces right;
+     act 4: check only; the release 0x2B464 was already there). The 0x2D0E0 table (0x15AC bytes) and the grabbed
+     animation tables 0x30B64 / 0x30BB0 / 0x30BFC are new extractor entries. The holder's tag `+$82 == 4` skips the
+     bar and the placing (`enemy_holder_tag`, a non-player holder).
+   - Pass 0x1185A (`pass_1185a`, was a stub): a thrown or fallen enemy body (list 0x6B30) against the other enemies
+     (frame class 0 / 2 / 4, body boxes 0x128F8): state 0x02020400, HP minus the enemy attack record 0x11, stun 0, both
+     get its hit stop, the victim faces the way the body flies, spark 0. This is the "throw into another enemy".
+   - Player side (the trace showed it): the knee's HUD bar request (0x1D792: kind 2 when the enemy's `+$82` is 0, else 0,
+     skipped when the knee put the enemy into a reaction), the knee spark of a killing second knee uses the first
+     knee's offset (0x1D7B2), and the lie-down and dizzy tables read the level with `move.b $5ee(a5)`: the HIGH byte of
+     the level word, so the row is always 0 (`player_level_band`; the port took the low byte and mis-read the lie
+     time of every knockdown from level 8 up).
+   - Harness: `DINO.spawn_enemy` in `record.lua` (poke a pool A object), `pokes/grabs.lua` and the scenarios
+     `grabs`, `grabs2`, `grabs3` (README), run with all four characters.
+   **Checks:** `cargo build` / `cargo test` green (75 tests, 6 new: the placement and its facing flip, act 0, the checks,
+   the holder tag, the thrown body, the level band). Plain `MODE=step`: `explore` 22 -> 1 (class, field) pairs (the held
+   thug of frame 462 matches: only `player.kills` of frame 48 is left, see task 1), `obstacle` 15 -> 0 (frame 207), `stage1_jack`
+   1, `stage1_late` 0, `stage1_fight` 0, `melee` 0 and `armed` 4 (the same prop hit and enemy `+$76` of task 3). The new
+   scenarios (grabs, both knees, front and back throws, throws into other thugs, releases by a jump or by being hit,
+   enemies that die in the hold) run clean for Jack, Mustapha and Mess (Hannah: `player.kills` of frame 2 only; `grabs2` with
+   Mess: the enemy item below). `follow` (HEAD of task 3 -> now, pairs in ported classes): `explore` 152 -> 131, `obstacle`
+   117 -> 70. The rest is not the grab: the enemies drift from frame 118 (the unported bird class 0x32 draws `rand()`),
+   the held thug sits in another pool slot after that (`player.partner` D374 / D454 at obstacle 206), and the wave
+   controller and the effects drift with them.
+   **Left over (causes):** G.$755C `shake_req` after a thrown enemy lands (frame 1032 of `grabs`, 370 of `grabs2`: the landing asks
+   for a shake, `screen_shake` 0x222D6 is a stub of the camera port, MAME has consumed it); enemy class 2 AI details that are not the
+   grab: at the start of an attack (state 0x0A04) MAME stores a stack address in `+$76` (0x57B6 / 0x57D6 / ... instead of
+   the player: armed 609, `g2` frame 1106) and a different `dir` / speed when the approach starts while the player is in the
+   air (`grabs2_mess` 593) or after a get-up (151 of a Hannah run); the unported bird / opening-scene classes as in
+   task 2. **Pass 0x10DCC** (items hurting players, 0x10DCC..0x10F94) is not small (about 110 instructions of its own plus
+   the dispatch) and nothing the harness can record reaches it with one player (a second player does not join in a
+   recording: `2C` / `2S` in a script did nothing); it stays noted in the findings of task 3.
 4. **Remaining stage 1 enemies (enemy area).** Pool A classes (handlers from table 0x2346C):
    10 0x3B828, 14 0x4020E, 20 0x457B0, 49 0x56A70 (three off-screen bird controllers, present at the
    first frame), 50 0x56C80 (birds spawned at run time, one `rand()` each), and the opening scene
@@ -163,7 +200,7 @@ and stage clear screen match the original.
 
 ## Status
 
-In progress. Tasks 1 to 3 done (2026-10-12). Handoff notes: `re/specs/enemy/HANDOFF.md`,
+In progress. Tasks 1 to 3b done (2026-10-12). Handoff notes: `re/specs/enemy/HANDOFF.md`,
 `re/specs/player/HANDOFF.md`, `re/specs/flow/HANDOFF.md`.
 Tasks 1 to 3, 6 and 7 come from the phase 0 comparison (2026-10-12).
 
@@ -240,7 +277,7 @@ Tasks 1 to 3, 6 and 7 come from the phase 0 comparison (2026-10-12).
   continue at 0x2B54E). Placing (act 2 only, when the high byte of the player's `+$60` is negative): the table
   pointer is `long[0x2D0E0 + player +$20]`, the word offset is read at `+ enemy +$84 / 2`, the row is
   `(+$60 & 0x3F) * 8` bytes further, `(dx, dy, anim, facing)`: X = player X + dx (dx negated and the facing bit
-  flipped when the player faces left, `+$24 == 0`), Y = player Y + dy, Z = player Z, `+$24` = the facing, and the
+  flipped when the player faces RIGHT, `+$24 != 0`; ported in task 3b), Y = player Y + dy, Z = player Z, `+$24` = the facing, and the
   animation is word `anim` of the table `0x2E724[enemy +$84]` loaded with 0x1236 (the grabbed animations; the hit
   animations are 0x2E68C). MAME shows state 0x0206 act 2 for the held thug (explore frame 461, obstacle 206).
   0x2B54E, 0x2B478 (the wait `+$7A` by 0x2B8C4), 0x2B4BA (`+$80` by 0x2B614 / 0x2B604) and 0x2B506 (wrap X by

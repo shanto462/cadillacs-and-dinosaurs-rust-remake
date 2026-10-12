@@ -28,6 +28,10 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x2E7BC, // hit reactions (table 0x2E68C by +$84) of the class 2 variants: name 0
     0x2E928, // name 1
     0x2EA94, // name 0x1A
+    // Held by a player (0x2B35A, table 0x2E724 by +$84): the class 2 variants.
+    0x30B64, // name 0
+    0x30BB0, // name 1
+    0x30BFC, // name 0x1A
     // Pool E (items, phase 1 task 2). Containers 0x28C8A..0x28D1C, one table per variant.
     0x2995E, // container var 0
     0x2998C, // var 2

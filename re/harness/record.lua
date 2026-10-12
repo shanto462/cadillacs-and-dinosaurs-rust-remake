@@ -15,7 +15,7 @@
 --   DINO_POKE    optional Lua file run once at the sync point, before the snapshot is taken: it edits
 --                RAM (the snapshot and the whole recording start from the edited state, the port loads
 --                it from the .state). It receives one argument, the table DINO (`local DINO = ...`)
---                with DINO.space and DINO.spawn_item(...).
+--                with DINO.space, DINO.spawn_item(...) and DINO.spawn_enemy(...).
 --
 -- Timing. The vblank IRQ (0x542) sets the frame flag -$7EAE(a5) = 0xFF0152 at 0x5C8, before it
 -- flushes the sound queue, writes the scroll registers, reads the inputs (0x738) and ticks the
@@ -134,6 +134,28 @@ function DINO.spawn_item(class_word, var, x, z, w5c, drop_row)
   space:write_u16(a + 0x10, z)
   space:write_u16(a + 0x26, var)
   space:write_u16(a + 0x5C, w5c or 0)
+  space:write_u8(a + 0x96, drop_row or 0)
+  return a
+end
+
+-- Spawn a pool A object (an enemy) the same way (0xFDAE with pool selector 0: free list $65F8 count,
+-- $6602 pointer, 0x483C): +$00 = 1, +$20 class word (class * 4), +$08 X, +$10 Z, +$26 variant, +$5C,
+-- +$5B (entrance facing) and +$96 (drop row). The enemy starts at mode 0 and runs its entrance.
+function DINO.spawn_enemy(class_word, var, x, z, w5c, b5b, drop_row)
+  local cnt = space:read_u16(0xFFE5F8)
+  assert(cnt > 0, "pool A is full")
+  local ptr = space:read_u16(0xFFE602)
+  local slot = space:read_u16(0xFF0000 + ptr)
+  space:write_u16(0xFFE602, (ptr + 2) & 0xFFFF)
+  space:write_u16(0xFFE5F8, cnt - 1)
+  local a = 0xFF0000 + slot
+  space:write_u8(a, 1)
+  space:write_u16(a + 0x20, class_word)
+  space:write_u16(a + 0x08, x)
+  space:write_u16(a + 0x10, z)
+  space:write_u16(a + 0x26, var)
+  space:write_u16(a + 0x5C, w5c or 0)
+  space:write_u8(a + 0x5B, b5b or 0)
   space:write_u8(a + 0x96, drop_row or 0)
   return a
 end

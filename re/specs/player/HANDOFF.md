@@ -31,7 +31,10 @@ Character ids: 0 Jack, 1 Mustapha, 2 Hannah, 3 Mess (SPEC.md has a correction ba
 - Hurt 0x1C02C: light 0/2/0x1A, knockdown 4/6/0x1C, thrown 8, burn 0xA/0xC (flames via effects port),
   pushback 0xE..0x18, wall hit 0x20, stagger 0x22, getup 0x1CD9A, dizzy (0x1D0FA roll, 0x1CE02),
   mash 0x6012, lie 0x1D17E, special buffer 0x63E6, recover 0x1C0DA (20 f invulnerability).
-- Grab 0x1D652: hold, knees (0x1D746), throw (0x1D850, offsets 0x2CB32), release 0x1D72A.
+- Grab 0x1D652: hold, knees (0x1D746), throw (0x1D850, offsets 0x2CB32), release 0x1D72A. Task 3b: the knee also asks
+  the HUD for the enemy's bar (0x1D792) and a killing second knee puts its spark at the first knee's offset (0x1D7B2);
+  the enemy side is `enemy_grabbed` 0x2B35A in `enemy_combat.rs`. The lie-down and dizzy tables read the level with
+  `move.b $5ee(a5)` (the high byte, so row 0, `player_level_band`).
 - Held by enemy 0x1D2BE: mash, escape attack 0x1D3F8 (Mustapha reverses the hold), stumble 0x1D48E,
   follow 0x1D4EA (table 0x2CBE0 kept as a byte blob).
 - Death 0x1BF42, lives / continue 0x1BFD0.

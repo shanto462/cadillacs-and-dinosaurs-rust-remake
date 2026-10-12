@@ -83,6 +83,7 @@ keep them left of x 0x580 at the start.
 | `pickups` | `scripts/pickups.txt`, `pokes/pickups.lua` | 360 | an ammo box with no gun (`+$10F`), the refill of the next gun at its pick-up, taking a weapon while holding one (the old one is dropped) |
 | `melee_hannah`, `melee_mustapha`, `melee_mess`, `heavy_*`, `gunwalk_*` | the scripts and pokes above, `DINO_BOOT=re/harness/scripts/boot_hannah.txt` (or `boot_mustapha.txt`, `boot_mess.txt`) | 820, 420, 600 | the same runs with the other three characters (the select screen order is Jack, Hannah, Mustapha, Mess; the port reads the character from the snapshot): the per-character pose, run and jump tables, Hannah cannot jump with a heavy object |
 | `armed` | `scripts/armed.txt`, `pokes/armed.lua` | 1000 | the stage1_fight script with a bat: swings that hit enemies and a prop, the bat breaks into a stick, a club swing at an enemy in reach, hit while holding (the weapon is dropped), picked up again |
+| `grabs`, `grabs2`, `grabs3` | `scripts/grabs.txt`, `grabs2.txt`, `grabs3.txt`, `pokes/grabs.lua` | 1200, 1100, 1200 | (phase 1 task 3b) five thugs around Jack (`DINO.spawn_enemy`, entrance "wait"); a fixed pseudo random input sequence of walking bouts and presses of A, A with a direction and J: grabs, both knees, throws forwards and backwards (also Mess's two throw animations), throws into other thugs (pass 0x1185A), releases by a jump or by being hit, thugs that die in the hold. Run with all four characters (`DINO_BOOT=re/harness/scripts/boot_hannah.txt` and so on; names `grabs_hannah`, `grabs2_mustapha`, ...); `grabs3` is meant for Mess and Jack |
 
 ```sh
 DINO_SYNC=control+86 re/harness/record.sh re/harness/scripts/stage1_fight.txt stage1_fight 1400
@@ -98,6 +99,10 @@ written, so MAME and the port both start from the edited RAM. The file gets the 
 `DINO.spawn_item(class_word, variant, x, z [, w5c, drop_row])`, which takes a pool E slot the way the
 stage script does (0xFDAE: free list G.$65FE / $65F4, class word = class * 4, variant = `+$26`). Other
 pokes may write RAM through `DINO.space` (for example Jack's HP). Examples: `re/harness/pokes/`.
+`DINO.spawn_enemy(class_word, variant, x, z [, w5c, b5b, drop_row])` does the same for pool A (free list G.$65F8 /
+$6602, 0x483C): class word = class * 4 (class 2 = 8), variant = type * 0x100 + entrance (class 2: type 0 Ferris, 2 Gneiss,
+4 Driver; entrance 0 walk in, 2 dash in, 4 wait until a player is near, 6 fade, 8 jump, 0xA drop), `b5b` = the entrance
+facing (a negative byte sits). `pokes/grabs.lua` is an example.
 
 ### `DINO_STEP_PLAYERS=1` (step mode only)
 

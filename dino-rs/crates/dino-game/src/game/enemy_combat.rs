@@ -29,7 +29,58 @@ impl Game {
     pub fn pass_11a9e(&mut self) {}
     pub fn pass_11e56(&mut self) {}
     pub fn pass_11cec(&mut self) {}
-    pub fn pass_1185a(&mut self) {}
+
+    /// 0x1185A: a thrown or knocked down enemy body (list 0x6B30, registered by its flight and fall
+    /// states) against the other hurtable enemies (list 0x671E) that are not in a reaction yet.
+    pub fn pass_1185a(&mut self) {
+        for a2 in self.combat.get(0x6B30).to_vec() {
+            for a3 in self.combat.get(0x671E).to_vec() {
+                if a3 == a2 || self.body(a3).live & 2 != 0 {
+                    continue;
+                }
+                self.enemy_body_hits_enemy(a2, a3);
+            }
+        }
+    }
+
+    /// 0x1189C: only the frame classes 0, 2 and 4 of the victim count (6, 8 and 0xA return). Body box
+    /// against body box (0x128F8). A hit: the victim is hurt (state 0x02020400: sub 2, reaction 4)
+    /// with the enemy attack record 0x11 (damage only, stun 0, no HP bar), both get its hit stop,
+    /// the victim looks the way the body flies and a spark appears (0x12720, spark 0).
+    fn enemy_body_hits_enemy(&mut self, a2: Handle, a3: Handle) {
+        let (ab, db) = (self.body(a2).clone(), self.body(a3).clone());
+        if ab.body_box == 0 || db.body_box == 0 || !matches!(db.kind, 0 | 2 | 4) {
+            return;
+        }
+        let Some((ha, hb)) = collide::boxes_hit(&self.assets.sprites, &ab, ab.body_box, &db, db.body_box) else { return };
+        let rec = self.assets.player.enemy_attacks[0x11];
+        {
+            let v = self.body_mut(a3);
+            v.live = 2;
+            v.serial = ab.serial;
+            v.who = ab.who;
+            v.set_state(0x0202_0000);
+            if let Slot::Enemy(i) = slot_of(a3).unwrap() {
+                self.enemies.slots[i].m.sb(WAIT, 0);
+            }
+        }
+        let v = self.body_mut(a3);
+        v.attacker = a2;
+        v.hp_prev = v.hp;
+        let hp = (v.hp as i16).wrapping_sub(rec.damage as i16);
+        v.hp = if hp > 0 { hp as u16 } else { 0 };
+        v.stun = 0;
+        v.act = 4;
+        v.step = 0;
+        v.hitstop = rec.hit_stop;
+        v.b9a = rec.spark;
+        v.facing = (ab.vx < 0) as u8;
+        self.body_mut(a2).hitstop = rec.hit_stop;
+        if rec.sound != 0 {
+            self.snd_hit(rec.sound); // 0x962A
+        }
+        self.spawn_hit_spark(a2, a3, ha, hb, 0); // 0x12720
+    }
 
     /// 0x10F96: player attacks (list 0x671A / $6722, frame class 4) against the hurtable
     /// enemies (list 0x671E / $6726).
@@ -323,6 +374,11 @@ impl Game {
     /// name id +$3, HP bar +$6A, HP before the hit +$6E, HP +$6C, the object address) to the ring
     /// of the credited player (+$2, none when negative) unless that ring slot is still in use.
     /// `h` is a pool A object (its address was loaded with `movea.w`, so the long is sign extended).
+    pub(super) fn enemy_hud_request(&mut self, h: Handle, kind: u8) {
+        let b = self.body(h).clone();
+        self.enemy_hud_hit(h, &b, kind);
+    }
+
     fn enemy_hud_hit(&mut self, h: Handle, b: &Body, kind: u8) {
         if (b.who as i8) < 0 || b.who > 2 {
             return;
@@ -974,11 +1030,282 @@ impl Game {
         }
     }
 
-    /// 0x2B35A: held by a player (+$70). Not ported yet: released at once.
+    /// 0x2B35A: held by a player (+$70), sub 6. `act` 0: ask the HUD for the vitality bar of the
+    /// holder (0x16B36, kind 1) and continue as act 2; act 2: while the holder is still in its
+    /// grabbing state (mode 2, sub 4, frame class 0xC) put the enemy into its hand; act 4: only the
+    /// check. A knee sets `act` to the reaction of the attack record (0, 2): the bar request again.
+    /// Otherwise the grab is over: floor snap, reaction 0x20 and back to the AI (0x2B54E).
     pub fn enemy_grabbed(&mut self, e: &mut Enemy, h: Handle) {
-        e.b.wall = 0;
-        self.enemy_snap_to_floor(e);
-        e.b.reaction = 0x20;
-        self.enemy_recover(e, h);
+        match e.b.act {
+            0 => {
+                // 0x2B36C: a holder with +$82 == 4 (not a player) skips the bar and the placing.
+                if self.enemy_holder_tag(e.b.partner) == 4 {
+                    e.b.act = 4;
+                    return;
+                }
+                let b = e.b.clone();
+                self.enemy_hud_hit(h, &b, 1); // 0x16B36 with d0 = 1
+                e.b.act += 2;
+                e.b.b62 = 0;
+                self.enemy_grabbed_place(e, h, true);
+            }
+            2 => {
+                e.b.b62 = 0;
+                self.enemy_grabbed_place(e, h, true);
+            }
+            4 => {
+                e.b.b62 = 0;
+                self.enemy_grabbed_place(e, h, false);
+            }
+            // The 68000 jumps through the word table 0x2B366 with any value; the attack records of
+            // the grab give 0 and 2.
+            _ => {}
+        }
+    }
+
+    /// +$82 of the holder: players (and anything that is not a pool A / E object) read 0.
+    pub(super) fn enemy_holder_tag(&self, p: Handle) -> u8 {
+        match slot_of(p) {
+            Some(Slot::Enemy(i)) => self.enemies.slots[i].m.b(0x82),
+            Some(Slot::Item(i)) => self.items.slots[i].m.b(0x82),
+            _ => 0,
+        }
+    }
+
+    /// 0x2B392 / 0x2B434: the holder must be alive, in mode 2 / sub 4 with the frame class
+    /// 0xC, else the grab ends (0x2B464). `place`: act 2 also puts the enemy at the hand.
+    fn enemy_grabbed_place(&mut self, e: &mut Enemy, h: Handle, place: bool) {
+        let holder = e.b.partner;
+        let ok = slot_of(holder).is_some() && {
+            let p = self.body(holder);
+            p.live != 0 && p.mode == 2 && p.sub == 4 && p.kind == 0xC
+        };
+        if !ok {
+            // 0x2B464: released (a missing holder reads the ROM, whose first byte is 0).
+            e.b.wall = 0;
+            self.enemy_snap_to_floor(e);
+            e.b.reaction = 0x20;
+            return self.enemy_recover(e, h);
+        }
+        if !place {
+            return;
+        }
+        let p = self.body(holder).clone();
+        // The high byte of the holder's attach word (+$60) is the row index, negative = no row.
+        let attach = (p.attach >> 8) as u8;
+        if (attach as i8) >= 0 {
+            return;
+        }
+        let t = &self.assets.enemy.t;
+        let base = t.u32(0x2D0E0, p.k20 as u32);
+        let off = t.i16(base, (e.m.w(W84) >> 1) as u32);
+        let row = base.wrapping_add(off as i32 as u32).wrapping_add(((attach & 0x3F) as u32) << 3);
+        let (mut dx, dy, anim, mut facing) = (t.i16(row, 0), t.i16(row, 2), t.u16(row, 4), t.u8(row, 6));
+        if p.facing != 0 {
+            dx = dx.wrapping_neg();
+            facing ^= 1;
+        }
+        // Word moves: the fractions of the enemy's position stay.
+        let x = p.xi().wrapping_add(dx);
+        let y = p.yi().wrapping_add(dy);
+        e.b.x = (e.b.x & 0xFFFF) | ((x as i32) << 16);
+        e.b.y = (e.b.y & 0xFFFF) | ((y as i32) << 16);
+        e.b.z = (e.b.z & 0xFFFF) | ((p.zi() as i32) << 16);
+        e.b.facing = facing;
+        let table = self.assets.enemy.t.u32(0x2E724, e.m.w(W84) as u32);
+        let first = self.assets.sprites.anim(table, anim);
+        e.b.load_frame(&self.assets.sprites, first); // 0x1236
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dino_assets::player::PlayerData;
+    use dino_assets::{AnimTable, AssetPack, AttackRecord, Frame, FrameDraw, HitBox, HitBoxBank};
+
+    fn frame(kind: u8, body_box: u8) -> Frame {
+        Frame {
+            rom_addr: 0,
+            stride: 10,
+            w0: 0,
+            w1: 0x8000,
+            draw: FrameDraw::Comp { main: 0, overlay: None },
+            param_a: 0,
+            param_b: 0,
+            kind,
+            duration: 5,
+            last: true,
+            body_box,
+            attack_box: 0,
+            attach: 0,
+            extra: [0; 4],
+            next: 0,
+        }
+    }
+
+    /// Placement tables for 0x2B35A: character 0 (+$20 = 0) has its word table at 0x2D0F0; the
+    /// enemy type 0 (+$84 = 0) finds its rows at 0x2D100; row 1 is (dx 0x20, dy 0x30, animation 1,
+    /// facing 1). The grabbed animations of type 0 are the table 0x30000.
+    fn game() -> Game {
+        let mut a = AssetPack::default();
+        let mut placement = vec![0u8; 0x40];
+        placement[..4].copy_from_slice(&0x2D0F0u32.to_be_bytes());
+        placement[0x10..0x12].copy_from_slice(&0x0010u16.to_be_bytes()); // type 0: rows at 0x2D100
+        let row = 0x20 + 8; // row 1
+        placement[row..row + 8].copy_from_slice(&[0, 0x20, 0, 0x30, 0, 1, 1, 0]);
+        a.enemy.t.blobs = vec![(0x2D0E0, placement), (0x2E724, 0x30000u32.to_be_bytes().to_vec())];
+        a.sprites.frames = vec![frame(0xE, 0)];
+        a.sprites.anim_tables.insert(0x30000, AnimTable { rom_addr: 0x30000, stride: 10, anims: vec![None, Some(0)] });
+        Game::new(Box::leak(Box::new(a)))
+    }
+
+    /// Player 0 in the grabbing state with attach row 1 (high byte 0x81).
+    fn holder(g: &mut Game, facing: u8) {
+        let p = &mut g.players[0].b;
+        p.live = 1;
+        p.set_state(0x0204_0002);
+        p.kind = 0xC;
+        p.attach = 0x8100;
+        p.facing = facing;
+        p.set_xi(100);
+        p.set_yi(5);
+        p.set_zi(60);
+    }
+
+    fn held_enemy(g: &Game) -> Enemy {
+        let mut e = Enemy::default();
+        e.b.live = 1;
+        e.b.partner = Game::player_handle(0);
+        e.b.x = 0x1234_5678;
+        e.b.y = 0x0001_8000;
+        e.b.z = 0x0002_4000;
+        e.b.set_state(0x0206_0000);
+        let _ = g;
+        e
+    }
+
+    #[test]
+    fn the_held_enemy_is_put_into_the_hand_by_the_attach_row() {
+        let mut g = game();
+        holder(&mut g, 0);
+        let h = g.enemies.handle(0);
+        let mut e = held_enemy(&g);
+        e.b.act = 2;
+        g.enemy_grabbed(&mut e, h);
+        // facing 0: dx as it is, the facing byte of the row; the fractions of X, Y, Z stay.
+        assert_eq!((e.b.xi(), e.b.x & 0xFFFF), (100 + 0x20, 0x5678));
+        assert_eq!((e.b.yi(), e.b.y & 0xFFFF), (5 + 0x30, 0x8000));
+        assert_eq!((e.b.zi(), e.b.z & 0xFFFF), (60, 0x4000));
+        assert_eq!(e.b.facing, 1);
+        assert_eq!(e.b.kind, 0xE, "the grabbed frame (the holder checks the frame class)");
+        // The holder faces right (+$24 != 0): dx negated, facing bit flipped.
+        holder(&mut g, 1);
+        g.enemy_grabbed(&mut e, h);
+        assert_eq!(e.b.xi(), 100 - 0x20);
+        assert_eq!(e.b.facing, 0);
+    }
+
+    #[test]
+    fn act_0_asks_the_hud_for_the_bar_and_continues_as_act_2() {
+        let mut g = game();
+        holder(&mut g, 0);
+        let h = g.enemies.handle(0);
+        let mut e = held_enemy(&g);
+        e.b.act = 0;
+        e.b.b62 = 7;
+        e.b.who = 0;
+        e.b.id = 3;
+        e.b.hp = 0x20;
+        e.b.hp_bar = 0x64;
+        e.b.hp_prev = 0x30;
+        g.hud.rings[0][0][0] = 0xFFFF; // a free ring slot
+        g.enemy_grabbed(&mut e, h);
+        assert_eq!((e.b.act, e.b.b62), (2, 0));
+        assert_eq!(g.hud.ring_w[0], 0x10, "one message queued");
+        assert_eq!(g.hud.rings[0][0][..4], [0x0103, 0x64, 0x30, 0x20], "kind 1, name, bar, HP before, HP");
+        assert_eq!(e.b.xi(), 100 + 0x20, "act 0 places the enemy in the same frame");
+    }
+
+    #[test]
+    fn a_holder_that_is_not_grabbing_or_a_row_without_attach_leaves_the_enemy_alone() {
+        let mut g = game();
+        holder(&mut g, 0);
+        let h = g.enemies.handle(0);
+        // Act 4 only checks. Row index negative = no row: act 2 returns too.
+        let mut e = held_enemy(&g);
+        e.b.act = 4;
+        g.enemy_grabbed(&mut e, h);
+        assert_eq!((e.b.xi(), e.b.act, e.b.sub), (0x1234, 4, 6));
+        e.b.act = 2;
+        g.players[0].b.attach = 0x0100;
+        g.enemy_grabbed(&mut e, h);
+        assert_eq!(e.b.xi(), 0x1234);
+    }
+
+    #[test]
+    fn the_holder_tag_is_zero_for_players() {
+        let mut g = game();
+        g.enemies.slots[3].m.sb(0x82, 4);
+        assert_eq!(g.enemy_holder_tag(Game::player_handle(0)), 0);
+        assert_eq!(g.enemy_holder_tag(g.enemies.handle(3)), 4);
+        assert_eq!(g.enemy_holder_tag(0), 0);
+    }
+
+    /// 0x1189C: a thrown body (list 0x6B30) hurts an enemy of frame class 0 / 2 / 4 whose body box
+    /// it touches: reaction state 0x02020400, HP - record damage, stun 0, both stop for the
+    /// record's hit stop, the victim faces the way the body flies.
+    #[test]
+    fn a_thrown_body_hits_another_enemy() {
+        let mut a = AssetPack::default();
+        a.sprites.hitboxes = HitBoxBank { base: 0x100000, words: vec![0, 0, 0, 0, 0, 0, 0, 0x20, -0x10, 0x20, 0, 0x40] }; // box 1
+        let mut player = PlayerData::default();
+        player.enemy_attacks = vec![AttackRecord::default(); 0x12];
+        player.enemy_attacks[0x11] = AttackRecord { damage: 5, stun: 9, reaction: 9, hit_stop: 2, sound: 0, score: 0, spark: 3, b7: 0 };
+        a.player = player;
+        let mut g = Game::new(Box::leak(Box::new(a)));
+        let (thrown, victim) = (g.enemies.handle(1), g.enemies.handle(2));
+        for (h, x) in [(thrown, 0x100), (victim, 0x108)] {
+            let b = g.body_mut(h);
+            b.live = 1;
+            b.box_table = 0x100000;
+            b.body_box = 1;
+            b.set_xi(x);
+            b.set_zi(0x50);
+        }
+        {
+            let t = g.body_mut(thrown);
+            t.who = 1;
+            t.serial = 9;
+            t.vx = -0x80;
+            t.kind = 4;
+        }
+        {
+            let v = g.body_mut(victim);
+            v.kind = 2;
+            v.hp = 0x40;
+            v.stun = 10;
+            v.act = 0xA;
+            v.step = 6;
+        }
+        g.combat.push(0x6B30, thrown);
+        g.combat.push(0x671E, thrown);
+        g.combat.push(0x671E, victim);
+        g.pass_1185a();
+        let v = g.body(victim);
+        assert_eq!(v.state(), 0x0202_0400);
+        assert_eq!((v.live, v.hp, v.hp_prev, v.stun, v.hitstop), (2, 0x3B, 0x40, 0, 2));
+        assert_eq!((v.who, v.serial, v.attacker, v.facing, v.b9a), (1, 9, thrown, 1, 3));
+        assert_eq!(g.body(thrown).hitstop, 2);
+        assert_eq!(g.effects.free_count(), 47, "a spark");
+        // A victim already in a reaction (live bit 1) and one of frame class 6 are left alone.
+        g.body_mut(victim).live = 2;
+        g.body_mut(victim).hp = 0x40;
+        g.pass_1185a();
+        assert_eq!(g.body(victim).hp, 0x40);
+        g.body_mut(victim).live = 1;
+        g.body_mut(victim).kind = 6;
+        g.pass_1185a();
+        assert_eq!(g.body(victim).hp, 0x40);
     }
 }

@@ -2626,9 +2626,16 @@ impl Game {
         }
     }
 
+    /// `move.b $5ee(a5),d1 ; andi.w #$18,d1` (0x1CE28, 0x1CE4C, 0x1D188, 0x1D1A8): the 68000 is big
+    /// endian, so the byte at the address of the level word is its HIGH byte. The level is 0..0x1F,
+    /// so the band is always 0 (the rows 8, 16 and 24 of the tables are never used).
+    fn player_level_band(&self) -> usize {
+        ((self.w.level >> 8) as u8 & 0x18) as usize
+    }
+
     /// 0x1D17E lie-down setup (two rand() calls).
     fn player_lie_setup(&mut self, i: usize) {
-        let row = ((self.w.level & 0x18) * 2) as usize;
+        let row = self.player_level_band() * 2;
         let r = (self.rand() & 0xF) as usize;
         let t = self.player_pd().lie_time[(row + r) & 63];
         let r = (self.rand() & 0xF) as usize;
@@ -3212,7 +3219,7 @@ impl Game {
             // 0x1CE02 dizzy entry
             self.players[i].b.step = 2;
             self.player_panim(i, 2, 4);
-            let row = (self.w.level & 0x18) as usize;
+            let row = self.player_level_band();
             let r = (self.rand() & 0xF) as usize;
             let stars = self.player_pd().dizzy_stars[(row * 2 + r) & 63];
             let r = (self.rand() & 0x1E) as usize;
@@ -3364,8 +3371,16 @@ impl Game {
             return;
         }
         self.player_grab_hit(i); // 0x12526
-        // HP bar of the enemy (0x16B36) is drawn by the HUD port.
-        // 0x1D7BA: spark at offset 0x1D93E[char * 2 + second] (0x128C8).
+        // 0x1D792: unless the hit threw the enemy into a reaction (sub 2), its HP bar goes to the
+        // HUD (0x16B36): kind 2 when the enemy's +$82 is 0, else kind 0.
+        let reacting = self.body(e).sub == 2;
+        if !reacting {
+            let kind = if self.enemy_holder_tag(e) == 0 { 2 } else { 0 };
+            self.enemy_hud_request(e, kind);
+        }
+        // 0x1D7BA: spark at offset 0x1D93E[char * 2 + second] (0x128C8). The second knee jumps to
+        // the first knee's call (0x1D7B2, offset 0) when the enemy is in a reaction (it was killed).
+        let second = second && !reacting;
         let p = &self.players[i];
         let [dx, dy] = self.player_pd().knee_spark[(p.b.id as usize & 3) * 2 + second as usize];
         let x = p.b.xi().wrapping_add(if p.b.facing != 0 { dx.wrapping_neg() } else { dx });
