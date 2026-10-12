@@ -33,7 +33,20 @@ episode, exactness. The game as a player sees it: [`plan/game/README.md`](plan/g
 The older plan with one file per phase is in [`plan/PLAN.md`](plan/PLAN.md) (D5 rewrites it). The rule for
 every phase: the port must match the original frame by frame (checked with the phase 0 harness).
 
-## Progress (phase 1, stage 1 complete)
+## Progress: design phase (`plan/game/NEW-PLAN.md` section 1)
+
+| Task | State |
+| --- | --- |
+| D1 Research: story, 8 episodes, attract, mechanics list | Done (2026-10-12), `plan/game/` |
+| T0 MAME probe tool and 104 capture recipes | Done (2026-10-12), `re/harness/probe/`, `plan/game/design/capture-recipes.md` |
+| X0 Asset dump (no emulator) and catalog | Done (2026-10-12), `re/out/assets/` (committed), `plan/game/design/asset-catalog.md` |
+| D4d Front end and story | Running |
+| D3e Pool B inventory and area walk, part 1 (Episodes 1 and 2) | Running |
+| D2a Player moves | Running |
+| D4c, D3b, D2b, D2c, D3a, D3c, D3d, D3e parts 2-3, D3f, D4a, D4b, D4e | Pending (three research agents at a time) |
+| D5 Merge into the final build plan | Pending |
+
+## Progress: old phase 1 (stage 1 complete; continues as milestone M5 after the backbone)
 
 | Task | State |
 | --- | --- |
@@ -43,7 +56,7 @@ every phase: the port must match the original frame by frame (checked with the p
 | 3b Enemy grab (enemy_grabbed 0x2B35A), throw into enemies | Done (2026-10-12), grab differences gone |
 | 4a Pool A: birds, opening scene objects, classes 10 (Hammer T. / Blk Elmer / Wrench T.) and 20 (Punk, Thug) | Done (2026-10-12), step runs match |
 | 4a2 Pool A class 14 (Blade, Razor) with its parts (classes 60, 34, 41), class 15 pieces, the shared library 0x32xxx, player pass 0x11962 | Done (2026-10-12), 33 new scenarios (with all four characters) match in step mode; 16 / 17 (stage 2 truck) not ported |
-| 4 Remaining stage 1 enemies and props (4b: pool B) | In progress |
+| 4 Remaining stage 1 enemies and props (4b: pool B) | Paused (design first) |
 | 5-9 Vice T., join prompts, leftovers, stage flow, exactness pass | Pending |
 
 ## Next steps (in order)
