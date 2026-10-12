@@ -23,8 +23,15 @@ loading assets from the user's own `dino.zip`. Rules and file ownership: `dino-r
 
 ## Plan
 
-The full plan with one file per phase is in [`plan/PLAN.md`](plan/PLAN.md). The rule for every
-phase: the port must match the original frame by frame (checked with the phase 0 harness).
+**Current direction (2026-10-12): design first.** The user played the port and found it far from the
+whole game (no attract loop, no story, no scene flow, many missing mechanics). The new plan is
+[`plan/game/NEW-PLAN.md`](plan/game/NEW-PLAN.md): a design study of the whole game first (T0 probe tool,
+D2 player, D3 enemies / dinosaurs / bosses / scenery, D4 world systems, D5 merge), no new game code
+until D5 is reviewed with the user; then the whole-game backbone (M0 to M3), sound, real content per
+episode, exactness. The game as a player sees it: [`plan/game/README.md`](plan/game/README.md).
+
+The older plan with one file per phase is in [`plan/PLAN.md`](plan/PLAN.md) (D5 rewrites it). The rule for
+every phase: the port must match the original frame by frame (checked with the phase 0 harness).
 
 ## Progress (phase 1, stage 1 complete)
 
