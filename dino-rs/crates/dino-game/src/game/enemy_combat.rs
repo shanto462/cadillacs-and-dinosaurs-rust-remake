@@ -74,12 +74,12 @@ impl Game {
         v.step = 0;
         v.hitstop = rec.hit_stop;
         v.b9a = rec.spark;
-        v.facing = (ab.vx < 0) as u8;
         self.body_mut(a2).hitstop = rec.hit_stop;
         if rec.sound != 0 {
             self.snd_hit(rec.sound); // 0x962A
         }
-        self.spawn_hit_spark(a2, a3, ha, hb, 0); // 0x12720
+        self.spawn_hit_spark(a2, a3, ha, hb, 0); // 0x12720 (before the victim turns, 0x11950)
+        self.body_mut(a3).facing = (ab.vx < 0) as u8;
     }
 
     /// 0x10F96: player attacks (list 0x671A / $6722, frame class 4) against the hurtable

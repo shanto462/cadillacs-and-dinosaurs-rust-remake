@@ -412,8 +412,14 @@ impl Game {
         let p = &mut self.players[i];
         let d = p.pressed & 0xF;
         if d != 0 {
-            p.mash = p.mash.saturating_sub(w[d as usize]);
-            return;
+            let (v, borrow) = p.mash.overflowing_sub(w[d as usize]);
+            if borrow {
+                p.mash = 0;
+                return;
+            }
+            // 0x6024: `bcc 0x6032`: without a borrow the code goes on with the attack press and
+            // the cooldown (a stick tap together with A counts twice).
+            p.mash = v;
         }
         if p.mash_cd != 0 {
             p.mash_cd -= 1;
@@ -2646,9 +2652,10 @@ impl Game {
         p.mash_cd = 0;
     }
 
-    /// 0x6606: lets an enemy claim this downed player (enemy AI). TODO(enemy port): needs the
-    /// enemy lists 0x6A5A / 0x6A8E and enemy fields +$7E / +$7F / +$76.
-    fn player_downed_claim(&mut self, _i: usize) {}
+    /// 0x6606: lets an enemy claim this downed player (enemy AI, `enemy/claim.rs`).
+    fn player_downed_claim(&mut self, i: usize) {
+        self.enemy_claim_downed_player(i);
+    }
 
     /// 0x1C19C / 0x1C37C knockdown (type 4 or 6).
     fn player_knockdown(&mut self, i: usize, kind: u8) {

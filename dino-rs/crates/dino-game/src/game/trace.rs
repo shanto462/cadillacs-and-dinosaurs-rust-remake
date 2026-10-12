@@ -382,6 +382,63 @@ const ENEMY_RAW: &[(u32, u8, &str)] = &[
     (0xBA, 1, "fade_t"),
     (0xBB, 1, "fade_step"),
     (0xBC, 1, "obst_t"),
+    // Bytes that no shared field and no class 2 name covers (classes 49, 50, 54, 55 and later ones
+    // use them); a byte is a byte, whatever the class calls it.
+    (0x4B, 1, "r4b"),
+    (0x5F, 1, "r5f"),
+    (0x73, 1, "r73"),
+    (0x74, 1, "r74"),
+    (0x75, 1, "r75"),
+    (0x7E, 1, "r7e"),
+    (0x7F, 1, "r7f"),
+    (0x82, 1, "r82"),
+    (0x91, 1, "r91"),
+    (0x92, 1, "r92"),
+    (0x93, 1, "r93"),
+    (0x97, 1, "r97"),
+    (0x98, 1, "r98"),
+    (0x99, 1, "r99"),
+    (0x9B, 1, "r9b"),
+    (0x9C, 1, "r9c"),
+    (0x9D, 1, "r9d"),
+    (0x9E, 1, "r9e"),
+    (0x9F, 1, "r9f"),
+    (0xB1, 1, "rb1"),
+    (0xBD, 1, "rbd"),
+    (0xBE, 1, "rbe"),
+    (0xBF, 1, "rbf"),
+    (0xC0, 1, "rc0"),
+    (0xC1, 1, "rc1"),
+    (0xC2, 1, "rc2"),
+    (0xC3, 1, "rc3"),
+    (0xC4, 1, "rc4"),
+    (0xC5, 1, "rc5"),
+    (0xC6, 1, "rc6"),
+    (0xC7, 1, "rc7"),
+    (0xC8, 1, "rc8"),
+    (0xC9, 1, "rc9"),
+    (0xCA, 1, "rca"),
+    (0xCB, 1, "rcb"),
+    (0xCC, 1, "rcc"),
+    (0xCD, 1, "rcd"),
+    (0xCE, 1, "rce"),
+    (0xCF, 1, "rcf"),
+    (0xD0, 1, "rd0"),
+    (0xD1, 1, "rd1"),
+    (0xD2, 1, "rd2"),
+    (0xD3, 1, "rd3"),
+    (0xD4, 1, "rd4"),
+    (0xD5, 1, "rd5"),
+    (0xD6, 1, "rd6"),
+    (0xD7, 1, "rd7"),
+    (0xD8, 1, "rd8"),
+    (0xD9, 1, "rd9"),
+    (0xDA, 1, "rda"),
+    (0xDB, 1, "rdb"),
+    (0xDC, 1, "rdc"),
+    (0xDD, 1, "rdd"),
+    (0xDE, 1, "rde"),
+    (0xDF, 1, "rdf"),
 ];
 
 /// Raw bytes of a pool E object that the item code reads or writes (everything the shared
@@ -528,6 +585,12 @@ impl Prop {
     pub fn trace_visit(&mut self, f: &mut F, stage: u8) {
         self.b.trace_header(f, false);
         self.m.trace_load_all(f, 0xC0);
+        if f.all() || self.b.k20 == 73 * 4 {
+            // The bird spawner's delay (class 73, 0x89AE0) sits in the same word.
+            let mut t = self.m.w(0x80);
+            f.u16(0x80, "wave_timer", &mut t);
+            self.m.sw(0x80, t);
+        }
         if f.all() || self.b.k20 == 15 * 4 {
             let mut t = self.m.w(0x80);
             f.u16(0x80, "wave_timer", &mut t);
@@ -724,8 +787,8 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 /// `pool_c_update`, `pool_e_update`.
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
-    ("enemy", &[2]),
-    ("prop", &[15]),
+    ("enemy", &[2, 10, 20, 49, 50, 54, 55]),
+    ("prop", &[15, 73]),
     (
         "item",
         &[

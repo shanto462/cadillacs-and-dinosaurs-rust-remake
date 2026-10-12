@@ -53,6 +53,42 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x35832, 0x30, "walk speed ids"),
     (0x35882, 0x30, "run speed ids"),
     (0x1033E, 0x40, "stage time by stage*8 + area*2 (0x1031A)"),
+    // class 10 (HAMMER T. / BLK ELMER / WRENCH T.)
+    (0x3BAA6, 0x40, "class 10 entrance 8 wait times"),
+    (0x3BD84, 0x10, "class 10 pause times"),
+    (0x3C0EE, 0x60, "class 10 attack kind by variant row and rand"),
+    (0x3C1E6, 0x3C, "class 10 attack scripts, rows of 6"),
+    (0x3C35A, 8, "class 10 wind up by aggression"),
+    (0x3C3DE, 8, "class 10 run speed ids by level band"),
+    (0x3C5D0, 0x20, "class 10 recovery by level"),
+    (0x3CC04, 0x28, "class 10 slots (dx, dz)"),
+    (0x3CD14, 0x20, "class 10 direction map"),
+    (0x3CFCA, 0x60, "class 10 attack chance by variant row and level"),
+    (0x3D120, 0x30, "class 10 walk speed ids by variant row and level band"),
+    (0x32566, 0x80, "repeat count by level band and rand (0x32540)"),
+    // class 20 (PUNK / THUG)
+    (0x458E6, 0x40, "class 20 entrance 0 wait times"),
+    (0x459E0, 0x40, "class 20 entrance 2 wait times"),
+    (0x45E64, 0x20, "class 20 action pick by variant row and rand"),
+    (0x45F54, 0x10, "class 20 hop counts"),
+    (0x4634E, 8, "class 20 wait by aggression (state 0xA)"),
+    (0x463F6, 0x58, "class 20 attack scripts, rows of 8"),
+    (0x460F8, 0x10, "class 20 choice by rand"),
+    (0x46AF6, 0x18, "class 20 slots (dx, dz)"),
+    (0x46CF0, 0x10, "class 20 steering noise"),
+    (0x46EC6, 0x40, "class 20 script row by variant and rand"),
+    (0x46D98, 0x40, "class 20 attack chance by variant row and level"),
+    (0x46E22, 0x28, "class 20 offsets of the walk at the target by row"),
+    (0x4697E, 0x20, "class 20 recovery index by rand"),
+    (0x4699E, 0x20, "class 20 recovery frames by index and level band"),
+    (0x47224, 0x20, "class 20 walk speed ids by variant row and aggression"),
+    (0x45C62, 8, "class 20 fade destination"),
+    (0x45C6E, 0x20, "class 20 fade source palette pointers by variant and step"),
+    // pool B class 73 (bird spawner)
+    (0x89B32, 16, "bird variants by random 0..7"),
+    // class 55 (opening scene thugs)
+    (0x5794A, 12, "scripted thug X step by variant"),
+    (0x57956, 12, "scripted thug Z step by variant"),
     // HP
     (0x31454, 0x27 * 64, "HP by name id and level"),
     (0x31E52, 10 * 48, "boss HP"),
@@ -140,6 +176,11 @@ pub fn extract(rom: &Rom) -> EnemyData {
     let mut extra = Vec::new();
     for k in 0..12u32 {
         let p = rom.u32(0x33CDA + 4 * k);
+        extra.push((p, (p..p + 32).map(|x| rom.u8(x)).collect()));
+    }
+    // class 20 fade (0x45C6E): 2 variants x 4 palette blocks of 16 colours.
+    for k in 0..8u32 {
+        let p = rom.u32(0x45C6E + 4 * k);
         extra.push((p, (p..p + 32).map(|x| rom.u8(x)).collect()));
     }
     d.t.blobs.extend(extra);

@@ -1,0 +1,2 @@
+# stand still through the opening scene (no input)
+0-599:

@@ -85,6 +85,16 @@ keep them left of x 0x580 at the start.
 | `armed` | `scripts/armed.txt`, `pokes/armed.lua` | 1000 | the stage1_fight script with a bat: swings that hit enemies and a prop, the bat breaks into a stick, a club swing at an enemy in reach, hit while holding (the weapon is dropped), picked up again |
 | `grabs`, `grabs2`, `grabs3` | `scripts/grabs.txt`, `grabs2.txt`, `grabs3.txt`, `pokes/grabs.lua` | 1200, 1100, 1200 | (phase 1 task 3b) five thugs around Jack (`DINO.spawn_enemy`, entrance "wait"); a fixed pseudo random input sequence of walking bouts and presses of A, A with a direction and J: grabs, both knees, throws forwards and backwards (also Mess's two throw animations), throws into other thugs (pass 0x1185A), releases by a jump or by being hit, thugs that die in the hold. Run with all four characters (`DINO_BOOT=re/harness/scripts/boot_hannah.txt` and so on; names `grabs_hannah`, `grabs2_mustapha`, ...); `grabs3` is meant for Mess and Jack |
 
+Pool A class scenarios (phase 1 task 4a). Record with `DINO_POKE=re/harness/pokes/NAME.lua DINO_SYNC=control+86 re/harness/record.sh re/harness/scripts/NAME.txt NAME FRAMES` (`intro`: `DINO_SYNC=vblank:1150`, no poke).
+
+| NAME | script / poke | FRAMES | what it covers |
+| --- | --- | --- | --- |
+| `intro` | `scripts/intro.txt` (no input), `DINO_SYNC=vblank:1150` | 600 | (phase 1 task 4a) the opening scene from the start of the stage (no control yet): the scripted thugs (pool A class 55), the bystander (54), the three bird controllers (49) and the first birds (50, variants 0xA / 0xC from the stage script); the unported pool B master (class 0x4A) is loaded from MAME every frame in step mode, so the act list of classes 54 / 55 runs for real. Classes 56 and 57 of the scene are not ported |
+| `c10a` | `scripts/c10a.txt` (`genscript.py 1 900`), `pokes/c10a.lua` | 900 | (task 4a) class 10 (Hammer T., Blk Elmer, Wrench T.): three thugs, entrances walk in, drop and wait; random fight inputs |
+| `c20a` | `scripts/c20a.txt` (`genscript.py 3 1800 --hits 8`), `pokes/c20a.lua` | 1800 | (task 4a) class 20 (Punk, Thug): all five entrances (walk, dash, fade, drop, wait) and fights |
+| `c20b` | `scripts/c20b.txt` (`genscript.py 21 2400 --hits 8`), `pokes/c20b.lua` | 2400 | (task 4a) eight waiting Punk / Thug, Jack's HP 0x190: all actions and attacks. `c20b_hannah`, `c20b_mustapha`, `c20b_mess` with `DINO_BOOT` |
+| `c10b`, `c10c` | `scripts/c10b.txt` (`genscript.py 7 1500 --hits 8`), `scripts/c10c.txt` (`genscript.py 11 2400 --hits 8`), `pokes/c10b.lua` / `c10c.lua` | 1500, 2400 | (task 4a) five and eight class 10 thugs that wake up near Jack, Jack's HP raised to 0x190: all attack kinds, the paired attack, the stomp walk, deaths. `c10c_hannah`, `c10c_mustapha`, `c10c_mess` with `DINO_BOOT=re/harness/scripts/boot_NAME.txt` |
+
 ```sh
 DINO_SYNC=control+86 re/harness/record.sh re/harness/scripts/stage1_fight.txt stage1_fight 1400
 for m in run follow step; do MODE=$m re/harness/port.sh re/harness/scripts/stage1_fight.txt stage1_fight 1400; done
@@ -119,6 +129,20 @@ Use it only for the item scenarios.
 pool E class. With `DINO_STEP_PLAYERS=1` the item scenarios still show differences on the frames where the item itself changes the player (a throw clears `+$B6`, a shot
 clears `+$C4`, an empty gun sets a new `+$B6`): MAME's record of the frame already has those changes, so the loaded player tells the item "I do not hold you" before it
 runs. The flag is still in the code, but do not use it.
+
+## Helper scripts (phase 1 task 4a)
+
+- `regress.sh [NAME ...]`: the step runs of all the recorded scenarios of phase 1 (a quick check that nothing broke: the number of
+  (class, field) pairs in ported classes per scenario, 0 is the goal; `armed` has 3 known ones, `intro` the scripted player).
+- `check.sh MODE NAME [diff.py options]`: runs the port in `step` / `follow` / `run` mode on a recorded scenario (the
+  script and frame count come from a small table in the script, or from `SCRIPT=` and `FRAMES=`) and prints the diff report.
+- `objhex.py TRACE ADDR LEN FIRST [LAST]`: hex dump of one object (or any RAM range) at a frame, then the changed bytes
+  of every later frame (MAME or port trace). `cover.py TRACE [enemy|prop] [CLASS...]`: which state words (+$04..+$07) a class
+  reaches in a recording (how much of its code a scenario runs).
+- `genscript.py SEED FRAMES [--hits N]`: writes a pseudo random fight input script (bouts of walking, punches, throws, jumps).
+- `re/tools/d2 ADDR COUNT [TABLE:N ...]` (`dj.py`): disassembly with the word jump tables decoded (`jmp / jsr T(pc,dN.w)`;
+  the length of a table comes from the Ghidra function starts, or is given as `T:count`); `re/tools/dc.py` makes a compact
+  listing of a `d2` dump (labels only at branch targets).
 
 ## Checking one routine against the original code
 

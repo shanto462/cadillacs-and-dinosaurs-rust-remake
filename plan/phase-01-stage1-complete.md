@@ -164,6 +164,54 @@ no difference. Add the class to `PORTED_CLASSES` in `dino-game/src/game/trace.rs
    task 2. **Pass 0x10DCC** (items hurting players, 0x10DCC..0x10F94) is not small (about 110 instructions of its own plus
    the dispatch) and nothing the harness can record reaches it with one player (a second player does not join in a
    recording: `2C` / `2S` in a script did nothing); it stays noted in the findings of task 3.
+4a. **Pool A classes of stage 1, first part (enemy area). PARTLY DONE (2026-10-12).** Ported, each class checked in step mode
+   against MAME (`MODE=step`, 0 differences in every ported class of every scenario below):
+   - Class 49 (0x56A70, three background bird controllers), class 50 (0x56C80, birds that fly in, 7 variants), class 54
+     (0x576D2, bystander of the opening scene), class 55 (0x5785C, the scripted thugs of the opening scene: their hit
+     reaction and grab are the shared 0x2A606 / 0x2B35A), all in `game/enemy/scenery.rs`. Class 55's death is the shared
+     0x2AF86 (kills `+$10B`, rank 0x182A2, `rand()`, voice 0x9796), so the `player.kills` / `aggression` difference at frame
+     48 of stage1_jack and explore is gone. The bird spawner pool B class 73 (0x89ABA, in `prop.rs`) is ported too: it is what
+     makes class 50 appear at run time (it draws the variant and the next delay: two `rand()` calls per bird).
+   - Class 10 (0x3B828, HAMMER T. / BLK ELMER / WRENCH T.) in `game/enemy/class10*.rs`: init and the five entrances (walk,
+     drop, jump attacks 4 / 6, wait), the AI states 0..0x12, the attack scripts (table 0x3C1E6: punches A / B, the charging
+     punch C, the dive D), the paired attack on a downed player (0x6606 = `enemy/claim.rs`, called by the player port, lists
+     0x6A5A / 0x6A8E cleared at the start of `enemies_update`), the grab machine and the stomp machine (0x3C60C), the hit on the
+     held player (0x125C0), recover (0x2B56C entries 0xC / 0x28 / 0x2C) and death (the class 2 routine).
+   - Shared library fixes found on the way: `enemy_angle_to` (0x103A) adds with `add.b` (only the low byte of the
+     accumulator changes), which matters for distances above 0xFF (class 2 never had them in a recording); the victim of
+     the thrown-body pass 0x1185A turns after the hit spark is placed (0x11950 after 0x1194C); class 2 stores a junk word
+     in `+$76` when a dash attack starts (0x35782, a0 is still the table pointer): the leftover `+$76` of task 3b.
+     Player side (found by the held-by-an-enemy scenes): `player_mash` (0x6012) continues with the attack press after a stick tap
+     (`bcc` at 0x6024), `player_downed_claim` calls the claim routine.
+   - Class 20 (0x457B0, PUNK / THUG) in `game/enemy/class20*.rs`: init, the six entrances (two standing waits, walk, dash,
+     fade with the palette steps 0x45C32, drop), the AI states 0 / 2 / 4 / 6 / 8 / 0xA, the three actions of state 4 (walk about
+     and keep the distance 0x46C24, hops and a jump at the player, the choice machine `+$A5` with a strafe, a hop in place and a
+     jump), the attack script (table 0x463F6: punches, the jump kick, the lunge, the leaping dive with the division by 0x33) and
+     the recoveries; death is the class 2 routine. Hit recover entries 0x20 / 0x24 -> 0x45D74.
+   - New tools: `re/harness/{check.sh, regress.sh, objhex.py, cover.py, genscript.py}`, `re/tools/{dj.py, d2, dc.py}` (README).
+   **Not done: class 14 (0x4020E, BLADE / RAZOR) with its parts (classes 60, 34, 41, 15, 16, 17)**; it stays `[NOT PORTED]`
+   (frozen in step runs). What the analysis found is in "Findings of task 4a" below and in `re/specs/enemy/HANDOFF.md`.
+   **Checks (`re/harness/regress.sh` repeats the step runs):** `cargo build` / `cargo test` green (80 + 4 tests, 5 new: the `add.b` of 0x103A, the 0x6606 claim rules, the division of the dive; the extractor test now uses 0x57D88 as the unregistered
+   frame). Plain `MODE=step` runs: `stage1_jack`, `stage1_late`, `explore`, `stage1_fight`, `obstacle`, `melee`, `grabs` and the
+   other `grabs*` runs: 0 differences in ported classes; `armed`: the 2 known ones (the prop B#40 hit at frame 564, the
+   `+$76` junk of task 3b is fixed). New scenarios `intro` (the opening scene from the stage start: classes 54 / 55 / 49 / 50
+   with the master prop loaded from MAME), `c10a`, `c10b`, `c10c` (+ `_hannah`, `_mustapha`, `_mess`), `c20a`, `c20b` (+ the
+   same three characters): 0 differences in ported classes in 900 to 2400 frames (the opening scene run `intro`: classes 54 / 55
+   differ only in the frame of the spawn by the unported master prop, the player differs in the scripted attack of the scene,
+   frames 522 to 556: the scripted player states are not ported). `follow` / `run` of `explore` and `stage1_fight`, pairs of (class, field)
+   in ported classes before -> after: explore follow 131 -> 9, run 153 -> 10; stage1_fight follow 96 -> 28, run 193 -> 225
+   (more classes run now, so more consequences of one drift are counted). First difference in a ported class or a global:
+   before frame 48 (`player.kills`) and the `rand()` drift from frame 102 / 118; after: explore follow 227, run 157,
+   stage1_fight follow 227, run 102. All of them come from pool B (task 4b): the first `rand()` difference of a `run` is frame 30
+   (class 0x42, 0x86D76, the scroll1 banners draw one), after that the birds and the spawner differ; in `follow` the wave
+   controller (class 15) at frame 227 sits in another pool B slot because class 0x42 / 0x28 are frozen instead of freeing
+   themselves like in MAME.
+   **Remaining differences (all causes):** pool B classes 0x14, 0x1F, 0x28, 0x42, 0x4A (task 4b) and the special object
+   (pool D slot 15 at 0xE574, class 31's list); scroll1 banner cells and one palette word (class 0x14 / 0x42); the effects
+   classes 3, 7 (dust 0x92E5E), 0xB (debris 0x934F6), 0x13 (dizzy stars 0x94338) and the flames, not ported yet (effects port);
+   G.$755C `shake_req` (the landing of a thrown or diving enemy asks for a shake, `screen_shake` 0x222D6 is still a stub of
+   the camera port); `armed` frame 564 (the prop hit); the opening scene classes 56 (0x57C9C) and 57 (0x57D94) (only in the
+   `intro` scenario).
 4. **Remaining stage 1 enemies (enemy area).** Pool A classes (handlers from table 0x2346C):
    10 0x3B828, 14 0x4020E, 20 0x457B0, 49 0x56A70 (three off-screen bird controllers, present at the
    first frame), 50 0x56C80 (birds spawned at run time, one `rand()` each), and the opening scene
@@ -200,7 +248,7 @@ and stage clear screen match the original.
 
 ## Status
 
-In progress. Tasks 1 to 3b done (2026-10-12). Handoff notes: `re/specs/enemy/HANDOFF.md`,
+In progress. Tasks 1 to 3b done and 4a partly done (2026-10-12). Handoff notes: `re/specs/enemy/HANDOFF.md`,
 `re/specs/player/HANDOFF.md`, `re/specs/flow/HANDOFF.md`.
 Tasks 1 to 3, 6 and 7 come from the phase 0 comparison (2026-10-12).
 
@@ -309,4 +357,39 @@ Tasks 1 to 3, 6 and 7 come from the phase 0 comparison (2026-10-12).
   set by 0x5CA6, 0x5F76 and 0x1A0F0, and 0x19B60 starts the layer *before* 0x5F76: with `+$38 == 0` the first walking
   fire reads the ROM vector table (`dx3c` = 0x00FF, `dy3e` = 0x0E66 in MAME). Reproduced; `draw.rs` already draws the
   split body.
+
+### Findings of task 4a for the later tasks
+
+- **Class 14 (BLADE / RAZOR, 0x4020E..0x41F1A) and its parts.** One script record makes THREE objects: init sub 0 (0x40224) takes
+  two more pool A slots, sorts the three addresses and turns the middle one into the class 14 object (`+$A8` / `+$AA` = the
+  other two), the others into class 60 (`+$20 = 0xF0`, 0x580C6, `+$26` = 0 / 0x200, anim table 0x6FB6A, `+$A0` = the master):
+  small draw-only parts (knife / weapon art) that follow `+$BE` (knives left, 0..2) of the master (0x41D6E places them with the tables
+  0x58178 / 0x58308). The alive code is a table-driven state machine (`+$06` 0..0x3A, 30 handlers at 0x40EBC..0x41154 listed in the
+  table at 0x407F8; the entrance by `+$27` is table 0x403E8; the "state entry" routines 0x41278..0x41954 are reached through the word
+  tables 0x41C3A / 0x41D56, the decision 0x41BE8 reads the ROM tables 0x73214 / 0x73414 / 0x73494 / 0x73514 / 0x73714 / 0x73914 by
+  variant, aggression and `rand()`). It throws knives (class 34, 0x5129E: `0x40466 -> pool A class 0x88`) and class 41 (0xA4, 0x55866: a
+  thrown blade) and spawns class 15 / 16 / 17 pieces (0x41EEA, 0x41F1A, 0x420EA, 0x423A4: debris of a hit knife?). Shared library
+  routines it needs (0x32xxx, most are tiny): 0x32A58 / 0x32A70 / 0x32A88 / 0x32B68 / 0x32B94 / 0x32C5E / 0x32D86 / 0x32D90 /
+  0x32F56 (aim and slot helpers, they read `+$E6` / `+$E7` of the player), 0x3282A (is it on screen), 0x3293C (distance class) and
+  0x9D44 (sound with pan). Death (0x41E38): one `rand()` (the 1/64 anti-tamper call 0x2A5B6 does nothing on a genuine ROM), kill
+  score, 60 frames of blinking.
+- **Class 20 (PUNK / THUG)** is done (see above); its listing needed care because a table before the code made the disassembler print
+  the first instruction of many handlers as garbage (0x45F64 `clr.b $a5(a6)` and 0x4611C `move.b #2,$a4(a6)` were found that way):
+  print each handler start again with `re/tools/d2 ADDR 4` before trusting a reading. Things the port gets from the listing that are
+  easy to misread: `add.b d0,$14(a6)` adds to the HIGH byte of the word at +$14 (big endian), `bcc` after `bsr` of a window routine
+  is the opposite polarity of `bcs` (0x45FF8 jumps when the window test fails), the fall-through of one handler into the next
+  one in memory (0x45FCE -> 0x45FF8, 0x46606 -> 0x46642), and `bls` after the direction turn keeps the NEW direction.
+- **Method that worked for class 10 (reuse it):** read the listing with `re/tools/d2` (tables decoded), port function by function with
+  the original address in the comment, record a poke scenario (`DINO.spawn_enemy`, all entrances and variants, 5..8 enemies, Jack with
+  HP 0x190, a `genscript.py` input), run `MODE=step`, fix the first difference, repeat; `cover.py` shows which states a recording
+  reaches. The step run found: the `add.b` of 0x103A, the spark order of 0x1185A, the junk `+$76`, the mash routine, the missing
+  hit-recover entry, the sound toggle 0xA062 (G.$43B bit 3). Tables go through `dino-extract` (`TABLES` in `dino-extract/src/enemy.rs`).
+- **Quirks of class 10 kept on purpose:** the grab test 0x3C726 and the stomp test 0x3C9C8 add a bias of 0x400 to the X difference
+  (the intended window sits 0x400 px away), so the thug never grabs in a real stage (no recording shows the 0x0204xx04 states);
+  0x3D0B4 adds the zero `d2` to the direction (no effect); the first thug of a claim can use the player's stale `+$88` (0x6606
+  scratch) as its aim point (0x3CCC0).
+- **For 4b (pool B):** class 73 (0x89ABA, bird spawner) is done. Classes 12, 14, 20 (GO hint), 31, 40, 66, 69, 74 are not; class 74
+  (0x89B48) is the master of the opening scene: its `+$05` is what classes 54 and 55 follow (`+$A4` = its handle), it also spawns class 54
+  (0x89B90.., `+$20 = 0xD8`) and probably 55 / 56 / 57. Class 66 (0x86D76) draws one `rand()` at frame 30 of every recording and is the
+  first source of the `run` drift.
 

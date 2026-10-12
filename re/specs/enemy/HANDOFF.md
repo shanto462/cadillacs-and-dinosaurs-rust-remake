@@ -33,10 +33,24 @@ Code: `dino-rs/crates/dino-game/src/game/{enemy.rs, enemy_combat.rs, spawn.rs, r
   0x30B64 / 0x30BB0 / 0x30BFC are registered (`OBJECT_ANIM_TABLES`). Checked with the `grabs`, `grabs2` and `grabs3`
   scenarios of all four characters (README).
 
+- **Pool A scenery and opening scene (phase 1 task 4a)**, `game/enemy/scenery.rs`: class 49 (0x56A70) background bird controller,
+  class 50 (0x56C80) flying scenery (variants 0..0xC), class 54 (0x576D2) opening scene bystander, class 55 (0x5785C) scripted
+  thugs (act list `+$06` 0..0x12 driven by the master prop's `+$05`; sub 2 / 6 run the shared hit reaction / grab). Pool B class 73
+  (0x89ABA) bird spawner in `prop.rs`.
+- **Class 10 (0x3B828, phase 1 task 4a)**, `game/enemy/class10{,_ai,_moves,_hold,_lib}.rs` and `claim.rs`: HAMMER T. / BLK ELMER /
+  WRENCH T. complete (see `plan/phase-01-stage1-complete.md` task 4a). `claim.rs` = 0x6606 (a downed player lets class 10 thugs claim
+  him through the lists 0x6A5A / 0x6A8E, which `enemies_update` clears like 0xE948). `enemy_hit_held_player` = 0x125C0.
+  `enemy_recover_other` knows the recover entries of class 10 (0x2B56C: 0xC, 0x28, 0x2C -> 0x3BC38). New shared pieces: the repeat count
+  0x32540 (`enemy_rep_count`), the sound 0xA062 (`enemy_snd_a062`, bit 3 of G.$43B), 0x32566 / class 10 tables in `dino-extract`.
+
+- **Class 20 (0x457B0, phase 1 task 4a)**, `game/enemy/class20{,_ai,_attack,_lib}.rs`: PUNK / THUG complete (state 0xA is never
+  entered in the listing). Recover entries 0x20 / 0x24 (0x2B56C) -> `c20_reset_ai` (0x45D74).
+
 ## Stubbed (TODO markers in the code)
-- Pool A classes other than 2 are freed at once (`enemy_class_unported`); scenery 49/50 freed.
+- Pool A classes other than 2, 10, 20, 49, 50, 54, 55 are freed at once (`enemy_class_unported`): next is 14 (BLADE / RAZOR, with parts
+  60 / 34 / 41 / 15..17), then 18 (Vice T.), 56 and 57 (opening scene). Analysis in the plan file, "Findings of task 4a".
   `enemy_recover_other` (0x2B56C for other classes) only resets to state 0.
-- Pool B classes other than 15 are freed at once (props, scenery, B#12/#14/#20/#31/#40/#66/#69/#73/#74).
+- Pool B classes other than 15 and 73 are freed at once (props, scenery, B#12/#14/#20/#31/#40/#66/#69/#73/#74).
 - **item.rs**: done in phase 1 task 2 (see `plan/phase-01-stage1-complete.md`); only class 6 (0x29B06, glow of weapon type 11), the RADIO event 0x8BD24 and the dust trail 0x92E5E are missing.
 - `enemy_hud_hit` (0x16B36) is ported (HUD ring message, phase 0; `enemy_hud_request` is the call for the player port). `enemy_grabbed` is ported (phase 1 task 3b, see Ported).
 - Floor collision: done in phase 1 task 1 (`game/terrain.rs`: 0x12CB4 with floor lookup, walls, street edges and the obstacle test; `enemy_floor_collision` / `enemy_snap_to_floor`).
@@ -62,8 +76,7 @@ Code: `dino-rs/crates/dino-game/src/game/{enemy.rs, enemy_combat.rs, spawn.rs, r
    the player port is documented at the top of item.rs.
 4. (done) Container hits: passes 0x11F86 / 0x1201C / 0x120D2 in `item/hits.rs`.
 5. Uncomment `player_hit_by_enemy(p, e)` in `pass_115b0` once the player port has it.
-6. Stage 1 classes: #10 HAMMER/ELMER/WRENCH (0x3B828), #14 BLADE/RAZOR (0x4020E), #20 PUNK/THUG
-   (0x457B0), #18 VICE T. (0x42590, notes in SPEC section 12) and pool B class 22 (0x7BEF6); then
+6. Stage 1 classes: (#10 and #20 done) #14 BLADE/RAZOR (0x4020E), #18 VICE T. (0x42590, notes in SPEC section 12) and pool B class 22 (0x7BEF6); then
    Shivat (#24, 0x4838C). Each needs its anim tables added to OBJECT_ANIM_TABLES.
 7. Stage 1 pool B props (B#12/#14/#20/#31/#40/#66/#69/#73/#74): read their handlers (table 0x2362E).
 8. Ask the player port for a shared floor collision (they have `floor_lookup` / floor segments).

@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /Volumes/Shanto/Repos/Personal/Github/roms/re/.venv/bin/python -I /Volumes/Shanto/Repos/Personal/Github/roms/re/tools/dj.py /Volumes/Shanto/Repos/Personal/Github/roms/re/out/dino_68k.bin "$@"

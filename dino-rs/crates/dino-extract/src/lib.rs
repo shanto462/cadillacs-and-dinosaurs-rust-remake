@@ -60,7 +60,7 @@ mod tests {
     use super::*;
 
     /// Needs the user's ROM set at `../dino.zip` (skipped otherwise). A frame record that no
-    /// registered table reaches (0x56C60, an animation of a pool A scenery class) is decoded on
+    /// registered table reaches (0x57D88, an animation of the opening scene class 56) is decoded on
     /// demand; an address that is not a frame record is skipped.
     #[test]
     fn extra_frames_are_decoded_on_demand() {
@@ -69,11 +69,11 @@ mod tests {
             return;
         }
         let base = extract(path).unwrap();
-        assert!(!base.sprites.frame_by_addr.contains_key(&0x56C60));
-        let extra = ExtraFrames { sprite: vec![0x56C60, 0x10, 0x56C61], effect: vec![0x9252C, 0x10], raw: vec![0x10] };
+        assert!(!base.sprites.frame_by_addr.contains_key(&0x57D88));
+        let extra = ExtraFrames { sprite: vec![0x57D88, 0x10, 0x56C61], effect: vec![0x9252C, 0x10], raw: vec![0x10] };
         let pack = extract_with(path, &extra).unwrap();
-        let id = pack.sprites.frame_by_addr[&0x56C60];
-        assert_eq!(pack.sprites.frame(id).rom_addr, 0x56C60);
+        let id = pack.sprites.frame_by_addr[&0x57D88];
+        assert_eq!(pack.sprites.frame(id).rom_addr, 0x57D88);
         assert!(!pack.sprites.frame_by_addr.contains_key(&0x10));
         assert!(!pack.sprites.frame_by_addr.contains_key(&0x56C61));
         assert!(pack.effects.frame_by_addr.contains_key(&0x9252C));

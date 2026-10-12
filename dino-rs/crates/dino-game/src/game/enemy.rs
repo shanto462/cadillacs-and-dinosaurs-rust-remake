@@ -9,6 +9,18 @@
 use super::body::Body;
 use super::{Game, Handle, Slot, slot_of};
 
+mod claim;
+mod class20;
+mod class20_ai;
+mod class20_attack;
+mod class20_lib;
+mod class10;
+mod class10_ai;
+mod class10_hold;
+mod class10_lib;
+mod class10_moves;
+mod scenery;
+
 /// Bytes of an object beyond the shared header, addressed by the original offset.
 #[derive(Clone, Debug)]
 pub struct Ram(pub [u8; 0xE0]);
@@ -134,6 +146,9 @@ impl Game {
         // 0xE96A (just before 0x23420): dizzy count of last frame.
         self.spawn.g.dizzy_prev = self.spawn.g.dizzy;
         self.spawn.g.dizzy = 0;
+        // 0xE948..0xE95C (between pool E and pool A): the claim lists 0x6A5A / 0x6A8E (class 10).
+        self.combat.clear(0x6A5A);
+        self.combat.clear(0x6A8E);
         for i in 0..self.enemies.slots.len() {
             if self.enemies.slots[i].b.live == 0 {
                 continue;
@@ -142,7 +157,12 @@ impl Game {
             let mut e = std::mem::take(&mut self.enemies.slots[i]);
             match e.b.k20 / 4 {
                 2 => self.enemy_class2(&mut e, h),
-                49 | 50 => self.enemy_class_scenery(&mut e, h),
+                10 => self.enemy_class10(&mut e, h),
+                20 => self.enemy_class20(&mut e, h),
+                49 => self.enemy_class49(&mut e, h),
+                50 => self.enemy_class50(&mut e, h),
+                54 => self.enemy_class54(&mut e, h),
+                55 => self.enemy_class55(&mut e, h),
                 _ => self.enemy_class_unported(&mut e, h, i),
             }
             self.enemies.slots[i] = e;
@@ -155,16 +175,6 @@ impl Game {
             return; // harness: kept as the snapshot had it
         }
         eprintln!("pool A class {:#x} not ported (freed)", e.b.k20 / 4);
-        self.enemy_free_pool_a(e, i);
-    }
-
-    /// Classes 49 / 50 (parallax birds and similar scenery, +$7D = 0xFF): not ported yet;
-    /// they never affect gameplay, so they are freed.
-    pub fn enemy_class_scenery(&mut self, e: &mut Enemy, h: Handle) {
-        if self.trace_hold(h, &e.b) {
-            return;
-        }
-        let i = self.enemy_index(h);
         self.enemy_free_pool_a(e, i);
     }
 
@@ -263,10 +273,15 @@ impl Game {
 
     /// 0x324D4: walk animation forward when moving toward the facing side, else backwards.
     pub fn enemy_walk_anim(&self, b: &mut Body) {
+        self.enemy_walk_anim_c(b);
+    }
+
+    /// 0x324D4 with its carry (the animation ended or wrapped).
+    pub fn enemy_walk_anim_c(&self, b: &mut Body) -> bool {
         if (b.dir >> 4) != b.facing {
-            self.enemy_step(b);
+            self.enemy_step(b)
         } else {
-            self.enemy_step_back(b);
+            self.enemy_step_back(b)
         }
     }
 
@@ -308,7 +323,8 @@ impl Game {
         if acc < small {
             k = 4;
             for kk in 1..=3u8 {
-                acc = acc.wrapping_add(step);
+                // `add.b d4,d2` (0x10B2): only the low byte of the accumulator changes.
+                acc = (acc & 0xFF00) | (acc as u8).wrapping_add(step as u8) as u16;
                 if acc >= small {
                     k = kk;
                     break;
@@ -1596,9 +1612,14 @@ impl Game {
         }
     }
 
-    /// 0x2B56C entries of classes that are not ported yet: back to AI state 0.
-    pub fn enemy_recover_other(&mut self, e: &mut Enemy, _h: Handle, _w84: u16) {
-        e.b.set_state(0x0200_0000);
+    /// 0x2B56C (table by +$84): the class' own "back to the AI" routine. Ported: 0xC, 0x28, 0x2C
+    /// (class 10, 0x3BC38), 0x20 / 0x24 (class 20, 0x45D74). Entries of classes that are not ported yet: back to AI state 0.
+    pub fn enemy_recover_other(&mut self, e: &mut Enemy, h: Handle, w84: u16) {
+        match w84 {
+            0x0C | 0x28 | 0x2C => self.c10_reset_ai(e, h),
+            0x20 | 0x24 => self.c20_reset_ai(e, h), // 0x45D74
+            _ => e.b.set_state(0x0200_0000),
+        }
     }
 
     /// +$58 = id, +$5A = 0, +$59 = 0, +$5E = next attack serial.
@@ -1632,6 +1653,10 @@ impl Game {
             return false;
         }
         if (e.b.dir.wrapping_sub(6) & 0xF) < 5 {
+            // 0x35782: `move.w a0,$76(a6)` with a0 = the table pointer of 0x35758 (the target is not
+            // reloaded): +$76 holds the low word of 0x35796 + variant * 16 (0x5796 / 0x57B6 / 0x57D6)
+            // until the next target pick. Quirk kept.
+            e.m.sw(TARGET, (0x35796u32 + (Self::enemy_variant(e) << 4)) as u16);
             return true;
         }
         e.m.sb(NO_DASH_ATK, 1);
@@ -1949,6 +1974,9 @@ impl Body {
     pub fn set_zi_keep(&mut self, v: i16) {
         self.z = (self.z & 0xFFFF) | ((v as i32) << 16);
     }
+    pub fn set_yi_keep(&mut self, v: i16) {
+        self.y = (self.y & 0xFFFF) | ((v as i32) << 16);
+    }
 }
 
 #[cfg(test)]
@@ -1970,6 +1998,15 @@ mod tests {
         assert_eq!(Game::enemy_angle_to(&b, 100, 0), 0x10); // -Z
         assert_eq!(Game::enemy_angle_to(&b, 0, 100), 0x18); // -X
         assert_eq!(Game::enemy_angle_to(&b, 200, 200), 4);
+    }
+
+    /// 0x10B2 adds with `add.b`: for dx 0x3F8 and dz 0x13E the accumulator (0x7F, step 0xFE) stays below dz
+    /// when only its low byte changes, so the sub-step is 4 (a word add would stop at 1 and give 0x17). Found by
+    /// the c10a recording of MAME, frame 467 (final direction 0x15 after one step of the turn).
+    #[test]
+    fn angle_adds_with_a_byte() {
+        let b = at(0x4B3, 0x13E);
+        assert_eq!(Game::enemy_angle_to(&b, 0xBB, 0), 0x14);
     }
 
     #[test]

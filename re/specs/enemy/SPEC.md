@@ -1487,3 +1487,71 @@ Three routines compare ROM words with an offset copy. If the ROM was modified th
 - The animation frame record bytes `+$2C/+$2D/+$2E` (hold, turn, attack-box mode) are used as described, but the full animation format is the animation topic. **[I]**
 - `f_939B6` (class 2 init), `0x4B58` (in water?), `0x9796` (landing effect): effects/sound only. **[U]**
 - Player-side fields (`+$A3` lives/credit flag, `+$C6` power, `+$A0` move ids) are used by the rank and target code; their exact meaning is the player topic. **[I]**
+
+---------------------------------------------------------------------------------------------------
+
+## 17. Stage 1 pool A classes decoded in phase 1 task 4a [O]
+
+All addresses are 68000 program addresses. `+$26` high byte = variant, low byte = entrance (for classes that have both).
+Port: `dino-rs/crates/dino-game/src/game/enemy/` (`scenery.rs`, `class10*.rs`, `claim.rs`).
+
+### 17.1 Scenery and opening scene
+- **Class 49, 0x56A70** (3 of them at stage start, `+$7D = 0xFF`, palette 0x9D, anim table 0x56C38): a bird that swings in X.
+  `+$86` acceleration, `+$8A` velocity (longs); var 0: limit +-0xA000, acceleration -0x100 / +0x100; var 2: +-0x8000, -0xC0 / +0xC0. The
+  init draws one `rand()` (`& 0x3F00` added to the velocity). It follows scroll2 (`+$82` = last camera X G.$744) and moves against scroll3
+  (`+$84` = last G.$7E4; var 2 four times as much, 0x56C24). Frees itself through 0x173C.
+- **Class 50, 0x56C80** (anim table 0x5708C, mode 0 does not run the first frame): seven variants (`+$26` 0..0xC) of sprites that fly across
+  the sky; positions relative to the camera (`cam_x - 0x30`, `+ 0x190`, ...). Variants 0 and 2 free themselves unless G.$748 == 0x100. Each
+  init draws 1 to 3 `rand()` (variant 4: X jitter, then `& 0x17000` of the vertical speed, whose bit 16 comes from the d0 upper word = 0).
+  Variants 0xA / 0xC add `rand() & 0x3F000` to X every frame, with d0 = the new X velocity (bits 16 and 17 come from its high word).
+  Variant 4 flaps once (`tst.l $A2(a6)` reads +$A2..+$A5). Spawned by the stage script (0xA, 0xC) and by pool B class 73.
+- **Pool B class 73, 0x89ABA**: bird spawner. Timer `+$80` starts at 0x80, then 0x100 + `rand() & 0x1FF`; each time a pool A slot is taken for class 50
+  (`+$20 = 0xC8`, var from the table 0x89B32 by `rand() & 7`: 0, 2, 4, 6, 8, 4, 6, 8); the delay is drawn even when the pool is full.
+- **Class 54, 0x576D2**: the bystander. `+$A4` = master handle (pool B class 74), `+$A2` = the master's `+$05` seen last; each change
+  adds 2 to its own `+$05`. By `+$05`: 4 anim 1, 8 anim 2, 0xC wait 0x3C, 0xE anim 3 and face right, 0x10 walk right 4 px per frame
+  until 0x173C frees it.
+- **Class 55, 0x5785C**: scripted thug (Ferris or Gneiss by `rand() & 1`, HP 1, `+$7D = 0xFF`). `+$05` 0 = the act list below, 2 = hit
+  reaction 0x2A606, 6 = grabbed 0x2B35A; mode 4 frees. `+$06` follows the master's `+$05`: 0 / 2 / 4 stand or walk right (variants
+  3..5 to X 0x3C0 / 0x3D0), 6 and 0xA stand, 8 walk to a spot (0x480 / 0x470 left, 0x3C0 / 0x3D0 right), 0xC run (`+$AA` px, `+$AC` in
+  Z every second frame; tables 0x5794A / 0x57956), 0xE jump (gravity -0x4000, speed 0x40000, sound 0x3B), 0x10 fly backwards (sound
+  0xA354 after `+$BA` frames), 0x12 blink out for `+$A8` frames, then mode 4.
+
+### 17.2 Class 10: HAMMER T. (name 3) / BLK ELMER (0xA) / WRENCH T. (0xB), 0x3B828
+- Mode 0 init sub 0 (0x3B850: id, `+$84` = 0xC / 0x28 / 0x2C, anim tables 0x3D150 / 0x3D400 / 0x3D6B0, HP 0x31424), sub 2 entrance
+  (low byte: 0 walk to the screen centre until a player is 0x18 px ahead or 0x80 px walked, 2 drop from 0x100, 4 / 6 start attack kind 3 / 5,
+  8 wait until visible and a player is within 0x50), sub 4 = end (pick target, reset). Mode 2: sub 0 AI, 2 hit reaction, 4 the hold
+  machine (`+$AC` 0 grab, 2 stomp), 6 grabbed. Mode 4: the class 2 death (score, blink 0x78 frames).
+- AI states `+$06`: 0 decide (wait `+$7A`), 2 approach the slot (`+$7C` 0..3 beside the target, table 0x3CC04 dx), 4 / 6 pauses, 8 walk to the
+  attack position (slots 4 / 5), 0xA the attack script (row `+$A4` of 0x3C1E6, position `+$A6`; actions 0 A punch (anim 6, atk 4),
+  2 B punch (anim 7, atk 5), 4 C charging punch (atk 6, run, slide, wait), 6 D run punch then a jump slam (atk 6 / 7, shake G.$755C = 2)), 0xC taunt
+  (sound 0x5A), 0xE fall, 0x10 paired attack on a held or downed player, 0x12 hop down a ledge. Attack kind pick 0x3BFF2: table 0x3C0EE row of the
+  variant (16 x 2 bytes per row), kind 2 starts the grab machine, 2..6 go straight to 0xA, 0 / 1 / 7 / 8 walk first.
+- `0x3C1DA`: when the target is in frame class 8 and the thug was the last attacker, `rand() & 0x1F < 0x10` starts the taunt (0x3C222; the
+  state word 0x2000C000 is a typo for 0x02000C00 and is overwritten at once).
+- Claim: the player (downed, frame 0x21 / 0x22 / 0x23) lets list A / B thugs claim him (0x6606): both objects get `+$7E` (A) or `+$7F` (B),
+  the thug's `+$76` becomes the player. A thug with `+$7E` runs the stomp machine (needs the player's `+$CD` != 0), with `+$7F` the paired
+  attack (state 0x10). Both position tests that start the grab (0x3C74A) and the stomp (0x3C9C8) carry a bias of 0x400 and never pass.
+- Damage on the held player: 0x125C0 (attack record `+$58`, 0x6422 scale, hit stop on both, drop check 0x1177A, power factor 0x11738).
+
+### 17.3 Library notes
+- `0x103A` angle: the step loop adds with `add.b` (low byte only). `0x32540`: repeat count = `table[0x32566 + (level & 0x18) * 4 + rand() & 0x1F] - 1`.
+  `0xA062`: sound 0x73 / 0xF9 (toggle bit 3 of G.$43B), `0xA034`: sound 0x5A (pan by X). `0x4AF4` / `0x4B26`: register in the lists 0x6A5A / 0x6A8E (only
+  while `+$00 == 1`).
+- `0x1189C` (thrown body hits another enemy): the hit spark is placed (0x1194C) before the victim turns (0x11950).
+- `0x35782` (class 2 dash attack check): on success `+$76` = low word of 0x35796 + variant * 16, not the target.
+
+### 17.4 Class 20: PUNK (name 8) / THUG (name 9), 0x457B0
+- Init sub 0 (0x457D8: id 8 / 9, `+$84` 0x20 / 0x24, anim tables 0x47244 / 0x475FE), sub 2 entrance by the low byte of `+$26`:
+  0 / 2 wait standing / sitting (random time 0x60..0x240 from the tables 0x458E6 / 0x459E0, until visible and a player is within 0x50),
+  4 walk in (anim 1, speed 0x47204), 6 dash in (anim 2, speed 0x1F), 8 fade in (OBJ palette 0x1D steps through 0x45C32), 0xA drop from 0x100.
+  Sub 4 ends it (pick target and slot, 0x45DB0).
+- AI `+$06`: 0 decide, 2 walk to the slot beside the target (slot 0..5, table 0x46AF6) until 0x80 in front of it (window 0x60 x 0x40), then the
+  action by `rand()` (table 0x45E64, 16 per variant): 0 walk about (0x46C24 keeps 0x80 away), 2 hops and a jump at the player (0x45F3C),
+  4 the choice machine `+$A5` (table 0x460F8: 0 two hops, 2 walk beside the target then strafe, 4 walk to the slot and jump at the target);
+  state 4 re-decides every 0x28 frames (`+$A9`) and starts the attack when a player stands in front (0x4716C) or by the chance table
+  0x46D98 (by level). 6 the attack script (row `+$AA` of 0x463F6 by `rand()` and the variant, position `+$AC`; actions 0 walk to the offset
+  point, 2 / 4 punches (anim 0xC / 0xD, atk 0xD / 0xE), 6 jump kick (atk 0xF, anim 0x15), 8 jump with a dive (atk 0x10), 0xA the leaping dive
+  with a velocity from a division by 0x33 (high byte of the speed = quotient)), then the recovery 0x46940 (table 0x4697E / 0x4699E by
+  level band). 8 fall (anim 0x16 then 0xF). Death: the class 2 routine (0x46A2E).
+- The quirks: 0x46B0E turns by +6 only (the -6 branch is dead); 0x45FF8 jumps when the 0x46BE0 window test fails; the sound 0x9C20 is the
+  0xE0 / 0xE1 toggle (bit 6 of G.$43A) for non-players.

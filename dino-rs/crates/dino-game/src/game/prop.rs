@@ -33,6 +33,7 @@ impl Game {
             let mut p = std::mem::take(&mut self.props.slots[i]);
             match p.b.k20 / 4 {
                 15 => self.prop_wave(&mut p, h, i),
+                73 => self.prop_bird_spawner(&mut p, i),
                 _ => self.prop_unported(&mut p, h, i),
             }
             self.props.slots[i] = p;
@@ -53,6 +54,45 @@ impl Game {
         clear_header(&mut p.b);
         p.b.b63 = 0;
         self.props.release(i);
+    }
+
+    /// 0x89ABA pool B class 73: the bird spawner of stage 1. Every 0x100..0x2FF frames it takes a
+    /// pool A slot for a class 50 bird (`+$20 = 0xC8`) of variant 0, 2, 4, 6, 8, 4, 6 or 8 (table
+    /// 0x89B32, one `rand()`), then draws the next delay (one `rand()`). A full pool still draws
+    /// the delay. (Phase 1 task 4a: the birds need their spawner for the `rand()` order.)
+    fn prop_bird_spawner(&mut self, p: &mut Prop, i: usize) {
+        match p.b.mode {
+            0 => {
+                // 0x89ACE, continues at 0x89AE0 in the same frame.
+                p.b.mode = 2;
+                p.b.live = 2;
+                p.m.sw(TIMER, 0x80);
+                self.prop_bird_spawner_tick(p);
+            }
+            2 => self.prop_bird_spawner_tick(p),
+            _ => self.prop_free(p, i),
+        }
+    }
+
+    /// 0x89AE0.
+    fn prop_bird_spawner_tick(&mut self, p: &mut Prop) {
+        let t = p.m.w(TIMER).wrapping_sub(1);
+        p.m.sw(TIMER, t);
+        if t != 0 {
+            return;
+        }
+        if let Some(h) = self.spawn_alloc(0) {
+            let b = self.body_mut(h);
+            b.live = 1;
+            b.k20 = 0xC8;
+            b.var26 = 0;
+            b.dir = 0;
+            let k = ((self.rand() & 7) * 2) as u32;
+            let v = self.assets.enemy.t.u16(0x89B32, k);
+            self.body_mut(h).var26 = v;
+        }
+        let d = (self.rand() & 0x1FF).wrapping_add(0x100);
+        p.m.sw(TIMER, d);
     }
 
     fn prop_wave_script(&self, p: &Prop) -> &'static Wave {

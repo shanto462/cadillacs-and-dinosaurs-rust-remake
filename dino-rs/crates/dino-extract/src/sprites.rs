@@ -32,6 +32,17 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x30B64, // name 0
     0x30BB0, // name 1
     0x30BFC, // name 0x1A
+    // Pool A scenery and opening scene (phase 1 task 4a): classes 49, 50, 54, 55.
+    0x56C38, // class 49 background birds
+    0x5708C, // class 50 flying scenery
+    0x577D2, // class 54 opening scene bystander
+    0x57BA4, // class 55 scripted thug, Ferris
+    0x57C20, // class 55, Gneiss
+    // Class 10 (phase 1 task 4a): animations, then the hit tables (0x2E68C by +$84) and the grabbed
+    // tables (0x2E724) of the names HAMMER T. (0xC), BLK ELMER (0x28), WRENCH T. (0x2C).
+    0x3D150, 0x3D400, 0x3D6B0, 0x2F480, 0x2F5E2, 0x2F744, 0x30E34, 0x30E80, 0x30ECC,
+    // Class 20 (PUNK 0x47244, THUG 0x475FE) and their hit (0x2E68C) / grabbed (0x2E724) tables.
+    0x47244, 0x475FE, 0x2FFAA, 0x30132, 0x31048, 0x31094,
     // Pool E (items, phase 1 task 2). Containers 0x28C8A..0x28D1C, one table per variant.
     0x2995E, // container var 0
     0x2998C, // var 2
