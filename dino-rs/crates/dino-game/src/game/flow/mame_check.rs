@@ -121,12 +121,48 @@ struct Differences {
     layer: Option<(u16, u16)>,
     counter: Option<(u16, u16)>,
     sounds: Option<(Vec<u16>, Vec<u16>)>,
+    /// The attract state byte G.-$7030 (MAME, port).
+    state: Option<(u8, u8)>,
+    /// The variables of the system task and the game start that differ (name, MAME, port), see
+    /// `system_fields`. Not part of `none`: the demos and other screens of MAME have their own values.
+    sys: Vec<(&'static str, u16, u16)>,
 }
 
 impl Differences {
-    fn none(&self) -> bool {
-        *self == Differences::default()
+    /// The system variables that matter in every screen of the attract loop: coins, credits, the press
+    /// start flag, in game, started and the wait counter (not the fade mask, the mode and G.$4D5, which
+    /// the stubs and the real screens set differently).
+    fn core_sys(&self) -> Vec<&(&'static str, u16, u16)> {
+        self.sys.iter().filter(|(n, _, _)| !n.starts_with("fade") && !n.starts_with("mode") && !n.starts_with("G.$4D5")).collect()
     }
+
+    /// Nothing differs in the screens, the layer control, the title counter, the sounds and the state byte.
+    fn none(&self) -> bool {
+        Differences { sys: Vec::new(), ..self.clone() } == Differences::default()
+    }
+}
+
+/// The system task's and the game start's variables: (name, address, MAME's value of the byte or
+/// word at it, the port's). Compared by the coin and start tests.
+fn system_fields(g: &Game, ram: &[u8]) -> Vec<(&'static str, u16, u16)> {
+    let b = |a: u32| ram[(a - 0xFF0000) as usize] as u16;
+    let s = &g.flow.front.sys;
+    [
+        ("coins P1 (G.$47B)", b(0xFF847B), s.slots[0].coins as u16),
+        ("credits P1 (G.$47D)", b(0xFF847D), s.slots[0].credits as u16),
+        ("credits pool (G.$46A)", b(0xFF846A), s.credits as u16),
+        ("press start up (G.$46D)", b(0xFF846D), s.press_up as u16),
+        ("in game (G.$4CC)", b(0xFF84CC), g.flow.in_game as u16),
+        ("started (G.$4CD)", b(0xFF84CD), g.flow.started as u16),
+        ("G.$4D5", b(0xFF84D5), g.spawn.g.b4d5 as u16),
+        ("mode (G.$4D0)", b(0xFF84D0), g.flow.mode as u16),
+        ("fade mask (G.$44A)", b(0xFF844A), g.fade.mask as u16),
+        ("wait counter (G.$4F6)", ram16(ram, 0xFF84F6), g.rank.w4f6),
+    ]
+    .into_iter()
+    .filter(|&(_, m, p)| m != p)
+    .map(|(n, m, p)| (n, m, p))
+    .collect()
 }
 
 fn ram16(ram: &[u8], a: u32) -> u16 {
@@ -206,6 +242,11 @@ fn compare_power_on(
         if mc != pc {
             d.counter = Some((mc, pc));
         }
+        d.sys = system_fields(&g, ram);
+        let (ms, ps) = (ram[0xFF0FD0 - 0xFF0000], g.flow.front.attract_state);
+        if ms != ps {
+            d.state = Some((ms, ps));
+        }
         let (msn, psn) = (mame_sounds(&prev_ram, ram), g.w.sounds.clone());
         if msn != psn {
             d.sounds = Some((msn, psn));
@@ -214,6 +255,25 @@ fn compare_power_on(
         out.push(d);
     }
     (g, out)
+}
+
+/// The demo (0x99E88) clears the RAM it uses, the state byte among it, and restores it 3 frames later;
+/// the stub of the demo does not (M1-12). Takes these runs of 4 records or fewer, where MAME has
+/// 0 and the port the real state, out of the differences.
+fn drop_demo_blips(rows: &mut [Differences]) {
+    let mut k = 0;
+    while k < rows.len() {
+        if matches!(rows[k].state, Some((0, p)) if p != 0) {
+            let s = k;
+            while k + 1 < rows.len() && rows[k + 1].state == rows[s].state {
+                k += 1;
+            }
+            if k - s < 4 {
+                rows[s..=k].iter_mut().for_each(|d| d.state = None);
+            }
+        }
+        k += 1;
+    }
 }
 
 /// The records in `rows` (index = record) that differ in `what`, as ranges "a..=b".
@@ -400,7 +460,9 @@ fn slide_texts_match_mame() {
 fn power_on_report() {
     let Some(a) = assets() else { return };
     let last = std::env::var("DINO_LAST").ok().and_then(|v| v.parse().ok()).unwrap_or(940);
-    let (_, rows) = compare_power_on(a, TRACE, last, |_| [0; 3], |_, _| {});
+    let trace = std::env::var("DINO_TRACE").unwrap_or_else(|_| "../../../re/out/traces/attract3.mame.trc".into());
+    let (_, mut rows) = compare_power_on(a, &trace, last, |_| [0; 3], |_, _| {});
+    drop_demo_blips(&mut rows);
     println!("s1      {}", ranges(&rows, |d| d.s1 > 0));
     println!("s2      {}", ranges(&rows, |d| d.s2 > 0));
     println!("s3      {}", ranges(&rows, |d| d.s3 > 0));
@@ -409,6 +471,7 @@ fn power_on_report() {
     println!("layer   {}", ranges(&rows, |d| d.layer.is_some()));
     println!("counter {}", ranges(&rows, |d| d.counter.is_some()));
     println!("sounds  {}", ranges(&rows, |d| d.sounds.is_some()));
+    println!("state   {}", ranges(&rows, |d| d.state.is_some()));
     let from: usize = std::env::var("DINO_FROM").ok().and_then(|v| v.parse().ok()).unwrap_or(25);
     for (k, d) in rows.iter().enumerate().skip(from) {
         if !d.none() {
@@ -574,4 +637,229 @@ fn boot_screens_skip_like_the_original() {
         assert!(bad.is_empty(), "{what}: differs at records {:?}", &bad[..bad.len().min(4)]);
         assert_eq!(layer_change_ticks(a, 335, press), (Some(layer_at), Some(layer_at + 4)), "{what}");
     }
+}
+
+/// The attract loop from power on without input, 28960 records of `attract3.mame.trc` (made like the
+/// others, `re/harness/record.sh re/harness/scripts/attract.txt attract3 29500` with the video
+/// clock; see `re/harness/README.md`). A3: the attract state byte G.-$7030 changes at the video frames
+/// 2744, 6874, 9311, 13411, 15848, 19979, 22416, 26516 and 28953 (records 2 less), equal in
+/// every record (the demo's own clear of the byte for 3 frames aside, see `drop_demo_blips`). The
+/// title is real in every pass: from the frame of its setup (layer control 0x1396) to the one before
+/// the next screen starts, tilemaps, palettes, sprite list, layer control, title counter and sound
+/// codes equal the recording. The other screens are stubs of the measured length (`attract.rs`) and
+/// are not compared.
+#[test]
+fn attract_loop_state_and_titles_match_mame() {
+    let Some(a) = assets() else { return };
+    let trace = "../../../re/out/traces/attract3.mame.trc";
+    if !Path::new(trace).exists() {
+        eprintln!("mame_check: {trace} is missing, skipped");
+        return;
+    }
+    let (_, mut rows) = compare_power_on(a, trace, 28960, |_| [0; 3], |_, _| {});
+    drop_demo_blips(&mut rows);
+    let state = ranges(&rows, |d| d.state.is_some());
+    assert!(state.is_empty(), "the attract state byte differs at records {state}");
+    // (setup frame, last frame) of the ten titles: the layer control 0x1396 to the frame before the title returns
+    let titles = [
+        (319, 918),
+        (2744, 3342),
+        (6876, 7476),
+        (9313, 9913),
+        (13413, 14013),
+        (15848, 16447),
+        (19981, 20581),
+        (22418, 23018),
+        (26518, 27118),
+        (28953, 28960),
+    ];
+    for (from, to) in titles {
+        let bad: Vec<(usize, &Differences)> = rows.iter().enumerate().take(to + 1).skip(from).filter(|(_, d)| !d.none()).collect();
+        assert!(bad.is_empty(), "title {from}..={to}: {} records differ, first {:?}", bad.len(), &bad[..bad.len().min(3)]);
+    }
+}
+
+/// A hash of what the player sees and hears of the game after a tick, to tell two runs apart.
+fn fingerprint(g: &Game) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    for layer in [&g.vram.scroll1, &g.vram.scroll2, &g.vram.scroll3] {
+        layer.iter().for_each(|c| (c.code, c.attr).hash(&mut h));
+    }
+    g.pal.words.hash(&mut h);
+    g.sprites.entries.iter().for_each(|e| (e.x, e.y, e.code, e.attr).hash(&mut h));
+    (g.w.sounds.clone(), g.w.layer_ctrl, g.flow.in_game, g.flow.front.attract_state, g.flow.mode).hash(&mut h);
+    h.finish()
+}
+
+/// The recordings of the flow scenarios (`re/harness/scripts/flow_system.txt`, recorded in one batch
+/// with `re/harness/record.sh --batch`): the same inputs reach a task one record earlier than in the
+/// plain recordings, so the port gets the script line `f` at tick `f - 1`.
+fn flow_trace(name: &str) -> Option<String> {
+    let p = format!("../../../re/out/traces/flow_{name}.mame.trc");
+    if Path::new(&p).exists() {
+        return Some(p);
+    }
+    eprintln!("mame_check: {p} is missing, skipped");
+    None
+}
+
+/// A10, a coin at video frame 450 to 457 and a start at 600 to 605 (`flow_c-title`, script lines
+/// `450-457:C` and `600-605:S`): the coin is accepted when the signal has been high for two frames and low
+/// for two (record 458), the credit, the sounds 0xFF00 and 0x30, the press start screen (G.$46D =
+/// 0xFF) and its picture (scroll2, scroll3, palettes, sprite list, layer control: scroll1 holds the
+/// prompts of the system task, M2-02) equal the recording from the frame its task first runs; the
+/// start (record 599) takes the credit, sets G.$4CC and G.$4CD, queues 0x31, fades out for 16 frames
+/// (the fade mask clears at 614), the game task is created at 617 (G.$4D5 = 1, G.$46D = 0) and its mode
+/// becomes 4 (the select) at 621. Every watched variable of `system_fields` equals up to then.
+#[test]
+fn coin_and_start_match_mame() {
+    let Some(a) = assets() else { return };
+    let Some(trace) = flow_trace("c-title") else { return };
+    let (_, rows) = compare_power_on(a, &trace, 621, |_| [0; 3], |k, g| {
+        g.w.coins = (449..=456).contains(&k) as u8;
+        g.w.system = 8 | (599..=604).contains(&k) as u8;
+    });
+    let mut bad = Vec::new();
+    for (k, d) in rows.iter().enumerate().skip(25) {
+        if !d.sys.is_empty() || d.sounds.is_some() || d.state.is_some() || d.counter.is_some() {
+            bad.push(format!("record {k}: {:?} sounds {:?} state {:?} counter {:?}", d.sys, d.sounds, d.state, d.counter));
+        }
+        let picture = if k < 458 {
+            d.s1 + d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some()
+        } else if k >= 461 && k < 599 {
+            d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some()
+        } else {
+            false
+        };
+        if picture {
+            bad.push(format!("record {k}: picture {d:?}"));
+        }
+    }
+    assert!(bad.is_empty(), "{} problems, first: {:?}", bad.len(), &bad[..bad.len().min(4)]);
+}
+
+/// A11, a start without a credit does nothing: `flow_s-nocredit` (start at 450 to 455 and 1000 to 1005)
+/// and `flow_s-nocredit-demo` (4000 to 4005) are identical to the plain attract recording in the
+/// pictures, the layer control, the state byte and the sound ring. The port gives the same output
+/// with and without the presses in every tick, and equals the recording where its screens are real
+/// (the title, records 25 to 918).
+#[test]
+fn start_without_credit_does_nothing() {
+    let Some(a) = assets() else { return };
+    let Some(trace) = flow_trace("s-nocredit") else { return };
+    let press = |k: i32| (449..=454).contains(&k) || (999..=1004).contains(&k) || (3999..=4004).contains(&k);
+    let (mut with, mut without) = (Game::new(a), Game::new(a));
+    with.flow_boot();
+    without.flow_boot();
+    for k in 0..4100 {
+        with.w.system = 8 | press(k) as u8;
+        without.w.system = 8;
+        with.tick();
+        without.tick();
+        assert_eq!(fingerprint(&with), fingerprint(&without), "a start without credit changed something at tick {k}");
+        assert_eq!(with.flow.in_game, 0);
+    }
+    let (_, rows) = compare_power_on(a, &trace, 1400, |_| [0; 3], |k, g| g.w.system = 8 | press(k) as u8);
+    let bad: Vec<(usize, &Differences)> = rows.iter().enumerate().skip(25).take(894).filter(|(_, d)| !d.none() || !d.core_sys().is_empty()).collect();
+    assert!(bad.is_empty(), "differs at {:?}", &bad[..bad.len().min(3)]);
+    let state = ranges(&rows[25..], |d| d.state.is_some() || !d.core_sys().is_empty());
+    assert!(state.is_empty(), "the state byte or a system variable differs at records {state}");
+}
+
+/// A12, free play (`flow_freeplay`: G.$46B poked to 1 at power frame 100, start at 500 to 505): the
+/// title shows FREE PLAY (the blink task reads G.$46B), there is no press start screen, a start takes
+/// no credit, queues 0x31, fades out, creates the game task and reaches the select (mode 4) at
+/// record 521, 22 frames after the start at 499. The title records 25 to 498 equal the recording
+/// (FREE PLAY text included) and every watched variable equals up to the select.
+#[test]
+fn free_play_start_matches_mame() {
+    let Some(a) = assets() else { return };
+    let Some(trace) = flow_trace("freeplay") else { return };
+    let (_, rows) = compare_power_on(a, &trace, 521, |_| [0; 3], |k, g| {
+        if k == 99 {
+            g.flow.front.sys.free_play = true; // the poke
+        }
+        g.w.system = 8 | (499..=504).contains(&k) as u8;
+    });
+    let bad: Vec<(usize, &Differences)> = rows.iter().enumerate().skip(25).filter(|(k, d)| (*k < 499 && !d.none()) || !d.sys.is_empty() || d.sounds.is_some()).collect();
+    assert!(bad.is_empty(), "{} records differ, first {:?}", bad.len(), &bad[..bad.len().min(3)]);
+}
+
+/// F35, the wait counter G.$4F6 (0x1827A): it counts every frame while nobody plays and the common pool
+/// has credits or free play is on, and a lost pass of the system task (the attract task is busy with
+/// a clear) skips a count. `m104_free` is the attract loop with G.$46B poked to 1 at power frame 100
+/// (`DINO_POKES`) for 3100 records; the counter equals it in every record up to 3000 (it has lost 12 counts
+/// by then: at records 316 to 319, 920, 1245, 1606, 1967, 2319 to 2321 and 2743). With the factory
+/// settings (separate chutes) a coin gives a credit to the player and not to the common pool, so the
+/// counter stays 0: `m104_coin` (a coin at 448 to 455, 3100 records) shows the press start screen the
+/// whole time with G.$4F6 = 0 and the same picture as the port.
+#[test]
+fn wait_counter_matches_mame() {
+    let Some(a) = assets() else { return };
+    let free = "../../../re/out/traces/m104_free.mame.trc";
+    let coin = "../../../re/out/traces/m104_coin.mame.trc";
+    if !Path::new(free).exists() || !Path::new(coin).exists() {
+        eprintln!("mame_check: {free} or {coin} is missing (see the doc of this test), skipped");
+        return;
+    }
+    let (g, rows) = compare_power_on(a, free, 3000, |_| [0; 3], |k, g| {
+        if k == 99 {
+            g.flow.front.sys.free_play = true;
+        }
+    });
+    let bad: Vec<(usize, Vec<&(&str, u16, u16)>)> = rows.iter().enumerate().skip(25).filter(|(_, d)| !d.core_sys().is_empty()).map(|(k, d)| (k, d.core_sys())).collect();
+    assert!(bad.is_empty(), "{} records differ, first {:?}", bad.len(), &bad[..bad.len().min(3)]);
+    assert_eq!(g.rank.w4f6, 2890, "the counter after 3000 records (2902 frames of counting, 12 lost)");
+    // the title (FREE PLAY text included) and the state byte equal the recording through the title
+    let title: Vec<&Differences> = rows.iter().skip(25).take(894).filter(|d| !d.none()).collect();
+    assert!(title.is_empty(), "the free play title differs: {:?}", title.first());
+
+    let (g, rows) = compare_power_on(a, coin, 3000, |_| [0; 3], |k, g| g.w.coins = (448..=455).contains(&k) as u8);
+    assert_eq!(g.rank.w4f6, 0, "factory settings: the counter does not run with a credit of a player");
+    assert_eq!(g.flow.front.sys.slots[0].credits, 1);
+    let bad: Vec<(usize, &Differences)> =
+        rows.iter().enumerate().skip(25).filter(|(k, d)| !d.core_sys().is_empty() || (*k >= 461 && (d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some()))).collect();
+    assert!(bad.is_empty(), "{} records differ, first {:?}", bad.len(), &bad[..bad.len().min(3)]);
+}
+
+/// F25, the attract state is kept across games (D4d s3.1, probe `d4d-b16/go-attract`, no recording
+/// here): a game over in state 0 (the profile cards are up) restarts the attract task, which shows the
+/// ranking once (0x97C94), then runs the routine of the same state 0 again (title, profile cards,
+/// ranking) and only then steps to state 2. Port only.
+#[test]
+fn game_over_resumes_the_attract_state() {
+    let Some(a) = assets() else { return };
+    let mut g = Game::new(a);
+    g.flow_boot();
+    for _ in 0..1000 {
+        g.tick(); // in the profile cards of state 0
+    }
+    assert_eq!((g.flow.front.attract_state, g.flow.front.stub), (0, super::attract::Stub::Profiles));
+    g.flow.in_game = 1; // a game that ends at once
+    g.flow_game_over();
+    let mut events: Vec<String> = Vec::new();
+    let mut last_stub = super::attract::Stub::None;
+    let mut last_state = 0;
+    for _ in 0..5000 {
+        g.tick();
+        if g.flow.front.stub != last_stub {
+            last_stub = g.flow.front.stub;
+            if last_stub != super::attract::Stub::None {
+                events.push(format!("{last_stub:?}"));
+            }
+        }
+        if g.flow.front.title == 1 && events.last().map(String::as_str) != Some("Title") {
+            events.push("Title".into());
+        }
+        if g.flow.front.attract_state != last_state {
+            last_state = g.flow.front.attract_state;
+            events.push(format!("state {last_state}"));
+        }
+        if last_state == 2 {
+            break;
+        }
+    }
+    assert_eq!(events, ["Ranking", "Title", "Profiles", "Ranking", "state 2"]);
+    assert_eq!(g.flow.front.game_over_flag, 0, "the flag was cleared after the ranking");
 }

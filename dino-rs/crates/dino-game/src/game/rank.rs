@@ -77,6 +77,23 @@ impl Game {
         self.rank_area_start();
     }
 
+    /// 0x1827A, run by the system task every frame: G.$4F6 counts the frames the machine waits
+    /// with a credit (or in free play) outside a game; a game clears it. `pool` is the word at
+    /// G.$46A (the credits of the common pool in the high byte, the free play flag in the low byte):
+    /// with separate chutes (the factory setting) the pool stays 0 and the counter does not run.
+    /// The counter wraps from 0xFFFF to 0x8000. (The game start 0x17F8A reads it only after this
+    /// routine cleared it in the pass that creates the game task, so the rank band is always 0.)
+    pub fn rank_waited_tick(&mut self, in_game: bool, pool: u16) {
+        if in_game {
+            self.rank.w4f6 = 0;
+        } else if pool != 0 {
+            self.rank.w4f6 = self.rank.w4f6.wrapping_add(1);
+            if self.rank.w4f6 == 0 {
+                self.rank.w4f6 = 0x8000;
+            }
+        }
+    }
+
     /// 0x1800E: per-stage rank adjustment, then area start.
     pub fn rank_stage_start(&mut self) {
         let t = &self.assets.enemy.t;

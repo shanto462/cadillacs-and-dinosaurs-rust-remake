@@ -14,6 +14,8 @@
 //! typewriter), `picture` (page loaders, block printers, scene palettes) and `config` (the
 //! settings file). `HANDOFF.md` in `re/specs/flow/` shows how a scene script uses them.
 
+#[path = "flow/attract.rs"]
+pub mod attract;
 #[path = "flow/boot.rs"]
 pub mod boot;
 #[path = "flow/config.rs"]
@@ -88,6 +90,9 @@ pub struct Flow {
     pub chosen: u8,
     /// G.$4CF 2-player layout (from DIP A bit 4 at game start).
     pub b4cf: u8,
+    /// A game was started by the system task and the game task 0xA870 is not created yet (the
+    /// fade out and the clear take 18 frames): `flow_frame` does not run the game task.
+    pub game_pending: bool,
     /// G.$4D0 game mode, G.$4D1 sub-mode, G.$4D2 sub-sub word.
     pub mode: u8,
     pub sub: u8,
@@ -179,6 +184,7 @@ impl Game {
 
     /// One frame of all flow tasks, in task slot order.
     pub fn flow_frame(&mut self) {
+        self.flow_coin_isr(); // the interrupt: 0x9D4BE reads the coin inputs before the tasks
         self.flow_system_task(); // slot 0
         if self.flow.in_game != 0 {
             self.flow_join_task(); // slot 0x10
@@ -193,6 +199,7 @@ impl Game {
         // inputs of the frame before.
         self.flow.front.prev_input = self.w.input;
         self.flow.front.prev_system = self.w.system;
+        self.flow.front.ticks = self.flow.front.ticks.wrapping_add(1);
     }
 
     // ---------------------------------------------------------------- game task 0xA870
@@ -247,7 +254,7 @@ impl Game {
 
     /// The game task loop body (0xA914): sleep (G.$4D6 & 15) frames, count, run the mode.
     fn flow_game_task(&mut self) {
-        if self.flow.in_game == 0 {
+        if self.flow.in_game == 0 || self.flow.game_pending {
             return;
         }
         if self.flow.wait > 1 {
@@ -261,7 +268,7 @@ impl Game {
         self.w.frame = self.w.frame.wrapping_add(1);
         self.flow.frame = self.flow.frame.wrapping_add(1);
         match self.flow.mode {
-            0x00 => self.flow_mode_init(),
+            0x00 => self.flow_mode_start(),
             0x04 => self.flow_select_mode(),
             0x08 => self.flow_stage_start(), // 0xD898: intermission cut-scenes not ported
             0x0C => {
@@ -274,7 +281,30 @@ impl Game {
         }
     }
 
-    /// Mode 0 (0xA978): game start setup, then the character select.
+    /// Mode 0 as the game task runs it after a start from the attract loop (0xA978): the routine
+    /// needs 4 frames of CPU time. The recording shows the rank start (0x17F8A) and the palettes of the
+    /// stage at full brightness (0x8A44, 0x892C) after the first 2, the rest of `flow_mode_init`
+    /// (HUD, mode 4) 2 frames later.
+    fn flow_mode_start(&mut self) {
+        if self.flow.sub2 != 0 {
+            self.flow_stage_setup(); // 0xA9BE (loads the palettes again)
+            return;
+        }
+        self.flow_join_start(); // task 0x6C4A in slot 0x10
+        self.vram.clear2();
+        self.vram.clear3();
+        self.sprites.clear();
+        self.rank.dip = self.flow.dip.dip_b;
+        self.rank_game_start(); // 0x17F8A
+        self.rank.started = true;
+        self.load_all_palettes(); // 0x8A44
+        self.brightness_full(); // 0x892C
+        self.flow.sub2 = 1;
+        self.flow.wait = 2;
+    }
+
+    /// Mode 0 (0xA978): game start setup, then the character select (in one go: the direct start
+    /// `start_stage` uses it).
     fn flow_mode_init(&mut self) {
         self.flow_join_start(); // task 0x6C4A in slot 0x10
         self.vram.clear2();
@@ -501,6 +531,8 @@ impl Game {
         self.flow_clear_screen();
         self.sound(0xFF00);
         self.flow.in_game = 0;
+        self.flow.game_pending = false;
+        self.flow.front.sys.press_up = 0; // G.$46D
         for p in self.players.iter_mut() {
             p.b.live = 0;
         }

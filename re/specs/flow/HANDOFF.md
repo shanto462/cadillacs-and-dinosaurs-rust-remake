@@ -10,8 +10,9 @@
   hooks (0x12BE4 documented no-op), `start_stage` (direct start, used by --stage / --chars).
 
 ## Stubbed (TODO(port) in code)
-- `flow/front.rs`: system task (coins, credits, start), title, press start, character select
-  (mode 4 currently starts the stage at once).
+- `flow/front.rs`: character select (mode 4 starts the stage at once with Jack, Mustapha, Hannah for the
+  players that pressed start; M2-03). The system task is ported without the credit text, SERVICE and the
+  outputs (M2-02); the attract loop, title and press start screen are done (`boot.rs`, `attract.rs`).
 - `flow/join.rs`: join / continue task 0x6C4A, continue mode 0x10 (currently game over).
 - Clear task 0xB97E tally (waits 120 frames), intro states 0-2 (map, EPISODE title), mode 8
   cut-scenes, ending 0x1C, weapon display 0x2389C (needs player +$B4/+$B6).
@@ -25,8 +26,7 @@
    in boss inits, `flow_boss_defeated` (0xACEE), set `g.flow.b4e3` from the player scripts
    (then delete the TEMP in `flow_intro_task`). Lives / score / rank are in `g.hud.stats[i]`.
 3. Port `join.rs` (0x6C4A states, strings 0x84D6.., positions in SPEC section 6 / fork notes).
-4. Port `front.rs`: system task coin logic 0x9D4BE / 0x9D386 / 0x9D196, title 0x9A3CE, press
-   start 0x983EE, select 0xAD46 (0xAF7C, 0xB06A, 0xB122, 0xB25E).
+4. Select 0xAD46 (0xAF7C, 0xB06A, 0xB122, 0xB25E); the system task, title and press start are done.
 5. Clear task tally 0xB97E, intro map / episode title, weapon display.
 
 ## Key mapping needed (already wired by the main session)
@@ -46,6 +46,7 @@ sections 2 and 3). Everything below is in `dino-rs/crates/dino-game/src/game/flo
 | `text.rs` | string printers and the typewriter | 0xBB6 / 0xBAE, 0xC4C / 0xC44, 0xC9A, 0xCD2 / 0xCE4 / 0xCDA, 0x84F72, 0xE12 / 0xE0A, 0xE68, 0x84736 (+ 0x84E0C), 0x7EC20 / 0x7EC48 (0xC0A is `hud_print`, already in `hud.rs`) |
 | `picture.rs` | page loaders, block printers, scene palette sets | 0x20454, 0x204CA, 0x20592, 0x98B86, 0x98BAE, 0x89E6 |
 | `config.rs` | the settings file (`Config` named options, `Settings` = the three cooked bytes G.$777A..C) | 0xAC794 / 0xAC7BC (cooking), factory image 0xACBF4 |
+| `attract.rs` | the attract state byte, the routines of its states, the stub screens (M1-04) | 0x97C46, 0x97C94, 0x97D84, 0x97CC0, 0x97D02, 0x983D8 |
 | `boot.rs` | power on to the title: the boot task, the boot screens, the head of the attract task, the title, the INSERT COIN blink task, the press start screen (M1-03) | 0xA69A, 0x9DCF6, 0x9DD80, 0x97C20, 0x97D84 (head), 0x9A3CE, 0x98874, 0x983EE, 0x978EE, 0x980B0, 0x110C |
 | `mame_check.rs` | tests that compare the above with the MAME recordings (see "Checks") | |
 | `../snd.rs` | the attract sound filter `snd_passes` / `Game::snd_heard` | 0x610..0x69E |
@@ -153,57 +154,91 @@ power-on run with the same tilemap and palette regions as the MAME recordings.
   0x84736, the typewriter, `speed_up`. Check them against a real screen when a scene first uses them
   (the credit text of the press-start screen uses 0xCE4, 0xC4C, 0xBB6 and 0xE68).
 
-## What M1-04 starts from (M1-03 is done: power on to the end of the title is exact)
+## What M1-05 and M2-02 start from (M1-03 and M1-04 are done)
 
-`flow/boot.rs` is the whole path from power on to the title, equal to the MAME recording
-`attract.mame.trc` in every record from 25 to 918 (tilemaps, the four palette banks, the sprite list,
-layer control G.$28, title counter G.-$7022, sound codes): `mame_check.rs`
-`power_on_boot_and_title_match_mame`. `cargo test -p dino-game power_on_report -- --ignored --nocapture`
-lists the differing records by kind for any change (`DINO_LAST`, `DINO_FROM`).
+Power on, the title, the attract state machine, the coin and the start of a game are exact against MAME.
+`cargo test -p dino-game power_on_report -- --ignored --nocapture` lists the records that differ from a recording by
+kind (`DINO_TRACE` picks the recording, default `attract3.mame.trc`; `DINO_LAST`, `DINO_FROM`).
 
-* Slot 0x10 is `front.task`, one `Scene` whose state is the script position (`boot.rs`, `mod st`): the
-  reset wait, the boot task 0xA69A (hi-score table at frame 42, the sound codes, the clear at 68, the three
-  player inits with their three `rand()` calls at 70), the boot screens, then the attract task 0x97C20 head
-  (`ATTRACT`, `PASS`) and the title 0x9A3CE (`TITLE_START` .. `TITLE_LOOP`, 600 passes, counter in
-  `front.title` = G.-$7022). `flow_attract_task` runs it, then the blink task (`front.blink`, slot 0x20) and the
-  press start task (`front.press`, slot 0x20). `flow_attract_start()` restarts the attract task (used after a
-  game over).
-* Stubs for M1-04 / M1-05 / M1-07: `st::PASS` runs the title routine of state 0 for every state and, when the
-  title ends (`title_pass` returns false), starts the pass again; `front.attract_state` (G.-$7030) is written
-  at boot and never advanced. Put the real state routines (0x97D84, 0x97CC0, 0x97D02, 0x97C94 with the ranking
-  after a game over) at `st::PASS` and replace the restart after the title by the profile cards.
-* `flow_press_start_screen()` is 0x983EE: the system task calls it (and kills `front.task` first, as the
-  original kills the attract tasks). It replaces the blink task by the press start task 0x978EE (green blocks,
-  the two fixed logo pieces). The call takes about 3 frames of CPU time in the recording: the task first runs
-  3 frames after the call and its first object pass 2 frames after that (both are sleeps in the code).
-  `press_start_screen_matches_mame` calls it at record 607 of `coinstart.mame.trc` (coin at video frame 600)
-  and compares scroll2, scroll3, all palettes, the sprite list and the layer control from record 610 to 697;
-  scroll1 (the prompts of the system task) and records 607 to 609 (the clear and the palette load are one
-  call in the port) are not compared. M1-04 fits the call frame to the coin timing.
+## The recordings of the M1 tests
+
+They are git-ignored, in `re/out/traces/`; each test skips when its file is missing. Plain recordings (record k =
+video frame k + 2, an input script line `f` reaches the game at record `f`):
+`DINO_CLOCK=video DINO_BOOT=re/harness/scripts/attract.txt DINO_SYNC=vblank:1 re/harness/record.sh SCRIPT NAME FRAMES`:
+`attract` / `attract2` (13400 / 26500 records, `attract.txt`, see `re/harness/README.md`), `attract3` (29500 records, same
+script), `boot_skip_a` / `boot_skip_b` (340 records, `98-101:A` and `228-231:2J`), `m104_free` and `m104_coin`
+(3100 records; `m104_free` with `DINO_POKES=file` holding `100 FF846B 1 1`, an empty script; `m104_coin` the script
+`448-455:C`). The flow scenario batch of M2-31 (`flow_c-title`, `flow_s-nocredit`, `flow_s-nocredit-demo`,
+`flow_freeplay`) was recorded with `record.sh --batch`: a script line `f` reaches the game one record earlier there
+(`f - 1`), the tests of `mame_check.rs` give the port the shifted input.
+
+## M1-03: power on to the end of the first title
+
+`flow/boot.rs` is the whole path from power on to the title, equal to `attract.mame.trc` in every record from 25 to
+918 (tilemaps, the four palette banks, the sprite list, layer control G.$28, title counter G.-$7022, sound codes):
+`mame_check.rs` `power_on_boot_and_title_match_mame`.
+
+* Slot 0x10 is `front.task`, one `Scene` whose state is the script position (`boot.rs`, `mod st`, shared with
+  `attract.rs`): the reset wait, the boot task 0xA69A (hi-score table and sound code at frame 41, the settings cooked
+  at 68, the three player inits with their `rand()` calls at 70), the boot screens, the head of the attract task
+  0x97C20 and the title 0x9A3CE (`TITLE_START` .. `TITLE_LOOP`, 600 passes, counter in `front.title` = G.-$7022).
+  `flow_attract_task` runs it, then the blink task (`front.blink`, slot 0x20) and the press start task
+  (`front.press`, slot 0x20).
 * The title logo is pool A class 98 (`enemy/class98.rs`, `enemy_spawn_logo(variant)`): variants 0 and 1 (title),
   2 and 3 (press start), 4 and 0x10 / 0x11 are ported too (unit tests in the file). It uses the animation table
   0x71F72 (added to `OBJECT_ANIM_TABLES`). The title tune 0x88 is queued by variants 0 and 4 at their 10th and
-  18th pass.
-* The Capcom sign 0x110C is `flow_capcom_sign(col, row)` (tile codes 0x113C in `FRONT_TABLES`, 3 x 16 cells,
-  attribute 0x0A); the green of the background is `title_green` (0x980B0).
-* Timing conventions found here (the sample of a MAME record is not the end of a task pass: a task that
-  calls a short sleep right after the sample can run again before the next one, and a busy clear 0xAE0 spans
-  about 1.3 frames): sleeps are written with the measured length (`wait(2, ...)` after each full clear), two
-  places differ from a plain reading of the code and say so in comments (the first title pass follows the
-  setup in the same frame; the fourth title block is half drawn at the end of the setup frame, the last 27
-  cells come one frame later). A scene created while another scene runs in the same frame is ticked in that
-  frame too: give it `sleep(n + 1)` to make it first run n frames later.
-* The skip of the boot screens (attack or jump of player 1 or 2 after 30 frames of a screen) is in
-  `boot_wait`; `boot_screens_skip_like_the_original` compares three recordings made with
-  `re/harness/record.sh` (commands in the test). Video frame f of the probe batches is record f - 2; a press
-  at probe frame f is seen one frame earlier than the script line `f` of the harness.
-* Not done on purpose: records 0 to 24 (the reset code's clear and RAM test of the video memory: the port
-  starts from the state at record 25), the debug flag and test mode switch of 0xA69A, the system task and
-  skip-wait task creation, 0x9CFC6 (M1-04), the anti-tamper roll of the title (only its `rand()` is made).
-* Known leftovers outside this task: `Game::tick` (`mod.rs`) still counts G.$0000 outside the game task; the
-  original keeps 0 there until the game task (0xA914) or a demo runs, so the trace shows `global.frame`
-  differing. `Flow::dip` is set before power on (the original cooks it at frame 68). `diff.py` reads the
-  all-zero sprite buffer of the original (no end marker before the first sprite list) as 256 entries and
+  18th pass. The Capcom sign 0x110C is `flow_capcom_sign(col, row)` (tile codes 0x113C in `FRONT_TABLES`); the green
+  of the background is `title_green` (0x980B0).
+* `flow_press_start_screen()` is 0x983EE, called by the system task. It replaces the blink task by the press start
+  task 0x978EE (green blocks, the two fixed logo pieces). The call takes about 3 frames of CPU time in the
+  recording: the task first runs 3 frames after the call and its first object pass 2 frames after that.
+* The skip of the boot screens (attack or jump of player 1 or 2 after 30 frames of a screen) is in `boot_wait`.
+* Not done on purpose: records 0 to 24 (the reset code's clear and RAM test of the video memory: the port starts from
+  the state at record 25), the debug flag and test mode switch of 0xA69A, the skip wait task 0x9E38C, the anti-tamper
+  roll of the title (only its `rand()` is made).
+
+## M1-04: the attract loop, the coin and the start
+
+* `flow/attract.rs`: the attract state byte `front.attract_state` (G.-$7030) and the routines of the states
+  0x97D84 (0, 4), 0x97CC0 (2), 0x97D02 (6), 0x97D42 (8), 0x97DBE (0xA), the pass 0x97C46 with the game over ranking
+  0x97C94. The state is kept across games (`flow_attract_start` after a game over resumes it). The title is real; the
+  profile cards, the demo, the story slides, the ranking and the movie are **stubs**: a cleared screen with a label
+  that lasts exactly as long as the real screen did in `attract3.mame.trc` (constants `PROFILE_FRAMES`,
+  `RANKING_FRAMES`, `DEMO_FRAMES`, `SLIDES_FRAMES`, `MOVIE_FRAMES` at the top of the file). Replace one stub at a time
+  by the real screen of M1-05 (profiles), M1-07 (ranking), M1-08 (slides), M1-09 to M1-11 (movie), M1-12 and M1-13 (demo)
+  and keep its length until the real screen reproduces it. The state byte equals the recording in every record to 28960
+  (the change frames are video frames 2744, 6874, 9311, 13411, 15848, 19979, 22416, 26516, 28953), and every title of
+  the ten passes equals it from its setup frame to its end: `attract_loop_state_and_titles_match_mame`.
+* Measured differences between passes (the original's CPU time falls differently, the port does not model it): the
+  frames between the setup of the title and its first pass, the cells of the four blocks written when the setup frame
+  ends and the frame the blink task first runs are the table `TITLE_RUNS` in `boot.rs`; the first profile cards are 8
+  frames shorter than the later ones, the first ranking one frame shorter. A clear of all layers 0xAE0 in the attract
+  task is staged like the original's (sprites and scroll1, scroll2 a frame later, scroll3 one more):
+  `flow_attract_clear`; the script waits 2 frames after it (`flow_attract_busy`). Waits longer than 255 frames are
+  chained sleeps (`flow_attract_wait`: the kernel sleep byte holds 255).
+* `flow/front.rs`: the system task 0x9D048 and the coin interrupt code 0x9D4BE (`flow_coin_isr`, run by `flow_frame`
+  before the tasks; the port gets coins in `Game::w.coins` and start buttons in `w.system`, G.$1A bits 0 to 2): the
+  debounce (two frames high and two low), the conversion with all coin modes (table 0x9D038, `flow_sys_init` = 0x9CFC6),
+  the three chute modes, free play, the press start screen when a coin or credit is there, the start detection
+  0x9D196 (a change of the start bit with enough credits), the game start: tasks of the slots 0x10 to 0x40 end, G.$4CC =
+  1, sound 0x31, a 16 frame fade out (`start_fade_task`), a clear, the game task is created 18 frames after the press
+  (G.$4D5 = 1, G.$46D = 0; `flow.game_pending` until then) and its mode 0 sets mode 4 after 4 more frames (22 after the
+  press, `flow_mode_start`). The select (`flow_select_mode`) is still a stub: it gives the players that started the
+  heroes Jack, Mustapha, Hannah and starts Episode 1 at once. M2-02 adds the credit text and the prompts (0x9D66A, 0x9D752;
+  the press start screen has none), SERVICE, the coin lockout and counter outputs and the TEST button; it should
+  replace `flow_sys_init` and the system task of `front.rs` by `system.rs`.
+* Tests (`mame_check.rs`): `coin_and_start_match_mame` (A10: credit at record 458, the press start screen, the start at
+  599, G.$4CC, the fade, G.$4D5 at 617, mode 4 at 621), `start_without_credit_does_nothing` (A11), `free_play_start_matches_mame`
+  (A12), `wait_counter_matches_mame` (F35), `game_over_resumes_the_attract_state` (F25, port only).
+* The wait counter G.$4F6 (`rank_waited_tick`, 0x1827A) counts only when the common pool has credits or free play is on
+  (`tst.w $46a`), so with the factory settings (separate chutes) it stays 0. The system task also loses a pass whenever the
+  attract task is busy over a frame boundary (`front.sys_skip`, and `PROFILE_LOST` for the profile cards): the free play
+  recording shows 12 lost counts by record 3000 and the port reproduces them exactly. The game start 0x17F8A reads the
+  counter only after the system task cleared it in the pass that creates the game task, so the starting rank band is always
+  0 in the original (the counter feeds nothing): kept.
+* `Game::tick` no longer counts G.$0000 outside the game task (the original keeps 0 through the boot and title); the settings
+  `Flow::dip` are cooked at frame 68 like the original (`flow_apply_config` stores them for that).
+* `diff.py` reads the all-zero sprite buffer of the original (no end marker before the first sprite list) as 256 entries and
   reports "sprites differ" for records 25 to 319; the Rust comparison treats it as an empty list.
 * The tables in `FRONT_TABLES` have the extents of appendix B of D4d; a table that is too short panics
   with its address when read ("ROM text table byte ... was not extracted"): extend the line in

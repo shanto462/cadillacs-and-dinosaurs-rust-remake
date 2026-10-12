@@ -265,17 +265,13 @@ impl Game {
         PLAYERS.0 + PLAYERS.1 * i as u16
     }
 
-    /// One video frame: the in-game task (0xAAF6), then the other tasks in slot order.
+    /// One video frame: the in-game task (0xAAF6), then the other tasks in slot order. G.$0000 is
+    /// counted by the game task (0xA914) and the demo (0x99EC4) only: it stays 0 through the boot
+    /// and the title, as in the original.
     pub fn tick(&mut self) {
         self.w.sounds.clear();
-        let in_game = self.flow.in_game != 0;
         self.flow_frame();
         self.run_fade_task();
-        if !in_game {
-            // Outside the game task (attract, title: not ported yet) every frame counts.
-            // In game, `flow_game_task` increments G.$0000 before the mode runs (0xA914).
-            self.w.frame = self.w.frame.wrapping_add(1);
-        }
     }
 
     /// 0xAAF6 game_frame: the in-game per-frame order.
