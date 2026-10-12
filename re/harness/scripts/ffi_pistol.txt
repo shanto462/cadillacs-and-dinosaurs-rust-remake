@@ -1,0 +1,5 @@
+# M3: weapon friendly fire ffi_pistol
+0-9:
+10-11:A
+70-71:A
+170-179:

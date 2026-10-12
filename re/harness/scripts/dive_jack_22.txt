@@ -1,0 +1,5 @@
+# M10: Jack dive attack 22 frames after jump
+0-9:
+10-10:1J
+32-34:1A
+35-79:

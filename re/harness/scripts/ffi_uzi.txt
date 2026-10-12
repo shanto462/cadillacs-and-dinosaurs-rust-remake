@@ -1,0 +1,5 @@
+# M3: weapon friendly fire ffi_uzi
+0-9:
+10-11:A
+70-110:A
+170-179:

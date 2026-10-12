@@ -1,0 +1,7 @@
+# M10: Hannah wall jump triangle kick
+0-9:
+10-50:2L
+10-10:2J
+32-32:2J
+42-45:2A
+46-89:

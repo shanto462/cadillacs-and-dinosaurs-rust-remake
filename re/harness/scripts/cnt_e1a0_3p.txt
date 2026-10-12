@@ -1,0 +1,4 @@
+# M8: 3-player game wave thresholds
+0-9:
+10-170:1R2R3R
+171-179:

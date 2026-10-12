@@ -366,6 +366,39 @@ the join transition is ported. All three complete without a panic. Unported obje
 still differ. `re/harness/regress.sh mp2 mp3 mp_join` reruns these comparisons; they are also in its
 default list. Traces and diff reports stay under ignored `re/out/traces/`.
 
+### Multiplayer scenarios M1 to M10 (phase 2 task M2-30)
+
+56 reference scenarios covering the two and three player mechanics of D2c section 19
+(groups M1 through M10). Every scenario has a headless MAME recording (`NAME.mame.trc` and
+`NAME.state`), an input script in `scripts/NAME.txt`, and a poke setup in `pokes/NAME.lua`.
+Every scenario runs in `port.sh` without a panic. Differences in unported combat passes,
+tag team mechanics, boss routines, and item handlers are cataloged for future tasks
+(M5-20, M9-01, M9-02).
+
+Record any scenario with:
+
+```sh
+DINO_BOOT=re/harness/scripts/BOOT.txt DINO_POKE=re/harness/pokes/NAME.lua DINO_SYNC=control+86 \
+  re/harness/record.sh re/harness/scripts/NAME.txt NAME FRAMES
+re/harness/port.sh re/harness/scripts/NAME.txt NAME FRAMES
+re/.venv/bin/python -I re/harness/diff.py re/out/traces/NAME.mame.trc re/out/traces/NAME.port.trc
+```
+
+| Group | Topic | Scenarios | Boot | Coverage and expectations |
+| --- | --- | --- | --- | --- |
+| M1 | Friendly fire fist windows | `ff3_n0`..`ff3_n4`, `ff2_n0`..`ff2_n3` | `boot_3p` / `boot_2p` | Friendly fire fist gate based on alive enemy census count: 0 thugs dz in [-1,0,1], 1 thug dz in [0,1], 2 thugs dz=0 only, 3+ thugs disabled. |
+| M2 | Multi-friend hit and HP floor | `ff3_multi`, `ff3_hpfloor` | `boot_3p` | One punch hits multiple friends in reach; specials cannot hurt friends; friendly fire cannot kill (stops at 1 HP). |
+| M3 | Friendly fire with weapons | `ffi_pistol`, `ffi_uzi`, `ffi_shotgun`, `ffi_club`, `ffi_torch`, `ffi_butcher`, `ffi_knifethrow`, `ffi_dyn`, `ffi_bazooka`, `ffi_stones` | `boot_2p` | Weapon friendly fire ignores enemy census count (always active at dz=0), inflicts 1 HP floor, misses at dz=1. |
+| M4 | Tag team ties | `tie_jack_hannah`, `tie_dx31_dz0`, `tie_dx32_dz0`, `tie_dx0_dz15`, `tie_dx0_dz16`, `tie3_all`, `tie_weapon`, `tie_inputbreak` | `boot_2p` / `boot_3p` | Stillness counter (90 frames) triggers tie at t=92; boundaries dx in [-32,31] and dz in [0,15]; input resets timer; lower player index priority in 3P. |
+| M5 | Partner run attack | `tierun_hannah_hit`, `tierun_hannah_nodir` | `boot_2p` | Held direction during partner throw executes action 0x1A run attack (18 dmg to thugs); neutral stick executes standard jab. |
+| M6 | Contact and overlap | `pp_walk`, `pp_both`, `pp_run`, `pp_z`, `pp_jump`, `pp_three` | `boot_2p` / `boot_3p` | Players walk, run, and jump through each other without collision boxes or pushing. |
+| M7 | Boss HP scaling | `boss_vice_2p_r0`, `boss_vice_3p_r0`, `boss_vice_2p_r24`, `boss_vice_3p_r24` | `boot_2p` / `boot_3p` | Vice HP scaling by player count and rank (2P: 550 r0, 700 r24; 3P: 650 r0, 750 r24). |
+| M8 | Player count and death | `dead_p2_of2`, `dead_p3_of3`, `dead_p2_of3`, `cnt_e1a0_2p`, `cnt_e1a0_3p` | `boot_2p` / `boot_3p` | Player count G.$4EF drops exactly 61 frames after final death; multiplayer wave threshold adjustments. |
+| M9 | Same-frame weapon pickup | `pick_same2`, `pick_same3`, `pick_next2`, `pick_next2b` | `boot_2p` / `boot_3p` | Simultaneous attack press on weapon gives item to earliest updated player; other players perform normal attack. |
+| M10 | Dive window and triangle kick | `dive_jack_22`, `dive_mustapha_21`, `dive_hannah_22`, `dive_mess_22`, `wja_hannah_10`, `wja_mustapha_10` | `boot_2p` / `boot_3p` | Dive timing window (21 to 25 frames after jump) across all four heroes; wall jump triangle kick. |
+
+
+
 ## Trace format
 
 `re/harness/trace.py` documents it and reads it. A trace is a header (JSON) and one record per frame;
@@ -470,6 +503,14 @@ done
 | camera | 10 | D4c A1, A2, A7, A8: Episode 1 opening, five simple openings, Ep8 3P, GO idle/moving, Vice defeat |
 | end_chain | 8 | D4c A9: poked end flow for every episode, including the long Episode 8 ending timer |
 
+All nine groups were recorded and audited on 2026-10-13: 127/127 unique
+scenarios, 419,550 video records and 625 selected pictures. This includes a
+clean system rerun and the eight groups left pending by commit `2136d09`.
+Each group ran in one headless MAME process, sequentially, with SDL dummy
+drivers. Every trace parses, has continuous record and power-frame numbers,
+and matches its recorder count. Every segment has a completion line.
+The audit is in `re/out/m2-31-inventory.log`.
+
 The batch runner uses the existing probe's input, hold, HP, score and runtime
 jump helpers. Each segment starts at the saved first power-on video frame.
 The trace includes boot and the entire assisted jump. No ROM tables, camera
@@ -505,8 +546,8 @@ is restored. Its cached trace snapshot supplies record -1, followed by live
 samples starting at power frame 2. This matches the first-frame restore used
 by the probe and keeps a complete power-on trace for every segment.
 
-G1 and G2 are skipped for this harness-only run by the task instruction. G3 is
-the MAME trace check and complete batch inventory. G4 uses `flow_play.txt` from
+G1 and G2 use the shared Rust tree without edits. G3 is the MAME trace check
+and complete batch inventory. G4 uses `flow_play.txt` from
 power on with pictures under `re/out/shots/`. G5 is a tool task: no ported game
 routine and no extracted ROM data is added.
 
@@ -544,35 +585,52 @@ when a pixel differs or a picture is missing. Exit 2 when the arguments are wron
 sheet is `PORT_DIR/shotdiff.png` unless `--out` is set. `--worst 8` (default) is how many
 frames are on it, highest percent first. `--worst 0` skips the sheet.
 
-### Worker report for this run
+### Completion report (M2-31, 2026-10-13)
 
-Implemented the MAME timed-poke path, power-on input clock, strict bad-line
-handling, and nine flow input/poke groups with 127 unique scenarios. Batch
-traces keep the full boot and assisted setup. The old Lua sync-poke interface
-and game-frame recorder remain available. No dino-rs files were edited.
+Recorded the remaining eight groups and reran system cleanly. The existing
+input and poke files needed no changes. Updated this README with the finished
+inventory. No edits to dino-rs, probe.lua, or the recorder. No commit or push.
 
-- G1/G2: skipped as instructed for this harness-only task.
-- G3: partial. A 10-frame power trace completed. The system batch produced all
-  seven traces. In the coin/start trace, in-game is set at power frame 601,
-  mode 4 appears at 623, and sub-mode 2 at 625. Free-play select begins at 523.
-  All nine paired recipe files validate, six malformed batch poke cases fail,
-  and shell syntax and whitespace checks pass. The final recorder changes
-  still need a clean system rerun. Story/clock timed-poke checks, the other
-  eight batches and the required temporary 60-frame stage1_jack recording
-  remain pending.
-- G4: the game completed a headless 2200-frame play-script run. The graphical
-  screenshot run failed in miniquad because macOS could not create an OpenGL
-  pixel format. The new MAME select picture was inspected: Jack's panel,
-  TIME 09 and the 2P/3P JOIN-IN panels are visible. This does not complete the
-  requested port screenshot gate.
-- G5: tool work only. No ported routine, ROM byte array, table copy or dump was
-  added to source, tests or this document. Traces and pictures stay in re/out.
+- G1: `cargo build` passed; `cargo test` passed 144 tests, with one ignored
+  and zero failed. Logs: `re/out/m2-31-build.log` and `m2-31-test.log`.
+- G2: `regress.sh` completed all 52 scenarios, with 48 at zero ported-class
+  pairs. Baseline and current counts are the same: `mp_join` 37/37, `armed`
+  4/4, `intro` 14/14, `c14c_mustapha` 8/8. Baseline sources are this README's
+  multiplayer section and `plan/phase-01-stage1-complete.md`. Known causes
+  remain join/drop-in logic (first difference 49), the unported prop's hit
+  and piece spawns (564), scripted intro spawns and player actions (62), and
+  hit-spark pool slots affected by unported dizzy stars (836). Full result:
+  `re/out/m2-31-regress.log`. No new allow rules.
+- G3: all 127 batch traces passed the inventory audit. The clean coin/start
+  trace retains in-game at power frame 601, mode 4 at 623 and sub-mode 2 at
+  625; free-play select starts at 523. The story check recorded 2000 frames
+  plus sync: all three writes apply at 1300, mode 4 follows at 1606 and mode
+  0x0C at 1607. The clock check recorded 2200 frames plus sync: the word is
+  0x0013 at 1800, with scripted control and clock freeze both zero, then
+  counts down to 0x0005. The temporary `m2-31-stage1_jack-60` recording equals
+  the existing `stage1_jack` reference in every region for all 60 frames plus
+  sync; there is no first differing frame. The original reference was kept.
+  Check results: `re/out/m2-31-pending-checks.log`. These are MAME ground
+  truth recordings; port equality for the 127 flow scenarios belongs to the
+  corresponding implementation tasks.
+- G4: `flow_play.txt` completed 2200 frames from power on in the headless port.
+  The windowed screenshot attempt failed before drawing, with macOS
+  LaunchServices initialization failure and a miniquad null-reference panic
+  in `apple_util.rs`. Logs: `re/out/m2-31-play-headless.log` and
+  `m2-31-play-2200.log`. The port screenshot gate remains blocked. Fresh MAME
+  pictures were inspected and copied to `re/out/shots/m2-31-*.png`: the
+  Butcher story portrait and text, the rooftop fight with the red 0:07 clock,
+  and the Episode 3 map with HELL ROAD. The select picture shows Jack's
+  panel, TIME 09 and the 2P/3P panels. MAME pictures do not complete G4.
+- G5: no ported routine or ROM data was added. All traces, snapshots and
+  diagnostic logs remain ignored artifacts under `re/out/`.
 
-The first batch attempt used the wrong Lua environment for the loaded probe
-and kept running after callback errors. The loader now passes its environment
-explicitly, callback errors request machine exit, and the shell has a 900-second
-timeout. That earlier process is still running as PID 39209. The sandbox denied
-termination signals. Further MAME runs are held until the user stops it.
-One system retry completed while that earlier process was still active; its
-log was shared with the failed process, so it needs a clean rerun. No MAME or
-port equality claim is made for the remaining scenarios. No commit or push.
+The earlier hung PID 39209 no longer existed before recording started. All
+12 MAME processes in this run exited normally: nine group processes, two
+timed-poke checks and one compatibility recording. No timeout or process
+that could not be stopped remains from this run. MAME's checksum warnings
+come from the existing placeholder PLD and QSound DSP files described above;
+audio remains outside these recordings' proof.
+
+Open question: G4 still needs a port screenshot run in a macOS session where
+miniquad can initialize its window. The M2-31 recording work is complete.

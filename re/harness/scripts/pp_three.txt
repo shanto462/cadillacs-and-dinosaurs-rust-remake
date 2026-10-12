@@ -1,0 +1,4 @@
+# M6: 3 players walk through each other
+0-9:
+10-100:1R3L
+101-129:

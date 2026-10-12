@@ -1,0 +1,5 @@
+# M10: Mess dive attack 22 frames after jump
+0-9:
+10-10:3J
+32-34:3A
+35-79:

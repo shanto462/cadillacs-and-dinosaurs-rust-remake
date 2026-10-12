@@ -1,0 +1,4 @@
+# M4: input on frame 60 resets stillness counter
+0-59:
+60-61:1R
+62-139:

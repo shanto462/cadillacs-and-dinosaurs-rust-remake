@@ -1,0 +1,3 @@
+local DINO = ...
+local space = DINO.space
+space:write_u16(0xFFB3FC, 1000); space:write_u16(0xFFB404, 296)

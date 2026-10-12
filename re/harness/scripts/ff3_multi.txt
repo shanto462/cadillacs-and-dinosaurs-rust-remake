@@ -1,0 +1,8 @@
+# M2: 3 players, one jab hits two friends, special does nothing to friends
+0-11:
+12-13:A
+40-41:A
+60-61:A
+80-81:A
+170-171:1A1J
+172-219:

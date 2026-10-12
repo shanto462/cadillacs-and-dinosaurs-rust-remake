@@ -1,0 +1,5 @@
+# M10: Mustapha dive attack 21 frames after jump
+0-9:
+10-10:2J
+31-33:2A
+34-79:

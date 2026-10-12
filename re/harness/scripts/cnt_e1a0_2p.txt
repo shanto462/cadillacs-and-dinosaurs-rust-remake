@@ -1,0 +1,4 @@
+# M8: 2-player game wave thresholds
+0-9:
+10-170:1R2R
+171-179:
