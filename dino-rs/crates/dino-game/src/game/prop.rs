@@ -7,6 +7,12 @@ use super::spawn::clear_header;
 use super::{Game, Handle};
 use dino_assets::enemy::Wave;
 
+// Pool B classes of the front end (M1-06): the profile card board (93) and its scroll (94).
+#[path = "prop/class93.rs"]
+mod class93;
+#[path = "prop/class94.rs"]
+mod class94;
+
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
     pub b: Body,
@@ -34,6 +40,8 @@ impl Game {
             match p.b.k20 / 4 {
                 15 => self.prop_wave(&mut p, h, i),
                 73 => self.prop_bird_spawner(&mut p, i),
+                93 => self.prop_class93(&mut p, i),
+                94 => self.prop_class94(&mut p, i),
                 _ => self.prop_unported(&mut p, h, i),
             }
             self.props.slots[i] = p;

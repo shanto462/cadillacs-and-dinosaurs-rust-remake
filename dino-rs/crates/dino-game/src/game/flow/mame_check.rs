@@ -123,6 +123,9 @@ struct Differences {
     sounds: Option<(Vec<u16>, Vec<u16>)>,
     /// The attract state byte G.-$7030 (MAME, port).
     state: Option<(u8, u8)>,
+    /// The six scroll shadows G.$6C4, $6C8, $744, $748, $7E4, $7E8 (MAME, port). Not part of `none`: the
+    /// stub screens do not scroll as the original's do.
+    cams: Option<([u16; 6], [u16; 6])>,
     /// The variables of the system task and the game start that differ (name, MAME, port), see
     /// `system_fields`. Not part of `none`: the demos and other screens of MAME have their own values.
     sys: Vec<(&'static str, u16, u16)>,
@@ -138,7 +141,7 @@ impl Differences {
 
     /// Nothing differs in the screens, the layer control, the title counter, the sounds and the state byte.
     fn none(&self) -> bool {
-        Differences { sys: Vec::new(), ..self.clone() } == Differences::default()
+        Differences { sys: Vec::new(), cams: None, ..self.clone() } == Differences::default()
     }
 }
 
@@ -206,7 +209,20 @@ fn compare_power_on(
     trace: &str,
     last: i32,
     input: impl Fn(i32) -> [u8; 3],
+    before: impl FnMut(i32, &mut Game),
+) -> (Game, Vec<Differences>) {
+    compare_power_on_with(a, trace, last, input, before, |_, _, _| {})
+}
+
+/// `compare_power_on` with a look at the game and the recording's RAM after each tick, for what the
+/// `Differences` do not hold.
+fn compare_power_on_with(
+    a: &'static AssetPack,
+    trace: &str,
+    last: i32,
+    input: impl Fn(i32) -> [u8; 3],
     mut before: impl FnMut(i32, &mut Game),
+    mut after: impl FnMut(i32, &Game, &[u8]),
 ) -> (Game, Vec<Differences>) {
     let mut rd = TraceReader::open(trace).expect("the recording opens");
     rd.next(); // record -1, the sync state
@@ -247,6 +263,15 @@ fn compare_power_on(
         if ms != ps {
             d.state = Some((ms, ps));
         }
+        let c = &g.cam;
+        let (mc, pc) = (
+            [0xFF86C4, 0xFF86C8, 0xFF8744, 0xFF8748, 0xFF87E4, 0xFF87E8].map(|x| ram16(ram, x)),
+            [c.cam1_x, c.cam1_y, c.s2.cam_x, c.s2.cam_y, c.s3.cam_x, c.s3.cam_y],
+        );
+        if mc != pc {
+            d.cams = Some((mc, pc));
+        }
+        after(k, &g, ram);
         let (msn, psn) = (mame_sounds(&prev_ram, ram), g.w.sounds.clone());
         if msn != psn {
             d.sounds = Some((msn, psn));
@@ -450,6 +475,62 @@ fn slide_texts_match_mame() {
     assert_layer(&g, &images[0], 1, "slide 1 first text, record 4701");
     g.text_tall(rom(&g, 0x98D14));
     assert_layer(&g, &images[1], 1, "slide 1 second text, record 4761");
+}
+
+/// A5 (M1-05 and M1-06), the four profile cards: the whole routine 0x9A7E6 against `attract3.mame.trc`, in
+/// the five runs it has there (called at the records 919, 7477, 14014, 20582 and 27119). In every record from
+/// the call to the one after the clear that ends it, the three tilemaps, the four palette banks, the sprite
+/// list (the portrait and the small hero of the cards), the layer control, the sound codes queued (the music
+/// 0x13, the hits 0x38, the voices 0x4B to 0x4E and the poses 0x40 to 0x43 of the small hero), the scroll
+/// shadows G.$6C4 .. G.$7E8, the counter G.-$7018 and its table index G.-$7016 equal the recording. The first
+/// run is 1399 frames long, the later ones 1407 (the routine returns in the pass of the counter 0x4B0: the
+/// records 2318, 8884, ...). The card starts (counters 10, 310, 610, 910: records 930, 1276, 1637, 1998) draw
+/// the text at once and the objects' first sprites come two frames later (records 932, 1278, 1639, 2000: 12,
+/// 30, 15 and 20 sprites). The screen shows the scroll registers 2 frames after the shadows (cpsa of the
+/// recording): that is the renderer's, not compared here.
+#[test]
+fn profile_cards_run_like_the_original() {
+    let Some(a) = assets() else { return };
+    let trace = "../../../re/out/traces/attract3.mame.trc";
+    if !Path::new(trace).exists() {
+        eprintln!("mame_check: {trace} is missing, skipped");
+        return;
+    }
+    // (record of the call, the last record that equals the recording: two after the routine returned)
+    let runs: [(usize, usize); 5] = [(919, 2319), (7477, 8885), (14014, 15422), (20582, 21990), (27119, 28527)];
+    let mut problems: Vec<String> = Vec::new();
+    let mut sprites = std::collections::BTreeMap::new();
+    let mut ends = Vec::new();
+    let mut was_up = false;
+    let (_, rows) = compare_power_on_with(a, trace, 28527, |_| [0; 3], |_, _| {}, |k, g, ram| {
+        let up = g.flow.front.stub == super::attract::Stub::Profiles;
+        if up {
+            let (m, p) = ((ram16(ram, 0xFF0FE8), ram16(ram, 0xFF0FEA)), (g.flow.front.task.count, g.flow.front.task.sub));
+            if m != p && problems.len() < 6 {
+                problems.push(format!("record {k}: counter and index (MAME) {m:?} (port) {p:?}"));
+            }
+        }
+        if was_up && !up {
+            ends.push(k);
+        }
+        was_up = up;
+        if [932, 1278, 1639, 2000].contains(&k) {
+            sprites.insert(k, g.sprites.entries.len());
+        }
+    });
+    assert!(problems.is_empty(), "{problems:?}");
+    for (from, to) in runs {
+        let bad: Vec<(usize, &Differences)> = rows
+            .iter()
+            .enumerate()
+            .take(to + 1)
+            .skip(from)
+            .filter(|(_, d)| d.s1 + d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some() || d.sounds.is_some() || d.cams.is_some() || d.state.is_some())
+            .collect();
+        assert!(bad.is_empty(), "profile run {from}: {} records differ, first {:?}", bad.len(), &bad[..bad.len().min(3)]);
+    }
+    assert_eq!(ends, [2318, 8884, 15421, 21989, 28526], "the routine returns after 1399 and then 1407 frames");
+    assert_eq!(sprites.values().copied().collect::<Vec<_>>(), [12, 30, 15, 20], "the sprites of the cards at their starts: {sprites:?}");
 }
 
 /// Diagnostic report of the power-on comparison: the records that differ, by kind. Run with

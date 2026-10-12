@@ -19,6 +19,7 @@ mod class14_states;
 mod class14_tests;
 mod class15;
 mod class98;
+mod class100;
 mod class20;
 mod class20_ai;
 mod class20_attack;
@@ -179,6 +180,7 @@ impl Game {
                 55 => self.enemy_class55(&mut e, h),
                 60 => self.enemy_class60(&mut e, h),
                 98 => self.enemy_class98(&mut e, h),
+                100 => self.enemy_class100(&mut e, h),
                 _ => self.enemy_class_unported(&mut e, h, i),
             }
             self.enemies.slots[i] = e;

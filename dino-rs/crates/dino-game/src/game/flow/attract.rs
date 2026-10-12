@@ -14,20 +14,20 @@
 //! | 8 | 0x97D42 | ranking only (not reachable) |
 //! | 0xA | 0x97DBE | state = 0 (not reachable) |
 //!
-//! The title is real (`boot.rs`). The profiles (0x9A7E6, M1-05), the ranking (0x1516C through 0x983D8,
-//! M1-07), the demo (0x99E88, M1-12), the story slides (0x988C0, M1-08) and the opening movie
-//! (0x9BF50, M1-09) are stubs: a blank screen with a label that lasts exactly as long as the real
-//! screen did in the MAME recording `attract3.mame.trc`, so the state byte changes at the same
-//! frames (video frames 2744, 6874, 9311, 13411, 15848, 19979, 22416, 26516, 28953). The lengths are
-//! measured, not computed: the original takes a few frames more or less on some passes (one clear of
-//! all layers needs 1.3 frames of CPU time, the demo and the profile cards drop frames), which the
-//! port does not model. Each stub says where its numbers come from; the real screens replace them.
+//! The title is real (`boot.rs`), and so are the profile cards (0x9A7E6, `profiles.rs`, M1-05). The
+//! ranking (0x1516C through 0x983D8, M1-07), the demo (0x99E88, M1-12), the story slides (0x988C0,
+//! M1-08) and the opening movie (0x9BF50, M1-09) are stubs: a blank screen with a label that lasts
+//! exactly as long as the real screen did in the MAME recording `attract3.mame.trc`, so the state byte
+//! changes at the same frames (video frames 2744, 6874, 9311, 13411, 15848, 19979, 22416, 26516, 28953).
+//! The lengths are measured, not computed: the original takes a few frames more or less on some passes
+//! (one clear of all layers needs 1.3 frames of CPU time, the demo drops frames), which the port does
+//! not model. Each stub says where its numbers come from; the real screens replace them.
 
 use super::boot::st;
 use crate::game::Game;
 use crate::game::flow::scene::Scene;
 
-/// The stub screen that is up (for the label and the lost system task passes).
+/// The screen that is up and not a plain title: the profile cards (real), the stubs.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Stub {
     #[default]
@@ -41,20 +41,18 @@ pub enum Stub {
 
 /// Frames of the stubs, measured in `attract3.mame.trc` (records = video frames - 2): from the
 /// frame the original calls the routine to the frame it returns.
-/// The profile cards: 1399 the first time, 1407 afterwards (the first run is 8 frames shorter).
-const PROFILE_FRAMES: [u16; 2] = [1399, 1407];
 /// The ranking: 422 the first time, 423 afterwards.
 const RANKING_FRAMES: [u16; 2] = [422, 423];
+/// The cells of scroll3 the clear 0xAE0 has done when the frame it clears scroll2 in ends (the
+/// original clears the maps one after the other, 4096 cells at about 32 cycles each). Any value from
+/// 1072 to 3576 gives what the recording shows (56 of the 216 board cells left, see
+/// `flow_attract_clear_step`); the middle of the range that the cycle count allows is used.
+const CLEAR3_FIRST: usize = 3000;
 /// The demo with its last picture and the fade (1200 game frames, 5 frames of setup, 100 frozen,
 /// 16 of fade), the story slides and the opening movie (to the end of the routine).
 const DEMO_FRAMES: u16 = 1325;
 const SLIDES_FRAMES: u16 = 1779;
 const MOVIE_FRAMES: u16 = 1745;
-
-/// Frames after the start of the profile stub in which the system task loses its pass: the first
-/// frame (the screen is set up with clears) and the three card changes (the counter G.$4F6 of
-/// the free play recording `m104_free.mame.trc` misses a count there).
-const PROFILE_LOST: [u32; 4] = [1, 326, 687, 1048];
 
 impl Game {
     /// A stretch of CPU time of the original that the port writes as a sleep: `frames` until the
@@ -79,10 +77,16 @@ impl Game {
     }
 
     /// The next part of a clear that is under way (see `flow_attract_clear`), at the start of a frame.
+    /// Scroll3 is cleared in two frames: when scroll2 is done the clear of scroll3 has not got far
+    /// (`CLEAR3_FIRST` cells). The recording shows it when scroll3 holds the checker board of a
+    /// profile card: the last 56 cells it holds, those of the fourth block, are still there.
     pub(super) fn flow_attract_clear_step(&mut self) {
         match self.flow.front.clear_stage {
             1 => {
                 self.vram.clear2();
+                for c in self.vram.scroll3.iter_mut().take(CLEAR3_FIRST) {
+                    (c.code, c.attr) = (0x1C00, 0);
+                }
                 self.flow.front.clear_stage = 2;
             }
             2 => {
@@ -178,11 +182,9 @@ impl Game {
     pub(super) fn flow_attract_after_title(&mut self) {
         match self.flow.front.attract_state & 0x3E {
             0 | 4 => {
-                // 0x9A7E6: the profile cards
-                let k = self.flow.front.profile_runs as usize;
+                // 0x9A7E6: the profile cards (`profiles.rs`); it returns in `st::PROFILES_END`
                 self.flow.front.profile_runs = self.flow.front.profile_runs.saturating_add(1);
-                self.flow_attract_stub(Stub::Profiles, "CHARACTER PROFILES");
-                self.flow_attract_wait(PROFILE_FRAMES[k.min(1)], st::PROFILES_END);
+                self.flow_profile_start();
             }
             _ => {
                 // 2 and 6: 0x98330 (the World set re-creates the INSERT COIN blink task), the demo
@@ -294,10 +296,10 @@ impl Game {
         }
     }
 
-    /// True when the stub window loses the pass of the system task at this frame (see
-    /// [`PROFILE_LOST`]).
+    /// True when the system task loses its pass at this frame because of the screen that is up. The
+    /// profile cards lose theirs where their clears are (`flow_attract_busy`), so no screen has a
+    /// table of lost frames any more.
     pub(super) fn flow_attract_pass_lost(&self) -> bool {
-        let f = &self.flow.front;
-        f.stub == Stub::Profiles && PROFILE_LOST.contains(&f.ticks.wrapping_sub(f.stub_start))
+        false
     }
 }

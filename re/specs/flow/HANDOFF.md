@@ -243,3 +243,35 @@ script), `boot_skip_a` / `boot_skip_b` (340 records, `98-101:A` and `228-231:2J`
 * The tables in `FRONT_TABLES` have the extents of appendix B of D4d; a table that is too short panics
   with its address when read ("ROM text table byte ... was not extracted"): extend the line in
   `dino-assets/src/frontend.rs`.
+
+## M1-05 and M1-06: the four profile cards
+
+`flow/profiles.rs` is the routine 0x9A7E6 (the profile stub of M1-04 is gone, `PROFILE_FRAMES` and `PROFILE_LOST` too). It
+runs inside the attract task: `front.task` holds the script position (`profiles::pst`, dispatched by an arm in `boot.rs`),
+`task.count` the counter G.-$7018 and `task.sub` the table index G.-$7016; `front.stub` is `Stub::Profiles` while it runs.
+`flow_attract_after_title` calls `flow_profile_start`; the routine ends in `st::PROFILES_END` (the pass of the counter 0x4B0),
+where `attract.rs` goes on with the clear and the ranking stub as before.
+
+* The handlers are chosen by the ROM tables 0x9A8E4 / 0x9A908 (counter values and handler offsets) exactly as the original does,
+  one per pass. Cards: `flow_profile_card(0..3)` (clear scroll1, music 0x13 on the first card, label block, tall text, the four
+  objects, the units). Fades: the synchronous 0x87BA / 0x879A loops (16 steps, one per frame, `fade.steps` and `fade.mask` are
+  G.$44B and G.$44A); `palette.rs` keeps its own copy of the step, `flow_fade_bank_steps` is the same. The counter does not run
+  while a fade or the clear sleeps (that is why 1200 counts are 1398 frames).
+* The helpers 0x9AC86 and 0x9ACBA do nothing (their flags are never set). The checker moves by the object class 94 (scroll3 Y
+  minus 2 per update, G.$7E8). `D5-errata.md` has the corrections of D4d.
+* Objects: pool B 93 `prop/class93.rs` (the board: clears scroll3 twice, loads the board palette, draws four strips of tiles by
+  address, so its first cells land in the last 8 cells of scroll2), pool B 94 `prop/class94.rs` (the scroll and its life), pool A
+  100 `enemy/class100.rs` (variants 0 to 3 the portrait with OBJ palette 16, 4 to 7 the small hero; the sounds are the `+$2D`
+  byte of the animation frames, queued in every update of the frame). Data: `FRONT_TABLES` (0x92158, 0xC5952, 0x6A724, 0xBB252,
+  0xBB292, 0xBB3B2, 0xBB3F2) and the animation table 0x71F9E in `OBJECT_ANIM_TABLES`. B93 var 4 (a wider board) and its mode 2
+  fade in (0x8824) are ported only as far as the init: nothing creates it yet (the movie may).
+* CPU time, measured and written as waits (see the module comment): the pass after a card start is cut by the video frame
+  boundary (`pst::CUT`, `pst::CUT_END`; B93 splits its first update in two with the model field `CUT_FIELD`), and the first run
+  (attract.mame.trc) is one frame ahead of the later ones (attract3.mame.trc) at 8 places, `profile_first_run()`. The clear 0xAE0
+  clears scroll3 in two frames when scroll3 has content: `CLEAR3_FIRST` cells in the first (any value from 1072 to 3576 equals the
+  recording; the board's fourth strip is still there one frame).
+* The check: `mame_check.rs` `profile_cards_run_like_the_original` compares all five runs of `attract3.mame.trc` record by record
+  (tilemaps, palettes, sprite list, layer control, sound codes, the six scroll shadows, counter and index). Not compared, and
+  different in a picture: the scroll registers of the hardware show the shadows two frames late (cpsa in the recording), so a
+  port screenshot of a scrolling card has the checker 4 pixels off from a MAME snapshot. The renderer (`present.rs`) should apply
+  that latency to all scenes; the cards only show it first.

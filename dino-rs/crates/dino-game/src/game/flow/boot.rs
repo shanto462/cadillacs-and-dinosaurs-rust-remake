@@ -256,6 +256,12 @@ impl Game {
                         return;
                     }
                 }
+                s if super::profiles::pst::owns(s) => {
+                    self.flow_profile_script(); // the profile cards (`profiles.rs`)
+                    if self.flow.front.task.sleeping() > 0 {
+                        return;
+                    }
+                }
                 st::PROFILES_END => {
                     self.flow_attract_profiles_end();
                     return;
@@ -378,7 +384,7 @@ impl Game {
     /// The calls every picture task makes first: 0x49A8 (draw list), 0x4A18 / 0x4A46 (the lists
     /// the combat code fills each frame: empty here), 0x4C48 / 0x4C76 (pool A and B), 0x12BE4 (floor
     /// table of the area), 0xFBE8 (spawn lists).
-    fn title_pools_reset(&mut self) {
+    pub(super) fn title_pools_reset(&mut self) {
         self.draw_list.clear();
         self.sprites.splash_timer = 1; // 0x49B4 (the phase -$7124 is not reset)
         self.enemies = Pool::new(POOL_A);

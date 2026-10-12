@@ -29,6 +29,8 @@ pub mod join;
 mod mame_check;
 #[path = "flow/picture.rs"]
 pub mod picture;
+#[path = "flow/profiles.rs"]
+pub mod profiles;
 #[path = "flow/scene.rs"]
 pub mod scene;
 #[path = "flow/text.rs"]
