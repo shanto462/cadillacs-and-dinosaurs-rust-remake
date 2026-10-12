@@ -1,0 +1,5 @@
+# m516_dyn_swap_repick. Keys after the snapshot (frame 0 = first game frame). Source segment dyn_swap_repick, probe frames shifted by 2.
+8-8:A
+58-58:A
+133-133:A
+188-188:A

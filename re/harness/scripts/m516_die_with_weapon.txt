@@ -1,0 +1,2 @@
+# m516_die_with_weapon. Keys after the snapshot (frame 0 = first game frame). Source segment die_with_weapon, probe frames shifted by 2.
+8-8:A

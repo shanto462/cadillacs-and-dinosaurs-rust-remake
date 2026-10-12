@@ -1,0 +1,2 @@
+# m516_t08_PEARL. Keys after the snapshot (frame 0 = first game frame). Source segment t08_PEARL, probe frames shifted by 2.
+8-8:A

@@ -1,0 +1,2 @@
+# m516_e2_pearl. Keys after the snapshot (frame 0 = first game frame). Source segment e2_pearl, probe frames shifted by 0.
+2-120:R

@@ -1,0 +1,3386 @@
+# M7-00 preparation. See the M7-00 README section and m700_scenarios.tsv.
+# Snapshot keep timelines have MAME-only probe controls. Replay companions do not.
+
+# A207; re/out/d3e2/run1.txt:e4-opening
+segment m700_a207_e4_opening
+jump 4 0 0x0 at=start
+god on
+watch 20 B cls var x y z st
+watch 20 E cls var x y z st hp drop
+watch 20 A cls var x y z st hp drop
+watch 20 P1 x y z st hp held score
+watch 20 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+
+trace 950
+
+# A207; re/out/d3e2/run2.txt:e4-gate-crash
+segment m700_a207_e4_gate_crash
+jump 4 0 0x0 at=start
+god on
+watch 2 B cls var x y z st hp anim +0xA0.l +0xA4.l
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+
+trace 950
+
+# A208; re/out/d3e2/run4.txt:e4a1-hit-b0-58
+segment m700_a208_e4a1_hit_b0_58
+jump 4 1 0x0
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xa8
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x58
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A208; re/out/d3e2/run4.txt:e4a1-hit-f0-58
+segment m700_a208_e4a1_hit_f0_58
+jump 4 1 0x0
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xe8
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x58
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A209; re/out/d3e2/run2.txt:e4-vent
+segment m700_a209_e4_vent
+jump 4 1 0x180
+god on
+watch 2 B cls var x y z st hp anim +0xA0.l +0xA4.l
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+0-80:R
+85 poke 0xFFB27C 2 0x2c0
+85 poke 0xFFB280 2 0x0
+85 poke 0xFFB284 2 0x20
+85 poke 0xFFB298 1 0
+trace 360
+
+# A209; re/out/d3e2/run4.txt:e5-vent-hit
+segment m700_a209_e5_vent_hit
+jump 4 1 0x190
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x2e0
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x20
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+164-166:A
+182-184:A
+200-202:A
+218-220:A
+236-238:A
+trace 300
+
+# A210; re/out/d3e2/run3.txt:e4-break-lamp-left
+segment m700_a210_e4_break_lamp_left
+jump 4 1 0x4a2
+god on
+watch 2 B cls var x y z st hp anim
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+3 poke 0xFFB27C 2 0x588
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x68
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A210; re/out/d3e2/run3.txt:e4-break-window
+segment m700_a210_e4_break_window
+jump 4 1 0x760
+god on
+watch 2 B cls var x y z st hp anim
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+3 poke 0xFFB27C 2 0x8f8
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x60
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A210; re/out/d3e2/run3.txt:e4-break-lamp-right
+segment m700_a210_e4_break_lamp_right
+jump 4 1 0x7c0
+god on
+watch 2 B cls var x y z st hp anim
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+3 poke 0xFFB27C 2 0x978
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x68
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A211; re/out/d3e2/run4.txt:e4-fence-dx0-f1
+segment m700_a211_e4_fence_dx0_f1
+jump 4 1 0x4a2
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x610
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x60
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+trace 120
+
+# A211; re/out/d3e2/run4.txt:e4-fence-dx32-f1
+segment m700_a211_e4_fence_dx32_f1
+jump 4 1 0x4a2
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x630
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x60
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+trace 120
+
+# A211; re/out/d3e2/run4.txt:e4-fence-dx-32-f1
+segment m700_a211_e4_fence_dx_32_f1
+jump 4 1 0x4a2
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x5f0
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x60
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+trace 120
+
+# A212; re/out/d3e2/run4.txt:e4a1-scenery-grid
+segment m700_a212_e4a1_scenery_grid
+jump 4 1 0x4a2
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x580
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x10
+3 poke 0xFFB298 1 1
+7-9:A
+33 poke 0xFFB27C 2 0x580
+33 poke 0xFFB280 2 0
+33 poke 0xFFB284 2 0x20
+33 poke 0xFFB298 1 1
+37-39:A
+63 poke 0xFFB27C 2 0x580
+63 poke 0xFFB280 2 0
+63 poke 0xFFB284 2 0x30
+63 poke 0xFFB298 1 1
+67-69:A
+93 poke 0xFFB27C 2 0x580
+93 poke 0xFFB280 2 0
+93 poke 0xFFB284 2 0x40
+93 poke 0xFFB298 1 1
+97-99:A
+123 poke 0xFFB27C 2 0x580
+123 poke 0xFFB280 2 0
+123 poke 0xFFB284 2 0x50
+123 poke 0xFFB298 1 1
+127-129:A
+153 poke 0xFFB27C 2 0x580
+153 poke 0xFFB280 2 0
+153 poke 0xFFB284 2 0x60
+153 poke 0xFFB298 1 1
+157-159:A
+183 poke 0xFFB27C 2 0x5a0
+183 poke 0xFFB280 2 0
+183 poke 0xFFB284 2 0x10
+183 poke 0xFFB298 1 1
+187-189:A
+213 poke 0xFFB27C 2 0x5a0
+213 poke 0xFFB280 2 0
+213 poke 0xFFB284 2 0x20
+213 poke 0xFFB298 1 1
+217-219:A
+243 poke 0xFFB27C 2 0x5a0
+243 poke 0xFFB280 2 0
+243 poke 0xFFB284 2 0x30
+243 poke 0xFFB298 1 1
+247-249:A
+273 poke 0xFFB27C 2 0x5a0
+273 poke 0xFFB280 2 0
+273 poke 0xFFB284 2 0x40
+273 poke 0xFFB298 1 1
+277-279:A
+303 poke 0xFFB27C 2 0x5a0
+303 poke 0xFFB280 2 0
+303 poke 0xFFB284 2 0x50
+303 poke 0xFFB298 1 1
+307-309:A
+333 poke 0xFFB27C 2 0x5a0
+333 poke 0xFFB280 2 0
+333 poke 0xFFB284 2 0x60
+333 poke 0xFFB298 1 1
+337-339:A
+363 poke 0xFFB27C 2 0x5c0
+363 poke 0xFFB280 2 0
+363 poke 0xFFB284 2 0x10
+363 poke 0xFFB298 1 1
+367-369:A
+393 poke 0xFFB27C 2 0x5c0
+393 poke 0xFFB280 2 0
+393 poke 0xFFB284 2 0x20
+393 poke 0xFFB298 1 1
+397-399:A
+423 poke 0xFFB27C 2 0x5c0
+423 poke 0xFFB280 2 0
+423 poke 0xFFB284 2 0x30
+423 poke 0xFFB298 1 1
+427-429:A
+453 poke 0xFFB27C 2 0x5c0
+453 poke 0xFFB280 2 0
+453 poke 0xFFB284 2 0x40
+453 poke 0xFFB298 1 1
+457-459:A
+483 poke 0xFFB27C 2 0x5c0
+483 poke 0xFFB280 2 0
+483 poke 0xFFB284 2 0x50
+483 poke 0xFFB298 1 1
+487-489:A
+513 poke 0xFFB27C 2 0x5c0
+513 poke 0xFFB280 2 0
+513 poke 0xFFB284 2 0x60
+513 poke 0xFFB298 1 1
+517-519:A
+543 poke 0xFFB27C 2 0x5e0
+543 poke 0xFFB280 2 0
+543 poke 0xFFB284 2 0x10
+543 poke 0xFFB298 1 1
+547-549:A
+573 poke 0xFFB27C 2 0x5e0
+573 poke 0xFFB280 2 0
+573 poke 0xFFB284 2 0x20
+573 poke 0xFFB298 1 1
+577-579:A
+603 poke 0xFFB27C 2 0x5e0
+603 poke 0xFFB280 2 0
+603 poke 0xFFB284 2 0x30
+603 poke 0xFFB298 1 1
+607-609:A
+633 poke 0xFFB27C 2 0x5e0
+633 poke 0xFFB280 2 0
+633 poke 0xFFB284 2 0x40
+633 poke 0xFFB298 1 1
+637-639:A
+663 poke 0xFFB27C 2 0x5e0
+663 poke 0xFFB280 2 0
+663 poke 0xFFB284 2 0x50
+663 poke 0xFFB298 1 1
+667-669:A
+693 poke 0xFFB27C 2 0x5e0
+693 poke 0xFFB280 2 0
+693 poke 0xFFB284 2 0x60
+693 poke 0xFFB298 1 1
+697-699:A
+723 poke 0xFFB27C 2 0x600
+723 poke 0xFFB280 2 0
+723 poke 0xFFB284 2 0x10
+723 poke 0xFFB298 1 1
+727-729:A
+753 poke 0xFFB27C 2 0x600
+753 poke 0xFFB280 2 0
+753 poke 0xFFB284 2 0x20
+753 poke 0xFFB298 1 1
+757-759:A
+783 poke 0xFFB27C 2 0x600
+783 poke 0xFFB280 2 0
+783 poke 0xFFB284 2 0x30
+783 poke 0xFFB298 1 1
+787-789:A
+813 poke 0xFFB27C 2 0x600
+813 poke 0xFFB280 2 0
+813 poke 0xFFB284 2 0x40
+813 poke 0xFFB298 1 1
+817-819:A
+843 poke 0xFFB27C 2 0x600
+843 poke 0xFFB280 2 0
+843 poke 0xFFB284 2 0x50
+843 poke 0xFFB298 1 1
+847-849:A
+873 poke 0xFFB27C 2 0x600
+873 poke 0xFFB280 2 0
+873 poke 0xFFB284 2 0x60
+873 poke 0xFFB298 1 1
+877-879:A
+903 poke 0xFFB27C 2 0x620
+903 poke 0xFFB280 2 0
+903 poke 0xFFB284 2 0x10
+903 poke 0xFFB298 1 1
+907-909:A
+933 poke 0xFFB27C 2 0x620
+933 poke 0xFFB280 2 0
+933 poke 0xFFB284 2 0x20
+933 poke 0xFFB298 1 1
+937-939:A
+963 poke 0xFFB27C 2 0x620
+963 poke 0xFFB280 2 0
+963 poke 0xFFB284 2 0x30
+963 poke 0xFFB298 1 1
+967-969:A
+993 poke 0xFFB27C 2 0x620
+993 poke 0xFFB280 2 0
+993 poke 0xFFB284 2 0x40
+993 poke 0xFFB298 1 1
+997-999:A
+1023 poke 0xFFB27C 2 0x620
+1023 poke 0xFFB280 2 0
+1023 poke 0xFFB284 2 0x50
+1023 poke 0xFFB298 1 1
+1027-1029:A
+1053 poke 0xFFB27C 2 0x620
+1053 poke 0xFFB280 2 0
+1053 poke 0xFFB284 2 0x60
+1053 poke 0xFFB298 1 1
+1057-1059:A
+1083 poke 0xFFB27C 2 0x640
+1083 poke 0xFFB280 2 0
+1083 poke 0xFFB284 2 0x10
+1083 poke 0xFFB298 1 1
+1087-1089:A
+1113 poke 0xFFB27C 2 0x640
+1113 poke 0xFFB280 2 0
+1113 poke 0xFFB284 2 0x20
+1113 poke 0xFFB298 1 1
+1117-1119:A
+1143 poke 0xFFB27C 2 0x640
+1143 poke 0xFFB280 2 0
+1143 poke 0xFFB284 2 0x30
+1143 poke 0xFFB298 1 1
+1147-1149:A
+1173 poke 0xFFB27C 2 0x640
+1173 poke 0xFFB280 2 0
+1173 poke 0xFFB284 2 0x40
+1173 poke 0xFFB298 1 1
+1177-1179:A
+1203 poke 0xFFB27C 2 0x640
+1203 poke 0xFFB280 2 0
+1203 poke 0xFFB284 2 0x50
+1203 poke 0xFFB298 1 1
+1207-1209:A
+1233 poke 0xFFB27C 2 0x640
+1233 poke 0xFFB280 2 0
+1233 poke 0xFFB284 2 0x60
+1233 poke 0xFFB298 1 1
+1237-1239:A
+1263 poke 0xFFB27C 2 0x660
+1263 poke 0xFFB280 2 0
+1263 poke 0xFFB284 2 0x10
+1263 poke 0xFFB298 1 1
+1267-1269:A
+1293 poke 0xFFB27C 2 0x660
+1293 poke 0xFFB280 2 0
+1293 poke 0xFFB284 2 0x20
+1293 poke 0xFFB298 1 1
+1297-1299:A
+1323 poke 0xFFB27C 2 0x660
+1323 poke 0xFFB280 2 0
+1323 poke 0xFFB284 2 0x30
+1323 poke 0xFFB298 1 1
+1327-1329:A
+1353 poke 0xFFB27C 2 0x660
+1353 poke 0xFFB280 2 0
+1353 poke 0xFFB284 2 0x40
+1353 poke 0xFFB298 1 1
+1357-1359:A
+1383 poke 0xFFB27C 2 0x660
+1383 poke 0xFFB280 2 0
+1383 poke 0xFFB284 2 0x50
+1383 poke 0xFFB298 1 1
+1387-1389:A
+1413 poke 0xFFB27C 2 0x660
+1413 poke 0xFFB280 2 0
+1413 poke 0xFFB284 2 0x60
+1413 poke 0xFFB298 1 1
+1417-1419:A
+1443 poke 0xFFB27C 2 0x680
+1443 poke 0xFFB280 2 0
+1443 poke 0xFFB284 2 0x10
+1443 poke 0xFFB298 1 1
+1447-1449:A
+1473 poke 0xFFB27C 2 0x680
+1473 poke 0xFFB280 2 0
+1473 poke 0xFFB284 2 0x20
+1473 poke 0xFFB298 1 1
+1477-1479:A
+1503 poke 0xFFB27C 2 0x680
+1503 poke 0xFFB280 2 0
+1503 poke 0xFFB284 2 0x30
+1503 poke 0xFFB298 1 1
+1507-1509:A
+1533 poke 0xFFB27C 2 0x680
+1533 poke 0xFFB280 2 0
+1533 poke 0xFFB284 2 0x40
+1533 poke 0xFFB298 1 1
+1537-1539:A
+1563 poke 0xFFB27C 2 0x680
+1563 poke 0xFFB280 2 0
+1563 poke 0xFFB284 2 0x50
+1563 poke 0xFFB298 1 1
+1567-1569:A
+1593 poke 0xFFB27C 2 0x680
+1593 poke 0xFFB280 2 0
+1593 poke 0xFFB284 2 0x60
+1593 poke 0xFFB298 1 1
+1597-1599:A
+1623 poke 0xFFB27C 2 0x6a0
+1623 poke 0xFFB280 2 0
+1623 poke 0xFFB284 2 0x10
+1623 poke 0xFFB298 1 1
+1627-1629:A
+1653 poke 0xFFB27C 2 0x6a0
+1653 poke 0xFFB280 2 0
+1653 poke 0xFFB284 2 0x20
+1653 poke 0xFFB298 1 1
+1657-1659:A
+1683 poke 0xFFB27C 2 0x6a0
+1683 poke 0xFFB280 2 0
+1683 poke 0xFFB284 2 0x30
+1683 poke 0xFFB298 1 1
+1687-1689:A
+1713 poke 0xFFB27C 2 0x6a0
+1713 poke 0xFFB280 2 0
+1713 poke 0xFFB284 2 0x40
+1713 poke 0xFFB298 1 1
+1717-1719:A
+1743 poke 0xFFB27C 2 0x6a0
+1743 poke 0xFFB280 2 0
+1743 poke 0xFFB284 2 0x50
+1743 poke 0xFFB298 1 1
+1747-1749:A
+1773 poke 0xFFB27C 2 0x6a0
+1773 poke 0xFFB280 2 0
+1773 poke 0xFFB284 2 0x60
+1773 poke 0xFFB298 1 1
+1777-1779:A
+1803 poke 0xFFB27C 2 0x6c0
+1803 poke 0xFFB280 2 0
+1803 poke 0xFFB284 2 0x10
+1803 poke 0xFFB298 1 1
+1807-1809:A
+1833 poke 0xFFB27C 2 0x6c0
+1833 poke 0xFFB280 2 0
+1833 poke 0xFFB284 2 0x20
+1833 poke 0xFFB298 1 1
+1837-1839:A
+1863 poke 0xFFB27C 2 0x6c0
+1863 poke 0xFFB280 2 0
+1863 poke 0xFFB284 2 0x30
+1863 poke 0xFFB298 1 1
+1867-1869:A
+1893 poke 0xFFB27C 2 0x6c0
+1893 poke 0xFFB280 2 0
+1893 poke 0xFFB284 2 0x40
+1893 poke 0xFFB298 1 1
+1897-1899:A
+1923 poke 0xFFB27C 2 0x6c0
+1923 poke 0xFFB280 2 0
+1923 poke 0xFFB284 2 0x50
+1923 poke 0xFFB298 1 1
+1927-1929:A
+1953 poke 0xFFB27C 2 0x6c0
+1953 poke 0xFFB280 2 0
+1953 poke 0xFFB284 2 0x60
+1953 poke 0xFFB298 1 1
+1957-1959:A
+1983 poke 0xFFB27C 2 0x6e0
+1983 poke 0xFFB280 2 0
+1983 poke 0xFFB284 2 0x10
+1983 poke 0xFFB298 1 1
+1987-1989:A
+2013 poke 0xFFB27C 2 0x6e0
+2013 poke 0xFFB280 2 0
+2013 poke 0xFFB284 2 0x20
+2013 poke 0xFFB298 1 1
+2017-2019:A
+2043 poke 0xFFB27C 2 0x6e0
+2043 poke 0xFFB280 2 0
+2043 poke 0xFFB284 2 0x30
+2043 poke 0xFFB298 1 1
+2047-2049:A
+2073 poke 0xFFB27C 2 0x6e0
+2073 poke 0xFFB280 2 0
+2073 poke 0xFFB284 2 0x40
+2073 poke 0xFFB298 1 1
+2077-2079:A
+2103 poke 0xFFB27C 2 0x6e0
+2103 poke 0xFFB280 2 0
+2103 poke 0xFFB284 2 0x50
+2103 poke 0xFFB298 1 1
+2107-2109:A
+2133 poke 0xFFB27C 2 0x6e0
+2133 poke 0xFFB280 2 0
+2133 poke 0xFFB284 2 0x60
+2133 poke 0xFFB298 1 1
+2137-2139:A
+2163 poke 0xFFB27C 2 0x700
+2163 poke 0xFFB280 2 0
+2163 poke 0xFFB284 2 0x10
+2163 poke 0xFFB298 1 1
+2167-2169:A
+2193 poke 0xFFB27C 2 0x700
+2193 poke 0xFFB280 2 0
+2193 poke 0xFFB284 2 0x20
+2193 poke 0xFFB298 1 1
+2197-2199:A
+2223 poke 0xFFB27C 2 0x700
+2223 poke 0xFFB280 2 0
+2223 poke 0xFFB284 2 0x30
+2223 poke 0xFFB298 1 1
+2227-2229:A
+2253 poke 0xFFB27C 2 0x700
+2253 poke 0xFFB280 2 0
+2253 poke 0xFFB284 2 0x40
+2253 poke 0xFFB298 1 1
+2257-2259:A
+2283 poke 0xFFB27C 2 0x700
+2283 poke 0xFFB280 2 0
+2283 poke 0xFFB284 2 0x50
+2283 poke 0xFFB298 1 1
+2287-2289:A
+2313 poke 0xFFB27C 2 0x700
+2313 poke 0xFFB280 2 0
+2313 poke 0xFFB284 2 0x60
+2313 poke 0xFFB298 1 1
+2317-2319:A
+trace 2363
+
+# A212; re/out/d3e2/run1.txt:e4a1-sweep-back
+segment m700_a212_e4a1_sweep_back
+jump 4 1
+god on
+watch 20 B cls var x y z st
+watch 20 E cls var x y z st hp drop
+watch 20 A cls var x y z st hp drop
+watch 20 P1 x y z st hp held score
+watch 20 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+0 snapshot keep
+0-23:RU
+24-26:A
+34-36:A
+44-46:A
+54-77:RU
+78-80:A
+88-90:A
+98-100:A
+108-131:RU
+132-134:A
+142-144:A
+152-154:A
+162-185:RU
+186-188:A
+196-198:A
+206-208:A
+216-239:RU
+240-242:A
+250-252:A
+260-262:A
+270-293:RU
+294-296:A
+304-306:A
+314-316:A
+324-347:RU
+348-350:A
+358-360:A
+368-370:A
+378-401:RU
+402-404:A
+412-414:A
+422-424:A
+432-455:RU
+456-458:A
+466-468:A
+476-478:A
+486-509:RU
+510-512:A
+520-522:A
+530-532:A
+540-563:RU
+564-566:A
+574-576:A
+584-586:A
+594-617:RU
+618-620:A
+628-630:A
+638-640:A
+648-671:RU
+672-674:A
+682-684:A
+692-694:A
+702-725:RU
+726-728:A
+736-738:A
+746-748:A
+756-779:RU
+780-782:A
+790-792:A
+800-802:A
+810-833:RU
+834-836:A
+844-846:A
+854-856:A
+864-887:RU
+888-890:A
+898-900:A
+908-910:A
+918-941:RU
+942-944:A
+952-954:A
+962-964:A
+972-995:RU
+996-998:A
+1006-1008:A
+1016-1018:A
+1026-1049:RU
+1050-1052:A
+1060-1062:A
+1070-1072:A
+1080-1103:RU
+1104-1106:A
+1114-1116:A
+1124-1126:A
+1134-1157:RU
+1158-1160:A
+1168-1170:A
+1178-1180:A
+1188-1211:RU
+1212-1214:A
+1222-1224:A
+1232-1234:A
+1242-1265:RU
+1266-1268:A
+1276-1278:A
+1286-1288:A
+1296-1319:RU
+1320-1322:A
+1330-1332:A
+1340-1342:A
+1350-1373:RU
+1374-1376:A
+1384-1386:A
+1394-1396:A
+1404-1427:RU
+1428-1430:A
+1438-1440:A
+1448-1450:A
+1458-1481:RU
+1482-1484:A
+1492-1494:A
+1502-1504:A
+1512-1535:RU
+1536-1538:A
+1546-1548:A
+1556-1558:A
+1566-1589:RU
+1590-1592:A
+1600-1602:A
+1610-1612:A
+1620-1643:RU
+1644-1646:A
+1654-1656:A
+1664-1666:A
+1674-1697:RU
+1698-1700:A
+1708-1710:A
+1718-1720:A
+1728-1751:RU
+1752-1754:A
+1762-1764:A
+1772-1774:A
+1782-1805:RU
+1806-1808:A
+1816-1818:A
+1826-1828:A
+1836-1859:RU
+1860-1862:A
+1870-1872:A
+1880-1882:A
+1890-1913:RU
+1914-1916:A
+1924-1926:A
+1934-1936:A
+1944-1967:RU
+1968-1970:A
+1978-1980:A
+1988-1990:A
+1998-2021:RU
+2022-2024:A
+2032-2034:A
+2042-2044:A
+2052-2075:RU
+2076-2078:A
+2086-2088:A
+2096-2098:A
+2106-2129:RU
+2130-2132:A
+2140-2142:A
+2150-2152:A
+2160-2183:RU
+2184-2186:A
+2194-2196:A
+2204-2206:A
+2214-2237:RU
+2238-2240:A
+2248-2250:A
+2258-2260:A
+2268-2291:RU
+2292-2294:A
+2302-2304:A
+2312-2314:A
+2322-2345:RU
+2346-2348:A
+2356-2358:A
+2366-2368:A
+2376-2399:RU
+2400-2402:A
+2410-2412:A
+2420-2422:A
+2430-2453:RU
+2454-2456:A
+2464-2466:A
+2474-2476:A
+2484-2507:RU
+2508-2510:A
+2518-2520:A
+2528-2530:A
+2538-2561:RU
+2562-2564:A
+2572-2574:A
+2582-2584:A
+2592-2615:RU
+2616-2618:A
+2626-2628:A
+2636-2638:A
+2646-2669:RU
+2670-2672:A
+2680-2682:A
+2690-2692:A
+2700-2723:RU
+2724-2726:A
+2734-2736:A
+2744-2746:A
+2754-2777:RU
+2778-2780:A
+2788-2790:A
+2798-2800:A
+2808-2831:RU
+2832-2834:A
+2842-2844:A
+2852-2854:A
+2862-2885:RU
+2886-2888:A
+2896-2898:A
+2906-2908:A
+2916-2939:RU
+2940-2942:A
+2950-2952:A
+2960-2962:A
+2970-2993:RU
+2994-2996:A
+3004-3006:A
+3014-3016:A
+3024-3047:RU
+3048-3050:A
+3058-3060:A
+3068-3070:A
+3078-3101:RU
+3102-3104:A
+3112-3114:A
+3122-3124:A
+3132-3155:RU
+3156-3158:A
+3166-3168:A
+3176-3178:A
+3186-3209:RU
+3210-3212:A
+3220-3222:A
+3230-3232:A
+3240-3263:RU
+3264-3266:A
+3274-3276:A
+3284-3286:A
+3294-3317:RU
+3318-3320:A
+3328-3330:A
+3338-3340:A
+3348-3371:RU
+3372-3374:A
+3382-3384:A
+3392-3394:A
+3402-3425:RU
+3426-3428:A
+3436-3438:A
+3446-3448:A
+3456-3479:RU
+3480-3482:A
+3490-3492:A
+3500-3502:A
+3510-3533:RU
+3534-3536:A
+3544-3546:A
+3554-3556:A
+3564-3587:RU
+3588-3590:A
+3598-3600:A
+3608-3610:A
+3618-3641:RU
+3642-3644:A
+3652-3654:A
+3662-3664:A
+3672-3695:RU
+3696-3698:A
+3706-3708:A
+3716-3718:A
+3726-3749:RU
+3750-3752:A
+3760-3762:A
+3770-3772:A
+3780-3803:RU
+3804-3806:A
+3814-3816:A
+3824-3826:A
+3834-3857:RU
+3858-3860:A
+3868-3870:A
+3878-3880:A
+3888-3911:RU
+3912-3914:A
+3922-3924:A
+3932-3934:A
+3942-3965:RU
+3966-3968:A
+3976-3978:A
+3986-3988:A
+3996-4019:RU
+4020-4022:A
+4030-4032:A
+4040-4042:A
+4050-4073:RU
+4074-4076:A
+4084-4086:A
+4094-4096:A
+4104-4127:RU
+4128-4130:A
+4138-4140:A
+4148-4150:A
+trace 4200
+
+# A213; re/out/d3e2/run4.txt:e4-palettes
+segment m700_a213_e4_palettes
+jump 4 2 0x0
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+0 peek 0x914c20 112
+0 snapshot keep
+120 peek 0x914c20 112
+trace 160
+
+# A213; re/out/d3e2/run4.txt:e4a2-scenery-grid
+segment m700_a213_e4a2_scenery_grid
+jump 4 2 0x3d8
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x4b0
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x10
+3 poke 0xFFB298 1 1
+7-9:A
+33 poke 0xFFB27C 2 0x4b0
+33 poke 0xFFB280 2 0
+33 poke 0xFFB284 2 0x20
+33 poke 0xFFB298 1 1
+37-39:A
+63 poke 0xFFB27C 2 0x4b0
+63 poke 0xFFB280 2 0
+63 poke 0xFFB284 2 0x30
+63 poke 0xFFB298 1 1
+67-69:A
+93 poke 0xFFB27C 2 0x4b0
+93 poke 0xFFB280 2 0
+93 poke 0xFFB284 2 0x40
+93 poke 0xFFB298 1 1
+97-99:A
+123 poke 0xFFB27C 2 0x4b0
+123 poke 0xFFB280 2 0
+123 poke 0xFFB284 2 0x50
+123 poke 0xFFB298 1 1
+127-129:A
+153 poke 0xFFB27C 2 0x4d0
+153 poke 0xFFB280 2 0
+153 poke 0xFFB284 2 0x10
+153 poke 0xFFB298 1 1
+157-159:A
+183 poke 0xFFB27C 2 0x4d0
+183 poke 0xFFB280 2 0
+183 poke 0xFFB284 2 0x20
+183 poke 0xFFB298 1 1
+187-189:A
+213 poke 0xFFB27C 2 0x4d0
+213 poke 0xFFB280 2 0
+213 poke 0xFFB284 2 0x30
+213 poke 0xFFB298 1 1
+217-219:A
+243 poke 0xFFB27C 2 0x4d0
+243 poke 0xFFB280 2 0
+243 poke 0xFFB284 2 0x40
+243 poke 0xFFB298 1 1
+247-249:A
+273 poke 0xFFB27C 2 0x4d0
+273 poke 0xFFB280 2 0
+273 poke 0xFFB284 2 0x50
+273 poke 0xFFB298 1 1
+277-279:A
+303 poke 0xFFB27C 2 0x4f0
+303 poke 0xFFB280 2 0
+303 poke 0xFFB284 2 0x10
+303 poke 0xFFB298 1 1
+307-309:A
+333 poke 0xFFB27C 2 0x4f0
+333 poke 0xFFB280 2 0
+333 poke 0xFFB284 2 0x20
+333 poke 0xFFB298 1 1
+337-339:A
+363 poke 0xFFB27C 2 0x4f0
+363 poke 0xFFB280 2 0
+363 poke 0xFFB284 2 0x30
+363 poke 0xFFB298 1 1
+367-369:A
+393 poke 0xFFB27C 2 0x4f0
+393 poke 0xFFB280 2 0
+393 poke 0xFFB284 2 0x40
+393 poke 0xFFB298 1 1
+397-399:A
+423 poke 0xFFB27C 2 0x4f0
+423 poke 0xFFB280 2 0
+423 poke 0xFFB284 2 0x50
+423 poke 0xFFB298 1 1
+427-429:A
+453 poke 0xFFB27C 2 0x510
+453 poke 0xFFB280 2 0
+453 poke 0xFFB284 2 0x10
+453 poke 0xFFB298 1 1
+457-459:A
+483 poke 0xFFB27C 2 0x510
+483 poke 0xFFB280 2 0
+483 poke 0xFFB284 2 0x20
+483 poke 0xFFB298 1 1
+487-489:A
+513 poke 0xFFB27C 2 0x510
+513 poke 0xFFB280 2 0
+513 poke 0xFFB284 2 0x30
+513 poke 0xFFB298 1 1
+517-519:A
+543 poke 0xFFB27C 2 0x510
+543 poke 0xFFB280 2 0
+543 poke 0xFFB284 2 0x40
+543 poke 0xFFB298 1 1
+547-549:A
+573 poke 0xFFB27C 2 0x510
+573 poke 0xFFB280 2 0
+573 poke 0xFFB284 2 0x50
+573 poke 0xFFB298 1 1
+577-579:A
+603 poke 0xFFB27C 2 0x530
+603 poke 0xFFB280 2 0
+603 poke 0xFFB284 2 0x10
+603 poke 0xFFB298 1 1
+607-609:A
+633 poke 0xFFB27C 2 0x530
+633 poke 0xFFB280 2 0
+633 poke 0xFFB284 2 0x20
+633 poke 0xFFB298 1 1
+637-639:A
+663 poke 0xFFB27C 2 0x530
+663 poke 0xFFB280 2 0
+663 poke 0xFFB284 2 0x30
+663 poke 0xFFB298 1 1
+667-669:A
+693 poke 0xFFB27C 2 0x530
+693 poke 0xFFB280 2 0
+693 poke 0xFFB284 2 0x40
+693 poke 0xFFB298 1 1
+697-699:A
+723 poke 0xFFB27C 2 0x530
+723 poke 0xFFB280 2 0
+723 poke 0xFFB284 2 0x50
+723 poke 0xFFB298 1 1
+727-729:A
+753 poke 0xFFB27C 2 0x550
+753 poke 0xFFB280 2 0
+753 poke 0xFFB284 2 0x10
+753 poke 0xFFB298 1 1
+757-759:A
+783 poke 0xFFB27C 2 0x550
+783 poke 0xFFB280 2 0
+783 poke 0xFFB284 2 0x20
+783 poke 0xFFB298 1 1
+787-789:A
+813 poke 0xFFB27C 2 0x550
+813 poke 0xFFB280 2 0
+813 poke 0xFFB284 2 0x30
+813 poke 0xFFB298 1 1
+817-819:A
+843 poke 0xFFB27C 2 0x550
+843 poke 0xFFB280 2 0
+843 poke 0xFFB284 2 0x40
+843 poke 0xFFB298 1 1
+847-849:A
+873 poke 0xFFB27C 2 0x550
+873 poke 0xFFB280 2 0
+873 poke 0xFFB284 2 0x50
+873 poke 0xFFB298 1 1
+877-879:A
+903 poke 0xFFB27C 2 0x570
+903 poke 0xFFB280 2 0
+903 poke 0xFFB284 2 0x10
+903 poke 0xFFB298 1 1
+907-909:A
+933 poke 0xFFB27C 2 0x570
+933 poke 0xFFB280 2 0
+933 poke 0xFFB284 2 0x20
+933 poke 0xFFB298 1 1
+937-939:A
+963 poke 0xFFB27C 2 0x570
+963 poke 0xFFB280 2 0
+963 poke 0xFFB284 2 0x30
+963 poke 0xFFB298 1 1
+967-969:A
+993 poke 0xFFB27C 2 0x570
+993 poke 0xFFB280 2 0
+993 poke 0xFFB284 2 0x40
+993 poke 0xFFB298 1 1
+997-999:A
+1023 poke 0xFFB27C 2 0x570
+1023 poke 0xFFB280 2 0
+1023 poke 0xFFB284 2 0x50
+1023 poke 0xFFB298 1 1
+1027-1029:A
+1053 poke 0xFFB27C 2 0x590
+1053 poke 0xFFB280 2 0
+1053 poke 0xFFB284 2 0x10
+1053 poke 0xFFB298 1 1
+1057-1059:A
+1083 poke 0xFFB27C 2 0x590
+1083 poke 0xFFB280 2 0
+1083 poke 0xFFB284 2 0x20
+1083 poke 0xFFB298 1 1
+1087-1089:A
+1113 poke 0xFFB27C 2 0x590
+1113 poke 0xFFB280 2 0
+1113 poke 0xFFB284 2 0x30
+1113 poke 0xFFB298 1 1
+1117-1119:A
+1143 poke 0xFFB27C 2 0x590
+1143 poke 0xFFB280 2 0
+1143 poke 0xFFB284 2 0x40
+1143 poke 0xFFB298 1 1
+1147-1149:A
+1173 poke 0xFFB27C 2 0x590
+1173 poke 0xFFB280 2 0
+1173 poke 0xFFB284 2 0x50
+1173 poke 0xFFB298 1 1
+1177-1179:A
+1203 poke 0xFFB27C 2 0x5b0
+1203 poke 0xFFB280 2 0
+1203 poke 0xFFB284 2 0x10
+1203 poke 0xFFB298 1 1
+1207-1209:A
+1233 poke 0xFFB27C 2 0x5b0
+1233 poke 0xFFB280 2 0
+1233 poke 0xFFB284 2 0x20
+1233 poke 0xFFB298 1 1
+1237-1239:A
+1263 poke 0xFFB27C 2 0x5b0
+1263 poke 0xFFB280 2 0
+1263 poke 0xFFB284 2 0x30
+1263 poke 0xFFB298 1 1
+1267-1269:A
+1293 poke 0xFFB27C 2 0x5b0
+1293 poke 0xFFB280 2 0
+1293 poke 0xFFB284 2 0x40
+1293 poke 0xFFB298 1 1
+1297-1299:A
+1323 poke 0xFFB27C 2 0x5b0
+1323 poke 0xFFB280 2 0
+1323 poke 0xFFB284 2 0x50
+1323 poke 0xFFB298 1 1
+1327-1329:A
+1353 poke 0xFFB27C 2 0x5d0
+1353 poke 0xFFB280 2 0
+1353 poke 0xFFB284 2 0x10
+1353 poke 0xFFB298 1 1
+1357-1359:A
+1383 poke 0xFFB27C 2 0x5d0
+1383 poke 0xFFB280 2 0
+1383 poke 0xFFB284 2 0x20
+1383 poke 0xFFB298 1 1
+1387-1389:A
+1413 poke 0xFFB27C 2 0x5d0
+1413 poke 0xFFB280 2 0
+1413 poke 0xFFB284 2 0x30
+1413 poke 0xFFB298 1 1
+1417-1419:A
+1443 poke 0xFFB27C 2 0x5d0
+1443 poke 0xFFB280 2 0
+1443 poke 0xFFB284 2 0x40
+1443 poke 0xFFB298 1 1
+1447-1449:A
+1473 poke 0xFFB27C 2 0x5d0
+1473 poke 0xFFB280 2 0
+1473 poke 0xFFB284 2 0x50
+1473 poke 0xFFB298 1 1
+1477-1479:A
+trace 1523
+
+# A214; re/out/d3e2/run1.txt:e4a2-check-180
+segment m700_a214_e4a2_check_180
+jump 4 2 0x180
+god on
+watch 20 B cls var x y z st
+watch 20 E cls var x y z st hp drop
+watch 20 A cls var x y z st hp drop
+watch 20 P1 x y z st hp held score
+watch 20 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+0-599:R
+0-2:A
+20-22:A
+40-42:A
+60-62:A
+80-82:A
+100-102:A
+120-122:A
+140-142:A
+160-162:A
+180-182:A
+200-202:A
+220-222:A
+240-242:A
+260-262:A
+280-282:A
+300-302:A
+320-322:A
+340-342:A
+360-362:A
+380-382:A
+400-402:A
+420-422:A
+440-442:A
+460-462:A
+480-482:A
+500-502:A
+520-522:A
+540-542:A
+560-562:A
+580-582:A
+trace 600
+
+# A215; re/out/d3e2/run1.txt:e5-opening
+segment m700_a215_e5_opening
+jump 5 0 0x0 at=start
+god on
+watch 20 B cls var x y z st
+watch 20 E cls var x y z st hp drop
+watch 20 A cls var x y z st hp drop
+watch 20 P1 x y z st hp held score
+watch 20 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+
+trace 400
+
+# A215; re/out/d3e2/run1.txt:e5a0-check-170
+segment m700_a215_e5a0_check_170
+jump 5 0 0x170
+god on
+watch 20 B cls var x y z st
+watch 20 E cls var x y z st hp drop
+watch 20 A cls var x y z st hp drop
+watch 20 P1 x y z st hp held score
+watch 20 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+0-599:R
+0-2:A
+20-22:A
+40-42:A
+60-62:A
+80-82:A
+100-102:A
+120-122:A
+140-142:A
+160-162:A
+180-182:A
+200-202:A
+220-222:A
+240-242:A
+260-262:A
+280-282:A
+300-302:A
+320-322:A
+340-342:A
+360-362:A
+380-382:A
+400-402:A
+420-422:A
+440-442:A
+460-462:A
+480-482:A
+500-502:A
+520-522:A
+540-542:A
+560-562:A
+580-582:A
+trace 600
+
+# A215; re/out/d3e2/run3.txt:e5-hunter-natural
+segment m700_a215_e5_hunter_natural
+jump 5 0 0x230
+god on
+watch 2 B cls var x y z st hp anim
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+0-1199:R
+trace 1200
+
+# A216; re/out/d3e2/run1.txt:e5a0-check-660
+segment m700_a216_e5a0_check_660
+jump 5 0 0x660
+god on
+watch 20 B cls var x y z st
+watch 20 E cls var x y z st hp drop
+watch 20 A cls var x y z st hp drop
+watch 20 P1 x y z st hp held score
+watch 20 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+0-599:R
+0-2:A
+20-22:A
+40-42:A
+60-62:A
+80-82:A
+100-102:A
+120-122:A
+140-142:A
+160-162:A
+180-182:A
+200-202:A
+220-222:A
+240-242:A
+260-262:A
+280-282:A
+300-302:A
+320-322:A
+340-342:A
+360-362:A
+380-382:A
+400-402:A
+420-422:A
+440-442:A
+460-462:A
+480-482:A
+500-502:A
+520-522:A
+540-542:A
+560-562:A
+580-582:A
+trace 600
+
+# A216; re/out/d3e2/run4.txt:e5a0-hit-790-25c
+segment m700_a216_e5a0_hit_790_25c
+jump 5 0 0x600
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x788
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x25c
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A216; re/out/d3e2/run4.txt:e5a0-hit-7e8-25c
+segment m700_a216_e5a0_hit_7e8_25c
+jump 5 0 0x660
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x7e0
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x25c
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A217; re/out/d3e2/run2.txt:e5-rock-hit
+segment m700_a217_e5_rock_hit
+jump 5 0 0x700
+god on
+watch 2 B cls var x y z st hp anim +0xA0.l +0xA4.l
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+3 poke 0xFFB27C 2 0x76c
+3 poke 0xFFB280 2 0x0
+3 poke 0xFFB284 2 0x258
+3 poke 0xFFB298 1 0
+20-22:A
+32-34:A
+44-46:A
+56-58:A
+68-70:A
+80-82:A
+92-94:A
+104-106:A
+116-118:A
+128-130:A
+140-142:A
+152-154:A
+164-166:A
+176-178:A
+188-190:A
+200-202:A
+212-214:A
+224-226:A
+236-238:A
+248-250:A
+260-262:A
+272-274:A
+284-286:A
+296-298:A
+308-310:A
+320-322:A
+332-334:A
+344-346:A
+356-358:A
+368-370:A
+380-382:A
+392-394:A
+404-406:A
+416-418:A
+428-430:A
+440-442:A
+452-454:A
+464-466:A
+476-478:A
+488-490:A
+500-502:A
+512-514:A
+524-526:A
+536-538:A
+548-550:A
+560-562:A
+572-574:A
+trace 600
+
+# A217; re/out/d3e2/run4.txt:e5-rock-debris
+segment m700_a217_e5_rock_debris
+jump 5 0 0x740
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x7b0
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x250
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+164-166:A
+182-184:A
+200-202:A
+218-220:A
+236-238:A
+254-256:A
+272-274:A
+290-292:A
+308-310:A
+326-328:A
+344-346:A
+362-364:A
+380-382:A
+398-400:A
+416-418:A
+434-436:A
+452-454:A
+470-472:A
+488-490:A
+506-508:A
+524-526:A
+542-544:A
+560-562:A
+578-580:A
+596-598:A
+614-616:A
+632-634:A
+650-652:A
+668-670:A
+686-688:A
+704-706:A
+722-724:A
+740-742:A
+758-760:A
+776-778:A
+794-796:A
+812-814:A
+830-832:A
+848-850:A
+866-868:A
+884-886:A
+902-904:A
+920-922:A
+938-940:A
+956-958:A
+974-976:A
+992-994:A
+1010-1012:A
+1028-1030:A
+1046-1048:A
+1064-1066:A
+1082-1084:A
+1100-1102:A
+1118-1120:A
+1136-1138:A
+10 spawn A 66 ax=0x7c0 z=0x260
+60 spawn A 66 ax=0x7c0 z=0x260
+110 spawn A 66 ax=0x7c0 z=0x260
+160 spawn A 66 ax=0x7c0 z=0x260
+210 spawn A 66 ax=0x7c0 z=0x260
+260 spawn A 66 ax=0x7c0 z=0x260
+310 spawn A 66 ax=0x7c0 z=0x260
+360 spawn A 66 ax=0x7c0 z=0x260
+410 spawn A 66 ax=0x7c0 z=0x260
+460 spawn A 66 ax=0x7c0 z=0x260
+510 spawn A 66 ax=0x7c0 z=0x260
+560 spawn A 66 ax=0x7c0 z=0x260
+610 spawn A 66 ax=0x7c0 z=0x260
+660 spawn A 66 ax=0x7c0 z=0x260
+710 spawn A 66 ax=0x7c0 z=0x260
+760 spawn A 66 ax=0x7c0 z=0x260
+trace 1200
+
+# A218; re/out/d3e2/run4.txt:e5a1-hit-bfa-240
+segment m700_a218_e5a1_hit_bfa_240
+jump 5 1 0xa50
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xbf2
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x240
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A218; re/out/d3e2/run4.txt:e5a1-hit-c20-220
+segment m700_a218_e5a1_hit_c20_220
+jump 5 1 0xa80
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xc18
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x220
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A218; re/out/d3e2/run4.txt:e5a1-hit-c3a-240
+segment m700_a218_e5a1_hit_c3a_240
+jump 5 1 0xa90
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xc32
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x240
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A218; re/out/d3e2/run4.txt:e5a1-hit-c60-220
+segment m700_a218_e5a1_hit_c60_220
+jump 5 1 0xac0
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xc58
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x220
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A218; re/out/d3e2/run4.txt:e5a1-hit-c7a-240
+segment m700_a218_e5a1_hit_c7a_240
+jump 5 1 0xad0
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xc72
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x240
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A218; re/out/d3e2/run4.txt:e5a1-hit-ca0-220
+segment m700_a218_e5a1_hit_ca0_220
+jump 5 1 0xb00
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xc98
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x220
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A218; re/out/d3e2/run4.txt:e5a1-hit-cba-240
+segment m700_a218_e5a1_hit_cba_240
+jump 5 1 0xb10
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xcb2
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x240
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A218; re/out/d3e2/run4.txt:e5a1-hit-ce0-220
+segment m700_a218_e5a1_hit_ce0_220
+jump 5 1 0xb40
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xcd8
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x220
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A219; re/out/d3e2/run3.txt:e5-bridge-cross
+segment m700_a219_e5_bridge_cross
+jump 5 1 0xa60
+god on
+watch 2 B cls var x y z st hp anim
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+0 poke 0xFFB27C 2 0xbf2
+0 poke 0xFFB280 2 0
+0 poke 0xFFB284 2 0x240
+0 poke 0xFFB298 1 1
+0 snapshot keep
+6-8:A
+24-26:A
+48 poke 0xFFB27C 2 0xc18
+48 poke 0xFFB280 2 0
+48 poke 0xFFB284 2 0x220
+48 poke 0xFFB298 1 1
+54-56:A
+72-74:A
+96 poke 0xFFB27C 2 0xc32
+96 poke 0xFFB280 2 0
+96 poke 0xFFB284 2 0x240
+96 poke 0xFFB298 1 1
+102-104:A
+120-122:A
+144 poke 0xFFB27C 2 0xc58
+144 poke 0xFFB280 2 0
+144 poke 0xFFB284 2 0x220
+144 poke 0xFFB298 1 1
+150-152:A
+168-170:A
+192 poke 0xFFB27C 2 0xc72
+192 poke 0xFFB280 2 0
+192 poke 0xFFB284 2 0x240
+192 poke 0xFFB298 1 1
+198-200:A
+216-218:A
+240 poke 0xFFB27C 2 0xc98
+240 poke 0xFFB280 2 0
+240 poke 0xFFB284 2 0x220
+240 poke 0xFFB298 1 1
+246-248:A
+264-266:A
+288 poke 0xFFB27C 2 0xcb2
+288 poke 0xFFB280 2 0
+288 poke 0xFFB284 2 0x240
+288 poke 0xFFB298 1 1
+294-296:A
+312-314:A
+336 poke 0xFFB27C 2 0xcd8
+336 poke 0xFFB280 2 0
+336 poke 0xFFB284 2 0x220
+336 poke 0xFFB298 1 1
+342-344:A
+360-362:A
+384-2400:R
+600-1000:D
+1000-1400:D
+1400-1800:D
+400-402:A
+418-420:A
+436-438:A
+454-456:A
+472-474:A
+490-492:A
+508-510:A
+526-528:A
+544-546:A
+562-564:A
+580-582:A
+598-600:A
+616-618:A
+634-636:A
+652-654:A
+670-672:A
+688-690:A
+706-708:A
+724-726:A
+742-744:A
+760-762:A
+778-780:A
+796-798:A
+814-816:A
+832-834:A
+850-852:A
+868-870:A
+886-888:A
+904-906:A
+922-924:A
+940-942:A
+958-960:A
+976-978:A
+994-996:A
+1012-1014:A
+1030-1032:A
+1048-1050:A
+1066-1068:A
+1084-1086:A
+1102-1104:A
+1120-1122:A
+1138-1140:A
+1156-1158:A
+1174-1176:A
+1192-1194:A
+1210-1212:A
+1228-1230:A
+1246-1248:A
+1264-1266:A
+1282-1284:A
+1300-1302:A
+1318-1320:A
+1336-1338:A
+1354-1356:A
+1372-1374:A
+1390-1392:A
+1408-1410:A
+1426-1428:A
+1444-1446:A
+1462-1464:A
+1480-1482:A
+1498-1500:A
+1516-1518:A
+1534-1536:A
+1552-1554:A
+1570-1572:A
+1588-1590:A
+1606-1608:A
+1624-1626:A
+1642-1644:A
+1660-1662:A
+1678-1680:A
+1696-1698:A
+1714-1716:A
+1732-1734:A
+1750-1752:A
+1768-1770:A
+1786-1788:A
+1804-1806:A
+1822-1824:A
+1840-1842:A
+1858-1860:A
+1876-1878:A
+1894-1896:A
+1912-1914:A
+1930-1932:A
+1948-1950:A
+1966-1968:A
+1984-1986:A
+2002-2004:A
+2020-2022:A
+2038-2040:A
+2056-2058:A
+2074-2076:A
+2092-2094:A
+2110-2112:A
+2128-2130:A
+2146-2148:A
+2164-2166:A
+2182-2184:A
+2200-2202:A
+2218-2220:A
+2236-2238:A
+2254-2256:A
+2272-2274:A
+2290-2292:A
+2308-2310:A
+2326-2328:A
+2344-2346:A
+2362-2364:A
+2380-2382:A
+2398-2400:A
+trace 2400
+
+# A220; re/out/d3e2/run4.txt:e5-far-isolate-b00
+segment m700_a220_e5_far_isolate_b00
+jump 5 1 0xb00
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+0 objset B:62 r4 6
+hold 0xFF87AE 1 0
+hold 0xFF87AF 1 0
+0 snapshot keep
+
+trace 192
+
+# A220; re/out/d3e2/run4.txt:e5-far-isolate-f00
+segment m700_a220_e5_far_isolate_f00
+jump 5 1 0xf00
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+0 objset B:62 r4 6
+hold 0xFF87AE 1 0
+hold 0xFF87AF 1 0
+0 snapshot keep
+
+trace 192
+
+# A220; re/out/d3e2/run2.txt:e5-fire-c80
+segment m700_a220_e5_fire_c80
+jump 5 1 0xc80
+god on
+watch 2 B cls var x y z st hp anim +0xA0.l +0xA4.l
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+0 snapshot keep
+
+trace 180
+
+# A220; re/out/d3e2/run2.txt:e5-fire-d80
+segment m700_a220_e5_fire_d80
+jump 5 1 0xd80
+god on
+watch 2 B cls var x y z st hp anim +0xA0.l +0xA4.l
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+0 snapshot keep
+
+trace 180
+
+# A220; re/out/d3e2/run2.txt:e5-fire-e80
+segment m700_a220_e5_fire_e80
+jump 5 1 0xe80
+god on
+watch 2 B cls var x y z st hp anim +0xA0.l +0xA4.l
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+0 snapshot keep
+
+trace 180
+
+# A220; re/out/d3e2/run2.txt:e5-fire-f00
+segment m700_a220_e5_fire_f00
+jump 5 1 0xf00
+god on
+watch 2 B cls var x y z st hp anim +0xA0.l +0xA4.l
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+0 snapshot keep
+
+trace 180
+
+# A220; re/out/d3e2/run2.txt:e5-fire-f80
+segment m700_a220_e5_fire_f80
+jump 5 1 0xf80
+god on
+watch 2 B cls var x y z st hp anim +0xA0.l +0xA4.l
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+0 snapshot keep
+
+trace 180
+
+# A220; re/out/d3e2/run2.txt:e5-fire-1080
+segment m700_a220_e5_fire_1080
+jump 5 1 0x1080
+god on
+watch 2 B cls var x y z st hp anim +0xA0.l +0xA4.l
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+0 snapshot keep
+
+trace 180
+
+# A220; re/out/d3e2/run2.txt:e5-fire-1120
+segment m700_a220_e5_fire_1120
+jump 5 1 0x1120
+god on
+watch 2 B cls var x y z st hp anim +0xA0.l +0xA4.l
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+0 snapshot keep
+
+trace 180
+
+# A221; re/out/d3e2/run4.txt:e5a1-hit-f68-160
+segment m700_a221_e5a1_hit_f68_160
+jump 5 1 0xd80
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xf60
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x160
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A221; re/out/d3e2/run4.txt:e5a1-hit-f90-160
+segment m700_a221_e5a1_hit_f90_160
+jump 5 1 0xe00
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xf88
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x160
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A221; re/out/d3e2/run4.txt:e5a1-hit-fb8-160
+segment m700_a221_e5a1_hit_fb8_160
+jump 5 1 0xe00
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xfb0
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x160
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A222; re/out/d3e2/run2.txt:e5-wall-burst
+segment m700_a222_e5_wall_burst
+jump 5 1 0xf10
+god on
+watch 2 B cls var x y z st hp anim +0xA0.l +0xA4.l
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+0-160:R
+80 killall
+trace 500
+
+# A223; re/out/d3e2/run3.txt:e5-chief-natural
+segment m700_a223_e5_chief_natural
+jump 5 1 0x1120
+god on
+watch 2 B cls var x y z st hp anim
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 C cls var x y z st
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+0 snapshot keep
+0-999:R
+trace 1000
+
+# A223; re/out/d3e2/run4.txt:e5-chief-gun
+segment m700_a223_e5_chief_gun
+jump 5 1 0x1120
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x1270
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x140
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+164-166:A
+180-699:R
+trace 700
+
+# A224; re/out/d3e2/run4.txt:e4a0-hit-2a8-10
+segment m700_a224_e4a0_hit_2a8_10
+jump 4 0 0x100
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x2a0
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x10
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e4a0-hit-2d0-10
+segment m700_a224_e4a0_hit_2d0_10
+jump 4 0 0x100
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x2c8
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x10
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e4a0-hit-350-40
+segment m700_a224_e4a0_hit_350_40
+jump 4 0 0x1a0
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x348
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x40
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e4a0-hit-390-40
+segment m700_a224_e4a0_hit_390_40
+jump 4 0 0x1b8
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x388
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x40
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e4a1-hit-b0-58
+segment m700_a224_e4a1_hit_b0_58
+jump 4 1 0x0
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xa8
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x58
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e4a1-hit-f0-58
+segment m700_a224_e4a1_hit_f0_58
+jump 4 1 0x0
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xe8
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x58
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e4a1-hit-23a-68
+segment m700_a224_e4a1_hit_23a_68
+jump 4 1 0x60
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x232
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x68
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e4a1-hit-26a-68
+segment m700_a224_e4a1_hit_26a_68
+jump 4 1 0x60
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x262
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x68
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e4a1-hit-8c0-60
+segment m700_a224_e4a1_hit_8c0_60
+jump 4 1 0x6e0
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x8b8
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x60
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e4a1-hit-8f0-60
+segment m700_a224_e4a1_hit_8f0_60
+jump 4 1 0x700
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x8e8
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x60
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e4a1-hit-9c0-60
+segment m700_a224_e4a1_hit_9c0_60
+jump 4 1 0x820
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x9b8
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x60
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e4a2-hit-250-55
+segment m700_a224_e4a2_hit_250_55
+jump 4 2 0x80
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x248
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x55
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a0-hit-790-25c
+segment m700_a224_e5a0_hit_790_25c
+jump 5 0 0x600
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x788
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x25c
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a0-hit-7e8-25c
+segment m700_a224_e5a0_hit_7e8_25c
+jump 5 0 0x660
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0x7e0
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x25c
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a0-hit-a20-258
+segment m700_a224_e5a0_hit_a20_258
+jump 5 0 0x880
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xa18
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x258
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a0-hit-a50-258
+segment m700_a224_e5a0_hit_a50_258
+jump 5 0 0x880
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xa48
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x258
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a1-hit-bfa-240
+segment m700_a224_e5a1_hit_bfa_240
+jump 5 1 0xa50
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xbf2
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x240
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a1-hit-c20-220
+segment m700_a224_e5a1_hit_c20_220
+jump 5 1 0xa80
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xc18
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x220
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a1-hit-c3a-240
+segment m700_a224_e5a1_hit_c3a_240
+jump 5 1 0xa90
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xc32
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x240
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a1-hit-c60-220
+segment m700_a224_e5a1_hit_c60_220
+jump 5 1 0xac0
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xc58
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x220
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a1-hit-c7a-240
+segment m700_a224_e5a1_hit_c7a_240
+jump 5 1 0xad0
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xc72
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x240
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a1-hit-ca0-220
+segment m700_a224_e5a1_hit_ca0_220
+jump 5 1 0xb00
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xc98
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x220
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a1-hit-cba-240
+segment m700_a224_e5a1_hit_cba_240
+jump 5 1 0xb10
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xcb2
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x240
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a1-hit-ce0-220
+segment m700_a224_e5a1_hit_ce0_220
+jump 5 1 0xb40
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xcd8
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x220
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a1-hit-f68-160
+segment m700_a224_e5a1_hit_f68_160
+jump 5 1 0xd80
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xf60
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x160
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a1-hit-f90-160
+segment m700_a224_e5a1_hit_f90_160
+jump 5 1 0xe00
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xf88
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x160
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a1-hit-fb8-160
+segment m700_a224_e5a1_hit_fb8_160
+jump 5 1 0xe00
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+0 snapshot keep
+3 poke 0xFFB27C 2 0xfb0
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x160
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a1-hit-fb8-160
+segment m700_a224_e5a1_hit_fb8_160_l16
+jump 5 1 0xe00
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+level 16 free
+0 snapshot keep
+3 poke 0xFFB27C 2 0xfb0
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x160
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; re/out/d3e2/run4.txt:e5a1-hit-fb8-160
+segment m700_a224_e5a1_hit_fb8_160_l17
+jump 5 1 0xe00
+god on
+time 10:00
+watch 2 B cls var x y z st hp anim +0x48.b +0x4A.b +0xA8.b +0xA9.b +0xAA.b
+watch 2 E cls var x y z st hp drop
+watch 2 A cls var x y z st hp drop
+watch 2 P1 x y z st hp held score
+watch 2 G camx camy cammode area lock go alive car scripted
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+level 17 free
+0 snapshot keep
+3 poke 0xFFB27C 2 0xfb0
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x160
+3 poke 0xFFB298 1 1
+20-22:A
+38-40:A
+56-58:A
+74-76:A
+92-94:A
+110-112:A
+128-130:A
+146-148:A
+trace 180
+
+# A224; D3e-part2-s8-gates:e4a0_yard_1p
+segment m700_a224_e4a0_yard_1p
+jump 4 0 0x210 char=jack
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e4a0_yard_2p
+segment m700_a224_e4a0_yard_2p
+jump 4 0 0x210 char=jack,hannah
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e4a0_yard_3p
+segment m700_a224_e4a0_yard_3p
+jump 4 0 0x210 char=jack,hannah,mess
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e4a1_garage_1p
+segment m700_a224_e4a1_garage_1p
+jump 4 1 0 char=jack
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e4a1_garage_2p
+segment m700_a224_e4a1_garage_2p
+jump 4 1 0 char=jack,hannah
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e4a1_garage_3p
+segment m700_a224_e4a1_garage_3p
+jump 4 1 0 char=jack,hannah,mess
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e5a0_meadow_1p
+segment m700_a224_e5a0_meadow_1p
+jump 5 0 0x80 char=jack
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e5a0_meadow_2p
+segment m700_a224_e5a0_meadow_2p
+jump 5 0 0x80 char=jack,hannah
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e5a0_meadow_3p
+segment m700_a224_e5a0_meadow_3p
+jump 5 0 0x80 char=jack,hannah,mess
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e5a0_cliff_1p
+segment m700_a224_e5a0_cliff_1p
+jump 5 0 0x880 char=jack
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e5a0_cliff_2p
+segment m700_a224_e5a0_cliff_2p
+jump 5 0 0x880 char=jack,hannah
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e5a0_cliff_3p
+segment m700_a224_e5a0_cliff_3p
+jump 5 0 0x880 char=jack,hannah,mess
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e5a1_torch_1p
+segment m700_a224_e5a1_torch_1p
+jump 5 1 0xe00 char=jack
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e5a1_torch_2p
+segment m700_a224_e5a1_torch_2p
+jump 5 1 0xe00 char=jack,hannah
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A224; D3e-part2-s8-gates:e5a1_torch_3p
+segment m700_a224_e5a1_torch_3p
+jump 5 1 0xe00 char=jack,hannah,mess
+god on
+level 0 free
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A214; D3e-part2-s6-gates:e4a2_guns_1p_l8
+segment m700_a214_e4a2_guns_1p_l8
+jump 4 2 0x180 char=jack
+level 8 free
+god on
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A214; D3e-part2-s6-gates:e4a2_guns_1p_l9
+segment m700_a214_e4a2_guns_1p_l9
+jump 4 2 0x180 char=jack
+level 9 free
+god on
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A214; D3e-part2-s6-gates:e4a2_guns_1p_l25
+segment m700_a214_e4a2_guns_1p_l25
+jump 4 2 0x180 char=jack
+level 25 free
+god on
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A214; D3e-part2-s6-gates:e4a2_guns_1p_l26
+segment m700_a214_e4a2_guns_1p_l26
+jump 4 2 0x180 char=jack
+level 26 free
+god on
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A214; D3e-part2-s6-gates:e4a2_guns_2p_l0
+segment m700_a214_e4a2_guns_2p_l0
+jump 4 2 0x180 char=jack,hannah
+level 0 free
+god on
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180
+
+# A214; D3e-part2-s6-gates:e4a2_guns_3p_l0
+segment m700_a214_e4a2_guns_3p_l0
+jump 4 2 0x180 char=jack,hannah,mess
+level 0 free
+god on
+hold 0xFF850E 1 2
+watch 2 E cls var x y z st drop
+watch 2 P hp x y z st
+watch 2 G camx camy level alive
+0 snapshot keep
+
+trace 180

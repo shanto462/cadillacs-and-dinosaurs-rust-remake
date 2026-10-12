@@ -869,3 +869,247 @@ Detailed evidence is under `re/out/probe/_input/`:
 `m600_first_differences.tsv`, `m600_car_backtrace.log`, and each scenario's
 `.port.log` and `.diff.log`. MAME's PLD and QSound checksum warnings are the
 existing placeholder-ROM warnings noted in the harness limits above.
+
+## Episode 4 and 5 preparation scenarios (M7-00)
+
+The five `pokes/m700_*.txt` batches prepare all 39 requested acceptance IDs.
+Every scenario name starts with `m700_`. The batches are self contained:
+the old research recipes are cited for provenance, but are not loaded when
+recording. `scripts/m700_scenarios.tsv` lists each case, scenario, batch,
+frame count, recipe, timed mutation frames and kept probe controls.
+
+| Batch | Cases | Scenarios |
+| --- | --- | --- |
+| `m700_bosses.txt` | D3c BS-S1/S2; D3d BT-A1 to BT-A5 | 11 |
+| `m700_humans.txt` | D3a H17, H18, H26, Bludge item eating and return | 3 |
+| `m700_dinosaurs.txt` | D3b A1 to A8, A12 to A14, including all six punch and jump heights and both hostile levels | 25 |
+| `m700_scenery.txt` | D3e part 2 A207 to A224, with all eight bridge barrels, scenery controls, placed container hits and player-count and level gates | 99 |
+| `m700_replay.txt` | Companions for Bludge, Zeke, Hopper, Slice, Morgan's scene, garage breakables and the last pail | 14 |
+
+The first four batches preserve the design recipes with `snapshot keep`.
+Timed spawns, forced states, HP resets and camera/player pokes after the
+snapshot affect MAME only. God mode, rank and level holds, kill-all holds
+and background clock freezes can also continue through a trace. `port.sh`
+does not replay those commands. These are preparation references, so a
+port difference at a timed mutation is not evidence of a routine bug.
+The manifest names those frames and controls. Frame numbers after a
+snapshot count game frames; the old recipes counted video frames.
+Slowdown can shift events relative to the old design timelines.
+
+The replay companions finish their setup before the snapshot and end
+probe controls there. They contain only keys after the snapshot. Saved
+field values remain in RAM, but are no longer refreshed by a probe hold.
+These companions are separate encounters with their own frame zero.
+
+A219 records the partial natural crossing from D3e part 2. That recipe
+establishes the start of the diagonal descent; it does not prove a full
+uninterrupted bridge crossing. A224 adds 1P, 2P and 3P presence checks for
+the gated yard, garage, meadow, cliff and torch records. A214 adds the gun
+yard player-count and level boundary checks. The final pail also has level
+16 and 17 hit scenarios. These probes let the original stage scripts
+choose their records at run time. No table rows are copied into the batch.
+
+Record each batch with one headless MAME process, sequentially:
+
+```sh
+for batch in humans dinosaurs bosses scenery replay; do
+  PR_TIMEOUT=3600 PR_SNAPS=none PR_SHEET=0 \
+    re/harness/probe/probe_record.sh re/harness/pokes/m700_${batch}.txt all
+done
+```
+
+Run the recorded scenarios through the port in step mode:
+
+```sh
+tail -n +2 re/harness/scripts/m700_scenarios.tsv |
+while IFS="$(printf '\t')" read -r case_id name batch frames recipe mutations controls; do
+  MODE=step re/harness/port.sh re/harness/scripts/${name}.txt "$name" "$frames"
+done
+```
+
+Compare one scenario without allow rules:
+
+```sh
+name=m700_a3_z_force_c_replay
+re/.venv/bin/python -I re/harness/diff.py \
+  re/out/traces/${name}.mame.trc re/out/traces/${name}.step.trc
+```
+
+Use `probe_record.sh` for these scene setups. `record.sh` and `check.sh`
+do not reconstruct them. States, MAME and port traces, generated inputs,
+probe logs and validation evidence stay under ignored `re/out/` paths.
+The input scripts and manifest contain commands and metadata only.
+
+## Weapons and items preparation scenarios (M5-16)
+
+The batches in `re/harness/pokes/m516_*.txt` (the same text is in
+`re/out/probe/_input/`) record D2c W1 to W14 and D4a A01 to A25.
+A26 and A27 are not here (task M9). Every scenario name starts with `m516_`.
+`re/harness/scripts/m516_scenarios.tsv` lists the case, name, batch, trace
+length, source segment, snapshot frame and the frames of MAME-only commands.
+`re/harness/scripts/m516_*.txt` is the keys after the snapshot, for `port.sh`.
+
+| Batch | Cases | Scenarios |
+| --- | --- | --- |
+| `m516_w_pick.txt` | W1 to W4 | 19 |
+| `m516_w_melee.txt` | W5 to W9 | 58 |
+| `m516_w_throw.txt` | W10 to W12 and W14 | 31 |
+| `m516_w_life.txt` | W13 | 33 |
+| `m516_a_food.txt` | A01, A02, A03, A04, A22 | 36 |
+| `m516_a_box.txt` | A05, A06, A07, A08, A09, A10 | 32 |
+| `m516_a_drop.txt` | A11 to A15 and A17 | 21 |
+| `m516_a_long.txt` | A16 `life_long` | 1 |
+| `m516_a_world.txt` | A18 to A21 and A23 to A25 | 25 |
+
+256 scenarios. A shared segment is recorded once. A02 is the second eat
+inside the A01 food segments. A06 is the `cj_*` part of A05. `stone_items`
+is both A11 and A16. A22's food and treasure pictures are `f01`, `f09` and
+`t01`, plus `hud_clean`.
+
+Rows the design names for one hero stay that hero. Pistol, bazooka, knife,
+stick, butcher knife, torch, dynamite and the barrel are recorded for Jack,
+Mustapha, Hannah and Mess. Rifle, M-16, Uzi and the shotgun distances are
+the Jack rows in W3. Grenade, stones, ammo and the heavy objects other than
+the barrel are the Jack rows in W10 to W12. Other-hero copies that exist in
+the old weapon batch but are not named in D2c section 19 were not recorded.
+
+Lines before `snapshot` build the scene: the jump, the spawns, the pins,
+god mode and the opening HP. `keep` is set when god or a pin is on, so MAME
+keeps refreshing them. A later spawn, `objset`, `hp` or wear poke runs in
+MAME only. `port.sh` does not replay it. In step mode the next MAME record
+already contains the effect. In run mode the port diverges there. Trace
+frame 0 is the first game frame after the snapshot. The `snap` column is
+the old probe frame of that snapshot, so an old probe time is about
+`trace frame + snap`. These recordings had no slowdown, so the clocks stay
+within one step. A key written as frame N is the input of record N. The old
+probes set the key at the end of a video frame and saw the result on the
+next sample, so a design line such as "press at 10, state at 11" is one
+trace record here.
+
+Record one headless MAME process per batch:
+
+```sh
+for batch in w_pick w_melee w_throw w_life a_food a_box a_drop a_long a_world; do
+  PR_TIMEOUT=7200 PR_SNAPS=none PR_SHEET=0 \
+    re/harness/probe/probe_record.sh re/harness/pokes/m516_${batch}.txt all
+done
+```
+
+Replay:
+
+```sh
+tail -n +2 re/harness/scripts/m516_scenarios.tsv |
+while IFS="$(printf '\t')" read -r case_id name batch frames source snap muts; do
+  MODE=step re/harness/port.sh re/harness/scripts/${name}.txt "$name" "$frames"
+done
+```
+
+The `.state`, `.mame.trc` and recorder `.input.txt` files stay under ignored
+`re/out/traces/`. Logs stay under `re/out/probe/m516_*-rec/`.
+
+### M5-16 completion report (2026-10-13)
+
+Nine batches, 256 input scripts and the manifest. Every W1 to W14 row and
+every A01 to A25 row has a trace. No game code and no recorder code changed.
+
+- G1: the first `cargo build` failed while another worker was mid-edit
+  (`prop_card_board_finish` was called before that method was visible).
+  After 10 minutes the retry succeeded. `cargo test`: dino-game 151 passed,
+  0 failed, 1 ignored; dino-extract 7 passed.
+- G2: skipped. This task does not change game code.
+- G3 recording: 256 complete scenarios, 75,129 game frames, 0 lag vblanks.
+  Header lengths match the manifest. Script key lines match the recorder
+  input. Nine headless MAME processes, one per batch, all exited normally
+  (about 5 minutes of wall time).
+- G3 port: all 256 scenarios completed `port.sh` in step mode, with no panic.
+  None is equal to MAME. The summary is `re/out/probe/_input/m516_port_sum.txt`.
+- G4: game run and screenshots skipped, as this task changes no game code.
+- G5: scenario commands, inputs and this section only. No ported routine and
+  no ROM table.
+
+First difference: frame -1 in 12, frame 0 in 10, frame 1 in 208, frame 7 in
+1, frame 8 in 25.
+
+Frame 1 is kept god mode. MAME writes the invulnerability timer full every
+frame. The port counts it down. `m516_e7a0_lv10` and `m516_e7a0_lv20` differ
+in that timer only. The other frame-1 runs then diverge because a pin is
+not replayed (the thug walks), because a later `objset` or `hp` or spawn is
+MAME-only, or because an enemy class is not ported. On `m516_pistol_jack`
+the pickup sets the weapon-dirty HUD flag in MAME and not in the port, the
+pinned thug's position differs from frame 2, and the last-round HP poke
+(trace frame 116) is MAME-only.
+
+Frame 8 is the 25 W13 rows with no god mode. The friend jab or the discard
+press is the first event. The first fields are the weapon-dirty flag and
+the text layer. Frame 7 is `die_with_weapon`: the text layer only, one
+frame before the attack key.
+
+Frame 0: the four torch rows, the torch wear row and the torch run-swing
+differ in the torch item's height and timer before any key. Food 18's
+animation frame is empty in the port (the design says that object has no
+picture). Class 65 and class 70 are unported, so the barrel and the biker
+move in MAME and stay frozen in the port. Episode 5 area 0 start differs
+in the RNG and in floor items on the first frame.
+
+Frame -1: twelve jumps into later episodes. The snapshot loader rebuilds
+the spawn-list pointers and a wave pointer differently. The same loader
+question is open on the M6-00 recordings. The scenes still run.
+
+Open question: W3's rifle, M-16, Uzi and shotgun distances, and W10 to W12's
+grenade, stones and ammo, were measured for Jack. The other three heroes
+were not recorded for those rows. Say if those copies should be added.
+
+### M7-00 completion report (2026-10-13)
+
+Prepared five batches, 152 input scripts and one manifest. All 39 requested
+acceptance IDs have MAME references. Fourteen scenarios are replay
+companions. No game code, recorder code or allow rules changed.
+
+- G1: `cargo build` passed. `cargo test`: 158 passed, 0 failed, 1 ignored.
+- G2: skipped by the lane B instruction. No regression claim or gate-number
+  comparison with an earlier run.
+- G3 recording: 152 complete MAME scenarios, 143,545 game frames and 84 lag
+  vblanks. Every trace record number and requested length was checked.
+  Every state has its snapshot record. All 152 saved input scripts match
+  the recorder output, ignoring its comment header and treating the
+  explicit empty-key interval as an empty input. Five sequential headless
+  MAME processes recorded the final five batches. All completed normally.
+- G3 port comparison: all 152 scenarios ran through `port.sh` in step mode,
+  without allow rules. All 152 port traces completed at their requested
+  lengths, totaling 143,545 game frames. No game panics remained. None
+  equals MAME with the current port. First differences: frame -1 in 91
+  cases, frame 0 in 51, frame 1 in 10.
+- G4: game run and game screenshots skipped by the lane B instruction.
+- G5: only probe commands, input scripts and documentation were added.
+  No routines or ROM tables were ported. Runtime states and traces remain
+  under ignored `re/out/` paths.
+
+The frame-minus-one differences are spawn or active-wave pointers that the
+snapshot loader reconstructs differently. The ten frame-one differences
+are kept god controls refreshing player invulnerability in MAME only.
+Of the frame-zero cases, 32 first differ in the depth and animation of
+floor items in the Episode 5 scenes; five first differ in RNG; fourteen
+first differ in scene flags or enemy state. The class breakdowns identify
+unported actors, dinosaurs, bosses, poachers, props and effects. Those
+classes and timed MAME-only commands explain much of the later object,
+census, video and sound differences. They do not excuse a ported routine
+bug. Exact causes of the shared floor-item, RNG and ported-field differences
+remain implementation work for their owners.
+
+Open questions: snapshot spawn/wave pointer reconstruction; floor-item
+motion and animation at the start of the Episode 5 test scenes; AI RNG call
+order when those scenes contain unported classes; and the complete natural
+bridge crossing missing from the original A219 recipe. The new multiplayer
+and level probes prepare the placed-item gates, but do not establish port
+parity. Preparation is complete.
+
+Early port attempts read trace files before recording had finished and
+reported incomplete-file reader panics. They were stopped and rerun after
+each segment finished. The final results above contain only full traces.
+MAME emitted the existing placeholder PLD/QSound checksum warnings.
+
+Detailed evidence is under `re/out/probe/_input/`: `m700_audit.log`,
+`m700_build.log`, `m700_test.log`, `m700_summary.log`, `m700_results.tsv`,
+`m700_first_differences.tsv`, the five `m700_*_record.log` files and each
+scenario's `.port.log` and `.diff.log`. Batch logs are under
+`re/out/probe/m700_*-rec/`; states and traces are under `re/out/traces/`.

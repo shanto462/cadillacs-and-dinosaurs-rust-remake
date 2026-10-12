@@ -1,0 +1,3 @@
+# m516_wearff_stick_E0. Keys after the snapshot (frame 0 = first game frame). Source segment wearff_stick_E0, probe frames shifted by 2.
+8-8:2A
+58-58:A

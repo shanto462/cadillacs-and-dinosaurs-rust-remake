@@ -1,0 +1,4 @@
+# m516_ffd_hannah_pistol. Keys after the snapshot (frame 0 = first game frame). Source segment ffd_hannah_pistol, probe frames shifted by 2.
+8-8:2A
+58-58:A
+98-98:A

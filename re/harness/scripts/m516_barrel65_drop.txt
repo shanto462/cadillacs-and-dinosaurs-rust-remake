@@ -1,0 +1,15 @@
+# m516_barrel65_drop. Keys after the snapshot (frame 0 = first game frame). Source segment barrel65_drop, probe frames shifted by 2.
+68-68:A
+76-76:A
+84-84:A
+92-92:A
+100-100:A
+108-108:A
+116-116:A
+124-124:A
+132-132:A
+140-140:A
+148-148:A
+156-156:A
+164-164:A
+172-172:A

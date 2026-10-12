@@ -1,0 +1,10 @@
+# m516_rod0_jack. Keys after the snapshot (frame 0 = first game frame). Source segment rod0_jack, probe frames shifted by 4.
+6-6:A
+36-36:A
+136-136:A
+236-236:A
+336-336:A
+436-436:A
+536-536:A
+636-636:A
+736-736:A

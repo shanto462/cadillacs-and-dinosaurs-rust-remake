@@ -1,0 +1,15 @@
+# m516_biker70_drop. Keys after the snapshot (frame 0 = first game frame). Source segment biker70_drop, probe frames shifted by 2.
+58-58:A
+64-64:A
+70-70:A
+76-76:A
+82-82:A
+88-88:A
+94-94:A
+100-100:A
+106-106:A
+112-112:A
+118-118:A
+124-124:A
+130-130:A
+136-136:A

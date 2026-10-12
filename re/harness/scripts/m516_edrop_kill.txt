@@ -1,0 +1,2 @@
+# m516_edrop_kill. Keys after the snapshot (frame 0 = first game frame). Source segment edrop_kill, probe frames shifted by 5.
+7-7:A

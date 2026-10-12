@@ -1,0 +1,4 @@
+# m516_hud_clean. Keys after the snapshot (frame 0 = first game frame). Source segment hud_clean, probe frames shifted by 700.
+8-8:A
+100-100:A
+188-188:A

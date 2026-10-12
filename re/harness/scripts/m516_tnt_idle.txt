@@ -1,0 +1,2 @@
+# m516_tnt_idle. Keys after the snapshot (frame 0 = first game frame). Source segment tnt_idle, probe frames shifted by 2.
+# no keys: the scene runs on its own

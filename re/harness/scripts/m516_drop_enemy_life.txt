@@ -1,0 +1,2 @@
+# m516_drop_enemy_life. Keys after the snapshot (frame 0 = first game frame). Source segment drop_enemy_life, probe frames shifted by 30.
+10-10:A

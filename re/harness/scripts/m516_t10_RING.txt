@@ -1,0 +1,2 @@
+# m516_t10_RING. Keys after the snapshot (frame 0 = first game frame). Source segment t10_RING, probe frames shifted by 2.
+8-8:A

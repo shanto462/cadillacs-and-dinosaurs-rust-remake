@@ -1,0 +1,4 @@
+# m516_barrel_mustapha. Keys after the snapshot (frame 0 = first game frame). Source segment barrel_mustapha, probe frames shifted by 4.
+6-7:AR
+56-56:A
+96-126:J

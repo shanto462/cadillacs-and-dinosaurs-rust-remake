@@ -1,0 +1,2 @@
+# m516_t06_DINOBONE. Keys after the snapshot (frame 0 = first game frame). Source segment t06_DINOBONE, probe frames shifted by 2.
+8-8:A

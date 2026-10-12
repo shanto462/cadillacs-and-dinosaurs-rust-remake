@@ -1,0 +1,153 @@
+case	scenario	batch	frames	recipe	mutation_frames	kept_controls
+BS-S1	m700_bs_s1_s1_nat	bosses	6000	re/out/d3c/r1.txt:s1-nat	none	god on
+BS-S1	m700_bs_s1_s8_alt	bosses	6500	re/out/d3c/r3.txt:s8-alt	none	god on
+BS-S2	m700_bs_s2_s4_face	bosses	7000	re/out/d3c/r2.txt:s4-face	none	god on
+BT-A1	m700_bt_a1_m5_scene	bosses	900	re/out/d3d/r4.txt:m5-scene	none	god on | rank 12
+BT-A2	m700_bt_a2_m5_dmg	bosses	3400	re/out/d3d/r2.txt:m5-dmg	300,330,360,390,420,450,480,510,540,570,600,630,660,690,720,750,780,810,840,870,900,930,960,990,1020,1050,1080,1110,1140,1170,1200,1230,1260,1290,1320,1350,1380,1410,1440,1470,1500,1530,1560,1590,1620,1650,1680,1710,1740,1770,1800,1830,1860,1890,1920,1950,1980,2010,2040,2070,2100,2130,2160,2190,2220,2250,2280,2310,2340,2370,2400,2430,2460,2490,2520,2550,2580,2610,2640,2670,2700,2730,2760,2790,2820,2850,2880,2910,2940,2970,3000,3030,3060,3090,3120,3150,3180,3210,3240,3270,3300,3330,3360,3390	rank 12
+BT-A2	m700_bt_a2_m5_a	bosses	3200	re/out/d3d/r1.txt:m5-a	none	god on | rank 12
+BT-A3	m700_bt_a3_m5_uzi	bosses	1100	re/out/d3d/r3.txt:m5-uzi	700,702	god on | rank 12
+BT-A4	m700_bt_a4_m5_trans	bosses	5000	re/out/d3d/r2.txt:m5-trans	700	god on | rank 12
+BT-A4	m700_bt_a4_m5_b	bosses	5000	re/out/d3d/r1.txt:m5-b	700	god on | rank 12
+BT-A5	m700_bt_a5_m5_morgue_dmg	bosses	7000	re/out/d3d/r2.txt:m5-morgue-dmg	700,2700,2730,2760,2790,2820,2850,2880,2910,2940,2970,3000,3030,3060,3090,3120,3150,3180,3210,3240,3270,3300,3330,3360,3390,3420,3450,3480,3510,3540,3570,3600,3630,3660,3690,3720,3750,3780,3810,3840,3870,3900,3930,3960,3990,4020,4050,4080,4110,4140,4170,4200,4230,4260,4290,4320,4350,4380,4410,4440,4470,4500,4530,4560,4590,4620,4650,4680,4710,4740,4770,4800,4830,4860,4890,4920,4950,4980,5010,5040,5070,5100,5130,5160,5190,5220,5250,5280,5310,5340,5370,5400,5430,5460,5490,5520,5550,5580,5610,5640,5670,5700,5730,5760,5790,5820,5850,5880,5910,5940,5970,6000,6030,6060,6090,6120,6150,6180,6210,6240,6270,6300,6330,6360,6390,6420,6450,6480,6510,6540,6570,6600,6630,6660,6690,6720,6750,6780,6810,6840,6870,6900,6930,6960,6990	rank 12
+BT-A5	m700_bt_a5_m5_morgue_kill	bosses	10000	re/out/d3d/r2.txt:m5-morgue-kill	700,3600	god on | rank 12
+H17	m700_h17_bl_vomit	humans	2200	re/harness/pokes/m600_humans.txt:m600_h17_bl_vomit	5,6,1050	level 0 free | aggr 7 free | god on
+H18	m700_h18_bl_death	humans	2400	re/harness/pokes/m600_humans.txt:m600_h18_bl_death	5,6,1050,1060	level 0 free | aggr 7 free | god on
+H26	m700_h26_pk_bludge	humans	1500	re/harness/pokes/m600_humans.txt:m600_h26_pk_bludge	5,6	level 0 free | aggr 7 free | god on
+A1	m700_a1_z_solo_l31	dinosaurs	3600	re/out/d3b/b1.txt:z-solo-l31	2	hold 0xFF850E 1 2 | level 31 free
+A2	m700_a2_z_solo_l0	dinosaurs	3600	re/out/d3b/b1.txt:z-solo-l0	2	hold 0xFF850E 1 2 | level 0 free
+A3	m700_a3_z_force_a	dinosaurs	1500	re/out/d3b/b1.txt:z-force-a	2,900	hold 0xFF850E 1 2 | level 0 free
+A3	m700_a3_z_force_b	dinosaurs	1500	re/out/d3b/b1.txt:z-force-b	2,900	hold 0xFF850E 1 2 | level 0 free
+A3	m700_a3_z_force_c	dinosaurs	1500	re/out/d3b/b1.txt:z-force-c	2,900	hold 0xFF850E 1 2 | level 0 free
+A4	m700_a4_z_force_c_jump	dinosaurs	1300	re/out/d3b/b2.txt:z-force-c-jump	2,900	hold 0xFF850E 1 2 | level 0 free
+A5	m700_a5_z_grab_far	dinosaurs	1300	re/out/d3b/b2.txt:z-grab-far	2,900	hold 0xFF850E 1 2 | level 0 free
+A6	m700_a6_z_hit_punch_0	dinosaurs	160	re/out/d3b/b1.txt:z-hit-punch-0	2,8	hold 0xFF850E 1 2 | level 0 free
+A6	m700_a6_z_hit_jkick_0	dinosaurs	160	re/out/d3b/b1.txt:z-hit-jkick-0	2,8	hold 0xFF850E 1 2 | level 0 free
+A6	m700_a6_z_hit_punch_24	dinosaurs	160	re/out/d3b/b1.txt:z-hit-punch-24	2,8	hold 0xFF850E 1 2 | level 0 free
+A6	m700_a6_z_hit_jkick_24	dinosaurs	160	re/out/d3b/b1.txt:z-hit-jkick-24	2,8	hold 0xFF850E 1 2 | level 0 free
+A6	m700_a6_z_hit_punch_48	dinosaurs	160	re/out/d3b/b1.txt:z-hit-punch-48	2,8	hold 0xFF850E 1 2 | level 0 free
+A6	m700_a6_z_hit_jkick_48	dinosaurs	160	re/out/d3b/b1.txt:z-hit-jkick-48	2,8	hold 0xFF850E 1 2 | level 0 free
+A6	m700_a6_z_hit_punch_72	dinosaurs	160	re/out/d3b/b1.txt:z-hit-punch-72	2,8	hold 0xFF850E 1 2 | level 0 free
+A6	m700_a6_z_hit_jkick_72	dinosaurs	160	re/out/d3b/b1.txt:z-hit-jkick-72	2,8	hold 0xFF850E 1 2 | level 0 free
+A6	m700_a6_z_hit_punch_96	dinosaurs	160	re/out/d3b/b1.txt:z-hit-punch-96	2,8	hold 0xFF850E 1 2 | level 0 free
+A6	m700_a6_z_hit_jkick_96	dinosaurs	160	re/out/d3b/b1.txt:z-hit-jkick-96	2,8	hold 0xFF850E 1 2 | level 0 free
+A6	m700_a6_z_hit_punch_120	dinosaurs	160	re/out/d3b/b1.txt:z-hit-punch-120	2,8	hold 0xFF850E 1 2 | level 0 free
+A6	m700_a6_z_hit_jkick_120	dinosaurs	160	re/out/d3b/b1.txt:z-hit-jkick-120	2,8	hold 0xFF850E 1 2 | level 0 free
+A7	m700_a7_z_kill	dinosaurs	400	re/out/d3b/b1.txt:z-kill	2,8	hold 0xFF850E 1 2 | level 0 free
+A8	m700_a8_z_leave	dinosaurs	400	re/out/d3b/b2.txt:z-leave	2	hold 0xFF850E 1 2
+A12	m700_a12_h3_neutral	dinosaurs	2300	re/out/d3b/b3.txt:h3-neutral	2	hold 0xFF850E 1 2 | level 0 free | god on
+A13	m700_a13_h3_hit	dinosaurs	1500	re/out/d3b/b3.txt:h3-hit	2,6,700	hold 0xFF850E 1 2 | level 0 free
+A14	m700_a14_h3_hostile_l0	dinosaurs	2400	re/out/d3b/b3.txt:h3-hostile-l0	2,6	hold 0xFF850E 1 2 | level 0 free
+A14	m700_a14_h3_hostile_l31	dinosaurs	2400	re/out/d3b/b3.txt:h3-hostile-l31	2,6	hold 0xFF850E 1 2 | level 31 free
+A207	m700_a207_e4_opening	scenery	950	re/out/d3e2/run1.txt:e4-opening	none	god on
+A207	m700_a207_e4_gate_crash	scenery	950	re/out/d3e2/run2.txt:e4-gate-crash	none	god on
+A208	m700_a208_e4a1_hit_b0_58	scenery	180	re/out/d3e2/run4.txt:e4a1-hit-b0-58	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A208	m700_a208_e4a1_hit_f0_58	scenery	180	re/out/d3e2/run4.txt:e4a1-hit-f0-58	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A209	m700_a209_e4_vent	scenery	360	re/out/d3e2/run2.txt:e4-vent	85	god on
+A209	m700_a209_e5_vent_hit	scenery	300	re/out/d3e2/run4.txt:e5-vent-hit	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A210	m700_a210_e4_break_lamp_left	scenery	180	re/out/d3e2/run3.txt:e4-break-lamp-left	3	god on
+A210	m700_a210_e4_break_window	scenery	180	re/out/d3e2/run3.txt:e4-break-window	3	god on
+A210	m700_a210_e4_break_lamp_right	scenery	180	re/out/d3e2/run3.txt:e4-break-lamp-right	3	god on
+A211	m700_a211_e4_fence_dx0_f1	scenery	120	re/out/d3e2/run4.txt:e4-fence-dx0-f1	3	god on | hold 0xFF8506 1 1
+A211	m700_a211_e4_fence_dx32_f1	scenery	120	re/out/d3e2/run4.txt:e4-fence-dx32-f1	3	god on | hold 0xFF8506 1 1
+A211	m700_a211_e4_fence_dx_32_f1	scenery	120	re/out/d3e2/run4.txt:e4-fence-dx-32-f1	3	god on | hold 0xFF8506 1 1
+A212	m700_a212_e4a1_scenery_grid	scenery	2363	re/out/d3e2/run4.txt:e4a1-scenery-grid	3,33,63,93,123,153,183,213,243,273,303,333,363,393,423,453,483,513,543,573,603,633,663,693,723,753,783,813,843,873,903,933,963,993,1023,1053,1083,1113,1143,1173,1203,1233,1263,1293,1323,1353,1383,1413,1443,1473,1503,1533,1563,1593,1623,1653,1683,1713,1743,1773,1803,1833,1863,1893,1923,1953,1983,2013,2043,2073,2103,2133,2163,2193,2223,2253,2283,2313	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A212	m700_a212_e4a1_sweep_back	scenery	4200	re/out/d3e2/run1.txt:e4a1-sweep-back	none	god on | hold 0xFF850E 1 2
+A213	m700_a213_e4_palettes	scenery	160	re/out/d3e2/run4.txt:e4-palettes	none	god on | hold 0xFF850E 1 2
+A213	m700_a213_e4a2_scenery_grid	scenery	1523	re/out/d3e2/run4.txt:e4a2-scenery-grid	3,33,63,93,123,153,183,213,243,273,303,333,363,393,423,453,483,513,543,573,603,633,663,693,723,753,783,813,843,873,903,933,963,993,1023,1053,1083,1113,1143,1173,1203,1233,1263,1293,1323,1353,1383,1413,1443,1473	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A214	m700_a214_e4a2_check_180	scenery	600	re/out/d3e2/run1.txt:e4a2-check-180	none	god on
+A215	m700_a215_e5_opening	scenery	400	re/out/d3e2/run1.txt:e5-opening	none	god on
+A215	m700_a215_e5a0_check_170	scenery	600	re/out/d3e2/run1.txt:e5a0-check-170	none	god on
+A215	m700_a215_e5_hunter_natural	scenery	1200	re/out/d3e2/run3.txt:e5-hunter-natural	none	god on
+A216	m700_a216_e5a0_check_660	scenery	600	re/out/d3e2/run1.txt:e5a0-check-660	none	god on
+A216	m700_a216_e5a0_hit_790_25c	scenery	180	re/out/d3e2/run4.txt:e5a0-hit-790-25c	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A216	m700_a216_e5a0_hit_7e8_25c	scenery	180	re/out/d3e2/run4.txt:e5a0-hit-7e8-25c	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A217	m700_a217_e5_rock_hit	scenery	600	re/out/d3e2/run2.txt:e5-rock-hit	3	god on
+A217	m700_a217_e5_rock_debris	scenery	1200	re/out/d3e2/run4.txt:e5-rock-debris	3,10,60,110,160,210,260,310,360,410,460,510,560,610,660,710,760	god on | hold 0xFF8506 1 1
+A218	m700_a218_e5a1_hit_bfa_240	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-bfa-240	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A218	m700_a218_e5a1_hit_c20_220	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-c20-220	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A218	m700_a218_e5a1_hit_c3a_240	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-c3a-240	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A218	m700_a218_e5a1_hit_c60_220	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-c60-220	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A218	m700_a218_e5a1_hit_c7a_240	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-c7a-240	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A218	m700_a218_e5a1_hit_ca0_220	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-ca0-220	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A218	m700_a218_e5a1_hit_cba_240	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-cba-240	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A218	m700_a218_e5a1_hit_ce0_220	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-ce0-220	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A219	m700_a219_e5_bridge_cross	scenery	2400	re/out/d3e2/run3.txt:e5-bridge-cross	48,96,144,192,240,288,336	god on | hold 0xFF850E 1 2
+A220	m700_a220_e5_far_isolate_b00	scenery	192	re/out/d3e2/run4.txt:e5-far-isolate-b00	none	god on | hold 0xFF850E 1 2 | hold 0xFF87AE 1 0 | hold 0xFF87AF 1 0
+A220	m700_a220_e5_far_isolate_f00	scenery	192	re/out/d3e2/run4.txt:e5-far-isolate-f00	none	god on | hold 0xFF850E 1 2 | hold 0xFF87AE 1 0 | hold 0xFF87AF 1 0
+A220	m700_a220_e5_fire_c80	scenery	180	re/out/d3e2/run2.txt:e5-fire-c80	none	god on | hold 0xFF850E 1 2
+A220	m700_a220_e5_fire_d80	scenery	180	re/out/d3e2/run2.txt:e5-fire-d80	none	god on | hold 0xFF850E 1 2
+A220	m700_a220_e5_fire_e80	scenery	180	re/out/d3e2/run2.txt:e5-fire-e80	none	god on | hold 0xFF850E 1 2
+A220	m700_a220_e5_fire_f00	scenery	180	re/out/d3e2/run2.txt:e5-fire-f00	none	god on | hold 0xFF850E 1 2
+A220	m700_a220_e5_fire_f80	scenery	180	re/out/d3e2/run2.txt:e5-fire-f80	none	god on | hold 0xFF850E 1 2
+A220	m700_a220_e5_fire_1080	scenery	180	re/out/d3e2/run2.txt:e5-fire-1080	none	god on | hold 0xFF850E 1 2
+A220	m700_a220_e5_fire_1120	scenery	180	re/out/d3e2/run2.txt:e5-fire-1120	none	god on | hold 0xFF850E 1 2
+A221	m700_a221_e5a1_hit_f68_160	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-f68-160	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A221	m700_a221_e5a1_hit_f90_160	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-f90-160	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A221	m700_a221_e5a1_hit_fb8_160	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-fb8-160	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A222	m700_a222_e5_wall_burst	scenery	500	re/out/d3e2/run2.txt:e5-wall-burst	80	god on
+A223	m700_a223_e5_chief_natural	scenery	1000	re/out/d3e2/run3.txt:e5-chief-natural	none	god on
+A223	m700_a223_e5_chief_gun	scenery	700	re/out/d3e2/run4.txt:e5-chief-gun	3	god on | hold 0xFF8506 1 1
+A224	m700_a224_e4a0_hit_2a8_10	scenery	180	re/out/d3e2/run4.txt:e4a0-hit-2a8-10	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e4a0_hit_2d0_10	scenery	180	re/out/d3e2/run4.txt:e4a0-hit-2d0-10	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e4a0_hit_350_40	scenery	180	re/out/d3e2/run4.txt:e4a0-hit-350-40	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e4a0_hit_390_40	scenery	180	re/out/d3e2/run4.txt:e4a0-hit-390-40	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e4a1_hit_b0_58	scenery	180	re/out/d3e2/run4.txt:e4a1-hit-b0-58	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e4a1_hit_f0_58	scenery	180	re/out/d3e2/run4.txt:e4a1-hit-f0-58	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e4a1_hit_23a_68	scenery	180	re/out/d3e2/run4.txt:e4a1-hit-23a-68	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e4a1_hit_26a_68	scenery	180	re/out/d3e2/run4.txt:e4a1-hit-26a-68	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e4a1_hit_8c0_60	scenery	180	re/out/d3e2/run4.txt:e4a1-hit-8c0-60	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e4a1_hit_8f0_60	scenery	180	re/out/d3e2/run4.txt:e4a1-hit-8f0-60	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e4a1_hit_9c0_60	scenery	180	re/out/d3e2/run4.txt:e4a1-hit-9c0-60	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e4a2_hit_250_55	scenery	180	re/out/d3e2/run4.txt:e4a2-hit-250-55	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a0_hit_790_25c	scenery	180	re/out/d3e2/run4.txt:e5a0-hit-790-25c	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a0_hit_7e8_25c	scenery	180	re/out/d3e2/run4.txt:e5a0-hit-7e8-25c	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a0_hit_a20_258	scenery	180	re/out/d3e2/run4.txt:e5a0-hit-a20-258	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a0_hit_a50_258	scenery	180	re/out/d3e2/run4.txt:e5a0-hit-a50-258	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a1_hit_bfa_240	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-bfa-240	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a1_hit_c20_220	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-c20-220	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a1_hit_c3a_240	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-c3a-240	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a1_hit_c60_220	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-c60-220	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a1_hit_c7a_240	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-c7a-240	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a1_hit_ca0_220	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-ca0-220	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a1_hit_cba_240	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-cba-240	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a1_hit_ce0_220	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-ce0-220	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a1_hit_f68_160	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-f68-160	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a1_hit_f90_160	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-f90-160	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a1_hit_fb8_160	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-fb8-160	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1
+A224	m700_a224_e5a1_hit_fb8_160_l16	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-fb8-160	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1 | level 16 free
+A224	m700_a224_e5a1_hit_fb8_160_l17	scenery	180	re/out/d3e2/run4.txt:e5a1-hit-fb8-160	3	god on | hold 0xFF850E 1 2 | hold 0xFF8506 1 1 | level 17 free
+A224	m700_a224_e4a0_yard_1p	scenery	180	D3e-part2-s8-gates:e4a0_yard_1p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e4a0_yard_2p	scenery	180	D3e-part2-s8-gates:e4a0_yard_2p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e4a0_yard_3p	scenery	180	D3e-part2-s8-gates:e4a0_yard_3p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e4a1_garage_1p	scenery	180	D3e-part2-s8-gates:e4a1_garage_1p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e4a1_garage_2p	scenery	180	D3e-part2-s8-gates:e4a1_garage_2p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e4a1_garage_3p	scenery	180	D3e-part2-s8-gates:e4a1_garage_3p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e5a0_meadow_1p	scenery	180	D3e-part2-s8-gates:e5a0_meadow_1p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e5a0_meadow_2p	scenery	180	D3e-part2-s8-gates:e5a0_meadow_2p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e5a0_meadow_3p	scenery	180	D3e-part2-s8-gates:e5a0_meadow_3p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e5a0_cliff_1p	scenery	180	D3e-part2-s8-gates:e5a0_cliff_1p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e5a0_cliff_2p	scenery	180	D3e-part2-s8-gates:e5a0_cliff_2p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e5a0_cliff_3p	scenery	180	D3e-part2-s8-gates:e5a0_cliff_3p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e5a1_torch_1p	scenery	180	D3e-part2-s8-gates:e5a1_torch_1p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e5a1_torch_2p	scenery	180	D3e-part2-s8-gates:e5a1_torch_2p	none	god on | level 0 free | hold 0xFF850E 1 2
+A224	m700_a224_e5a1_torch_3p	scenery	180	D3e-part2-s8-gates:e5a1_torch_3p	none	god on | level 0 free | hold 0xFF850E 1 2
+A214	m700_a214_e4a2_guns_1p_l8	scenery	180	D3e-part2-s6-gates:e4a2_guns_1p_l8	none	level 8 free | god on | hold 0xFF850E 1 2
+A214	m700_a214_e4a2_guns_1p_l9	scenery	180	D3e-part2-s6-gates:e4a2_guns_1p_l9	none	level 9 free | god on | hold 0xFF850E 1 2
+A214	m700_a214_e4a2_guns_1p_l25	scenery	180	D3e-part2-s6-gates:e4a2_guns_1p_l25	none	level 25 free | god on | hold 0xFF850E 1 2
+A214	m700_a214_e4a2_guns_1p_l26	scenery	180	D3e-part2-s6-gates:e4a2_guns_1p_l26	none	level 26 free | god on | hold 0xFF850E 1 2
+A214	m700_a214_e4a2_guns_2p_l0	scenery	180	D3e-part2-s6-gates:e4a2_guns_2p_l0	none	level 0 free | god on | hold 0xFF850E 1 2
+A214	m700_a214_e4a2_guns_3p_l0	scenery	180	D3e-part2-s6-gates:e4a2_guns_3p_l0	none	level 0 free | god on | hold 0xFF850E 1 2
+H17	m700_h17_bl_vomit_replay	replay	2191	m700_h17_bl_vomit@8	none	none
+H26	m700_h26_pk_bludge_replay	replay	1491	m700_h26_pk_bludge@8	none	none
+A1	m700_a1_z_solo_l31_replay	replay	3595	m700_a1_z_solo_l31@4	none	none
+A3	m700_a3_z_force_c_replay	replay	597	m700_a3_z_force_c@902	none	none
+A6	m700_a6_z_hit_punch_72_replay	replay	149	m700_a6_z_hit_punch_72@10	none	none
+A8	m700_a8_z_leave_replay	replay	395	m700_a8_z_leave@4	none	none
+A12	m700_a12_h3_neutral_replay	replay	2295	m700_a12_h3_neutral@4	none	none
+A13	m700_a13_h3_hit_replay	replay	1491	m700_a13_h3_hit@8	none	none
+A14	m700_a14_h3_hostile_l31_replay	replay	2391	m700_a14_h3_hostile_l31@8	none	none
+BS-S2	m700_bs_s2_s4_face_replay	replay	6589	m700_bs_s2_s4_face@410	none	none
+BT-A1	m700_bt_a1_m5_scene_replay	replay	229	m700_bt_a1_m5_scene@670	none	none
+A210	m700_a210_e4_break_lamp_left_replay	replay	174	m700_a210_e4_break_lamp_left@5	none	none
+A211	m700_a211_e4_fence_dx0_f1_replay	replay	114	m700_a211_e4_fence_dx0_f1@5	none	none
+A221	m700_a221_e5a1_hit_fb8_160_replay	replay	174	m700_a221_e5a1_hit_fb8_160@5	none	none

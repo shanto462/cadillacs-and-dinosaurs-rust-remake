@@ -1,0 +1,15 @@
+# M5-16 item A16 life_long. One long trace.
+# Record: PR_TIMEOUT=7200 PR_SNAPS=none PR_SHEET=0 re/harness/probe/probe_record.sh THIS all
+
+# m516_life_long from re/out/d4a/batch1.txt segment life_long. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_life_long
+jump 1 0 928 char=jack
+god on
+2 spawn E 4 var=2 ax=1084 z=250
+2 spawn E 9 var=2 ax=1114 z=250
+2 spawn E 2 ax=1144 z=250
+2 spawn E 0 var=2 ax=1174 z=250
+2 spawn E 5 var=4 ax=1204 z=250 drop=0x11
+2 snapshot keep
+8 objset E:5 hp 0
+trace 3806

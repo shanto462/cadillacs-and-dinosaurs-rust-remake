@@ -1,0 +1,2 @@
+# m516_t02_DIAMOND. Keys after the snapshot (frame 0 = first game frame). Source segment t02_DIAMOND, probe frames shifted by 2.
+8-8:A

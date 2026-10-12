@@ -1,0 +1,257 @@
+case	scenario	batch	frames	source	snap	mutation_frames
+W3	m516_rifle_jack	w_pick	344	re/out/d2c/batchW_big.txt:rifle_jack	4	35,85,135,195,255,116,186,186
+W2	m516_pistol_jack	w_pick	339	re/out/d2c/batchW_big.txt:pistol_jack	4	35,85,135,210,116
+W3	m516_uzi_jack	w_pick	374	re/out/d2c/batchW_big.txt:uzi_jack	4	36,42,48,54,60,66,72,78,84,90,106,121
+W3	m516_m16_jack	w_pick	414	re/out/d2c/batchW_big.txt:m16_jack	4	36,42,48,54,60,66,72,78,84,90,106,121,196,196,205,305
+W4	m516_bazooka_jack	w_pick	504	re/out/d2c/batchW_big.txt:bazooka_jack	4	35,125,215,305
+W2	m516_pistol_mustapha	w_pick	339	re/out/d2c/batchW_big.txt:pistol_mustapha	4	35,85,135,210,116
+W4	m516_bazooka_mustapha	w_pick	504	re/out/d2c/batchW_big.txt:bazooka_mustapha	4	35,125,215,305
+W2	m516_pistol_hannah	w_pick	339	re/out/d2c/batchW_big.txt:pistol_hannah	4	35,85,135,210,116
+W4	m516_bazooka_hannah	w_pick	504	re/out/d2c/batchW_big.txt:bazooka_hannah	4	35,125,215,305
+W2	m516_pistol_mess	w_pick	339	re/out/d2c/batchW_big.txt:pistol_mess	4	35,85,135,210,116
+W4	m516_bazooka_mess	w_pick	504	re/out/d2c/batchW_big.txt:bazooka_mess	4	35,125,215,305
+W5	m516_knife_swing_jack	w_melee	474	re/out/d2c/batchW_big.txt:knife_swing_jack	4	35,145,255,365
+W5	m516_stick_jack	w_melee	474	re/out/d2c/batchW_big.txt:stick_jack	4	35,145,255,365
+W5	m516_butcher_jack	w_melee	474	re/out/d2c/batchW_big.txt:butcher_jack	4	35,145,255,365
+W9	m516_torch_jack	w_melee	374	re/out/d2c/batchW_big.txt:torch_jack	4	35
+W7	m516_rod0_jack	w_melee	844	re/out/d2c/batchW_big.txt:rod0_jack	4	35,135,235,335,435,535,635,735
+W5	m516_knife_swing_mustapha	w_melee	474	re/out/d2c/batchW_big.txt:knife_swing_mustapha	4	35,145,255,365
+W5	m516_stick_mustapha	w_melee	474	re/out/d2c/batchW_big.txt:stick_mustapha	4	35,145,255,365
+W5	m516_butcher_mustapha	w_melee	474	re/out/d2c/batchW_big.txt:butcher_mustapha	4	35,145,255,365
+W9	m516_torch_mustapha	w_melee	374	re/out/d2c/batchW_big.txt:torch_mustapha	4	35
+W5	m516_knife_swing_hannah	w_melee	474	re/out/d2c/batchW_big.txt:knife_swing_hannah	4	35,145,255,365
+W5	m516_stick_hannah	w_melee	474	re/out/d2c/batchW_big.txt:stick_hannah	4	35,145,255,365
+W5	m516_butcher_hannah	w_melee	474	re/out/d2c/batchW_big.txt:butcher_hannah	4	35,145,255,365
+W9	m516_torch_hannah	w_melee	374	re/out/d2c/batchW_big.txt:torch_hannah	4	35
+W7	m516_rod0_hannah	w_melee	844	re/out/d2c/batchW_big.txt:rod0_hannah	4	35,135,235,335,435,535,635,735
+W5	m516_knife_swing_mess	w_melee	474	re/out/d2c/batchW_big.txt:knife_swing_mess	4	35,145,255,365
+W5	m516_stick_mess	w_melee	474	re/out/d2c/batchW_big.txt:stick_mess	4	35,145,255,365
+W5	m516_butcher_mess	w_melee	474	re/out/d2c/batchW_big.txt:butcher_mess	4	35,145,255,365
+W9	m516_torch_mess	w_melee	374	re/out/d2c/batchW_big.txt:torch_mess	4	35
+W7	m516_rod1_jack	w_melee	851	re/out/d2c/batchW_big.txt:rod1_jack	4	42,142,242,342,442,542,642,742
+W7	m516_rod2_jack	w_melee	858	re/out/d2c/batchW_big.txt:rod2_jack	4	49,149,249,349,449,549,649,749
+W7	m516_rod1_hannah	w_melee	851	re/out/d2c/batchW_big.txt:rod1_hannah	4	42,142,242,342,442,542,642,742
+W8	m516_club_hold0_jack	w_melee	205	re/out/d2c/batchW_big.txt:club_hold0_jack	4	35
+W8	m516_club_hold10_jack	w_melee	214	re/out/d2c/batchW_big.txt:club_hold10_jack	4	35
+W8	m516_club_hold20_jack	w_melee	224	re/out/d2c/batchW_big.txt:club_hold20_jack	4	35
+W8	m516_club_hold30_jack	w_melee	234	re/out/d2c/batchW_big.txt:club_hold30_jack	4	35
+W8	m516_club_hold40_jack	w_melee	244	re/out/d2c/batchW_big.txt:club_hold40_jack	4	35
+W8	m516_club_hold50_jack	w_melee	254	re/out/d2c/batchW_big.txt:club_hold50_jack	4	35
+W8	m516_club_hold60_jack	w_melee	264	re/out/d2c/batchW_big.txt:club_hold60_jack	4	35
+W8	m516_club_hold0_mustapha	w_melee	205	re/out/d2c/batchW_big.txt:club_hold0_mustapha	4	35
+W8	m516_club_hold60_mustapha	w_melee	264	re/out/d2c/batchW_big.txt:club_hold60_mustapha	4	35
+W8	m516_club_hold0_hannah	w_melee	205	re/out/d2c/batchW_big.txt:club_hold0_hannah	4	35
+W8	m516_club_hold60_hannah	w_melee	264	re/out/d2c/batchW_big.txt:club_hold60_hannah	4	35
+W8	m516_club_hold0_mess	w_melee	205	re/out/d2c/batchW_big.txt:club_hold0_mess	4	35
+W8	m516_club_hold60_mess	w_melee	264	re/out/d2c/batchW_big.txt:club_hold60_mess	4	35
+W10	m516_dynamite_jack	w_throw	323	re/out/d2c/batchW_big.txt:dynamite_jack	4	35,55
+W10	m516_grenade_jack	w_throw	323	re/out/d2c/batchW_big.txt:grenade_jack	4	35,55
+W10	m516_stones_jack	w_throw	323	re/out/d2c/batchW_big.txt:stones_jack	4	35,55
+W10	m516_dynamite_mustapha	w_throw	323	re/out/d2c/batchW_big.txt:dynamite_mustapha	4	35,55
+W10	m516_dynamite_hannah	w_throw	323	re/out/d2c/batchW_big.txt:dynamite_hannah	4	35,55
+W10	m516_dynamite_mess	w_throw	323	re/out/d2c/batchW_big.txt:dynamite_mess	4	35,55
+W10	m516_dynamite_run_jack	w_throw	344	re/out/d2c/batchW_big.txt:dynamite_run_jack	4	35,55
+W10	m516_stones1_jack	w_throw	323	re/out/d2c/batchW_big.txt:stones1_jack	4	35,55
+W10	m516_stones2_jack	w_throw	323	re/out/d2c/batchW_big.txt:stones2_jack	4	35,55
+W11	m516_barrel_jack	w_throw	254	re/out/d2c/batchW_big.txt:barrel_jack	4	55,125
+W11	m516_barrel_mustapha	w_throw	254	re/out/d2c/batchW_big.txt:barrel_mustapha	4	55,125
+W11	m516_barrel_hannah	w_throw	254	re/out/d2c/batchW_big.txt:barrel_hannah	4	55,125
+W11	m516_barrel_mess	w_throw	254	re/out/d2c/batchW_big.txt:barrel_mess	4	55,125
+W11	m516_drum_jack	w_throw	254	re/out/d2c/batchW_big.txt:drum_jack	4	55,125
+W11	m516_pail_jack	w_throw	254	re/out/d2c/batchW_big.txt:pail_jack	4	55,125
+W11	m516_stone6_jack	w_throw	254	re/out/d2c/batchW_big.txt:stone6_jack	4	55,125
+W11	m516_boulder_jack	w_throw	254	re/out/d2c/batchW_big.txt:boulder_jack	4	55,125
+W11	m516_tntbarrel_jack	w_throw	254	re/out/d2c/batchW_big.txt:tntbarrel_jack	4	55,125
+W1	m516_pick_lowest	w_pick	274	re/out/d2c/batchW_big.txt:pick_lowest	4	
+W1	m516_pick_lockout	w_pick	164	re/out/d2c/batchW_big.txt:pick_lockout	4	
+W12	m516_ammo_refill	w_throw	234	re/out/d2c/batchW_big.txt:ammo_refill	4	116
+W12	m516_ammo_full	w_throw	154	re/out/d2c/batchW_big.txt:ammo_full	4	36
+W12	m516_ammo_first	w_throw	174	re/out/d2c/batchW_big.txt:ammo_first	4	56,58
+W12	m516_ammo_rifle	w_throw	154	re/out/d2c/batchW_big.txt:ammo_rifle	4	26,36
+W13	m516_drop_swap_life	w_life	3826	re/out/d2c/batchW_big.txt:drop_swap_life	2	58
+W13	m516_drop_enemy_life	w_life	3718	re/out/d2c/batchW_big.txt:drop_enemy_life	30	
+W3	m516_shotgun_d30	w_pick	124	re/out/d2c/batchF.txt:shotgun_d30	4	35
+W3	m516_shotgun_d45	w_pick	124	re/out/d2c/batchF.txt:shotgun_d45	4	35
+W3	m516_shotgun_d60	w_pick	124	re/out/d2c/batchF.txt:shotgun_d60	4	35
+W3	m516_shotgun_d100	w_pick	124	re/out/d2c/batchF.txt:shotgun_d100	4	35
+W3	m516_shotgun_d150	w_pick	124	re/out/d2c/batchF.txt:shotgun_d150	4	35
+W3	m516_shotgun_d200	w_pick	124	re/out/d2c/batchF.txt:shotgun_d200	4	35
+W13	m516_wearff_knife_E0	w_life	326	re/out/d2c/batchF.txt:wearff_knife_E0	2	28
+W13	m516_wearff_pistol_E0	w_life	326	re/out/d2c/batchF.txt:wearff_pistol_E0	2	28
+W13	m516_wearff_club_E0	w_life	326	re/out/d2c/batchF.txt:wearff_club_E0	2	28
+W13	m516_wearff_rod_E0	w_life	326	re/out/d2c/batchF.txt:wearff_rod_E0	2	28
+W13	m516_wearff_butcher_E0	w_life	326	re/out/d2c/batchF.txt:wearff_butcher_E0	2	28
+W13	m516_wearff_uzi_E0	w_life	326	re/out/d2c/batchF.txt:wearff_uzi_E0	2	28
+W13	m516_wearff_stick_E0	w_life	326	re/out/d2c/batchF.txt:wearff_stick_E0	2	28
+W13	m516_wearff_torch_E0	w_life	326	re/out/d2c/batchF.txt:wearff_torch_E0	2	28
+W13	m516_wearff_knife_00	w_life	326	re/out/d2c/batchF.txt:wearff_knife_00	2	28
+W13	m516_wearff_knife_20	w_life	326	re/out/d2c/batchF.txt:wearff_knife_20	2	28
+W13	m516_wearff_knife_40	w_life	326	re/out/d2c/batchF.txt:wearff_knife_40	2	28
+W13	m516_wearff_knife_60	w_life	326	re/out/d2c/batchF.txt:wearff_knife_60	2	28
+W13	m516_wearff_knife_80	w_life	326	re/out/d2c/batchF.txt:wearff_knife_80	2	28
+W13	m516_wearff_knife_A0	w_life	326	re/out/d2c/batchF.txt:wearff_knife_A0	2	28
+W13	m516_wearff_knife_C0	w_life	326	re/out/d2c/batchF.txt:wearff_knife_C0	2	28
+W13	m516_wearff_knife_60b	w_life	326	re/out/d2c/batchF.txt:wearff_knife_60b	2	28
+W13	m516_wearff_knife_60c	w_life	326	re/out/d2c/batchF.txt:wearff_knife_60c	2	28
+W13	m516_wearff_dynamite_00	w_life	326	re/out/d2c/batchF.txt:wearff_dynamite_00	2	28
+W13	m516_wearff_grenade_00	w_life	326	re/out/d2c/batchF.txt:wearff_grenade_00	2	28
+W13	m516_wearff_stones_00	w_life	326	re/out/d2c/batchF.txt:wearff_stones_00	2	28
+W13	m516_special_discard_club	w_life	228	re/out/d2c/batchF.txt:special_discard_club	2	
+W13	m516_special_discard_pistol	w_life	228	re/out/d2c/batchF.txt:special_discard_pistol	2	
+W13	m516_special_discard_knife	w_life	228	re/out/d2c/batchF.txt:special_discard_knife	2	
+W13	m516_die_with_weapon	w_life	366	re/out/d2c/batchF.txt:die_with_weapon	2	58
+W14	m516_runswing_knife	w_throw	224	re/out/d2c/batchF.txt:runswing_knife	4	
+W14	m516_runswing_club	w_throw	224	re/out/d2c/batchF.txt:runswing_club	4	
+W14	m516_runswing_pistol	w_throw	224	re/out/d2c/batchF.txt:runswing_pistol	4	
+W14	m516_runswing_butcher	w_throw	224	re/out/d2c/batchF.txt:runswing_butcher	4	
+W14	m516_runswing_torch	w_throw	224	re/out/d2c/batchF.txt:runswing_torch	4	
+W14	m516_runswing_dynamite	w_throw	224	re/out/d2c/batchF.txt:runswing_dynamite	4	
+W14	m516_jumpweapon_club_jack	w_throw	214	re/out/d2c/batchF.txt:jumpweapon_club_jack	4	
+W14	m516_jumpweapon_knife_hannah	w_throw	214	re/out/d2c/batchF.txt:jumpweapon_knife_hannah	4	
+W14	m516_jumpweapon_pistol_mustapha	w_throw	214	re/out/d2c/batchF.txt:jumpweapon_pistol_mustapha	4	
+W6	m516_reach_jack_96	w_melee	104	re/out/d2c/batchF.txt:reach_jack_96	4	35
+W6	m516_reach_jack_104	w_melee	104	re/out/d2c/batchF.txt:reach_jack_104	4	35
+W6	m516_reach_jack_112	w_melee	104	re/out/d2c/batchF.txt:reach_jack_112	4	35
+W6	m516_reach_jack_120	w_melee	104	re/out/d2c/batchF.txt:reach_jack_120	4	35
+W6	m516_reach_jack_128	w_melee	104	re/out/d2c/batchF.txt:reach_jack_128	4	35
+W6	m516_reach_jack_136	w_melee	104	re/out/d2c/batchF.txt:reach_jack_136	4	35
+W6	m516_reach_mustapha_96	w_melee	104	re/out/d2c/batchF.txt:reach_mustapha_96	4	35
+W6	m516_reach_mustapha_104	w_melee	104	re/out/d2c/batchF.txt:reach_mustapha_104	4	35
+W6	m516_reach_mustapha_112	w_melee	104	re/out/d2c/batchF.txt:reach_mustapha_112	4	35
+W6	m516_reach_mustapha_120	w_melee	104	re/out/d2c/batchF.txt:reach_mustapha_120	4	35
+W6	m516_reach_mustapha_128	w_melee	104	re/out/d2c/batchF.txt:reach_mustapha_128	4	35
+W6	m516_reach_mustapha_136	w_melee	104	re/out/d2c/batchF.txt:reach_mustapha_136	4	35
+W6	m516_reach_hannah_96	w_melee	104	re/out/d2c/batchF.txt:reach_hannah_96	4	35
+W6	m516_reach_hannah_104	w_melee	104	re/out/d2c/batchF.txt:reach_hannah_104	4	35
+W6	m516_reach_hannah_112	w_melee	104	re/out/d2c/batchF.txt:reach_hannah_112	4	35
+W6	m516_reach_hannah_120	w_melee	104	re/out/d2c/batchF.txt:reach_hannah_120	4	35
+W6	m516_reach_hannah_128	w_melee	104	re/out/d2c/batchF.txt:reach_hannah_128	4	35
+W6	m516_reach_hannah_136	w_melee	104	re/out/d2c/batchF.txt:reach_hannah_136	4	35
+W6	m516_reach_mess_96	w_melee	104	re/out/d2c/batchF.txt:reach_mess_96	4	35
+W6	m516_reach_mess_104	w_melee	104	re/out/d2c/batchF.txt:reach_mess_104	4	35
+W6	m516_reach_mess_112	w_melee	104	re/out/d2c/batchF.txt:reach_mess_112	4	35
+W6	m516_reach_mess_120	w_melee	104	re/out/d2c/batchF.txt:reach_mess_120	4	35
+W6	m516_reach_mess_128	w_melee	104	re/out/d2c/batchF.txt:reach_mess_128	4	35
+W6	m516_reach_mess_136	w_melee	104	re/out/d2c/batchF.txt:reach_mess_136	4	35
+W13	m516_floor_knives_long	w_life	706	re/out/d2c/batchF.txt:floor_knives_long	2	
+W13	m516_ffd_hannah_pistol	w_life	206	re/out/d2c/batchM_big.txt:ffd_hannah_pistol	2	
+W13	m516_ffd_mustapha_pistol	w_life	206	re/out/d2c/batchM_big.txt:ffd_mustapha_pistol	2	
+W13	m516_ffd_mess_bazooka	w_life	206	re/out/d2c/batchM_big.txt:ffd_mess_bazooka	2	
+W13	m516_ffd_mess_pistol	w_life	206	re/out/d2c/batchM_big.txt:ffd_mess_pistol	2	
+W13	m516_ffd_hannah_bazooka	w_life	206	re/out/d2c/batchM_big.txt:ffd_hannah_bazooka	2	
+W13	m516_ffd_hannah_knife	w_life	206	re/out/d2c/batchM_big.txt:ffd_hannah_knife	2	
+A01,A02,A22	m516_f01_BARBECUE	a_food	146	re/out/d4a/batch1.txt:f01_BARBECUE	2	66,68
+A01,A02	m516_f02_STEAK	a_food	146	re/out/d4a/batch1.txt:f02_STEAK	2	66,68
+A01,A02	m516_f03_LOBSTER	a_food	146	re/out/d4a/batch1.txt:f03_LOBSTER	2	66,68
+A01,A02	m516_f04_SUSHI	a_food	146	re/out/d4a/batch1.txt:f04_SUSHI	2	66,68
+A01,A02	m516_f05_BURGER	a_food	146	re/out/d4a/batch1.txt:f05_BURGER	2	66,68
+A01,A02	m516_f06_HOTDOG	a_food	146	re/out/d4a/batch1.txt:f06_HOTDOG	2	66,68
+A01,A02	m516_f07_PIZZA	a_food	146	re/out/d4a/batch1.txt:f07_PIZZA	2	66,68
+A01,A02	m516_f08_SALAD	a_food	146	re/out/d4a/batch1.txt:f08_SALAD	2	66,68
+A01,A02,A22	m516_f09_CAKE	a_food	146	re/out/d4a/batch1.txt:f09_CAKE	2	66,68
+A01,A02	m516_f10_PAFFE	a_food	146	re/out/d4a/batch1.txt:f10_PAFFE	2	66,68
+A01,A02	m516_f11_PUDDING	a_food	146	re/out/d4a/batch1.txt:f11_PUDDING	2	66,68
+A01,A02	m516_f12_POTATO	a_food	146	re/out/d4a/batch1.txt:f12_POTATO	2	66,68
+A01,A02	m516_f13_GUM	a_food	146	re/out/d4a/batch1.txt:f13_GUM	2	66,68
+A01,A02	m516_f14_CHOCOLATE	a_food	146	re/out/d4a/batch1.txt:f14_CHOCOLATE	2	66,68
+A01,A02	m516_f15_DONUT	a_food	146	re/out/d4a/batch1.txt:f15_DONUT	2	66,68
+A01,A02	m516_f16_COFFEE	a_food	146	re/out/d4a/batch1.txt:f16_COFFEE	2	66,68
+A01,A02	m516_f17_CROISSANT	a_food	146	re/out/d4a/batch1.txt:f17_CROISSANT	2	66,68
+A03	m516_f18_food18	a_food	146	re/out/d4a/batch1.txt:f18_food18	2	66,68
+A04,A22	m516_t01_GOLD	a_food	96	re/out/d4a/batch1.txt:t01_GOLD	2	
+A04	m516_t02_DIAMOND	a_food	96	re/out/d4a/batch1.txt:t02_DIAMOND	2	
+A04	m516_t03_CUP	a_food	96	re/out/d4a/batch1.txt:t03_CUP	2	
+A04	m516_t04_EGG	a_food	96	re/out/d4a/batch1.txt:t04_EGG	2	
+A04	m516_t05_GOLDDUST	a_food	96	re/out/d4a/batch1.txt:t05_GOLDDUST	2	
+A04	m516_t06_DINOBONE	a_food	96	re/out/d4a/batch1.txt:t06_DINOBONE	2	
+A04	m516_t07_AMMONITE	a_food	96	re/out/d4a/batch1.txt:t07_AMMONITE	2	
+A04	m516_t08_PEARL	a_food	96	re/out/d4a/batch1.txt:t08_PEARL	2	
+A04	m516_t09_NECKLACE	a_food	96	re/out/d4a/batch1.txt:t09_NECKLACE	2	
+A04	m516_t10_RING	a_food	96	re/out/d4a/batch1.txt:t10_RING	2	
+A04	m516_t11_WATCH	a_food	96	re/out/d4a/batch1.txt:t11_WATCH	2	
+A04	m516_t12_RADIO	a_food	96	re/out/d4a/batch1.txt:t12_RADIO	2	
+A04	m516_t13_DIME	a_food	96	re/out/d4a/batch1.txt:t13_DIME	2	
+A04	m516_t14_1000$	a_food	96	re/out/d4a/batch1.txt:t14_1000$	2	
+A04	m516_t15_SUNGLASS	a_food	96	re/out/d4a/batch1.txt:t15_SUNGLASS	2	
+A04	m516_t16_GROVE	a_food	96	re/out/d4a/batch1.txt:t16_GROVE	2	
+A04	m516_t17_t17	a_food	96	re/out/d4a/batch1.txt:t17_t17	2	
+A05,A06	m516_cj_0_pail	a_box	266	re/out/d4a/batch1.txt:cj_0_pail	2	
+A05,A06	m516_cj_2_drum	a_box	266	re/out/d4a/batch1.txt:cj_2_drum	2	
+A05,A06	m516_cj_4_barrel	a_box	266	re/out/d4a/batch1.txt:cj_4_barrel	2	
+A05,A06	m516_cj_6_stone	a_box	266	re/out/d4a/batch1.txt:cj_6_stone	2	
+A05,A06	m516_cj_8_boulder	a_box	266	re/out/d4a/batch1.txt:cj_8_boulder	2	
+A05,A06	m516_cj_A_statue	a_box	266	re/out/d4a/batch1.txt:cj_A_statue	2	
+A05,A06	m516_cj_C_tires	a_box	266	re/out/d4a/batch1.txt:cj_C_tires	2	
+A05	m516_ch_4_barrel_mustapha	a_box	206	re/out/d4a/batch1.txt:ch_4_barrel_mustapha	2	
+A05	m516_ch_4_barrel_hannah	a_box	206	re/out/d4a/batch1.txt:ch_4_barrel_hannah	2	
+A05	m516_ch_4_barrel_mess	a_box	206	re/out/d4a/batch1.txt:ch_4_barrel_mess	2	
+A07	m516_tnt_2	a_box	266	re/out/d4a/batch1.txt:tnt_2	2	
+A07	m516_tnt_idle	a_box	166	re/out/d4a/batch1.txt:tnt_idle	2	
+A08	m516_expl_hits_pail	a_box	126	re/out/d4a/batch1.txt:expl_hits_pail	2	18
+A08	m516_expl_hits_barrel	a_box	126	re/out/d4a/batch1.txt:expl_hits_barrel	2	18
+A10	m516_lift_tires_dx-56	a_box	76	re/out/d4a/batch1.txt:lift_tires_dx-56	2	
+A10	m516_lift_tires_dx-40	a_box	76	re/out/d4a/batch1.txt:lift_tires_dx-40	2	
+A10	m516_lift_tires_dx-24	a_box	76	re/out/d4a/batch1.txt:lift_tires_dx-24	2	
+A10	m516_lift_tires_dx-8	a_box	76	re/out/d4a/batch1.txt:lift_tires_dx-8	2	
+A10	m516_lift_tires_dx+0	a_box	76	re/out/d4a/batch1.txt:lift_tires_dx+0	2	
+A10	m516_lift_tires_dx+8	a_box	76	re/out/d4a/batch1.txt:lift_tires_dx+8	2	
+A10	m516_lift_tires_dx+24	a_box	76	re/out/d4a/batch1.txt:lift_tires_dx+24	2	
+A10	m516_lift_tires_dx+40	a_box	76	re/out/d4a/batch1.txt:lift_tires_dx+40	2	
+A10	m516_lift_tires_dx+56	a_box	76	re/out/d4a/batch1.txt:lift_tires_dx+56	2	
+A10	m516_lift_statue_dx-24	a_box	76	re/out/d4a/batch1.txt:lift_statue_dx-24	2	
+A10	m516_lift_statue_dx+0	a_box	76	re/out/d4a/batch1.txt:lift_statue_dx+0	2	
+A10	m516_lift_statue_dx+24	a_box	76	re/out/d4a/batch1.txt:lift_statue_dx+24	2	
+A10	m516_lift_barrel_dx-24	a_box	76	re/out/d4a/batch1.txt:lift_barrel_dx-24	2	
+A10	m516_lift_barrel_dx+0	a_box	76	re/out/d4a/batch1.txt:lift_barrel_dx+0	2	
+A10	m516_lift_barrel_dx+24	a_box	76	re/out/d4a/batch1.txt:lift_barrel_dx+24	2	
+A11	m516_stones_stone	a_drop	488	re/out/d4a/batch1.txt:stones_stone	2	8,45,53,90,98,135,143,180,188,225,233,270,278,315,323
+A11	m516_stones_boulder	a_drop	488	re/out/d4a/batch1.txt:stones_boulder	2	8,45,53,90,98,135,143,180,188,225,233,270,278,315,323
+A12	m516_sp_nogun	a_drop	106	re/out/d4a/batch1.txt:sp_nogun	2	38
+A12	m516_sp_gun	a_drop	106	re/out/d4a/batch1.txt:sp_gun	2	38
+A12	m516_sp_knife	a_drop	106	re/out/d4a/batch1.txt:sp_knife	2	38
+A12	m516_sp_uzi	a_drop	106	re/out/d4a/batch1.txt:sp_uzi	2	38
+A12	m516_sp_bazooka	a_drop	106	re/out/d4a/batch1.txt:sp_bazooka	2	38
+A12	m516_sp_club	a_drop	106	re/out/d4a/batch1.txt:sp_club	2	38
+A12	m516_sp_held	a_drop	106	re/out/d4a/batch1.txt:sp_held	2	38
+A13	m516_hop_right	a_drop	266	re/out/d4a/batch1.txt:hop_right	2	18
+A13	m516_hop_right2	a_drop	266	re/out/d4a/batch1.txt:hop_right2	2	18
+A13	m516_hop_left	a_drop	266	re/out/d4a/batch1.txt:hop_left	2	18
+A13	m516_hop_mid	a_drop	266	re/out/d4a/batch1.txt:hop_mid	2	18
+A14	m516_pool_22	a_drop	125	re/out/d4a/batch1.txt:pool_22	3	37
+A14	m516_pool_23	a_drop	125	re/out/d4a/batch1.txt:pool_23	3	37
+A15	m516_despawn_x	a_drop	46	re/out/d4a/batch1.txt:despawn_x	2	
+A16	m516_life_long	a_long	3806	re/out/d4a/batch1.txt:life_long	2	8
+A17	m516_dyn_swap	a_drop	336	re/out/d4a/batch1.txt:dyn_swap	2	48
+A21	m516_e2_pearl	a_world	168	re/out/d4a/batch1.txt:e2_pearl	0	
+A21	m516_e2_start	a_world	748	re/out/d4a/batch1.txt:e2_start	0	
+A23	m516_e8_meat	a_world	428	re/out/d4a/batch1.txt:e8_meat	0	
+A23	m516_e6_salad	a_world	328	re/out/d4a/batch1.txt:e6_salad	0	
+A18	m516_e1a0_c1p	a_world	268	re/out/d4a/batch1.txt:e1a0_c1p	0	
+A18	m516_e1a0_c2p	a_world	268	re/out/d4a/batch1.txt:e1a0_c2p	0	
+A18	m516_e1a0_c3p	a_world	268	re/out/d4a/batch1.txt:e1a0_c3p	0	
+A18	m516_e4a2_w1p_l0	a_world	227	re/out/d4a/batch1.txt:e4a2_w1p_l0	1	
+A18	m516_e4a2_w2p_l0	a_world	227	re/out/d4a/batch1.txt:e4a2_w2p_l0	1	
+A18	m516_e4a2_w3p_l0	a_world	227	re/out/d4a/batch1.txt:e4a2_w3p_l0	1	
+A19	m516_e7a0_lv10	a_world	267	re/out/d4a/batch1.txt:e7a0_lv10	1	
+A19	m516_e7a0_lv20	a_world	267	re/out/d4a/batch1.txt:e7a0_lv20	1	
+A20	m516_barrel65_drop	a_world	266	re/out/d4a/batch1.txt:barrel65_drop	2	
+A20	m516_biker70_drop	a_world	266	re/out/d4a/batch1.txt:biker70_drop	2	
+A22	m516_hud_clean	a_food	268	re/out/d4a/batch2.txt:hud_clean	700	90,92,180
+A11	m516_stones2_boulder	a_drop	1706	re/out/d4a/batch2.txt:stones2_boulder	2	8,40,48,80,88,120,128,160,168,200,208,240,248,280,288,320,328,360,368,400,408,440,448,480,488,520,528,560,568,600,608
+A19	m516_e4a2b_m16_l0	a_world	268	re/out/d4a/batch2.txt:e4a2b_m16_l0	0	
+A19	m516_e4a2b_m16_l5	a_world	268	re/out/d4a/batch2.txt:e4a2b_m16_l5	0	
+A19	m516_e4a2b_m16_l12	a_world	268	re/out/d4a/batch2.txt:e4a2b_m16_l12	0	
+A17	m516_dyn_swap_wait	a_drop	336	re/out/d4a/batch2.txt:dyn_swap_wait	2	48
+A17	m516_dyn_swap_repick	a_drop	426	re/out/d4a/batch2.txt:dyn_swap_repick	2	48
+A07	m516_tnt_5hits	a_box	306	re/out/d4a/batch2.txt:tnt_5hits	2	
+A21	m516_e2_diamond	a_world	126	re/out/d4a/batch2.txt:e2_diamond	2	
+A11,A16	m516_stone_items	a_drop	2106	re/out/d4a/batch2.txt:stone_items	2	
+A20	m516_edrop_kill	a_world	203	re/out/d4a/batch2.txt:edrop_kill	5	
+A20	m516_edrop_survive	a_world	203	re/out/d4a/batch2.txt:edrop_survive	5	
+A09	m516_gun_hits_barrel	a_box	166	re/out/d4a/batch3.txt:gun_hits_barrel	2	
+A09	m516_knife_hits_barrel	a_box	166	re/out/d4a/batch3.txt:knife_hits_barrel	2	
+A24	m516_e5a0_start	a_world	68	re/out/d4a/batch4.txt:e5a0_start	0	
+A24	m516_e5a0_diamond	a_world	348	re/out/d4a/batch4.txt:e5a0_diamond	0	
+A25	m516_e4a1_tires_jab_z58	a_world	86	re/out/d4a/batch4.txt:e4a1_tires_jab_z58	2	
+A25	m516_e4a1_tires_jab_z50	a_world	86	re/out/d4a/batch4.txt:e4a1_tires_jab_z50	2	
+A25	m516_e4a1_tires_jab_z48	a_world	86	re/out/d4a/batch4.txt:e4a1_tires_jab_z48	2	

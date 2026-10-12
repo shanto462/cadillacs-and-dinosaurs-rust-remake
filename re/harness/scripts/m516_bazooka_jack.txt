@@ -1,0 +1,7 @@
+# m516_bazooka_jack. Keys after the snapshot (frame 0 = first game frame). Source segment bazooka_jack, probe frames shifted by 4.
+6-6:A
+36-36:A
+126-126:A
+216-216:A
+306-306:A
+396-396:A

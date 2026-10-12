@@ -1,0 +1,1024 @@
+# M5-16 weapons W5 to W9. Scene is before the snapshot. Later objset lines are MAME only.
+# Record: PR_TIMEOUT=7200 PR_SNAPS=none PR_SHEET=0 re/harness/probe/probe_record.sh THIS all
+
+# m516_knife_swing_jack from re/out/d2c/batchW_big.txt segment knife_swing_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_knife_swing_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+145 objset A hp 100
+255 objset A hp 100
+365 objset A hp 100
+6-6:A
+36-36:A
+146-146:A
+256-256:A
+366-366:A
+trace 474
+
+# m516_knife_swing_mustapha from re/out/d2c/batchW_big.txt segment knife_swing_mustapha. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_knife_swing_mustapha
+jump 1 0 928 char=mustapha
+god on
+rank 0
+level 0
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+145 objset A hp 100
+255 objset A hp 100
+365 objset A hp 100
+6-6:A
+36-36:A
+146-146:A
+256-256:A
+366-366:A
+trace 474
+
+# m516_knife_swing_hannah from re/out/d2c/batchW_big.txt segment knife_swing_hannah. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_knife_swing_hannah
+jump 1 0 928 char=hannah
+god on
+rank 0
+level 0
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+145 objset A hp 100
+255 objset A hp 100
+365 objset A hp 100
+6-6:A
+36-36:A
+146-146:A
+256-256:A
+366-366:A
+trace 474
+
+# m516_knife_swing_mess from re/out/d2c/batchW_big.txt segment knife_swing_mess. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_knife_swing_mess
+jump 1 0 928 char=mess
+god on
+rank 0
+level 0
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+145 objset A hp 100
+255 objset A hp 100
+365 objset A hp 100
+6-6:A
+36-36:A
+146-146:A
+256-256:A
+366-366:A
+trace 474
+
+# m516_stick_jack from re/out/d2c/batchW_big.txt segment stick_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_stick_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=16 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+145 objset A hp 100
+255 objset A hp 100
+365 objset A hp 100
+6-6:A
+36-36:A
+146-146:A
+256-256:A
+366-366:A
+trace 474
+
+# m516_stick_mustapha from re/out/d2c/batchW_big.txt segment stick_mustapha. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_stick_mustapha
+jump 1 0 928 char=mustapha
+god on
+rank 0
+level 0
+2 spawn E 0 var=16 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+145 objset A hp 100
+255 objset A hp 100
+365 objset A hp 100
+6-6:A
+36-36:A
+146-146:A
+256-256:A
+366-366:A
+trace 474
+
+# m516_stick_hannah from re/out/d2c/batchW_big.txt segment stick_hannah. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_stick_hannah
+jump 1 0 928 char=hannah
+god on
+rank 0
+level 0
+2 spawn E 0 var=16 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+145 objset A hp 100
+255 objset A hp 100
+365 objset A hp 100
+6-6:A
+36-36:A
+146-146:A
+256-256:A
+366-366:A
+trace 474
+
+# m516_stick_mess from re/out/d2c/batchW_big.txt segment stick_mess. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_stick_mess
+jump 1 0 928 char=mess
+god on
+rank 0
+level 0
+2 spawn E 0 var=16 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+145 objset A hp 100
+255 objset A hp 100
+365 objset A hp 100
+6-6:A
+36-36:A
+146-146:A
+256-256:A
+366-366:A
+trace 474
+
+# m516_butcher_jack from re/out/d2c/batchW_big.txt segment butcher_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_butcher_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=18 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+145 objset A hp 100
+255 objset A hp 100
+365 objset A hp 100
+6-6:A
+36-36:A
+146-146:A
+256-256:A
+366-366:A
+trace 474
+
+# m516_butcher_mustapha from re/out/d2c/batchW_big.txt segment butcher_mustapha. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_butcher_mustapha
+jump 1 0 928 char=mustapha
+god on
+rank 0
+level 0
+2 spawn E 0 var=18 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+145 objset A hp 100
+255 objset A hp 100
+365 objset A hp 100
+6-6:A
+36-36:A
+146-146:A
+256-256:A
+366-366:A
+trace 474
+
+# m516_butcher_hannah from re/out/d2c/batchW_big.txt segment butcher_hannah. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_butcher_hannah
+jump 1 0 928 char=hannah
+god on
+rank 0
+level 0
+2 spawn E 0 var=18 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+145 objset A hp 100
+255 objset A hp 100
+365 objset A hp 100
+6-6:A
+36-36:A
+146-146:A
+256-256:A
+366-366:A
+trace 474
+
+# m516_butcher_mess from re/out/d2c/batchW_big.txt segment butcher_mess. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_butcher_mess
+jump 1 0 928 char=mess
+god on
+rank 0
+level 0
+2 spawn E 0 var=18 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+145 objset A hp 100
+255 objset A hp 100
+365 objset A hp 100
+6-6:A
+36-36:A
+146-146:A
+256-256:A
+366-366:A
+trace 474
+
+# m516_reach_jack_96 from re/out/d2c/batchF.txt segment reach_jack_96. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_jack_96
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1120 z=296
+4 hold 0xffd99c 2 1120
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_jack_104 from re/out/d2c/batchF.txt segment reach_jack_104. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_jack_104
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1128 z=296
+4 hold 0xffd99c 2 1128
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_jack_112 from re/out/d2c/batchF.txt segment reach_jack_112. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_jack_112
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1136 z=296
+4 hold 0xffd99c 2 1136
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_jack_120 from re/out/d2c/batchF.txt segment reach_jack_120. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_jack_120
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1144 z=296
+4 hold 0xffd99c 2 1144
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_jack_128 from re/out/d2c/batchF.txt segment reach_jack_128. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_jack_128
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1152 z=296
+4 hold 0xffd99c 2 1152
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_jack_136 from re/out/d2c/batchF.txt segment reach_jack_136. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_jack_136
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1160 z=296
+4 hold 0xffd99c 2 1160
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_mustapha_96 from re/out/d2c/batchF.txt segment reach_mustapha_96. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_mustapha_96
+jump 1 0 928 char=mustapha
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1120 z=296
+4 hold 0xffd99c 2 1120
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_mustapha_104 from re/out/d2c/batchF.txt segment reach_mustapha_104. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_mustapha_104
+jump 1 0 928 char=mustapha
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1128 z=296
+4 hold 0xffd99c 2 1128
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_mustapha_112 from re/out/d2c/batchF.txt segment reach_mustapha_112. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_mustapha_112
+jump 1 0 928 char=mustapha
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1136 z=296
+4 hold 0xffd99c 2 1136
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_mustapha_120 from re/out/d2c/batchF.txt segment reach_mustapha_120. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_mustapha_120
+jump 1 0 928 char=mustapha
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1144 z=296
+4 hold 0xffd99c 2 1144
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_mustapha_128 from re/out/d2c/batchF.txt segment reach_mustapha_128. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_mustapha_128
+jump 1 0 928 char=mustapha
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1152 z=296
+4 hold 0xffd99c 2 1152
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_mustapha_136 from re/out/d2c/batchF.txt segment reach_mustapha_136. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_mustapha_136
+jump 1 0 928 char=mustapha
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1160 z=296
+4 hold 0xffd99c 2 1160
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_hannah_96 from re/out/d2c/batchF.txt segment reach_hannah_96. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_hannah_96
+jump 1 0 928 char=hannah
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1120 z=296
+4 hold 0xffd99c 2 1120
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_hannah_104 from re/out/d2c/batchF.txt segment reach_hannah_104. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_hannah_104
+jump 1 0 928 char=hannah
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1128 z=296
+4 hold 0xffd99c 2 1128
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_hannah_112 from re/out/d2c/batchF.txt segment reach_hannah_112. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_hannah_112
+jump 1 0 928 char=hannah
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1136 z=296
+4 hold 0xffd99c 2 1136
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_hannah_120 from re/out/d2c/batchF.txt segment reach_hannah_120. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_hannah_120
+jump 1 0 928 char=hannah
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1144 z=296
+4 hold 0xffd99c 2 1144
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_hannah_128 from re/out/d2c/batchF.txt segment reach_hannah_128. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_hannah_128
+jump 1 0 928 char=hannah
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1152 z=296
+4 hold 0xffd99c 2 1152
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_hannah_136 from re/out/d2c/batchF.txt segment reach_hannah_136. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_hannah_136
+jump 1 0 928 char=hannah
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1160 z=296
+4 hold 0xffd99c 2 1160
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_mess_96 from re/out/d2c/batchF.txt segment reach_mess_96. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_mess_96
+jump 1 0 928 char=mess
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1120 z=296
+4 hold 0xffd99c 2 1120
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_mess_104 from re/out/d2c/batchF.txt segment reach_mess_104. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_mess_104
+jump 1 0 928 char=mess
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1128 z=296
+4 hold 0xffd99c 2 1128
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_mess_112 from re/out/d2c/batchF.txt segment reach_mess_112. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_mess_112
+jump 1 0 928 char=mess
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1136 z=296
+4 hold 0xffd99c 2 1136
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_mess_120 from re/out/d2c/batchF.txt segment reach_mess_120. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_mess_120
+jump 1 0 928 char=mess
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1144 z=296
+4 hold 0xffd99c 2 1144
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_mess_128 from re/out/d2c/batchF.txt segment reach_mess_128. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_mess_128
+jump 1 0 928 char=mess
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1152 z=296
+4 hold 0xffd99c 2 1152
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_reach_mess_136 from re/out/d2c/batchF.txt segment reach_mess_136. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_reach_mess_136
+jump 1 0 928 char=mess
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+3 spawn A 2 var=0 ax=1160 z=296
+4 hold 0xffd99c 2 1160
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 104
+
+# m516_rod0_jack from re/out/d2c/batchW_big.txt segment rod0_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_rod0_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=14 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+135 objset A hp 100
+235 objset A hp 100
+335 objset A hp 100
+435 objset A hp 100
+535 objset A hp 100
+635 objset A hp 100
+735 objset A hp 100
+6-6:A
+36-36:A
+136-136:A
+236-236:A
+336-336:A
+436-436:A
+536-536:A
+636-636:A
+736-736:A
+trace 844
+
+# m516_rod1_jack from re/out/d2c/batchW_big.txt segment rod1_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_rod1_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=14 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+42 objset A hp 100
+142 objset A hp 100
+242 objset A hp 100
+342 objset A hp 100
+442 objset A hp 100
+542 objset A hp 100
+642 objset A hp 100
+742 objset A hp 100
+6-6:A
+43-43:A
+143-143:A
+243-243:A
+343-343:A
+443-443:A
+543-543:A
+643-643:A
+743-743:A
+trace 851
+
+# m516_rod2_jack from re/out/d2c/batchW_big.txt segment rod2_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_rod2_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=14 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+49 objset A hp 100
+149 objset A hp 100
+249 objset A hp 100
+349 objset A hp 100
+449 objset A hp 100
+549 objset A hp 100
+649 objset A hp 100
+749 objset A hp 100
+6-6:A
+50-50:A
+150-150:A
+250-250:A
+350-350:A
+450-450:A
+550-550:A
+650-650:A
+750-750:A
+trace 858
+
+# m516_rod0_hannah from re/out/d2c/batchW_big.txt segment rod0_hannah. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_rod0_hannah
+jump 1 0 928 char=hannah
+god on
+rank 0
+level 0
+2 spawn E 0 var=14 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+135 objset A hp 100
+235 objset A hp 100
+335 objset A hp 100
+435 objset A hp 100
+535 objset A hp 100
+635 objset A hp 100
+735 objset A hp 100
+6-6:A
+36-36:A
+136-136:A
+236-236:A
+336-336:A
+436-436:A
+536-536:A
+636-636:A
+736-736:A
+trace 844
+
+# m516_rod1_hannah from re/out/d2c/batchW_big.txt segment rod1_hannah. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_rod1_hannah
+jump 1 0 928 char=hannah
+god on
+rank 0
+level 0
+2 spawn E 0 var=14 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+42 objset A hp 100
+142 objset A hp 100
+242 objset A hp 100
+342 objset A hp 100
+442 objset A hp 100
+542 objset A hp 100
+642 objset A hp 100
+742 objset A hp 100
+6-6:A
+43-43:A
+143-143:A
+243-243:A
+343-343:A
+443-443:A
+543-543:A
+643-643:A
+743-743:A
+trace 851
+
+# m516_club_hold0_jack from re/out/d2c/batchW_big.txt segment club_hold0_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_club_hold0_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=20 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-37:A
+trace 205
+
+# m516_club_hold10_jack from re/out/d2c/batchW_big.txt segment club_hold10_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_club_hold10_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=20 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-46:A
+trace 214
+
+# m516_club_hold20_jack from re/out/d2c/batchW_big.txt segment club_hold20_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_club_hold20_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=20 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-56:A
+trace 224
+
+# m516_club_hold30_jack from re/out/d2c/batchW_big.txt segment club_hold30_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_club_hold30_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=20 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-66:A
+trace 234
+
+# m516_club_hold40_jack from re/out/d2c/batchW_big.txt segment club_hold40_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_club_hold40_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=20 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-76:A
+trace 244
+
+# m516_club_hold50_jack from re/out/d2c/batchW_big.txt segment club_hold50_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_club_hold50_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=20 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-86:A
+trace 254
+
+# m516_club_hold60_jack from re/out/d2c/batchW_big.txt segment club_hold60_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_club_hold60_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=20 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-96:A
+trace 264
+
+# m516_club_hold0_mustapha from re/out/d2c/batchW_big.txt segment club_hold0_mustapha. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_club_hold0_mustapha
+jump 1 0 928 char=mustapha
+god on
+rank 0
+level 0
+2 spawn E 0 var=20 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-37:A
+trace 205
+
+# m516_club_hold60_mustapha from re/out/d2c/batchW_big.txt segment club_hold60_mustapha. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_club_hold60_mustapha
+jump 1 0 928 char=mustapha
+god on
+rank 0
+level 0
+2 spawn E 0 var=20 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-96:A
+trace 264
+
+# m516_club_hold0_hannah from re/out/d2c/batchW_big.txt segment club_hold0_hannah. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_club_hold0_hannah
+jump 1 0 928 char=hannah
+god on
+rank 0
+level 0
+2 spawn E 0 var=20 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-37:A
+trace 205
+
+# m516_club_hold60_hannah from re/out/d2c/batchW_big.txt segment club_hold60_hannah. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_club_hold60_hannah
+jump 1 0 928 char=hannah
+god on
+rank 0
+level 0
+2 spawn E 0 var=20 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-96:A
+trace 264
+
+# m516_club_hold0_mess from re/out/d2c/batchW_big.txt segment club_hold0_mess. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_club_hold0_mess
+jump 1 0 928 char=mess
+god on
+rank 0
+level 0
+2 spawn E 0 var=20 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-37:A
+trace 205
+
+# m516_club_hold60_mess from re/out/d2c/batchW_big.txt segment club_hold60_mess. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_club_hold60_mess
+jump 1 0 928 char=mess
+god on
+rank 0
+level 0
+2 spawn E 0 var=20 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-96:A
+trace 264
+
+# m516_torch_jack from re/out/d2c/batchW_big.txt segment torch_jack. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_torch_jack
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=22 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 374
+
+# m516_torch_mustapha from re/out/d2c/batchW_big.txt segment torch_mustapha. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_torch_mustapha
+jump 1 0 928 char=mustapha
+god on
+rank 0
+level 0
+2 spawn E 0 var=22 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 374
+
+# m516_torch_hannah from re/out/d2c/batchW_big.txt segment torch_hannah. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_torch_hannah
+jump 1 0 928 char=hannah
+god on
+rank 0
+level 0
+2 spawn E 0 var=22 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 374
+
+# m516_torch_mess from re/out/d2c/batchW_big.txt segment torch_mess. Snapshot at probe frame 4. Trace frame = probe frame - 4 (about; the snapshot is the next game frame).
+segment m516_torch_mess
+jump 1 0 928 char=mess
+god on
+rank 0
+level 0
+2 spawn E 0 var=22 ax=1027 z=296
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+6-6:A
+36-36:A
+trace 374

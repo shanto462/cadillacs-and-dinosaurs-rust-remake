@@ -1,0 +1,2 @@
+# m516_expl_hits_barrel. Keys after the snapshot (frame 0 = first game frame). Source segment expl_hits_barrel, probe frames shifted by 2.
+# no keys: the scene runs on its own

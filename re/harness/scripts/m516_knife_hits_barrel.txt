@@ -1,0 +1,4 @@
+# m516_knife_hits_barrel. Keys after the snapshot (frame 0 = first game frame). Source segment knife_hits_barrel, probe frames shifted by 2.
+8-8:A
+30-31:R
+42-42:A

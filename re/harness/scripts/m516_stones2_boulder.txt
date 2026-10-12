@@ -1,0 +1,2 @@
+# m516_stones2_boulder. Keys after the snapshot (frame 0 = first game frame). Source segment stones2_boulder, probe frames shifted by 2.
+# no keys: the scene runs on its own

@@ -1,0 +1,2 @@
+# m516_edrop_survive. Keys after the snapshot (frame 0 = first game frame). Source segment edrop_survive, probe frames shifted by 5.
+7-7:A

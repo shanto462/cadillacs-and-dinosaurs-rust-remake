@@ -1,0 +1,2 @@
+# m516_pool_22. Keys after the snapshot (frame 0 = first game frame). Source segment pool_22, probe frames shifted by 3.
+# no keys: the scene runs on its own

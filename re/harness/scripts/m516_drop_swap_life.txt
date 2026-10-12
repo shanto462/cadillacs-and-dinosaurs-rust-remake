@@ -1,0 +1,3 @@
+# m516_drop_swap_life. Keys after the snapshot (frame 0 = first game frame). Source segment drop_swap_life, probe frames shifted by 2.
+8-8:A
+68-68:A

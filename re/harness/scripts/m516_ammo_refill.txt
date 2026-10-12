@@ -1,0 +1,5 @@
+# m516_ammo_refill. Keys after the snapshot (frame 0 = first game frame). Source segment ammo_refill, probe frames shifted by 4.
+6-6:A
+36-36:A
+86-86:A
+126-126:A

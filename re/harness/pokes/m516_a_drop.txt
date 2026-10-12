@@ -1,0 +1,293 @@
+# M5-16 items A11 to A15 and A17. stone_items is also A16's stone row.
+# Record: PR_TIMEOUT=7200 PR_SNAPS=none PR_SHEET=0 re/harness/probe/probe_record.sh THIS all
+
+# m516_stones_boulder from re/out/d4a/batch1.txt segment stones_boulder. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_stones_boulder
+jump 1 0 928 char=jack
+god on
+2 spawn E 5 var=8 ax=1084 z=296
+2 snapshot keep
+8 objset E:5 hp 0
+45 spawn E 5 var=8 ax=1092 z=296
+53 objset E:5 hp 0
+90 spawn E 5 var=8 ax=1100 z=296
+98 objset E:5 hp 0
+135 spawn E 5 var=8 ax=1108 z=296
+143 objset E:5 hp 0
+180 spawn E 5 var=8 ax=1116 z=296
+188 objset E:5 hp 0
+225 spawn E 5 var=8 ax=1124 z=296
+233 objset E:5 hp 0
+270 spawn E 5 var=8 ax=1132 z=296
+278 objset E:5 hp 0
+315 spawn E 5 var=8 ax=1140 z=296
+323 objset E:5 hp 0
+trace 488
+
+# m516_stones_stone from re/out/d4a/batch1.txt segment stones_stone. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_stones_stone
+jump 1 0 928 char=jack
+god on
+2 spawn E 5 var=6 ax=1084 z=296
+2 snapshot keep
+8 objset E:5 hp 0
+45 spawn E 5 var=6 ax=1092 z=296
+53 objset E:5 hp 0
+90 spawn E 5 var=6 ax=1100 z=296
+98 objset E:5 hp 0
+135 spawn E 5 var=6 ax=1108 z=296
+143 objset E:5 hp 0
+180 spawn E 5 var=6 ax=1116 z=296
+188 objset E:5 hp 0
+225 spawn E 5 var=6 ax=1124 z=296
+233 objset E:5 hp 0
+270 spawn E 5 var=6 ax=1132 z=296
+278 objset E:5 hp 0
+315 spawn E 5 var=6 ax=1140 z=296
+323 objset E:5 hp 0
+trace 488
+
+# m516_stones2_boulder from re/out/d4a/batch2.txt segment stones2_boulder. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_stones2_boulder
+jump 1 0 928 char=jack
+god on
+2 spawn E 5 var=8 ax=1084 z=296
+2 snapshot keep
+8 objset E:5 hp 0
+40 spawn E 5 var=8 ax=1090 z=296
+48 objset E:5 hp 0
+80 spawn E 5 var=8 ax=1096 z=296
+88 objset E:5 hp 0
+120 spawn E 5 var=8 ax=1102 z=296
+128 objset E:5 hp 0
+160 spawn E 5 var=8 ax=1108 z=296
+168 objset E:5 hp 0
+200 spawn E 5 var=8 ax=1114 z=296
+208 objset E:5 hp 0
+240 spawn E 5 var=8 ax=1120 z=296
+248 objset E:5 hp 0
+280 spawn E 5 var=8 ax=1126 z=296
+288 objset E:5 hp 0
+320 spawn E 5 var=8 ax=1084 z=296
+328 objset E:5 hp 0
+360 spawn E 5 var=8 ax=1090 z=296
+368 objset E:5 hp 0
+400 spawn E 5 var=8 ax=1096 z=296
+408 objset E:5 hp 0
+440 spawn E 5 var=8 ax=1102 z=296
+448 objset E:5 hp 0
+480 spawn E 5 var=8 ax=1108 z=296
+488 objset E:5 hp 0
+520 spawn E 5 var=8 ax=1114 z=296
+528 objset E:5 hp 0
+560 spawn E 5 var=8 ax=1120 z=296
+568 objset E:5 hp 0
+600 spawn E 5 var=8 ax=1126 z=296
+608 objset E:5 hp 0
+trace 1706
+
+# m516_stone_items from re/out/d4a/batch2.txt segment stone_items. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_stone_items
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=0x1C ax=1084 z=296 w5c=0
+2 spawn E 0 var=0x1C ax=1124 z=296 w5c=1
+2 spawn E 0 var=0x1C ax=1164 z=296 w5c=2
+2 snapshot keep
+trace 2106
+
+# m516_sp_nogun from re/out/d4a/batch1.txt segment sp_nogun. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_sp_nogun
+jump 1 0 928 char=jack
+god on
+2 spawn E 5 var=4 ax=1084 z=296 drop=0x07
+2 snapshot keep
+38 objset E:5 hp 0
+trace 106
+
+# m516_sp_knife from re/out/d4a/batch1.txt segment sp_knife. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_sp_knife
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=4 ax=1174 z=296
+2 spawn E 5 var=4 ax=1084 z=296 drop=0x07
+2 snapshot keep
+38 objset E:5 hp 0
+trace 106
+
+# m516_sp_club from re/out/d4a/batch1.txt segment sp_club. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_sp_club
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=0x14 ax=1174 z=296
+2 spawn E 5 var=4 ax=1084 z=296 drop=0x07
+2 snapshot keep
+38 objset E:5 hp 0
+trace 106
+
+# m516_sp_gun from re/out/d4a/batch1.txt segment sp_gun. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_sp_gun
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=2 ax=1174 z=296
+2 spawn E 5 var=4 ax=1084 z=296 drop=0x07
+2 snapshot keep
+38 objset E:5 hp 0
+trace 106
+
+# m516_sp_uzi from re/out/d4a/batch1.txt segment sp_uzi. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_sp_uzi
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=6 ax=1174 z=296
+2 spawn E 5 var=4 ax=1084 z=296 drop=0x07
+2 snapshot keep
+38 objset E:5 hp 0
+trace 106
+
+# m516_sp_bazooka from re/out/d4a/batch1.txt segment sp_bazooka. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_sp_bazooka
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=0xC ax=1174 z=296
+2 spawn E 5 var=4 ax=1084 z=296 drop=0x07
+2 snapshot keep
+38 objset E:5 hp 0
+trace 106
+
+# m516_sp_held from re/out/d4a/batch1.txt segment sp_held. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_sp_held
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=2 ax=1027 z=296
+2 spawn E 5 var=4 ax=1084 z=296 drop=0x07
+2 snapshot keep
+38 objset E:5 hp 0
+8-8:A
+trace 106
+
+# m516_hop_mid from re/out/d4a/batch1.txt segment hop_mid. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_hop_mid
+jump 1 0 928 char=jack
+god on
+2 spawn E 5 var=4 ax=1184 z=296 drop=0x09
+2 snapshot keep
+18 objset E:5 hp 0
+trace 266
+
+# m516_hop_left from re/out/d4a/batch1.txt segment hop_left. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_hop_left
+jump 1 0 928 char=jack
+god on
+2 spawn E 5 var=4 ax=934 z=296 drop=0x09
+2 snapshot keep
+18 objset E:5 hp 0
+trace 266
+
+# m516_hop_right from re/out/d4a/batch1.txt segment hop_right. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_hop_right
+jump 1 0 928 char=jack
+god on
+2 spawn E 5 var=4 ax=1304 z=296 drop=0x09
+2 snapshot keep
+18 objset E:5 hp 0
+trace 266
+
+# m516_hop_right2 from re/out/d4a/batch1.txt segment hop_right2. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_hop_right2
+jump 1 0 928 char=jack
+god on
+2 spawn E 5 var=4 ax=1290 z=296 drop=0x09
+2 snapshot keep
+18 objset E:5 hp 0
+trace 266
+
+# m516_pool_22 from re/out/d4a/batch1.txt segment pool_22. Snapshot at probe frame 3. Trace frame = probe frame - 3 (about; the snapshot is the next game frame).
+segment m516_pool_22
+jump 1 0 928 char=jack
+god on
+2 spawn E 4 var=13 ax=948 z=236 n=22 dx=11
+3 spawn E 5 var=4 ax=1084 z=296 drop=0x09
+3 snapshot keep
+37 objset E:5 hp 0
+trace 125
+
+# m516_pool_23 from re/out/d4a/batch1.txt segment pool_23. Snapshot at probe frame 3. Trace frame = probe frame - 3 (about; the snapshot is the next game frame).
+segment m516_pool_23
+jump 1 0 928 char=jack
+god on
+2 spawn E 4 var=13 ax=948 z=236 n=23 dx=11
+3 spawn E 5 var=4 ax=1084 z=296 drop=0x09
+3 snapshot keep
+37 objset E:5 hp 0
+trace 125
+
+# m516_despawn_x from re/out/d4a/batch1.txt segment despawn_x. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_despawn_x
+jump 1 0 928 char=jack
+god on
+2 spawn E 4 var=13 ax=672 z=20
+2 spawn E 4 var=13 ax=720 z=34
+2 spawn E 4 var=13 ax=728 z=48
+2 spawn E 4 var=13 ax=732 z=62
+2 spawn E 4 var=13 ax=736 z=76
+2 spawn E 4 var=13 ax=740 z=90
+2 spawn E 4 var=13 ax=752 z=104
+2 spawn E 4 var=13 ax=800 z=118
+2 spawn E 4 var=13 ax=1488 z=132
+2 spawn E 4 var=13 ax=1500 z=146
+2 spawn E 4 var=13 ax=1504 z=160
+2 spawn E 4 var=13 ax=1508 z=174
+2 spawn E 4 var=13 ax=1520 z=188
+2 spawn E 4 var=13 ax=1568 z=202
+2 spawn E 0 var=4 ax=832 z=20
+2 spawn E 0 var=4 ax=856 z=34
+2 spawn E 0 var=4 ax=860 z=48
+2 spawn E 0 var=4 ax=864 z=62
+2 spawn E 0 var=4 ax=868 z=76
+2 spawn E 0 var=4 ax=880 z=90
+2 spawn E 0 var=4 ax=1408 z=104
+2 spawn E 0 var=4 ax=1432 z=118
+2 spawn E 0 var=4 ax=1436 z=132
+2 spawn E 0 var=4 ax=1440 z=146
+2 spawn E 0 var=4 ax=1444 z=160
+2 spawn E 0 var=4 ax=1452 z=174
+2 snapshot keep
+trace 46
+
+# m516_dyn_swap_wait from re/out/d4a/batch2.txt segment dyn_swap_wait. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_dyn_swap_wait
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=0x18 ax=1027 z=296
+2 snapshot keep
+48 spawn E 0 var=0x0A ax=1027 z=296
+8-8:A
+58-58:A
+trace 336
+
+# m516_dyn_swap_repick from re/out/d4a/batch2.txt segment dyn_swap_repick. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_dyn_swap_repick
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=0x18 ax=1027 z=296
+2 snapshot keep
+48 spawn E 0 var=0x0A ax=1027 z=296
+8-8:A
+58-58:A
+133-133:A
+188-188:A
+trace 426
+
+# m516_dyn_swap from re/out/d4a/batch1.txt segment dyn_swap. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_dyn_swap
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=0x18 ax=1027 z=296
+2 snapshot keep
+48 spawn E 0 var=0x0A ax=1027 z=296
+8-8:A
+58-58:A
+110-110:A
+124-124:A
+trace 336

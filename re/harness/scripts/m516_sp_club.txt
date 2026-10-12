@@ -1,0 +1,2 @@
+# m516_sp_club. Keys after the snapshot (frame 0 = first game frame). Source segment sp_club, probe frames shifted by 2.
+# no keys: the scene runs on its own

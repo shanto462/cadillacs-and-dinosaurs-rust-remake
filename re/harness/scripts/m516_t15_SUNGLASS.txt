@@ -1,0 +1,2 @@
+# m516_t15_SUNGLASS. Keys after the snapshot (frame 0 = first game frame). Source segment t15_SUNGLASS, probe frames shifted by 2.
+8-8:A

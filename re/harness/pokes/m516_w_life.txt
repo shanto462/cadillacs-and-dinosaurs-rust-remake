@@ -1,0 +1,444 @@
+# M5-16 weapons W13. Scene is before the snapshot. Later spawn, objset, hp and god lines are MAME only.
+# Record: PR_TIMEOUT=7200 PR_SNAPS=none PR_SHEET=0 re/harness/probe/probe_record.sh THIS all
+
+# m516_wearff_knife_E0 from re/out/d2c/batchF.txt segment wearff_knife_E0. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_knife_E0
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=4 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 224
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_pistol_E0 from re/out/d2c/batchF.txt segment wearff_pistol_E0. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_pistol_E0
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=2 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 224
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_club_E0 from re/out/d2c/batchF.txt segment wearff_club_E0. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_club_E0
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=20 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 224
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_rod_E0 from re/out/d2c/batchF.txt segment wearff_rod_E0. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_rod_E0
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=14 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 224
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_butcher_E0 from re/out/d2c/batchF.txt segment wearff_butcher_E0. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_butcher_E0
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=18 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 224
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_uzi_E0 from re/out/d2c/batchF.txt segment wearff_uzi_E0. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_uzi_E0
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=6 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 224
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_stick_E0 from re/out/d2c/batchF.txt segment wearff_stick_E0. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_stick_E0
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=16 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 224
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_torch_E0 from re/out/d2c/batchF.txt segment wearff_torch_E0. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_torch_E0
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=22 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 224
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_knife_00 from re/out/d2c/batchF.txt segment wearff_knife_00. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_knife_00
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=4 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 0
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_knife_20 from re/out/d2c/batchF.txt segment wearff_knife_20. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_knife_20
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=4 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 32
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_knife_40 from re/out/d2c/batchF.txt segment wearff_knife_40. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_knife_40
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=4 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 64
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_knife_60 from re/out/d2c/batchF.txt segment wearff_knife_60. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_knife_60
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=4 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 96
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_knife_80 from re/out/d2c/batchF.txt segment wearff_knife_80. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_knife_80
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=4 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 128
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_knife_A0 from re/out/d2c/batchF.txt segment wearff_knife_A0. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_knife_A0
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=4 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 160
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_knife_C0 from re/out/d2c/batchF.txt segment wearff_knife_C0. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_knife_C0
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=4 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 192
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_knife_60b from re/out/d2c/batchF.txt segment wearff_knife_60b. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_knife_60b
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=4 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 96
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_knife_60c from re/out/d2c/batchF.txt segment wearff_knife_60c. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_knife_60c
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=4 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 96
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_dynamite_00 from re/out/d2c/batchF.txt segment wearff_dynamite_00. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_dynamite_00
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=24 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 0
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_grenade_00 from re/out/d2c/batchF.txt segment wearff_grenade_00. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_grenade_00
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=26 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 0
+8-8:2A
+58-58:A
+trace 326
+
+# m516_wearff_stones_00 from re/out/d2c/batchF.txt segment wearff_stones_00. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_wearff_stones_00
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=28 ax=1034 z=296
+2 snapshot
+28 objset E:0 +0xA6.b 0
+8-8:2A
+58-58:A
+trace 326
+
+# m516_drop_swap_life from re/out/d2c/batchW_big.txt segment drop_swap_life. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_drop_swap_life
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+2 spawn E 0 var=2 ax=1027 z=296
+2 snapshot keep
+58 spawn E 0 var=0 ax=1027 z=296
+8-8:A
+68-68:A
+trace 3826
+
+# m516_drop_enemy_life from re/out/d2c/batchW_big.txt segment drop_enemy_life. Snapshot at probe frame 30. Trace frame = probe frame - 30 (about; the snapshot is the next game frame).
+segment m516_drop_enemy_life
+jump 1 0 928 char=jack
+god on
+rank 0
+level 0
+3 spawn A 2 var=0 ax=1058 z=296 n=1 dx=40 drop=39
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+30 objset A hp 1
+30 snapshot keep
+10-10:A
+trace 3718
+
+# m516_special_discard_club from re/out/d2c/batchF.txt segment special_discard_club. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_special_discard_club
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=20 ax=1027 z=296
+2 snapshot keep
+8-8:A
+58-60:AJ
+trace 228
+
+# m516_special_discard_pistol from re/out/d2c/batchF.txt segment special_discard_pistol. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_special_discard_pistol
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=2 ax=1027 z=296
+2 snapshot keep
+8-8:A
+58-60:AJ
+trace 228
+
+# m516_special_discard_knife from re/out/d2c/batchF.txt segment special_discard_knife. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_special_discard_knife
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=4 ax=1027 z=296
+2 snapshot keep
+8-8:A
+58-60:AJ
+trace 228
+
+# m516_die_with_weapon from re/out/d2c/batchF.txt segment die_with_weapon. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_die_with_weapon
+jump 1 0 928 char=jack
+2 spawn E 0 var=2 ax=1027 z=296
+2 snapshot
+58 hp 0
+8-8:A
+trace 366
+
+# m516_floor_knives_long from re/out/d2c/batchF.txt segment floor_knives_long. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_floor_knives_long
+jump 1 0 928 char=jack
+god on
+2 spawn E 0 var=4 ax=1104 z=266
+2 spawn E 0 var=4 ax=1128 z=278
+2 spawn E 0 var=4 ax=1152 z=290
+2 spawn E 0 var=4 ax=1176 z=302
+2 spawn E 0 var=4 ax=1200 z=314
+2 snapshot keep
+trace 706
+
+# m516_ffd_hannah_pistol from re/out/d2c/batchM_big.txt segment ffd_hannah_pistol. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_ffd_hannah_pistol
+jump 1 0 928 char=jack,hannah
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=2 ax=1034 z=296
+2 snapshot
+8-8:2A
+58-58:A
+98-98:A
+trace 206
+
+# m516_ffd_mustapha_pistol from re/out/d2c/batchM_big.txt segment ffd_mustapha_pistol. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_ffd_mustapha_pistol
+jump 1 0 928 char=jack,mustapha
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=2 ax=1034 z=296
+2 snapshot
+8-8:2A
+58-58:A
+98-98:A
+trace 206
+
+# m516_ffd_mess_bazooka from re/out/d2c/batchM_big.txt segment ffd_mess_bazooka. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_ffd_mess_bazooka
+jump 1 0 928 char=jack,mess
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=12 ax=1034 z=296
+2 snapshot
+8-8:2A
+58-58:A
+98-98:A
+trace 206
+
+# m516_ffd_mess_pistol from re/out/d2c/batchM_big.txt segment ffd_mess_pistol. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_ffd_mess_pistol
+jump 1 0 928 char=jack,mess
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=2 ax=1034 z=296
+2 snapshot
+8-8:2A
+58-58:A
+98-98:A
+trace 206
+
+# m516_ffd_hannah_bazooka from re/out/d2c/batchM_big.txt segment ffd_hannah_bazooka. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_ffd_hannah_bazooka
+jump 1 0 928 char=jack,hannah
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=12 ax=1034 z=296
+2 snapshot
+8-8:2A
+58-58:A
+98-98:A
+trace 206
+
+# m516_ffd_hannah_knife from re/out/d2c/batchM_big.txt segment ffd_hannah_knife. Snapshot at probe frame 2. Trace frame = probe frame - 2 (about; the snapshot is the next game frame).
+segment m516_ffd_hannah_knife
+jump 1 0 928 char=jack,hannah
+2 poke 0xffb27c 2 1000
+2 poke 0xffb284 2 296
+2 poke 0xffb3fc 2 1034
+2 poke 0xffb404 2 296
+2 spawn E 0 var=4 ax=1034 z=296
+2 snapshot
+8-8:2A
+58-58:A
+98-98:A
+trace 206

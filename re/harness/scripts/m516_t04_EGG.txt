@@ -1,0 +1,2 @@
+# m516_t04_EGG. Keys after the snapshot (frame 0 = first game frame). Source segment t04_EGG, probe frames shifted by 2.
+8-8:A

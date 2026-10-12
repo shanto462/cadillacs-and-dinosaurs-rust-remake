@@ -1,0 +1,5 @@
+# m516_dynamite_run_jack. Keys after the snapshot (frame 0 = first game frame). Source segment dynamite_run_jack, probe frames shifted by 4.
+6-6:A
+32-32:R
+35-76:R
+58-58:A

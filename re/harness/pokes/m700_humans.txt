@@ -1,0 +1,76 @@
+# M7-00 preparation. See the M7-00 README section and m700_scenarios.tsv.
+# Snapshot keep timelines have MAME-only probe controls. Replay companions do not.
+
+# H17; re/harness/pokes/m600_humans.txt:m600_h17_bl_vomit
+segment m700_h17_bl_vomit
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+watch 1 A:6 x y z st hp +0xD6.w +0xD0.w +0xB6.b
+watch 1 E cls var x y z st +0xAF.b
+watch 1 P1 hp x z score
+0 snapshot keep
+5 spawn A 6 var=0x0000 ax=1300 z=0x30
+6 spawn E 4 var=3 ax=1170 z=0x30
+6 spawn E 0 var=0x0C ax=1200 z=0x38
+6 spawn E 9 var=5 ax=1230 z=0x28
+6 spawn E 4 var=0xB ax=1260 z=0x40
+1050 objset A:6 x 1150
+1050 objset A:6 z 54
+1070-1072:A
+1110-1112:A
+1150-1152:A
+1190-1192:A
+1230-1232:A
+1270-1272:A
+trace 2200
+
+# H18; re/harness/pokes/m600_humans.txt:m600_h18_bl_death
+segment m700_h18_bl_death
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+watch 1 A:6 x y z st hp +0xD6.w +0xD0.w +0xB6.b
+watch 1 E cls var x y z st +0xAF.b
+watch 1 P1 hp x z score
+0 snapshot keep
+5 spawn A 6 var=0x0000 ax=1300 z=0x30
+6 spawn E 4 var=3 ax=1170 z=0x30
+6 spawn E 0 var=0x0C ax=1200 z=0x38
+6 spawn E 9 var=5 ax=1230 z=0x28
+6 spawn E 4 var=0xB ax=1260 z=0x40
+1050 objset A:6 x 1150
+1050 objset A:6 z 54
+1060 objset A:6 hp 1
+1070-1072:A
+1100-1102:A
+1130-1132:A
+1160-1162:A
+1190-1192:A
+1220-1222:A
+1250-1252:A
+1280-1282:A
+1310-1312:A
+1340-1342:A
+trace 2400
+
+# H26; re/harness/pokes/m600_humans.txt:m600_h26_pk_bludge
+segment m700_h26_pk_bludge
+jump 2 0 0x400
+level 0 free
+aggr 7 free
+hp 100
+god on
+watch 1 A:6 x y z st hp +0xD6.w +0xD0.w +0xB6.b
+watch 1 E cls var x y z st +0xAF.b
+watch 1 P1 hp x z score
+0 snapshot keep
+5 spawn A 6 var=0x0000 x=+0x100 z=0x30
+6 spawn E 0 var=0x0C ax=1240 z=0x30
+6 spawn E 4 var=3 ax=1200 z=0x34
+6 spawn E 9 var=5 ax=1170 z=0x2C
+trace 1500

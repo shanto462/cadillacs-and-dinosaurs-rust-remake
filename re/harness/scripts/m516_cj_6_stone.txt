@@ -1,0 +1,11 @@
+# m516_cj_6_stone. Keys after the snapshot (frame 0 = first game frame). Source segment cj_6_stone, probe frames shifted by 2.
+8-8:A
+20-20:A
+32-32:A
+44-44:A
+56-56:A
+68-68:A
+80-80:A
+92-92:A
+104-104:A
+116-116:A

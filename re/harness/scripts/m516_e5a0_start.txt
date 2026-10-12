@@ -1,0 +1,2 @@
+# m516_e5a0_start. Keys after the snapshot (frame 0 = first game frame). Source segment e5a0_start, probe frames shifted by 0.
+# no keys: the scene runs on its own

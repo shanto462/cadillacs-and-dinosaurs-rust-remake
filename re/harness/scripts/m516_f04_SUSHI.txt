@@ -1,0 +1,3 @@
+# m516_f04_SUSHI. Keys after the snapshot (frame 0 = first game frame). Source segment f04_SUSHI, probe frames shifted by 2.
+8-8:A
+76-76:A

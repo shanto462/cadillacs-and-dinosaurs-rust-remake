@@ -1,0 +1,5 @@
+# m516_runswing_pistol. Keys after the snapshot (frame 0 = first game frame). Source segment runswing_pistol, probe frames shifted by 4.
+6-6:A
+36-36:R
+39-76:R
+54-54:A
