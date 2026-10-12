@@ -1,0 +1,161 @@
+# Timed writes by segment: frame hexaddr size value. See README.
+
+segment pan-ep4-jack
+0 FF84D9 1 3
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep4-mess
+0 FF84D9 1 3
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep4-mustapha
+0 FF84D9 1 3
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep4-hannah
+0 FF84D9 1 3
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep4-jh
+0 FF84D9 1 3
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep4-jmm
+0 FF84D9 1 3
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep5-jack
+0 FF84D9 1 4
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep5-mess
+0 FF84D9 1 4
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep5-mustapha
+0 FF84D9 1 4
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep5-hannah
+0 FF84D9 1 4
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep5-jh
+0 FF84D9 1 4
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep5-jmm
+0 FF84D9 1 4
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep6-jack
+0 FF84D9 1 5
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep6-mess
+0 FF84D9 1 5
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep6-mustapha
+0 FF84D9 1 5
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep6-hannah
+0 FF84D9 1 5
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep6-jh
+0 FF84D9 1 5
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep6-jmm
+0 FF84D9 1 5
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep7-jack
+0 FF84D9 1 6
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep7-mess
+0 FF84D9 1 6
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep7-mustapha
+0 FF84D9 1 6
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep7-hannah
+0 FF84D9 1 6
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep7-jh
+0 FF84D9 1 6
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep7-jmm
+0 FF84D9 1 6
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep8-jack
+0 FF84D9 1 7
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep8-mess
+0 FF84D9 1 7
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep8-mustapha
+0 FF84D9 1 7
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep8-hannah
+0 FF84D9 1 7
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep8-jh
+0 FF84D9 1 7
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-ep8-jmm
+0 FF84D9 1 7
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-skip-ep2
+0 FF84D9 1 1
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment pan-skip-ep2-jump
+0 FF84D9 1 1
+0 FF84D1 1 0
+0 FF84D0 1 8

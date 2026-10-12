@@ -1,0 +1,21 @@
+# Timed writes by segment: frame hexaddr size value. See README.
+
+segment o1
+
+segment o3
+
+segment o5
+
+segment o6
+
+segment o7
+
+segment o8
+
+segment o8p3
+
+segment go1
+
+segment go2
+
+segment b1c

@@ -1,0 +1,128 @@
+# Flow ground truth: D4d section 13, D4c section 10. See README.
+
+segment k-hiscore
+frames 2400
+jump 1 1
+0 score 450000
+0 lives 0
+0 hp 0
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment k-hiscore-mid
+frames 2400
+jump 1 1
+0 score 15000
+0 lives 0
+0 hp 0
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment k-hiscore-5th
+frames 2400
+jump 1 1
+0 score 65000
+0 lives 0
+0 hp 0
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment sel-1p
+frames 1800
+600-607:C
+700-705:S
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment sel-1p-moves
+frames 1300
+600-607:C
+700-705:S
+800-803:R
+840-843:R
+880-883:L
+920-923:L
+960-963:L
+1000-1005:J
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment sel-2p-late
+frames 1700
+600-607:C
+700-705:S
+800-807:2C
+840-845:2S
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment sel-same
+frames 1300
+600-607:C
+700-705:S
+640-647:2C
+680-685:2S
+800-803:2L
+840-843:2L
+880-883:2L
+920-923:2R
+1000-1005:A
+1040-1045:2A
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment sel-3p-all-left
+frames 1500
+600-607:C
+640-647:2C
+680-687:3C
+700-705:S
+740-745:2S
+780-785:3S
+830-833:L
+830-833:2L
+830-833:3L
+900-903:L
+900-903:2L
+900-903:3L
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment sel-3p-timeout
+frames 1800
+600-607:C
+640-647:2C
+680-687:3C
+700-705:S
+740-745:2S
+780-785:3S
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment sel-picks-sim
+frames 1300
+600-607:C
+640-647:2C
+700-705:S
+740-745:2S
+900-905:A
+900-905:2A
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment k-name-entry
+frames 2700
+jump 1 1
+0 score 450000
+0 lives 0
+0 hp 0
+1750-1753:R
+1790-1793:R
+1830-1835:A
+1870-1873:R
+1910-1915:A
+1950-1953:L
+1990-1995:A
+2030-2035:A
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w

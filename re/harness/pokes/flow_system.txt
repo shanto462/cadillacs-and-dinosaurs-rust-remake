@@ -1,0 +1,16 @@
+# Timed writes by segment: frame hexaddr size value. See README.
+
+segment c-title
+
+segment s-nocredit
+
+segment s-nocredit-demo
+
+segment c-two
+
+segment c-three-start
+
+segment c-title-coinhold
+
+segment freeplay
+100 FF846B 1 1

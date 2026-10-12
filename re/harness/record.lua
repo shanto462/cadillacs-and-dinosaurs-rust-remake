@@ -15,6 +15,8 @@
 --                With video, vblank:0 and vblank:1 both start at the first video frame.
 --   DINO_MAX_VBLANKS  give up after this many vblanks without reaching the sync point (default 30000)
 --   DINO_SNAP_EVERY   also save a PNG screenshot every N test frames (0 = never)
+--   DINO_POKES   timed RAM writes from power on: frame hexaddr size value (PR_POKES format).
+--   DINO_SYNC=power uses video frames and input frames from power on.
 --   DINO_POKE    optional Lua file run once at the sync point, before the snapshot is taken: it edits
 --                RAM (the snapshot and the whole recording start from the edited state, the port loads
 --                it from the .state). It receives one argument, the table DINO (`local DINO = ...`)
@@ -55,9 +57,12 @@ local cfg = {
   max_vblanks = tonumber(env("DINO_MAX_VBLANKS", "30000")),
   snap_every = tonumber(env("DINO_SNAP_EVERY", "0")),
   poke = env("DINO_POKE", nil),
+  pokes = env("DINO_POKES", nil),
+  batch_probe = env("DINO_BATCH_PROBE", nil),
 }
+if cfg.sync == "power" then cfg.clock = "video" end
 assert(cfg.clock == "game" or cfg.clock == "video", "bad DINO_CLOCK " .. cfg.clock)
-assert(cfg.clock ~= "video" or cfg.sync:match("^vblank:%d+$"),
+assert(cfg.clock ~= "video" or (cfg.sync == "power" or cfg.sync:match("^vblank:%d+$")),
   "DINO_CLOCK=video requires DINO_SYNC=vblank:N")
 
 local function log(fmt, ...)
@@ -108,6 +113,48 @@ local function read_file(path)
   local s = fh:read("a")
   fh:close()
   return s
+end
+
+-- PR_POKES format: decimal frame, hexadecimal address, size 1/2/4,
+-- decimal or 0x-prefixed value. Validate the entire file before starting.
+local function parse_pokes(path)
+  local out = {}
+  if not path then return out end
+  local n = 0
+  for line in (read_file(path) .. "\n"):gmatch("([^\n]*)\n") do
+    n = n + 1
+    line = line:gsub("#.*", ""):match("^%s*(.-)%s*$")
+    if line ~= "" then
+      local f, a, z, v = line:match("^(%d+)%s+([%x]+)%s+([124])%s+(%S+)$")
+      local frame, addr, size, value = tonumber(f), a and tonumber(a, 16), tonumber(z), tonumber(v)
+      assert(frame and math.type(frame) == "integer" and frame <= 0x7FFFFFFF
+        and addr and size and value and math.type(value) == "integer"
+        and addr >= 0xFF0000 and addr + size <= 0x1000000
+        and (size == 1 or addr % 2 == 0)
+        and value >= 0 and value < 2 ^ (8 * size),
+        string.format("bad DINO_POKES line %s:%d: %s", path, n, line))
+      out[#out + 1] = { frame, addr, size, value, n }
+    end
+  end
+  table.sort(out, function(a, b) return a[1] < b[1] or (a[1] == b[1] and a[5] < b[5]) end)
+  return out
+end
+local valid_pokes, timed_pokes = pcall(parse_pokes, cfg.pokes)
+if not valid_pokes then
+  log("%s", timed_pokes)
+  manager.machine:exit()
+  return
+end
+local next_poke = 1
+local function apply_pokes(frame)
+  while timed_pokes[next_poke] and timed_pokes[next_poke][1] <= frame do
+    local p = timed_pokes[next_poke]
+    if p[3] == 1 then space:write_u8(p[2], p[4])
+    elseif p[3] == 2 then space:write_u16(p[2], p[4])
+    else space:write_u32(p[2], p[4]) end
+    log("poke at power frame %d: %X size %d = %X", frame, p[2], p[3], p[4])
+    next_poke = next_poke + 1
+  end
 end
 
 local function script_at(segs, frame)
@@ -273,6 +320,57 @@ local function write_record(fh, frame, flags, vblank, lagv, prev, snap)
   fh:write(string.pack("<I4", 0)) -- no extra JSON on the MAME side
 end
 
+-- Flow batches keep the probe's runtime jump/hold/object helpers. The trace
+-- includes the entire boot and jump, not only the post-jump segment. Only these
+-- explicit extension points are added to the loaded copy of probe.lua.
+if cfg.batch_probe then
+  local fh, old, count, last_frame, batch_count, power_snapshot
+  batch_count = 0
+  function DINO_BATCH_BEGIN(name)
+    assert(name:match("^[%w_-]+$"), "bad batch segment name")
+    assert(not fh, "unfinished batch trace")
+    fh = assert(io.open(env("DINO_TRACE_DIR", ".") .. "/flow_" .. name .. ".mame.trc", "wb"))
+    write_header(fh, ',"kind":"trace","clock":"video","sync":"power","probe_segment":' .. json_str(name))
+    old, count, last_frame = nil, 0, 0
+    batch_count = batch_count + 1
+    if power_snapshot then
+      write_record(fh, -1, 0, 1, 0, nil, power_snapshot)
+      old, count, last_frame = power_snapshot, 1, 1
+    end
+    next_poke = 1
+    apply_pokes(0)
+  end
+  function DINO_BATCH_FRAME(frame)
+    apply_pokes(frame)
+    local snap = snapshot()
+    if frame == 1 then power_snapshot = snap end
+    write_record(fh, count - 1, 0, frame, 0, old, snap)
+    old, count, last_frame = snap, count + 1, frame
+  end
+  function DINO_BATCH_END(msg)
+    if fh then fh:close(); fh = nil end
+    assert(not msg:match("FAILED") and not msg:match("LUA ERROR"), msg)
+    log("batch segment recorded %d video records through power frame %d: %s", count, last_frame, msg)
+    log("batch completed segments: %d", batch_count)
+  end
+  local source = read_file(cfg.batch_probe)
+  local function hook(anchor, replacement)
+    local a, b = source:find(anchor, 1, true)
+    assert(a, "probe extension point missing: " .. anchor)
+    assert(not source:find(anchor, b + 1, true), "ambiguous probe extension point")
+    source = source:sub(1, a - 1) .. replacement .. source:sub(b + 1)
+  end
+  hook('  log("SEGMENT", "%s frames=%d", seg.name, maxT)',
+    '  DINO_BATCH_BEGIN(seg.name)\n  log("SEGMENT", "%s frames=%d", seg.name, maxT)')
+  hook('  F = F + 1', '  F = F + 1\n  DINO_BATCH_FRAME(F)')
+  hook('local function end_segment(msg)',
+    'local function end_segment(msg)\n  DINO_BATCH_END(msg)')
+  hook('  if not ok then\n    io.stderr:write("probe.lua error: "',
+    '  if not ok then\n    manager.machine:exit()\n    io.stderr:write("probe.lua error: "')
+  assert(load(source, "@" .. cfg.batch_probe, "t", _ENV))()
+  return
+end
+
 -- ---------------------------------------------------------------------------------------------
 -- Game state probes
 -- ---------------------------------------------------------------------------------------------
@@ -303,6 +401,7 @@ end
 local control_frame = nil  -- G.$0000 when player 1 first could be controlled ("control+N")
 
 local function sync_now(vblank)
+  if cfg.sync == "power" then return true end
   if cfg.sync == "control" then return p1_controllable() end
   local n = cfg.sync:match("^control%+(%d+)$")
   if n then
@@ -320,6 +419,7 @@ end
 
 local phase = "boot"
 local vblank = 0
+local power_frame = 0 -- video clock, independent of game-frame IRQ taps
 local k = 0          -- test frame index
 local lag = 0        -- lag vblanks since the last record
 local trace_fh = nil
@@ -363,7 +463,7 @@ local function on_vblank()
       end
       phase = "test"
       k = 0
-      cur = script_at(test_segs, k)
+      cur = script_at(test_segs, cfg.sync == "power" and vblank or k)
       return
     end
     cur = script_at(boot_segs, vblank)
@@ -382,7 +482,7 @@ local function on_vblank()
       finish(string.format("recorded %d frames (sync + %d vblanks)", k, vblank))
       return
     end
-    cur = script_at(test_segs, k)
+    cur = script_at(test_segs, cfg.sync == "power" and vblank or k)
   end
 end
 
@@ -412,6 +512,11 @@ end
 -- Taps installed before the machine starts are lost at reset, so install them on the first frame.
 -- The boot script must not need input in the first frame.
 emu.register_frame_done(function()
-  if not installed then install() end
+  power_frame = power_frame + 1
+  if not installed then
+    install()
+    apply_pokes(0)
+  end
+  if phase ~= "done" then apply_pokes(power_frame) end
   if cfg.clock == "video" and phase ~= "done" then on_vblank() end
 end)

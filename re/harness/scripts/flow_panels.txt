@@ -1,0 +1,195 @@
+# Flow ground truth: D4d section 13, D4c section 10. See README.
+
+segment pan-ep4-jack
+frames 330
+jump 1 0 char=jack
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep4-mess
+frames 330
+jump 1 0 char=mess
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep4-mustapha
+frames 330
+jump 1 0 char=mustapha
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep4-hannah
+frames 330
+jump 1 0 char=hannah
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep4-jh
+frames 330
+jump 1 0 char=jack,hannah
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep4-jmm
+frames 330
+jump 1 0 char=jack,mustapha,mess
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep5-jack
+frames 330
+jump 1 0 char=jack
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep5-mess
+frames 330
+jump 1 0 char=mess
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep5-mustapha
+frames 330
+jump 1 0 char=mustapha
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep5-hannah
+frames 330
+jump 1 0 char=hannah
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep5-jh
+frames 330
+jump 1 0 char=jack,hannah
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep5-jmm
+frames 330
+jump 1 0 char=jack,mustapha,mess
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep6-jack
+frames 330
+jump 1 0 char=jack
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep6-mess
+frames 330
+jump 1 0 char=mess
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep6-mustapha
+frames 330
+jump 1 0 char=mustapha
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep6-hannah
+frames 330
+jump 1 0 char=hannah
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep6-jh
+frames 330
+jump 1 0 char=jack,hannah
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep6-jmm
+frames 330
+jump 1 0 char=jack,mustapha,mess
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep7-jack
+frames 330
+jump 1 0 char=jack
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep7-mess
+frames 330
+jump 1 0 char=mess
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep7-mustapha
+frames 330
+jump 1 0 char=mustapha
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep7-hannah
+frames 330
+jump 1 0 char=hannah
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep7-jh
+frames 330
+jump 1 0 char=jack,hannah
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep7-jmm
+frames 330
+jump 1 0 char=jack,mustapha,mess
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep8-jack
+frames 330
+jump 1 0 char=jack
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep8-mess
+frames 330
+jump 1 0 char=mess
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep8-mustapha
+frames 330
+jump 1 0 char=mustapha
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep8-hannah
+frames 330
+jump 1 0 char=hannah
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep8-jh
+frames 330
+jump 1 0 char=jack,hannah
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-ep8-jmm
+frames 330
+jump 1 0 char=jack,mustapha,mess
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-skip-ep2
+frames 400
+jump 1 0
+60-63:A
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment pan-skip-ep2-jump
+frames 400
+jump 1 0
+60-63:J
+snaps 100,250,320
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w

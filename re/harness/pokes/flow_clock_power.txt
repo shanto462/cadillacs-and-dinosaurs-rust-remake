@@ -1,0 +1,2 @@
+# Clock after Episode 1 opening has released control.
+1800 FF84E8 2 0x0013

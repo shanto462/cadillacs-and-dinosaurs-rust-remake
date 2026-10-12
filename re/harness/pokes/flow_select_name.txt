@@ -1,0 +1,23 @@
+# Timed writes by segment: frame hexaddr size value. See README.
+
+segment k-hiscore
+
+segment k-hiscore-mid
+
+segment k-hiscore-5th
+
+segment sel-1p
+
+segment sel-1p-moves
+
+segment sel-2p-late
+
+segment sel-same
+
+segment sel-3p-all-left
+
+segment sel-3p-timeout
+
+segment sel-picks-sim
+
+segment k-name-entry

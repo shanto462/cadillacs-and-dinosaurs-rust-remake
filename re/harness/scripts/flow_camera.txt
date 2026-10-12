@@ -1,0 +1,120 @@
+# Flow ground truth: D4d section 13, D4c section 10. See README.
+
+segment o1
+jump 1 0 at=start
+frames 1100
+snaps 3,231,303,615,648,700,1500,2500,3975,6000
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment o3
+jump 3 0 at=start
+frames 1000
+snaps 3,231,303,615,648,700,1500,2500,3975,6000
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment o5
+jump 5 0 at=start
+frames 1000
+snaps 3,231,303,615,648,700,1500,2500,3975,6000
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment o6
+jump 6 0 at=start
+frames 1000
+snaps 3,231,303,615,648,700,1500,2500,3975,6000
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment o7
+jump 7 0 at=start
+frames 1000
+snaps 3,231,303,615,648,700,1500,2500,3975,6000
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment o8
+jump 8 0 at=start
+frames 1000
+snaps 3,231,303,615,648,700,1500,2500,3975,6000
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment o8p3
+jump 8 0 char=jack,hannah,mess at=start
+frames 800
+snaps 3,231,303,615,648,700,1500,2500,3975,6000
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment go1
+jump 1 1
+god on
+hold 0xFF850E 1 2
+frames 2400
+snaps 3,231,303,615,648,700,1500,2500,3975,6000
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment go2
+jump 1 1
+god on
+hold 0xFF850E 1 2
+0-2400:R
+frames 2400
+snaps 3,231,303,615,648,700,1500,2500,3975,6000
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment b1c
+jump 1 2 0xA0
+god on
+30 killall
+60 killall
+90 killall
+120 killall
+150 killall
+180 killall
+210 killall
+240 killall
+270 killall
+300 killall
+330 killall
+360 killall
+390 killall
+420 killall
+450 killall
+480 killall
+510 killall
+540 killall
+570 killall
+600 killall
+630 killall
+660 killall
+690 killall
+720 killall
+750 killall
+780 killall
+810 killall
+840 killall
+870 killall
+900 killall
+0-2900:R
+1500 god off
+1500 hp 100
+1540 hp 100
+1580 hp 100
+1620 hp 100
+1660 hp 100
+1700 hp 100
+1740 hp 100
+1780 hp 100
+1820 hp 100
+1860 hp 100
+1900 hp 100
+1940 hp 100
+1980 hp 100
+2020 hp 100
+2060 hp 100
+2100 hp 100
+2140 hp 100
+2180 hp 100
+1500-1502:A,1510-1512:A,1520-1522:A,1530-1532:A,1540-1542:A,1550-1552:A,1560-1562:A,1570-1572:A,1580-1582:A,1590-1592:A,1600-1602:A,1610-1612:A,1620-1622:A,1630-1632:A,1640-1642:A,1650-1652:A,1660-1662:A,1670-1672:A,1680-1682:A,1690-1692:A,1700-1702:A,1710-1712:A,1720-1722:A,1730-1732:A,1740-1742:A,1750-1752:A,1760-1762:A,1770-1772:A,1780-1782:A,1790-1792:A,1800-1802:A,1810-1812:A,1820-1822:A,1830-1832:A,1840-1842:A,1850-1852:A,1860-1862:A,1870-1872:A,1880-1882:A,1890-1892:A,1900-1902:A,1910-1912:A,1920-1922:A,1930-1932:A,1940-1942:A,1950-1952:A,1960-1962:A,1970-1972:A,1980-1982:A,1990-1992:A,2000-2002:A,2010-2012:A,2020-2022:A,2030-2032:A,2040-2042:A,2050-2052:A,2060-2062:A,2070-2072:A,2080-2082:A,2090-2092:A,2100-2102:A,2110-2112:A,2120-2122:A,2130-2132:A,2140-2142:A,2150-2152:A,2160-2162:A,2170-2172:A,2180-2182:A,2190-2192:A,2200-2202:A,2210-2212:A,2220-2222:A,2230-2232:A,2240-2242:A,2250-2252:A,2260-2262:A,2270-2272:A,2280-2282:A,2290-2292:A,2300-2302:A,2310-2312:A,2320-2322:A,2330-2332:A,2340-2342:A,2350-2352:A,2360-2362:A,2370-2372:A,2380-2382:A,2390-2392:A,2400-2402:A,2410-2412:A,2420-2422:A,2430-2432:A,2440-2442:A,2450-2452:A,2460-2462:A,2470-2472:A,2480-2482:A,2490-2492:A,2500-2502:A,2510-2512:A,2520-2522:A,2530-2532:A,2540-2542:A,2550-2552:A,2560-2562:A,2570-2572:A,2580-2582:A,2590-2592:A,2600-2602:A,2610-2612:A,2620-2622:A,2630-2632:A,2640-2642:A,2650-2652:A,2660-2662:A,2670-2672:A,2680-2682:A,2690-2692:A,2700-2702:A,2710-2712:A,2720-2722:A,2730-2732:A,2740-2742:A,2750-2752:A,2760-2762:A,2770-2772:A,2780-2782:A,2790-2792:A,2800-2802:A,2810-2812:A,2820-2822:A,2830-2832:A,2840-2842:A,2850-2852:A,2860-2862:A,2870-2872:A,2880-2882:A,2890-2892:A
+1500 objset A:18 hp 1
+2000 objset A:18 hp 1
+frames 7000
+snaps 3,231,303,615,648,700,1500,2500,3975,6000
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w

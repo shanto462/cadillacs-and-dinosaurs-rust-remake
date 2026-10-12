@@ -1,0 +1,50 @@
+# Flow ground truth: D4d section 13, D4c section 10. See README.
+
+segment c-title
+frames 1500
+450-457:C
+600-605:S
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment s-nocredit
+frames 1500
+450-455:S
+1000-1005:S
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment s-nocredit-demo
+frames 4500
+4000-4005:S
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment c-two
+frames 1500
+450-457:C
+500-507:2C
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment c-three-start
+frames 1500
+450-457:C
+500-507:2C
+550-557:3C
+600-605:S
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment c-title-coinhold
+frames 1500
+450-480:C
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment freeplay
+frames 1300
+500-505:S
+700-705:2S
+snaps 520,740,900,1100,1700,1992,2147
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w

@@ -405,3 +405,174 @@ dino-game --rom dino.zip --step-from  NAME.mame.trc --input-file SCRIPT ...     
   `rand()`, free their slots, kill, spawn). `follow` and `step` exist for that. Sync after the
   scripted opening (`control+N`) to keep the run clean.
 - MAME runs with zero-filled placeholder PLD and QSound DSP ROMs: game state is exact, audio is not.
+
+## Timed power-on writes and flow ground truth (M2-00, M2-31)
+
+`DINO_SYNC=power` records every video frame from power on. The input file uses
+power-on frame numbers, as the probe does. Record -1 is power frame 1; record 0
+is power frame 2. The `vblank` column gives the power-on frame directly.
+`DINO_POKES=file` works with every sync mode. Its clock always counts video
+frames from power on, including frames before the sync point and slowdown.
+A frame-0 write is applied at the first video callback, before frame-1 writes.
+Writes for a frame run in file order before the trace sample and before the
+next frame's CPU work. They do not wait for a game-frame sync point.
+
+```
+# frame hexaddr size value
+1300 FF84D9 1 1
+1300 FF84D1 1 0
+1300 FF84D0 1 8
+1800 FF84E8 2 0x0013
+```
+
+Frames are decimal, addresses are full hexadecimal RAM addresses without `0x`,
+sizes are 1, 2 or 4, and values are decimal or `0x` hexadecimal. Blank lines
+and `#` comments are allowed. Out-of-order frames are sorted while preserving
+file order within a frame. Bad lines, non-integer values, overflow, non-RAM
+addresses, odd word/long addresses and missing files fail the recording.
+This is separate from the older `DINO_POKE=file.lua` sync-point hook, which
+still runs once before the state snapshot.
+
+```sh
+DINO_SYNC=power DINO_POKES=re/harness/pokes/flow_story_power.txt \
+  re/harness/record.sh re/harness/scripts/flow_play.txt flow_story_power 2000
+DINO_SYNC=power DINO_POKES=re/harness/pokes/flow_clock_power.txt \
+  re/harness/record.sh re/harness/scripts/flow_play.txt flow_clock_power 2200
+```
+
+The clock write is at 1800 so Episode 1 has released scripted control. The
+story write uses the frame-1300 recipe from NEW-PLAN section 5. These two files
+are plain timed poke files, ready for `DINO_POKES` or probe `PR_POKES`.
+
+### Recording the acceptance groups
+
+Each `flow_GROUP.txt` input has independent `segment NAME` blocks. Its matching
+poke file has the same segment names, with timed writes in the format above.
+`record.sh --batch` validates and merges both files, then starts one headless
+MAME process for the entire group. Never launch the groups concurrently.
+
+```sh
+for group in system join_continue select_name tally links ending panels camera end_chain; do
+  re/harness/record.sh --batch re/harness/scripts/flow_$group.txt \
+    flow_$group re/harness/pokes/flow_$group.txt || break
+done
+```
+
+| Group | Scenarios | Acceptance coverage |
+| --- | ---: | --- |
+| system | 7 | D4d A10, A11, A12: credit, start, no credit, free play, held coin |
+| join_continue | 15 | D4d A14, A15, A16: join strips, timeout, mash, late coin, second chute, game over |
+| select_name | 11 | D4d A13, A17: moves, late join, collision, 3P timeout, simultaneous picks, typed CB name |
+| tally | 31 | D4d A18: HP boundaries, kills, final blow, 1P/2P/3P, M.V.P. and damage ties |
+| links | 7 | D4d A19: Episodes 2 through 8 panels and cards |
+| ending | 6 | D4d A20, A21: all heroes, 3P, score set before ending name entry |
+| panels | 32 | D4d A22: solo and mixed parties, Episodes 2 through 8, attack and jump skip |
+| camera | 10 | D4c A1, A2, A7, A8: Episode 1 opening, five simple openings, Ep8 3P, GO idle/moving, Vice defeat |
+| end_chain | 8 | D4c A9: poked end flow for every episode, including the long Episode 8 ending timer |
+
+The batch runner uses the existing probe's input, hold, HP, score and runtime
+jump helpers. Each segment starts at the saved first power-on video frame.
+The trace includes boot and the entire assisted jump. No ROM tables, camera
+event copies or snapshots are embedded in these scripts. `jump` reads the
+user's ROM in MAME and streams the area as described in capture-recipes section 2.
+The scripts retain the design's post-jump timing rather than replacing it with
+an estimated power-on offset. With `jump`, timed writes and key lines use `t`
+from the first frame after that jump; without `jump`, they use power-on frames.
+The log gives both `t` and `f`. A `watch` logs the game-frame count `gf` too.
+These batch scripts are probe recipes; they cannot be passed directly to the
+port's plain `--input-file`. The full power traces and logged setup actions are
+available for M3 scenario tooling and for comparing the matching segment.
+
+The recorder loads a copy of `probe.lua` with checked extension points for
+segment begin, video sample, segment end and fatal-error exit. The probe source on disk is not
+changed. A Lua error exits the batch and makes the shell command fail. A missing
+extension point fails rather than silently recording a different time base.
+`DINO_TIMEOUT` limits a process to 900 seconds by default. Normal recordings
+must log their full requested frame count; a partial trace is an error.
+
+Outputs are ignored artifacts:
+
+- `re/out/traces/flow_NAME.mame.trc`: RAM, video RAM and CPS registers every video frame from power on.
+- `re/out/flow/flow_GROUP/NAME/log.txt`: setup actions, mode changes and watches with `t`, `f`, `gf`.
+- `re/out/flow/flow_GROUP/NAME/snap/`: selected pictures in the design's time base.
+- `re/out/flow/flow_GROUP/segments.txt`: one completion line per scenario.
+- `re/out/flow/flow_GROUP/mame/record.log`: recorder completion counts and MAME messages.
+
+For batch traces record -1 is the first sample; later record `frame` indexes
+start at 0. Use `vblank` for the absolute power frame and the probe log to locate
+the post-jump acceptance frame. After the first segment, the saved first frame
+is restored. Its cached trace snapshot supplies record -1, followed by live
+samples starting at power frame 2. This matches the first-frame restore used
+by the probe and keeps a complete power-on trace for every segment.
+
+G1 and G2 are skipped for this harness-only run by the task instruction. G3 is
+the MAME trace check and complete batch inventory. G4 uses `flow_play.txt` from
+power on with pictures under `re/out/shots/`. G5 is a tool task: no ported game
+routine and no extracted ROM data is added.
+
+## Picture compare (`shotdiff.py`)
+
+Compares MAME probe screenshots with port screenshots of the same frames. Prints the percent
+of pixels that differ on each frame, and writes a side by side contact sheet of the worst
+frames (MAME on the left, the port on the right). Screen tasks use this for the picture check.
+
+```sh
+re/.venv/bin/python -I re/harness/probe/shotdiff.py \
+    re/out/probe/recipes/fe-boot re/out/shots/fe-boot \
+    --frames 10,60,100,130,170,250,310
+```
+
+`MAME_DIR` is a probe folder (`log.txt` and `snap/0000.png` .., 384 x 224: capture-recipes
+section 5). The `SNAP` lines map each file to a frame. The file number is the snap order, not
+the frame. `PORT_DIR` is the same kind of folder, or a folder of pictures named by frame
+(`f00100.png`, `0100.png`, `100.png`, `frame_100.png`). One png file is accepted when
+`--frames` names a single frame (the current `--screenshot out.png` run).
+
+`--frames` uses the probe snap text: `100,250,330` or `every:10:4600:6500` (both ends included).
+With no `--frames`, every frame present on both sides is compared. `--clock t` (default) is the
+frame in the input file (`t=` in the log). `--clock f` is the video frame from power on. They
+are the same when the probe has no jump.
+
+The port window is 3 times 384 x 224. A picture that is an integer multiple of the other is
+reduced to game pixels before the count: the center pixel of each block when the scale is odd,
+the top left pixel when the scale is even. Any other size is resized with nearest neighbor and
+the line says so.
+
+One line per frame: `frame 100  0.00%  0/86016`. Then `first difference:` (the earliest frame)
+and either `all equal (0 percent)` or `worst:`. Exit 0 when every frame is 0 percent. Exit 1
+when a pixel differs or a picture is missing. Exit 2 when the arguments are wrong. The contact
+sheet is `PORT_DIR/shotdiff.png` unless `--out` is set. `--worst 8` (default) is how many
+frames are on it, highest percent first. `--worst 0` skips the sheet.
+
+### Worker report for this run
+
+Implemented the MAME timed-poke path, power-on input clock, strict bad-line
+handling, and nine flow input/poke groups with 127 unique scenarios. Batch
+traces keep the full boot and assisted setup. The old Lua sync-poke interface
+and game-frame recorder remain available. No dino-rs files were edited.
+
+- G1/G2: skipped as instructed for this harness-only task.
+- G3: partial. A 10-frame power trace completed. The system batch produced all
+  seven traces. In the coin/start trace, in-game is set at power frame 601,
+  mode 4 appears at 623, and sub-mode 2 at 625. Free-play select begins at 523.
+  All nine paired recipe files validate, six malformed batch poke cases fail,
+  and shell syntax and whitespace checks pass. The final recorder changes
+  still need a clean system rerun. Story/clock timed-poke checks, the other
+  eight batches and the required temporary 60-frame stage1_jack recording
+  remain pending.
+- G4: the game completed a headless 2200-frame play-script run. The graphical
+  screenshot run failed in miniquad because macOS could not create an OpenGL
+  pixel format. The new MAME select picture was inspected: Jack's panel,
+  TIME 09 and the 2P/3P JOIN-IN panels are visible. This does not complete the
+  requested port screenshot gate.
+- G5: tool work only. No ported routine, ROM byte array, table copy or dump was
+  added to source, tests or this document. Traces and pictures stay in re/out.
+
+The first batch attempt used the wrong Lua environment for the loaded probe
+and kept running after callback errors. The loader now passes its environment
+explicitly, callback errors request machine exit, and the shell has a 900-second
+timeout. That earlier process is still running as PID 39209. The sandbox denied
+termination signals. Further MAME runs are held until the user stops it.
+One system retry completed while that earlier process was still active; its
+log was shared with the failed process, so it needs a clean rerun. No MAME or
+port equality claim is made for the remaining scenarios. No commit or push.

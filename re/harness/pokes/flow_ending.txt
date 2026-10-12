@@ -1,0 +1,49 @@
+# Timed writes by segment: frame hexaddr size value. See README.
+
+segment end-jack
+0 FF84D9 1 7
+0 FF84D7 1 1
+0 FF84DB 1 1
+0 FF8507 1 1
+0 FF84D1 1 0
+0 FF84D0 1 0x1C
+
+segment end-hannah
+0 FF84D9 1 7
+0 FF84D7 1 1
+0 FF84DB 1 1
+0 FF8507 1 1
+0 FF84D1 1 0
+0 FF84D0 1 0x1C
+
+segment end-mess-jack
+0 FF84D9 1 7
+0 FF84D7 1 1
+0 FF84DB 1 1
+0 FF8507 1 1
+0 FF84D1 1 0
+0 FF84D0 1 0x1C
+
+segment end-3p
+0 FF84D9 1 7
+0 FF84D7 1 1
+0 FF84DB 1 1
+0 FF8507 1 1
+0 FF84D1 1 0
+0 FF84D0 1 0x1C
+
+segment end-mustapha
+0 FF84D9 1 7
+0 FF84D7 1 1
+0 FF84DB 1 1
+0 FF8507 1 1
+0 FF84D1 1 0
+0 FF84D0 1 0x1C
+
+segment end-hiscore
+30 FF84D9 1 7
+30 FF84D7 1 1
+30 FF84DB 1 1
+30 FF8507 1 1
+30 FF84D1 1 0
+30 FF84D0 1 0x1C

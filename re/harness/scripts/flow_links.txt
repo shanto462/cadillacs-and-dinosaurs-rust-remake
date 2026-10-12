@@ -1,0 +1,43 @@
+# Flow ground truth: D4d section 13, D4c section 10. See README.
+
+segment link-ep2
+frames 1100
+jump 1 0
+snaps 100,250,440,700,899
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment link-ep3
+frames 1100
+jump 1 0
+snaps 100,250,440,700,899
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment link-ep4
+frames 1100
+jump 1 0
+snaps 100,250,440,700,899
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment link-ep5
+frames 1100
+jump 1 0
+snaps 100,250,440,700,899
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment link-ep6
+frames 1100
+jump 1 0
+snaps 100,250,440,700,899
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment link-ep7
+frames 1100
+jump 1 0
+snaps 100,250,440,700,899
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment link-ep8
+frames 1100
+jump 1 0
+snaps 100,250,440,700,899
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w

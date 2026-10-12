@@ -1,0 +1,31 @@
+# Timed writes by segment: frame hexaddr size value. See README.
+
+segment k-1p
+
+segment k-mash
+
+segment k-coin-late
+
+segment k-nocoin-start
+
+segment k-coin2
+
+segment k2-timeout
+
+segment k2-coin
+
+segment k2-both
+
+segment j-p2
+
+segment j-p2-wait
+
+segment j-p2-moves
+
+segment j-p23
+
+segment j-nocredit
+
+segment j-coin-only
+
+segment j-coin-start-3p-char

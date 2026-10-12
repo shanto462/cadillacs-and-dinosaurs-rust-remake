@@ -1,0 +1,7 @@
+# Power-on play script for M2-00 smoke and G4.
+600-607:C
+700-705:S
+900-905:A
+1800-1920:R
+1925-1927:A
+1935-1937:A

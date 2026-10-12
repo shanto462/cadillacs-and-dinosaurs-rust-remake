@@ -1,0 +1,426 @@
+# Flow ground truth: D4d section 13, D4c section 10. See README.
+
+segment k-1p
+frames 2300
+jump 1 1
+0 lives 0
+0 hp 0
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment k-mash
+frames 2300
+jump 1 1
+0 lives 0
+0 hp 0
+300-301:A
+304-305:A
+308-309:A
+312-313:A
+316-317:A
+320-321:A
+324-325:A
+328-329:A
+332-333:A
+336-337:A
+340-341:A
+344-345:A
+348-349:A
+352-353:A
+356-357:A
+360-361:A
+364-365:A
+368-369:A
+372-373:A
+376-377:A
+380-381:A
+384-385:A
+388-389:A
+392-393:A
+396-397:A
+400-401:A
+404-405:A
+408-409:A
+412-413:A
+416-417:A
+420-421:A
+424-425:A
+428-429:A
+432-433:A
+436-437:A
+440-441:A
+444-445:A
+448-449:A
+452-453:A
+456-457:A
+460-461:A
+464-465:A
+468-469:A
+472-473:A
+476-477:A
+480-481:A
+484-485:A
+488-489:A
+492-493:A
+496-497:A
+500-501:A
+504-505:A
+508-509:A
+512-513:A
+516-517:A
+520-521:A
+524-525:A
+528-529:A
+532-533:A
+536-537:A
+540-541:A
+544-545:A
+548-549:A
+552-553:A
+556-557:A
+560-561:A
+564-565:A
+568-569:A
+572-573:A
+576-577:A
+580-581:A
+584-585:A
+588-589:A
+592-593:A
+596-597:A
+600-601:A
+604-605:A
+608-609:A
+612-613:A
+616-617:A
+620-621:A
+624-625:A
+628-629:A
+632-633:A
+636-637:A
+640-641:A
+644-645:A
+648-649:A
+652-653:A
+656-657:A
+660-661:A
+664-665:A
+668-669:A
+672-673:A
+676-677:A
+680-681:A
+684-685:A
+688-689:A
+692-693:A
+696-697:A
+700-701:A
+704-705:A
+708-709:A
+712-713:A
+716-717:A
+720-721:A
+724-725:A
+728-729:A
+732-733:A
+736-737:A
+740-741:A
+744-745:A
+748-749:A
+752-753:A
+756-757:A
+760-761:A
+764-765:A
+768-769:A
+772-773:A
+776-777:A
+780-781:A
+784-785:A
+788-789:A
+792-793:A
+796-797:A
+800-801:A
+804-805:A
+808-809:A
+812-813:A
+816-817:A
+820-821:A
+824-825:A
+828-829:A
+832-833:A
+836-837:A
+840-841:A
+844-845:A
+848-849:A
+852-853:A
+856-857:A
+860-861:A
+864-865:A
+868-869:A
+872-873:A
+876-877:A
+880-881:A
+884-885:A
+888-889:A
+892-893:A
+896-897:A
+900-901:A
+904-905:A
+908-909:A
+912-913:A
+916-917:A
+920-921:A
+924-925:A
+928-929:A
+932-933:A
+936-937:A
+940-941:A
+944-945:A
+948-949:A
+952-953:A
+956-957:A
+960-961:A
+964-965:A
+968-969:A
+972-973:A
+976-977:A
+980-981:A
+984-985:A
+988-989:A
+992-993:A
+996-997:A
+1000-1001:A
+1004-1005:A
+1008-1009:A
+1012-1013:A
+1016-1017:A
+1020-1021:A
+1024-1025:A
+1028-1029:A
+1032-1033:A
+1036-1037:A
+1040-1041:A
+1044-1045:A
+1048-1049:A
+1052-1053:A
+1056-1057:A
+1060-1061:A
+1064-1065:A
+1068-1069:A
+1072-1073:A
+1076-1077:A
+1080-1081:A
+1084-1085:A
+1088-1089:A
+1092-1093:A
+1096-1097:A
+1100-1101:A
+1104-1105:A
+1108-1109:A
+1112-1113:A
+1116-1117:A
+1120-1121:A
+1124-1125:A
+1128-1129:A
+1132-1133:A
+1136-1137:A
+1140-1141:A
+1144-1145:A
+1148-1149:A
+1152-1153:A
+1156-1157:A
+1160-1161:A
+1164-1165:A
+1168-1169:A
+1172-1173:A
+1176-1177:A
+1180-1181:A
+1184-1185:A
+1188-1189:A
+1192-1193:A
+1196-1197:A
+1200-1201:A
+1204-1205:A
+1208-1209:A
+1212-1213:A
+1216-1217:A
+1220-1221:A
+1224-1225:A
+1228-1229:A
+1232-1233:A
+1236-1237:A
+1240-1241:A
+1244-1245:A
+1248-1249:A
+1252-1253:A
+1256-1257:A
+1260-1261:A
+1264-1265:A
+1268-1269:A
+1272-1273:A
+1276-1277:A
+1280-1281:A
+1284-1285:A
+1288-1289:A
+1292-1293:A
+1296-1297:A
+1300-1301:A
+1304-1305:A
+1308-1309:A
+1312-1313:A
+1316-1317:A
+1320-1321:A
+1324-1325:A
+1328-1329:A
+1332-1333:A
+1336-1337:A
+1340-1341:A
+1344-1345:A
+1348-1349:A
+1352-1353:A
+1356-1357:A
+1360-1361:A
+1364-1365:A
+1368-1369:A
+1372-1373:A
+1376-1377:A
+1380-1381:A
+1384-1385:A
+1388-1389:A
+1392-1393:A
+1396-1397:A
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment k-coin-late
+frames 2300
+jump 1 1
+0 lives 0
+0 hp 0
+1300-1307:C
+1340-1345:S
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment k-nocoin-start
+frames 1600
+jump 1 1
+0 lives 0
+0 hp 0
+300-305:S
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment k-coin2
+frames 1600
+jump 1 1
+0 lives 0
+0 hp 0
+300-307:C
+360-367:C
+420-425:S
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment k2-timeout
+frames 3000
+jump 1 1 char=jack,hannah
+0 god on 2
+0 lives 0 1
+0 hp 0 1
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment k2-coin
+frames 1500
+jump 1 1 char=jack,hannah
+0 god on 2
+0 lives 0 1
+0 hp 0 1
+300-307:C
+340-345:S
+460-465:A
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment k2-both
+frames 2500
+jump 1 1 char=jack,hannah
+0 lives 0
+0 hp 0
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment j-p2
+frames 700
+jump 1 1
+0 god on 1
+10-17:2C
+60-65:2S
+140-145:2A
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment j-p2-wait
+frames 1300
+jump 1 1
+0 god on 1
+10-17:2C
+60-65:2S
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment j-p2-moves
+frames 600
+jump 1 1
+0 god on 1
+10-17:2C
+60-65:2S
+100-103:2R
+130-133:2R
+160-163:2L
+190-193:2L
+220-223:2L
+250-253:2L
+300-305:2J
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment j-p23
+frames 700
+jump 1 1
+0 god on 1
+10-17:2C
+20-27:3C
+60-65:2S
+62-67:3S
+150-155:2A
+170-175:3A
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment j-nocredit
+frames 300
+jump 1 1
+0 god on 1
+60-65:2S
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment j-coin-only
+frames 900
+jump 1 1
+0 god on 1
+10-17:2C
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment j-coin-start-3p-char
+frames 700
+jump 1 1 char=jack,hannah
+0 god on 1
+10-17:2C
+60-65:2S
+100-103:2L
+140-145:2A
+snaps 60,140,300,425,1382,1985,2075
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w

@@ -1,0 +1,215 @@
+# Flow ground truth: D4d section 13, D4c section 10. See README.
+
+segment tv-hp100
+frames 900
+jump 1 0
+0 hp 100
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-hp99
+frames 900
+jump 1 0
+0 hp 99
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-hp98
+frames 900
+jump 1 0
+0 hp 98
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-hp90
+frames 900
+jump 1 0
+0 hp 90
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-hp75
+frames 900
+jump 1 0
+0 hp 75
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-hp50
+frames 900
+jump 1 0
+0 hp 50
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-hp41
+frames 900
+jump 1 0
+0 hp 41
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-hp40
+frames 900
+jump 1 0
+0 hp 40
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-hp25
+frames 900
+jump 1 0
+0 hp 25
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-hp10
+frames 900
+jump 1 0
+0 hp 10
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-hp2
+frames 900
+jump 1 0
+0 hp 2
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-hp1
+frames 900
+jump 1 0
+0 hp 1
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-k0
+frames 900
+jump 1 0
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-k1
+frames 900
+jump 1 0
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-k2
+frames 900
+jump 1 0
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-k5
+frames 900
+jump 1 0
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-k50
+frames 900
+jump 1 0
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-k99
+frames 900
+jump 1 0
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-k150
+frames 900
+jump 1 0
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-k255
+frames 900
+jump 1 0
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-fb
+frames 900
+jump 1 0
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-2p-a
+frames 1000
+jump 1 0 char=jack,hannah
+0 hp 100 1
+0 hp 50 2
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-2p-b
+frames 1000
+jump 1 0 char=jack,hannah
+0 hp 50 1
+0 hp 100 2
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-2p-eq
+frames 1000
+jump 1 0 char=jack,hannah
+0 hp 50 1
+0 hp 50 2
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment tv-3p-a
+frames 1100
+jump 1 0 char=jack,hannah,mess
+0 hp 30 1
+0 hp 60 2
+0 hp 90 3
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment td-2p-12
+frames 1100
+jump 1 0 char=jack,hannah
+0 killall
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment td-2p-21
+frames 1100
+jump 1 0 char=jack,hannah
+0 killall
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment td-3p-231
+frames 1200
+jump 1 0 char=jack,hannah,mess
+0 killall
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment td-3p-tie
+frames 1200
+jump 1 0 char=jack,hannah,mess
+0 killall
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment td-1p-quiet
+frames 900
+jump 1 0
+0 killall
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment td-1p-dead
+frames 900
+jump 1 0
+0 killall
+0 hp 100
+snaps 60,100,120,160,700
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w

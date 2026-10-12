@@ -1,0 +1,36 @@
+# Timed writes by segment: frame hexaddr size value. See README.
+
+segment link-ep2
+0 FF84D9 1 1
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment link-ep3
+0 FF84D9 1 2
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment link-ep4
+0 FF84D9 1 3
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment link-ep5
+0 FF84D9 1 4
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment link-ep6
+0 FF84D9 1 5
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment link-ep7
+0 FF84D9 1 6
+0 FF84D1 1 0
+0 FF84D0 1 8
+
+segment link-ep8
+0 FF84D9 1 7
+0 FF84D1 1 0
+0 FF84D0 1 8

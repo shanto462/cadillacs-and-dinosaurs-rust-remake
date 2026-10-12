@@ -1,0 +1,38 @@
+# Flow ground truth: D4d section 13, D4c section 10. See README.
+
+segment end-jack
+frames 5700
+jump 1 0 char=jack
+snaps 10,100,660,980,3000,5019,5441,5550,5776
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment end-hannah
+frames 5700
+jump 1 0 char=hannah
+snaps 10,100,660,980,3000,5019,5441,5550,5776
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment end-mess-jack
+frames 5700
+jump 1 0 char=mess,jack
+snaps 10,100,660,980,3000,5019,5441,5550,5776
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment end-3p
+frames 5700
+jump 1 0 char=jack,hannah,mess
+snaps 10,100,660,980,3000,5019,5441,5550,5776
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment end-mustapha
+frames 5700
+jump 1 0 char=mustapha
+snaps 10,100,660,980,3000,5019,5441,5550,5776
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment end-hiscore
+frames 6900
+jump 1 0 char=jack
+0 score 450000
+snaps 10,100,660,980,3000,5019,5441,5550,5776
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w

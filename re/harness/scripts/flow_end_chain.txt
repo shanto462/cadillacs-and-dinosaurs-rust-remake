@@ -1,0 +1,57 @@
+# Flow ground truth: D4d section 13, D4c section 10. See README.
+
+segment f_ep1
+jump 1 2 0x1B0 char=jack,hannah,mess
+hold 0xFF850E 1 2
+frames 6500
+snaps 20,400,900,1500,3000,5000,6500,8999
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment f_ep2
+jump 2 2 0x240 char=jack,hannah,mess
+hold 0xFF850E 1 2
+frames 6500
+snaps 20,400,900,1500,3000,5000,6500,8999
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment f_ep3
+jump 3 0 0x300 char=jack,hannah,mess
+hold 0xFF850E 1 2
+frames 6500
+snaps 20,400,900,1500,3000,5000,6500,8999
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment f_ep4
+jump 4 2 0x400 char=jack,hannah,mess
+hold 0xFF850E 1 2
+frames 6500
+snaps 20,400,900,1500,3000,5000,6500,8999
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment f_ep5
+jump 5 1 0x1100 char=jack,hannah,mess
+hold 0xFF850E 1 2
+frames 6500
+snaps 20,400,900,1500,3000,5000,6500,8999
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment f_ep6
+jump 6 2 0xF80 char=jack,hannah,mess
+hold 0xFF850E 1 2
+frames 6500
+snaps 20,400,900,1500,3000,5000,6500,8999
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment f_ep7
+jump 7 3 0x400 char=jack,hannah,mess
+hold 0xFF850E 1 2
+frames 6500
+snaps 20,400,900,1500,3000,5000,6500,8999
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
+
+segment f_ep8
+jump 8 3 0x10A0 char=jack,hannah,mess
+hold 0xFF850E 1 2
+frames 9000
+snaps 20,400,900,1500,3000,5000,6500,8999
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w
