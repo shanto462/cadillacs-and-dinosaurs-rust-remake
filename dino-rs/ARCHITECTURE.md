@@ -106,3 +106,11 @@ Do not commit or push; the main session does that.
   runs 90 deterministic ticks with scripted player 1 input and saves a screenshot (opens a window briefly).
   Put screenshots under `../re/out/shots/` (ignored by git), then look at them.
 - `--viewer` / `--view char,set,anim` shows any player animation with hit boxes.
+
+## Build phase (from 2026-10-13)
+
+The task plan is `plan/game/design/D5-final-plan.md`. Its section 5 lists the new files and their owners
+(front end: `game/flow/scene.rs`, `game/flow/text.rs`, `game/flow/attract.rs`, `dino-extract/src/frontend.rs`;
+props and effects as child modules with `#[path]` under `game/prop/` and `game/effect/`; the sound driver in a
+new crate `crates/dino-sound`). A worker may edit a file owned by the main session only when its task block
+says so.

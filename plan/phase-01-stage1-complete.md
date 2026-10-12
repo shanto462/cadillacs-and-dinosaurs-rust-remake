@@ -1,3 +1,5 @@
+> **Replaced by the final plan. Tasks 1, 2, 3, 3b and 4a (terrain, items, weapons, grabs, classes 10, 14, 15, 20, scenery) are done and stay done. The rest moved: join prompts, stage flow, tally and area walks to M2 and M3, Episode 1 props to M3 (B11, B12, B14, B21) and M5 (B40), Vice, Rock Hopper and Walther to M5 (M5-09 to M5-13), verification to M5. Do not start tasks from this file.** See `plan/game/design/D5-final-plan.md` (written 2026-10-13). The text below is history.
+
 # Phase 1: stage 1 complete
 
 **Goal:** stage 1 (internal stage 0, the flooded city) plays exactly like the original from the

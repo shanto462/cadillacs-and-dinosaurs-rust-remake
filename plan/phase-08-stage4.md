@@ -1,3 +1,5 @@
+> **Replaced by milestone M7, Episode 4 tasks M7-01 to M7-06. Do not start tasks from this file.** See `plan/game/design/D5-final-plan.md` (written 2026-10-13). The text below is history.
+
 # Phase 8: stage 4 (internal stage 3)
 
 **Goal:** stage 4 plays exactly like the original, from its first frame to its stage clear.

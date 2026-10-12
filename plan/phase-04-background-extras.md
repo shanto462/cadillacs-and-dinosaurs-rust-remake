@@ -1,3 +1,5 @@
+> **Replaced by milestone M3 (M3-08 to M3-16: stage 2 camera and car camera, screen shake, row scroll, lift, area change details, shared tile and palette drivers). Do not start tasks from this file.** See `plan/game/design/D5-final-plan.md` (written 2026-10-13). The text below is history.
+
 # Phase 4: background and camera extras
 
 **Goal:** every background effect of every stage matches the original.

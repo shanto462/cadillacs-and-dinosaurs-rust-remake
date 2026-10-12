@@ -1,3 +1,5 @@
+> **Replaced by milestone M8, Episode 6 tasks M8-01 to M8-12. Do not start tasks from this file.** See `plan/game/design/D5-final-plan.md` (written 2026-10-13). The text below is history.
+
 # Phase 10: stage 6 (internal stage 5)
 
 **Goal:** stage 6 plays exactly like the original, from its first frame to its stage clear.

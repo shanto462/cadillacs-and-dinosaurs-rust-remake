@@ -29,3 +29,5 @@ re/mame/roms/
 # MAME runtime output
 cfg/
 nvram/
+# A player's settings file (plan D5)
+dino.cfg

@@ -1,3 +1,5 @@
+> **Replaced by milestone M8, Episode 7 tasks M8-13 to M8-18, with the lift tasks M3-13 and M3-14. Do not start tasks from this file.** See `plan/game/design/D5-final-plan.md` (written 2026-10-13). The text below is history.
+
 # Phase 11: stage 7 (internal stage 6)
 
 **Goal:** stage 7 plays exactly like the original, from its first frame to its stage clear.

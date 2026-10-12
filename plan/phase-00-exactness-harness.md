@@ -1,3 +1,5 @@
+> **Status (2026-10-13): done. Extended by tasks M1-00, M2-00, M3-06, M3-07, M4-01 and M4-09 of the final plan (power-on traces, timed pokes, probe segments as scenarios, sound register traces).** See `plan/game/design/D5-final-plan.md` (written 2026-10-13). The text below is history.
+
 # Phase 0: exactness harness
 
 **Goal:** a repeatable way to prove that the port behaves exactly like the original, used by every

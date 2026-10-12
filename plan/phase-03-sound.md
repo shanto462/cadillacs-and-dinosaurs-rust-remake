@@ -1,3 +1,5 @@
+> **Replaced by milestone M4 (M4-00 to M4-19: sound spec, data, the dino-sound driver, the QSound mixer, audio output, cue wiring, exactness). Do not start tasks from this file.** See `plan/game/design/D5-final-plan.md` (written 2026-10-13). The text below is history.
+
 # Phase 3: sound
 
 **Goal:** music and sound effects that match the original: same notes, timing, instruments,

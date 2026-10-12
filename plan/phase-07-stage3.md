@@ -1,3 +1,5 @@
+> **Replaced by milestone M6, Episode 3 tasks M6-18 to M6-32, with the camera tasks M3-08 to M3-12. Do not start tasks from this file.** See `plan/game/design/D5-final-plan.md` (written 2026-10-13). The text below is history.
+
 # Phase 7: stage 3 (internal stage 2)
 
 **Goal:** stage 3 plays exactly like the original, from its first frame to its stage clear.

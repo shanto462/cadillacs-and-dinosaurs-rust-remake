@@ -1,3 +1,5 @@
+> **Replaced by milestone M8, Episode 8 tasks M8-19 to M8-36, and the ending tasks M3-23 to M3-27. Do not start tasks from this file.** See `plan/game/design/D5-final-plan.md` (written 2026-10-13). The text below is history.
+
 # Phase 12: stage 8 (internal stage 7)
 
 **Goal:** stage 8 plays exactly like the original, from its first frame to its stage clear.

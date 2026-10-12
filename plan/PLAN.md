@@ -1,59 +1,63 @@
 # Plan: a native Rust port that plays exactly like the original
 
-The target is not "similar". For the same inputs, the port must produce **the same game as the
-arcade original**, frame by frame. Every phase below ends with proof of that, not only screenshots.
+The target is not "similar". For the same inputs, the port must produce **the same game as the arcade original**, frame by frame,
+from power on (the attract loop) to the ending. The user judges the result by playing it.
 
-## What "the same" means (acceptance rule for every phase)
+**The build plan is `plan/game/design/D5-final-plan.md`** (written 2026-10-13 after the design phase). It has the milestones, 261 task
+blocks (scope, original routines, data, files, design sections, MAME check, size, worker, dependencies), the rules of execution, the
+coverage of every row of `plan/game/mechanics-seen.md`, the risk list and the estimate. This file is the short map. The old one file per
+phase plan is history (each `plan/phase-*.md` carries a banner that names the milestone that replaced it).
 
-Run the original in MAME and the port with the same input stream, from the same starting point,
-and compare once per frame:
+## What "the same" means (acceptance rule for every task)
 
-1. **Object state:** for every live object (players, pools A/B/C/D/E), the fields the port models,
-   by original offset: position, velocity, state bytes, animation frame, timers, HP, links.
-2. **Globals:** RNG (`G.$14`), frame counter, rank and level, camera, stage/area, lock and GO flags,
-   scores, lives, credits, timers.
-3. **Video output:** the sprite list (all OBJ entries in order), scroll positions, the three
-   tilemaps, palette memory.
-4. **Sound requests:** the stream of sound codes (and their parameters) sent to the sound CPU.
+Run the original in MAME and the port with the same input stream, from the same starting point, and compare once per frame:
 
-A phase is done when its scripted runs show **no difference for the whole run**, or every
-remaining difference is listed in the phase file with its cause and is approved as a known
-limitation. Phase 0 builds the tools for this.
+1. **Object state:** every live object (players, pools A to E), the fields the port models, by original offset.
+2. **Globals:** RNG (`G.$14`), frame counter, rank and level, camera, stage and area, lock and GO flags, scores, lives, credits, timers.
+3. **Video output:** sprite list, scroll positions, the three tilemaps, palette memory; for front end screens a picture compare.
+4. **Sound requests:** the stream of sound codes with their parameters (and, from M4, the QSound register writes).
 
-## Rules (all phases)
+A task is done when its comparison shows no difference, or each remaining difference is listed with its cause in the milestone allow file.
+The tools: `re/harness/` (record, port, diff, `regress.sh`), the probe tool `re/harness/probe/`, and the tools the plan adds (power-on traces,
+timed pokes, probe segments as scenarios, picture compare, sound register compare).
 
-- Data comes from the ROM through `dino-extract`; code is ported by hand. No emulation.
-- Keep the original's integer math, order of operations, RNG call order and quirks (bugs included).
-- Every ported routine names its original address. Specs live in `re/specs/<area>/`.
-- **One agent at a time.** It finishes, the build is green, the phase checks pass, the main session
-  reviews and commits and pushes, then the next task starts. Agents never spawn their own agents.
-- Never commit ROM data or anything derived from it.
+## Rules (full text in D5 section 3)
 
-## Phases
+- Data comes from the ROM through `dino-extract` (exact table copies); code is ported by hand; no emulation; no ROM data in git.
+- Keep the original's integer math, order of operations, RNG call order and quirks. Every ported routine names its original address.
+- **One code worker at a time** on `dino-rs`; at most two workers at once, the second only for documents, harness scripts and MAME recordings.
+  Workers never start workers and never commit. The main session reviews, commits and pushes each green task.
+- Every task ends with: build and tests green, `re/harness/regress.sh` not worse, the named MAME comparison, a look at the real game.
+- MAME runs are batched and headless (one process for many probes, SDL dummy drivers, never a GUI).
+- Placeholders keep the game finishable until a class is ported (M3); every real class task removes its registry entry.
 
-| # | Phase | Depends on | Status |
-| --- | --- | --- | --- |
-| 0 | [Exactness harness: MAME reference traces, port traces, diff tool](phase-00-exactness-harness.md) | MAME CLI | Done |
-| 1 | [Stage 1 complete: terrain collision, items, weapons, all stage 1 enemies, Vice T., stage clear](phase-01-stage1-complete.md) | 0 | Next |
-| 2 | [Front end and game flow: attract, title, coins, select, join, continue, game over, high scores](phase-02-front-end-and-flow.md) | 0 | Pending |
-| 3 | [Sound: Z80 driver port, QSound mixer, audio output](phase-03-sound.md) | 0 | Pending (reverse engineering done) |
-| 4 | [Background and camera extras: shake, desert road, elevator, tile and palette animation](phase-04-background-extras.md) | 0 | Pending |
-| 5 | [Effects: all pool C classes and pool D](phase-05-effects.md) | 0 | Pending |
-| 6 | [Stage 2 (internal 1)](phase-06-stage2.md) | 1, 4, 5 | Pending |
-| 7 | [Stage 3 (internal 2): desert road and driving](phase-07-stage3.md) | 4 | Pending |
-| 8 | [Stage 4 (internal 3)](phase-08-stage4.md) | 6 | Pending |
-| 9 | [Stage 5 (internal 4)](phase-09-stage5.md) | 6 | Pending |
-| 10 | [Stage 6 (internal 5)](phase-10-stage6.md) | 6 | Pending |
-| 11 | [Stage 7 (internal 6): includes the elevator shaft](phase-11-stage7.md) | 4, 6 | Pending |
-| 12 | [Stage 8 (internal 7): final boss and ending](phase-12-stage8-and-ending.md) | 2, 6 | Pending |
-| 13 | [Whole-game verification and finish](phase-13-final-verification.md) | all | Pending |
+## Milestones
 
-Phases 1-5 are mostly independent once phase 0 exists, but they still run **one at a time** in the
-order above. Stage phases 6-12 each port the object classes their stage's spawn scripts use
-(decoded in `re/specs/enemy/stage_scripts.txt`); classes shared with earlier stages are already done.
+| M | Name | Hours | Status | What the user sees | Replaces |
+| --- | --- | --- | --- | --- | --- |
+| M0 | Every episode starts | 1.5 | Done (`f8e3c93`) | Episodes 2 to 8 start | new |
+| M1 | Attract loop, exact from power on | 24 | Next | boot, title, profiles, ranking, slides, movie, demos | phase 2 (first half) |
+| M2 | Coin, select, Episode 1 opening, clock, join, continue, game over, tally | 52 | Pending | the real start of a game and the link scenes | phase 2 (second half), phase 1 tasks 6 and 8 |
+| M3 | The whole game skeleton | 51 | Pending | power on to the ending through all 8 episodes, placeholder fights | phases 4, 12 (ending), 13 (part) |
+| M4 | Sound | 35 | Pending | music and effects | phase 3 |
+| M5 | Episode 1 for real | 37 | Pending | Episode 1 to Vice T. and the tally | phase 1 tasks 4 to 9, phase 5 (part) |
+| M6 | Episodes 2 and 3 | 59 | Pending | poachers, dinosaurs, the Butcher, the car, Hogg | phases 6, 7 |
+| M7 | Episodes 4 and 5 | 50 | Pending | Slice, Bludge, Zeke, Morgan and Morgue, the village | phases 8, 9 |
+| M8 | Episodes 6, 7 and 8 | 66 | Pending | the foot, Tyrog, Slisaurs, tanks, Fessenden, the real ending | phases 10, 11, 12 |
+| M9 | Small things pass | 25 | Pending | tag team, audit of every mechanics row, fixes | new |
+| M10 | Exactness and finish | 58 | Pending | whole episode runs against MAME, settings, sound, pacing, README | phase 13 |
+| | Total | 456 listed, about 600 expected | | | |
+
+Order: M1, M2, M3, M4, M5, M6, M7, M8, M9, M10. Lane B tasks (documents, harness tools, MAME recordings) run beside the code tasks as soon as their needs are met.
+The first ten tasks to start are listed in D5 section 10 (M1-00 first).
+
+## Phases of the old plan that are already done
+
+Phase 0 (harness), and in phase 1: terrain collision, items, weapons and pickup, enemy grab, pool A classes 10, 14 (with 15, 34, 41, 60) and 20.
+Their code and scenarios stay; `re/harness/regress.sh` guards them.
 
 ## Where things are
 
-- Specs and handoff notes: `re/specs/<area>/SPEC.md`, `HANDOFF.md`.
-- Code rules and file ownership: `dino-rs/ARCHITECTURE.md`. Overall status: `STATUS.md`.
-- Each phase file lists its tasks; a task is one agent run and ends with a commit.
+- Build plan: `plan/game/design/D5-final-plan.md`. Design documents: `plan/game/design/`. The game as a player sees it: `plan/game/README.md`.
+- Specs and handoff notes: `re/specs/<area>/SPEC.md`, `HANDOFF.md`. Code rules and file ownership: `dino-rs/ARCHITECTURE.md`. Overall status: `STATUS.md`.
+- Errata found while building: `plan/game/design/D5-errata.md` (append only).

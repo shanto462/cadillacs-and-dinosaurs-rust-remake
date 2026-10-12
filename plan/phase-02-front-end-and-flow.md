@@ -1,3 +1,5 @@
+> **Replaced by milestones M1 (boot, title, profiles, ranking, slides, movie, demo, attract state machine) and M2 (coin, select, join, continue, game over, name entry, tally, intro cards, story panels). Do not start tasks from this file.** See `plan/game/design/D5-final-plan.md` (written 2026-10-13). The text below is history.
+
 # Phase 2: front end and game flow
 
 **Goal:** from power-on, the port shows and plays the same screens as the original: boot, attract

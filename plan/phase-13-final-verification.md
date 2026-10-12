@@ -1,3 +1,5 @@
+> **Replaced by milestone M10 (M10-01 to M10-26). Do not start tasks from this file.** See `plan/game/design/D5-final-plan.md` (written 2026-10-13). The text below is history.
+
 # Phase 13: whole-game verification and finish
 
 **Goal:** the complete game, from power-on to the ending, matches the original, and the project is

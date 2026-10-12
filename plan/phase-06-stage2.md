@@ -1,3 +1,5 @@
+> **Replaced by milestone M6, Episode 2 tasks M6-01 to M6-17. Do not start tasks from this file.** See `plan/game/design/D5-final-plan.md` (written 2026-10-13). The text below is history.
+
 # Phase 6: stage 2 (internal stage 1)
 
 **Goal:** stage 2 plays exactly like the original, from its first frame to its stage clear.
