@@ -160,10 +160,10 @@ impl Game {
         }
     }
 
-    /// G.$4F3, copied from G.$4FB by the enemy census (0x32440); 3 or more disables player vs
-    /// player hits. TODO(enemy port): expose it; 3 (off) until then.
+    /// G.$4F3, copied from G.$4FB by the enemy census (0x32440): the enemies alive in the last
+    /// frame. 3 or more disables player vs player hits (D2a section 10, D2c).
     fn player_g4f3(&self) -> u8 {
-        3
+        self.spawn.g.alive
     }
 
     /// 0x10664 player vs player (attacker frame class 4): 1 HP, never below 1.
