@@ -309,3 +309,22 @@ STUB (empty named function), MISSING (no code), UNKNOWN (original not understood
 | T28 | Probe limit: `jump N A X` keeps wave controllers before X; stale controller can send `go` | M hallwin, e1a1n | n/a | |
 | T29 | Original hang (game frame counter stops) with kill-all held in Episode 7 | M e7a1, l_e7a2_k19 | n/a | investigate |
 | T30 | Ep 8 area 3 start row of table 0x4E56 is missing; a sub-area never uses it | R 0x4E56, 0x4FCE | n/a | |
+
+### From `design/D3b-dinosaurs.md` (D3b dinosaurs and flyers), 14 rows
+
+| ID | Mechanic | Source | Port | Notes |
+| --- | --- | --- | --- | --- |
+| DS01 | Monsters (A22, A24, A29, A38, A82) live in the hostile list 0x6B64; they hurt heroes (scaled by type and level) and enemies (raw damage, nobody gets score); no monster hurts a monster | R 0x11A9E, 0x11CEC, 0x11E56; M m-vs-thug, s3-vs-enemy | MISSING | D3b 1.2 |
+| DS02 | Dinosaurs give no kill score, no drop, are not counted by waves (`+7D = 0xFF`), are not touched by kill-all; hits score 100 / 200 / 400 | R, M z-kill, m-kill, h3-kill, s8-kill | MISSING | corrects D04 ("walks away, gives no score") only in detail |
+| DS03 | A sleeping Shivat has `+0 = 2` and cannot be hit by anyone; a dinosaur hunter (A79) wakes it with its third swing (helper 0x533FA, no HP loss) | R 0x533FA, 0x5F9F8; M s4-wake, s5-wake | MISSING | corrects D02 (poachers' hits do not wake it; hunters do) and D13 (bullets: not seen) |
+| DS04 | Hostile model names: MICHI, KIMAMA, MATOWARI, OKORI, KYOURAN, MANZOKU, COLOR, DIFFENCE; COLOR flash 16 toggles (about 88 frames) then angry; any hit on a neutral dinosaur starts it | R 0x490CE, 0x4F1C4; M h3-hit, s4-wake | MISSING | D03, D04, D12 |
+| DS05 | Neutral Hopper: after 600 frames in MATOWARI a 1 in 16 roll every 10 frames turns it angry, after 1200 it leaves; angry: 900 frames then 2 in 16 per 10 frames to leave. Shivat MATOWARI 900 frames, OKORI 1800 frames, same rolls | R, M h3-neutral | MISSING | |
+| DS06 | Zeke: HP 20, damage x2 (type factor 64); one punch or jump kick kills; patrol heights 74 to 203 (overshoot because the altitude test runs once per flap cycle); standing punches reach him only when y <= about 72, jump kicks y <= about 100 | R 0x2BECE; M z-hit-*, z-solo-* | MISSING | answers D09 "hit only by jumping" |
+| DS07 | Zeke attacks: swoop 0x5B, triple peck 0x5C, dive grab 0x3B (hold 31 frames, 18 damage); attack roll every 180 frames with 9, 16, 24, 30 in 32 by level band; type table by altitude index | R 0x606D4, M z-force-*, z-solo-* | MISSING | numbers in D3b 2 |
+| DS08 | Zeke's grab only works on a grounded hero in normal control; a jump at the right moment dodges it; the carry goes toward world X 0xC0 (original bug: reads RAM 0) | R 0x60C8C, 0x6108A; M z-force-c-jump, z-grab-far | MISSING | |
+| DS09 | Zeke leaves straight up when `camX >= +5C` (checked only in patrol), dies by flying away, never explodes; two Zekes pick different heroes (`+$116`) | R, M z-leave, z-kill | MISSING | |
+| DS10 | Mack: charger with strides (32 frames moving, 22 still, 122 px), horns hurt only in the middle of a stride, side chosen by the record X against camX + 0xC0, `+5B` = number of passes, 62 frame wind up, calm walk off | R 0x5341C; M m-solo-l0 | MISSING | corrects D07 |
+| DS11 | Rock Hopper is spawned only by Vice's init (variant 0, partner intro synchronised with Vice's `$6`); the scripts place it with variant 0x200 in Episode 5; angry Hopper blocks 12.5 percent of frontal hits; berserk after 5 hits | R 0x425C2, 0x4DCC6, 0x4F3E8; M h3-vice | MISSING | corrects D08 |
+| DS12 | Brontosaurus is one huge foot (A22) with a leg helper (A23): hover 180 frames over the nearest hero in its 80 px home column, 60 frame wait, wind up, slam 30 damage with knock down and screen shake 4, rest 30 frames, repeat (about 380 frames); cannot be hit | R 0x47C42; M bronto-0 | MISSING | corrects D11 |
+| DS13 | Unused creature art: A12 = opening movie raptors, A28 / A37 / A39 / A44 / A47 = test mode viewer sprites, A51 = carcass spawned by class 5, A46 / A48 = flock bird and trail | R spawn search, D4d | n/a | answers N2 of the asset catalog |
+| DS14 | Hopper and Shivat burn when hit by a burn reaction (record reaction 0xA or 0xC): flames and palette 0x84 | R 0x4EE1A, 0x48D8A | MISSING | untested, open item 2 |
