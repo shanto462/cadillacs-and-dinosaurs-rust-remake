@@ -8,7 +8,27 @@
 
 use super::Game;
 
+/// 0x610..0x69E: does the sound flush send this queued code to the sound chip? A code whose high
+/// byte is 0xFF (0xFF00 stop, 0xFF05, 0xFF07 fade, 0xFF0B reset) always goes. Any other code goes
+/// only in a game (G.$4CC is not 0, which includes the press-start-to-select moment), or when it
+/// is exactly 0x0030 (the coin sound), or when the demo sound setting is on (G.$777C bit 5, factory
+/// off). So the title, profiles, demo and movie are silent and only the coin sound is heard.
+#[allow(dead_code)] // used by the audio side when it exists
+pub fn snd_passes(code: u16, in_game: bool, demo_sound: bool) -> bool {
+    code & 0xFF00 == 0xFF00 || in_game || code == 0x0030 || demo_sound
+}
+
 impl Game {
+    /// The requests of this frame that reach the sound chip (the attract filter of 0x610). The
+    /// game code keeps calling `sound()` as the original queues every code; the audio side reads
+    /// this list instead of `w.sounds`. (The flush also sends one ring entry per frame when the
+    /// Z80 is ready: that timing belongs to the sound port.)
+    #[allow(dead_code)] // read by the audio side when it exists
+    pub fn snd_heard(&self) -> Vec<u16> {
+        let (in_game, demo) = (self.flow.in_game != 0, self.flow.dip.demo_sound());
+        self.w.sounds.iter().copied().filter(|&c| snd_passes(c, in_game, demo)).collect()
+    }
+
     /// `bchg.b #bit,$43A(a5)`: flips the bit and returns what it was (`bne` taken when true).
     fn snd_toggle(&mut self, bit: u8) -> bool {
         let old = self.w.snd_toggle >> bit & 1 != 0;
@@ -147,6 +167,36 @@ mod tests {
         g.snd_player(0, 0x9BCE);
         assert_eq!(g.w.sounds, vec![0xA8, 0x38, 0xF7, 0x6C, 0xF7]);
         assert_eq!(g.w.snd_toggle, 0b0010_0000);
+    }
+
+    /// The attract filter (0x610): control codes and the coin sound always pass, everything else
+    /// only in a game or with the demo sound setting on.
+    #[test]
+    fn attract_filter_passes_control_codes_and_the_coin_sound() {
+        for code in [0xFF00u16, 0xFF05, 0xFF07, 0xFF0B, 0xFFFF] {
+            assert!(snd_passes(code, false, false), "{code:#x}");
+        }
+        assert!(snd_passes(0x0030, false, false)); // the coin
+        for code in [0x0088u16, 0x0080, 0x0031, 0x0013, 0x0130, 0x0024] {
+            assert!(!snd_passes(code, false, false), "{code:#x}"); // title tune, ranking, start, ...
+            assert!(snd_passes(code, true, false), "{code:#x}"); // in a game
+            assert!(snd_passes(code, false, true), "{code:#x}"); // demo sound on
+        }
+    }
+
+    /// `snd_heard` applies it to the frame's requests, with the game state and the setting.
+    #[test]
+    fn heard_sounds_follow_the_game_state_and_the_setting() {
+        let mut g = game_with_tables(Vec::new());
+        for c in [0xFF00, 0x88, 0x30, 0x31] {
+            g.sound(c);
+        }
+        assert_eq!(g.snd_heard(), vec![0xFF00, 0x30]); // attract, factory settings
+        g.flow.in_game = 1;
+        assert_eq!(g.snd_heard(), vec![0xFF00, 0x88, 0x30, 0x31]);
+        g.flow.in_game = 0;
+        g.flow_apply_config(crate::game::flow::Config { demo_sound: true, ..Default::default() });
+        assert_eq!(g.snd_heard(), vec![0xFF00, 0x88, 0x30, 0x31]);
     }
 
     /// The hit sound table has 3-byte entries (bit number, code if the bit is clear, code if set).

@@ -251,6 +251,14 @@ impl TraceWriter {
     }
 }
 
+/// Where a headless run starts when it neither loads a snapshot nor steps from a trace: from
+/// power on (`boot`, the boot screens and the attract mode), or directly in a stage.
+pub struct Start<'a> {
+    pub boot: bool,
+    pub stage: u8,
+    pub chars: &'a [u8],
+}
+
 /// The headless run: load or start, then `frames` ticks with scripted input, tracing each.
 ///
 /// `follow_rng`: a MAME trace whose random number state replaces the port's before every frame
@@ -267,12 +275,13 @@ pub fn run(
     load: Option<&str>,
     step: Option<&str>,
     follow_rng: Option<&str>,
-    stage: u8,
-    chars: &[u8],
+    start: Start,
+    config: crate::game::flow::Config,
     script: Option<&Script>,
     frames: u32,
 ) -> Result<(), String> {
     let mut game = Game::new(assets);
+    game.flow_apply_config(config);
     let mut warnings = Vec::new();
     let mut reader = match step {
         Some(p) => Some(TraceReader::open(p)?),
@@ -292,7 +301,8 @@ pub fn run(
             warnings = load_regions(&mut game, rd)?;
         }
         (None, Some(p)) => warnings = load_state(&mut game, p)?,
-        (None, None) => game.start_stage(stage, chars),
+        (None, None) if start.boot => game.flow_boot(),
+        (None, None) => game.start_stage(start.stage, start.chars),
     }
     for w in &warnings {
         eprintln!("load-state: {w}");

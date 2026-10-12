@@ -1,9 +1,14 @@
 //! dino-game: native Rust port of the game logic, rendered on the GPU.
 //!
 //! Usage: `cargo run -p dino-game -- [--rom path/to/dino.zip] [--stage N] [--chars 0,2]
+//!         [--config FILE] [--print-config]
 //!         [--input SCRIPT | --input-file PATH] [--viewer] [--view char,set,anim]
 //!         [--screenshot out.png --frames N] [--load-state FILE] [--trace FILE --frames N]
 //!         [--step-from MAME.trc] [--follow-rng MAME.trc]`
+//! Without `--stage` and `--chars` the game starts from power on (the boot screens and the attract
+//! mode); `--stage N` / `--chars` start directly in a stage (development).
+//! `--config FILE` reads the settings (difficulty, coin mode, free play ...; see `game/flow/config.rs`),
+//! `--print-config` prints the factory settings file.
 //! See `input.rs` for keys and the input script format, `harness.rs` and `re/harness/README.md`
 //! for `--load-state` (start from a MAME snapshot) and `--trace` (headless run for the diff).
 
@@ -37,8 +42,11 @@ struct Args {
     frames: u32,
     view: Option<(usize, usize, u16)>,
     viewer: bool,
+    /// `--stage` and `--chars` start directly in a stage; without both the game boots (power on).
+    direct: bool,
     stage: u8,
     chars: Vec<u8>,
+    config: Option<String>,
     script: Option<input::Script>,
     trace: Option<String>,
     load_state: Option<String>,
@@ -58,8 +66,10 @@ fn args() -> Args {
         frames: value("--frames").and_then(|v| v.parse().ok()).unwrap_or(2),
         viewer: view.is_some() || a.iter().any(|x| x == "--viewer"),
         view,
+        direct: value("--stage").is_some() || value("--chars").is_some(),
         stage: value("--stage").and_then(|v| v.parse().ok()).unwrap_or(0),
         chars: value("--chars").map(|v| v.split(',').filter_map(|c| c.parse().ok()).collect()).unwrap_or(vec![0]),
+        config: value("--config"),
         script: match value("--input-file") {
             Some(p) => Some(input::Script::load(&p).unwrap_or_else(|e| {
                 eprintln!("error: {e}");
@@ -91,31 +101,46 @@ fn load_assets(load_state: Option<&str>, step_from: Option<&str>) -> &'static di
     }
 }
 
+/// The settings file (`--config`, `$DINO_CONFIG`, `./dino-config.json`; none = factory values).
+fn load_config(path: Option<&str>) -> game::flow::Config {
+    game::flow::Config::locate(path).unwrap_or_else(|e| {
+        eprintln!("error: {e}");
+        std::process::exit(1);
+    })
+}
+
 fn main() {
+    if std::env::args().any(|a| a == "--print-config") {
+        print!("{}", game::flow::Config::default().to_json());
+        return;
+    }
     let args = args();
+    let config = load_config(args.config.as_deref());
     if let Some(trace) = &args.trace {
         // Headless harness run: no window.
         let frames = std::env::args().any(|a| a == "--frames").then_some(args.frames).unwrap_or(600);
         let assets = load_assets(args.load_state.as_deref(), args.step_from.as_deref());
         let (load, step) = (args.load_state.as_deref(), args.step_from.as_deref());
         let follow = args.follow_rng.as_deref();
-        let r = harness::run(assets, trace, load, step, follow, args.stage, &args.chars, args.script.as_ref(), frames);
+        let start = harness::Start { boot: !args.direct, stage: args.stage, chars: &args.chars };
+        let r = harness::run(assets, trace, load, step, follow, start, config, args.script.as_ref(), frames);
         if let Err(e) = r {
             eprintln!("error: {e}");
             std::process::exit(1);
         }
         return;
     }
-    macroquad::Window::from_config(window_conf(), windowed(args));
+    macroquad::Window::from_config(window_conf(), windowed(args, config));
 }
 
-async fn windowed(args: Args) {
+async fn windowed(args: Args, config: game::flow::Config) {
     let assets = load_assets(args.load_state.as_deref(), None);
     let mut gpu = Gpu::new(assets);
 
     let mut viewer = args.viewer.then(|| viewer::Viewer::new(assets, args.view));
     let mut inputs = input::Inputs::new();
     let mut game = game::Game::new(assets);
+    game.flow_apply_config(config);
     match &args.load_state {
         Some(p) => match harness::load_state(&mut game, p) {
             Ok(warnings) => warnings.iter().for_each(|w| eprintln!("load-state: {w}")),
@@ -124,7 +149,8 @@ async fn windowed(args: Args) {
                 std::process::exit(1);
             }
         },
-        None => game.start_stage(args.stage, &args.chars),
+        None if args.direct => game.start_stage(args.stage, &args.chars),
+        None => game.flow_boot(), // power on: the boot screens, then the attract mode
     }
     let mut tick_no = 0u32;
     if viewer.is_some() {

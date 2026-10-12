@@ -8,30 +8,41 @@
 //! the stage intro 0xB9BE or stage clear 0xB97E task, slot 0x40 the fade task (`palette.rs`).
 //! `flow_frame` runs them in that order; each task keeps its own "sleep" counter.
 //!
-//! Sub-modules: `front` (system task, title, press start, character select) and `join`
-//! (join / continue task and the all-players-out continue mode).
+//! Sub-modules: `front` (system task, title, press start, character select), `join`
+//! (join / continue task and the all-players-out continue mode), and the services of the front
+//! end scenes: `scene` (the task runner with sleep counters), `text` (string printers and the
+//! typewriter), `picture` (page loaders, block printers, scene palettes) and `config` (the
+//! settings file). `HANDOFF.md` in `re/specs/flow/` shows how a scene script uses them.
 
+#[path = "flow/config.rs"]
+pub mod config;
 #[path = "flow/front.rs"]
 pub mod front;
 #[path = "flow/join.rs"]
 pub mod join;
+#[cfg(test)]
+#[path = "flow/mame_check.rs"]
+mod mame_check;
+#[path = "flow/picture.rs"]
+pub mod picture;
+#[path = "flow/scene.rs"]
+pub mod scene;
+#[path = "flow/text.rs"]
+pub mod text;
+
+pub use config::{Config, Settings};
 
 use super::Game;
 use super::Handle;
 
-/// Cooked settings G.$777A / $777B / $777C. The original builds them from the EEPROM settings;
-/// these are the factory defaults (0xACBF4, decoded by 0xAC7BC): 1 coin 1 credit, 3-player
-/// layout, difficulty 3, initial rank speed 1, extra life at 500000, 1 extra life, continue on.
-#[derive(Clone, Copy, Debug)]
-pub struct Settings {
-    pub dip_a: u8,
-    pub dip_b: u8,
-    pub dip_c: u8,
-}
+/// The region word G.$32 (0 Japan, 1 USA, 2 ETC). The boot task writes 2 at 0xA736 whatever the
+/// ROM set is, so the default is 2 (the World set is the only target).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Region(pub u16);
 
-impl Default for Settings {
+impl Default for Region {
     fn default() -> Self {
-        Settings { dip_a: 0x80, dip_b: 0x4B, dip_c: 0x41 }
+        Region(2)
     }
 }
 
@@ -61,7 +72,13 @@ pub struct Clear {
 
 #[derive(Default)]
 pub struct Flow {
+    /// The cooked settings G.$777A..C and the named options they come from (`config.rs`).
     pub dip: Settings,
+    pub config: Config,
+    /// G.$32 region word.
+    pub region: Region,
+    /// The typewriter objects (pool B class 0x68 in the original), see `text.rs`.
+    pub typers: Vec<text::Typer>,
     /// G.$4CC in a game; G.$4CD players that pressed start (bits); G.$4E4 players that chose a
     /// character (bits).
     pub in_game: u8,
@@ -120,12 +137,24 @@ impl Flow {
 impl Game {
     // ---------------------------------------------------------------- entry points
 
+    /// Takes the settings file (`config.rs`): the named options and the cooked bytes G.$777A..C
+    /// that the rest of the game reads (the game start 0xA804, the rank code, the score code and
+    /// the sound filter). Call it before `flow_boot` or `start_stage`; without it the factory
+    /// values are in place.
+    pub fn flow_apply_config(&mut self, config: Config) {
+        self.flow.dip = config.cook();
+        self.flow.config = config;
+    }
+
     /// Power on: what the boot task 0xA69A does before the attract loop (high score table),
-    /// then the attract mode. Use this to run the whole game; `start_stage` starts in a stage.
+    /// then the boot screens (`front.rs`, T1.2 continues from there into the attract loop).
+    /// Use this to run the whole game; `start_stage` starts in a stage.
     pub fn flow_boot(&mut self) {
         self.hud_hiscore_init();
         self.flow.front = front::Front::default();
+        self.flow_clear_screen(); // 0xA730
         self.flow_attract_start();
+        self.flow_boot_screens_start();
     }
 
     /// Direct start in a stage (testing; `main` passes --stage and --chars): the game start
@@ -161,6 +190,11 @@ impl Game {
         }
         self.flow_intro_task(); // slot 0x30
         self.flow_clear_task(); // slot 0x30
+        // The vertical blank of the next frame copies G.$16..18 to G.$1B..1D and G.$1A to G.$1F
+        // (0x738) before it reads the new inputs, so during a task the "previous" bytes are the
+        // inputs of the frame before.
+        self.flow.front.prev_input = self.w.input;
+        self.flow.front.prev_system = self.w.system;
     }
 
     // ---------------------------------------------------------------- game task 0xA870

@@ -12,6 +12,7 @@ use std::collections::HashMap;
 
 pub mod effect;
 pub mod enemy;
+pub mod frontend;
 pub mod player;
 pub mod sprites;
 pub mod stage;
@@ -59,6 +60,8 @@ pub struct AssetPack {
     pub text: text::TextData,
     /// Terrain collision tables (`terrain.rs`).
     pub terrain: terrain::TerrainData,
+    /// Front end scenes: picture pages, scene palettes, ROM tables (`frontend.rs`).
+    pub frontend: frontend::FrontendData,
 }
 
 impl AssetPack {

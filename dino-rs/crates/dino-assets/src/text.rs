@@ -43,6 +43,13 @@ impl TextData {
         ((self.u16(a, 0) as u32) << 16) | self.u16(a, 2) as u32
     }
 
+    /// The rest of the blob that holds `addr`, from `addr` on (for the text printers, which read
+    /// a string through the end marker they know: '@', 0x4040 ...).
+    pub fn slice_from(&self, addr: u32) -> &[u8] {
+        let (d, i) = self.find(addr);
+        &d[i..]
+    }
+
     /// Bytes from `addr` up to and including the '@' (0x40) terminator.
     pub fn string_at(&self, addr: u32) -> Vec<u8> {
         let mut v = Vec::new();

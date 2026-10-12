@@ -5,6 +5,7 @@
 
 pub mod effect;
 pub mod enemy;
+pub mod frontend;
 pub mod gfx;
 pub mod player;
 pub mod rom;
@@ -52,6 +53,7 @@ pub fn extract_with(rom_path: &Path, extra: &ExtraFrames) -> Result<AssetPack, S
         effects: effect::extract(&rom, extra),
         text: text::extract(&rom),
         terrain: terrain::extract(&rom),
+        frontend: frontend::extract(&rom),
     })
 }
 
