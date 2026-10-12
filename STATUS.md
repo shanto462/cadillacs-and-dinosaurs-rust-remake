@@ -26,6 +26,16 @@ loading assets from the user's own `dino.zip`. Rules and file ownership: `dino-r
 The full plan with one file per phase is in [`plan/PLAN.md`](plan/PLAN.md). The rule for every
 phase: the port must match the original frame by frame (checked with the phase 0 harness).
 
+## Progress (phase 1, stage 1 complete)
+
+| Task | State |
+| --- | --- |
+| 1 Terrain collision | Done (2026-10-12), 0 differences against the 68000 code |
+| 2 Items (pool E) | Done (2026-10-12), no item differences in step runs |
+| 3 Weapons and pickup (player side) | Done (2026-10-12), no player or item differences in 15 step runs |
+| 3b Enemy grab (enemy_grabbed 0x2B35A) | In progress |
+| 4-9 Enemies, Vice T., join prompts, leftovers, stage flow, exactness pass | Pending |
+
 ## Next steps (in order)
 
 1. Read each `HANDOFF.md` and finish the player and enemy ports until stage 1 is playable

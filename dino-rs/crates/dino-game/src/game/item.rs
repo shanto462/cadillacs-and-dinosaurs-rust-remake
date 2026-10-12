@@ -29,7 +29,7 @@
 //! * **kind** (+$A0): 0x00tt food, 0x0100 ammo box, 0x02kk weapon or container, 0x03tt treasure.
 //!   The player compares this word with its own held kind (+$B6).
 //!
-//! # API for the player port (task 3: find_pickup 0x5AA2, pickup 0x19832, held weapons)
+//! # API for the player port (used by `player_weapon.rs`, phase 1 task 3: find_pickup 0x5AA2, pickup 0x19832, held weapons)
 //! * **The item list `$69EE` / `$69F0`**: [`Game::item_list`] = `combat.get(0x69EE)`. Items that
 //!   are alive (+$00 == 1) register themselves in their update (0x4AC2) through
 //!   [`Game::item_register_pickup`]. The list is cleared in `objects_update` *after* the players
@@ -54,6 +54,9 @@
 //! * **Eating food and ammo** are done by the item itself on the first frame of the pick-up
 //!   (`small.rs`): heal (`Body::hp` of the player, then `hud_life_bar`), score, HUD message.
 //! * **Drops** from enemies: [`Game::item_drop_from_enemy`] (0x24B36), from containers 0x24B48.
+//! * **Also for the player**: [`Game::item_enemy_near`] (0x6248: an enemy in the reach of a club, for
+//!   the weapon and for the player's swing pose), `item_ammo_refill` (0x284E2, the pending refill of
+//!   the pick-up), [`Game::item_give_bazooka`] (0x65A4, a player that joins mid-stage).
 
 use super::body::Body;
 use super::enemy::{Enemy, Ram};
@@ -246,13 +249,11 @@ impl Game {
         self.combat.push(0x671A, h);
     }
 
-    #[allow(dead_code)] // called by the player port (task 3)
     /// The pickup list `$69EE`, newest registration first (`find_pickup` walks it from the top).
     pub fn item_list(&self) -> &[Handle] {
         self.combat.get(0x69EE)
     }
 
-    #[allow(dead_code)] // called by the player port (task 3)
     /// +$A0 of an item: its kind word (0x00tt food, 0x0100 ammo, 0x02kk weapon / container, 0x03tt
     /// treasure). 0 for anything that is not a pool E object.
     pub fn item_kind(&self, h: Handle) -> u16 {
@@ -262,7 +263,6 @@ impl Game {
         }
     }
 
-    #[allow(dead_code)] // called by the player port (task 3)
     /// 0x19858..0x1986C (player pickup 0x19832): the player `player` starts to lift `item`.
     /// `who` / `id` (+$02 word) are copied from the player, state sub 4, act 0, no palette
     /// override, `+$70` = player.
@@ -281,13 +281,67 @@ impl Game {
         b.partner = player;
     }
 
-    #[allow(dead_code)] // called by the player port (task 3)
     /// 0x1987E..0x1988A: the old held item of a player that picks up a new weapon is dropped
     /// (`+$05` = 0xC: it falls and lands).
     pub fn item_drop_held(&mut self, item: Handle) {
         if let Some(Slot::Item(i)) = slot_of(item) {
             self.items.slots[i].b.sub = 0xC;
         }
+    }
+
+    /// 0x6248: is an enemy (the list of the previous frame `$69BA`) in front of the object `b` (a
+    /// weapon or a player, +$03 = character, +$24 = facing) within the reach of the character's box
+    /// (table 0x62AE: 5 words per character: dx, X offset, X size, Z offset, Z size)?
+    pub fn item_enemy_near(&self, b: &Body) -> bool {
+        let t = &self.assets.enemy.t;
+        let row = b.id as u32 * 10;
+        let (dx, xoff, xw, zoff, zw) = (t.i16(0x62AE, row), t.i16(0x62AE, row + 2), t.u16(0x62AE, row + 4), t.i16(0x62AE, row + 6), t.u16(0x62AE, row + 8));
+        for &a1 in self.combat.get(0x69BA) {
+            let e = self.body(a1);
+            let d = if b.facing != 0 { dx } else { dx.wrapping_neg() };
+            let x = d.wrapping_add(b.xi()).wrapping_sub(e.xi()).wrapping_add(xoff) as u16;
+            if x >= xw {
+                continue;
+            }
+            let z = b.zi().wrapping_sub(e.zi()).wrapping_add(zoff) as u16;
+            if z >= zw {
+                continue;
+            }
+            return true;
+        }
+        false
+    }
+
+    /// 0x65A4: a player that joins in the middle of a stage (respawn with +$07 == 0) starts with a
+    /// bazooka (weapon type 6, variant 0xC, 4 rockets) in the hand: a pool E object of class 0 with
+    /// the player's who / id, at the player, initialised by the weapon handler at once, held (sub 8)
+    /// and gone after 600 frames if dropped (+$A4 = 0x258). The player's +$B4 / +$B6 take it. A
+    /// full pool gives nothing (the 68000 carry).
+    pub fn item_give_bazooka(&mut self, player: usize) {
+        let Some(j) = self.items.alloc() else { return };
+        let h = self.items.handle(j);
+        let me = Game::player_handle(player);
+        let (who, id, x, y, z) = {
+            let b = &self.players[player].b;
+            (b.who, b.id, b.xi(), b.yi(), b.zi())
+        };
+        let n = &mut self.items.slots[j];
+        n.b.live = 1;
+        n.b.who = who;
+        n.b.id = id;
+        n.b.k20 = class::WEAPON * 4;
+        n.b.var26 = 0xC;
+        put_hi(&mut n.b.x, x);
+        put_hi(&mut n.b.y, y);
+        put_hi(&mut n.b.z, z);
+        n.b.partner = me;
+        self.players[player].item = h;
+        let mut it = std::mem::take(&mut self.items.slots[j]);
+        self.item_weapon(&mut it, h, j); // 0x24D44 with mode 0: the init of type 6
+        it.m.sw(LIFE, 0x258);
+        it.b.sub = 8;
+        self.players[player].item_type = it.m.w(KIND);
+        self.items.slots[j] = it;
     }
 
     // ------------------------------------------------------------------ draw and range checks

@@ -79,9 +79,54 @@ no difference. Add the class to `PORTED_CLASSES` in `dino-game/src/game/trace.rs
    fire, melee swings that hit, the flights 0x10 and 0x14 of weapons, `weapon_enemy_near`, `item_eat`
    with an enemy-dropped item (food and treasure are unit-tested). Phase 0 evidence of the task:
    explore / stage1_fight frames 109, 789, 791.
-3. **Weapons and pickup (player area).** `find_pickup` 0x5AA2, pickup state, held weapon states
-   (0x201/0x202 melee, 0x203 charge, 0x206/0x207 guns, 0x209 recoil, 0x20A heavy object), ammo,
-   dropping on hit. Spec: `re/specs/player/SPEC.md` section 4.9.
+3. **Weapons and pickup (player area). DONE (2026-10-12).** Ported in `dino-game/src/game/player_weapon.rs`
+   (a child module of `player.rs`: it uses the private helpers of the state machine; tables through
+   `dino-extract/src/player.rs`, `PlayerData::t` and `comp_extra`):
+   - `find_pickup` 0x5AA2 (item list of the previous frame, the lowest kind wins, a heavy object needs the
+     stick towards it except variants 6 and 8, weapons are skipped for 40 frames after a pick-up, nothing in the
+     air or with G.$506), the pick-up state 0x14 (entry 0x19832: voice 0x9C20, `item_pickup_begin`, the old
+     weapon falls with `item_drop_held`, the waiting ammo refill `+$10F` 0x284E2; handler 0x198B4: 40 frames
+     `+$F8`, invulnerability `INV[8]`), the callers in idle 0x191C4 and walk 0x19356 (G.$506 is honoured now).
+   - The weapon states: attack 0x16 (0x198DC / 0x19954: a club swings only at an enemy in reach 0x6248, otherwise
+     the player takes the throw pose), guns 0x1C standing fire (0x19AB0 with the auto aim 0x64F6) and 0x1E walking
+     fire (0x19B60), charge 0x20 (0x19C36: 8 and 45 frame thresholds), recoil 0x22 (0x19CE0), run swing 0x202
+     (0x1A174 / 0x1A18C / 0x1A2F2 with 0x13EA and the tail of the run entry 0x19FDE), heavy object jump and
+     landing 0x1E / 0x20 (0x1B038 / 0x1B0CA) and fall pose 0x1A8AA.
+   - The poses and the **split body** (`+$25` bit 0: upper body = main frame, legs = a second animation layer
+     `+$30..+$3F`): idle 0x5BDC, walk 0x5CA6, swing 0x5E5C, gun walk 0x5F76, run 0x1A0F0, layer start 0x1506,
+     load 0x1564 (the extra bytes are read at the frame's *first* word, `comp_extra`), step 0x1542 (walk 0x193B8,
+     run 0x1A0DE, gun walk 0x19C20), and the `d0` quirk of walk_move 0x1BD94 (`player_pstep_d0`: 0x1A220 stores
+     the composition byte in `+$B2`). A layer started before `+$38` was ever set reads the ROM vector table (the
+     first walking fire): the extractor keeps the first 0x200 ROM bytes for it.
+   - 0x65A4 `item_give_bazooka` (a player that joins in the middle of a stage starts with a bazooka; called
+     from the respawn reset with `+$07 == 0`), the enemy fields the player damage reads (`player_enemy_w84` /
+     `player_enemy_b87` now read the enemy; the two stubs made every damage wrong by the enemy factor).
+   - Item side (`item.rs`, `item/small.rs`, `item/weapon.rs`): `item_enemy_near` (0x6248 for any body: the weapon
+     and the player share it), `item_ammo_refill` visible to the player, the `allow(dead_code)` of the API gone.
+     **No mistake of the item side showed up**: every item transition matches MAME with the real player.
+   **Checks:** `cargo build` / `cargo test` green (69 tests, 10 new in `player_weapon.rs`: find_pickup rules, the
+   held-item test, auto aim, the layer load / step, the stale offset pointer, the walk move byte, the bazooka of
+   a joining player). Step runs (`MODE=step`, no `DINO_STEP_PLAYERS`) of the old item scenarios (`items`, `misc`, `containers`..`containers3`,
+   `guns`, `guns2`, `bombs`, `ammo`): **0 differences in the player and in every pool E class** (HEAD before the
+   task: 31 to 77 (class, field) pairs in ported classes per scenario; `items` frame 1064 is MAME's lag frame). Six
+   new scenarios (README): `melee` 820 frames, `heavy` 420, `gunwalk` 600, `empty` 1150, `pickups` 360, `armed`
+   1000, and `melee`, `heavy` and `gunwalk` again with Hannah, Mustapha and Mess (boot scripts `boot_*.txt`): they
+   cover every new state (pick-up, 0x16, 0x1C, 0x1E, 0x20, 0x22, 0x202, 0x1E / 0x20 of the air, the
+   layer, the stale layer pointer, the ammo refill, a weapon swapped for another, emptied guns, a bat that hits and
+   breaks, a drop on being hit): no player or item difference in any of them (except the prop hit of `armed` below). `stage1_jack`, `stage1_late`,
+   `explore`, `stage1_fight`, `obstacle`: the same differences as at HEAD (1, 0, 22, 0 and 15 (class, field) pairs:
+   `player.kills` at frame 48 and the enemy class 2 grab, see task 1). `follow` runs of the new scenarios: no player
+   or item difference either (`armed` drifts after frame 564, see below). `DINO_STEP_PLAYERS=1` is obsolete (README):
+   with it the item scenarios still differ on the frames where the item itself changes the player (throw, shot,
+   empty gun), because the loaded record already has the change.
+   **Left over (causes):** the HUD weapon display 0x2389C..0x23EDA (scroll1 cells under the life bar, redrawn at a
+   pick-up and when the ammo changes: `hud_weapon` is a stub, HUD port); the muzzle and spark effects of the shots
+   (pool C classes 0x1F / 0x21, effects port) and the **dust of the recoil** 0x92E5E (pool C class 7, 0x92ECC: not
+   spawned, the effects port will need it for task 7); the unported enemy classes and props of the first wave
+   (frame 564 of `armed`: the jump kick hits the pool B class 0x28 prop, MAME gives `+$59` and score, the port
+   does not); enemy class 2 hit-reaction details (frame 609 of `armed`: `+$76` of an attacking thug is 0x57B6 in MAME;
+   a thug killed in a hurt reaction by a fire bomb explosion starts no death animation in the port, seen when
+   the bomb of `melee` is thrown to the right, not kept as a scenario).
 4. **Remaining stage 1 enemies (enemy area).** Pool A classes (handlers from table 0x2346C):
    10 0x3B828, 14 0x4020E, 20 0x457B0, 49 0x56A70 (three off-screen bird controllers, present at the
    first frame), 50 0x56C80 (birds spawned at run time, one `rand()` each), and the opening scene
@@ -118,7 +163,7 @@ and stage clear screen match the original.
 
 ## Status
 
-In progress. Tasks 1 and 2 done (2026-10-12). Handoff notes: `re/specs/enemy/HANDOFF.md`,
+In progress. Tasks 1 to 3 done (2026-10-12). Handoff notes: `re/specs/enemy/HANDOFF.md`,
 `re/specs/player/HANDOFF.md`, `re/specs/flow/HANDOFF.md`.
 Tasks 1 to 3, 6 and 7 come from the phase 0 comparison (2026-10-12).
 
@@ -183,3 +228,48 @@ Tasks 1 to 3, 6 and 7 come from the phase 0 comparison (2026-10-12).
 - **Effects:** the dust trail of a thrown weapon (0x92E5E) is still not called (task 7).
 - **Scenario cost:** `items` takes the stage1_fight run to break two containers (1250 frames); the poked
   scenarios are quick (200 to 900 frames).
+
+### Findings of task 3 for the later tasks
+
+- **Grab of an enemy (`enemy_grabbed` 0x2B35A, the next step; not ported):** the player side (0x1D652 and the
+  states 0x1D746 / 0x1D850 / 0x1D72A, all ported) is exact, only the enemy half is missing. What the listing says:
+  the handler dispatches on `+$06` (words at 0x2B366: act 0 = 0x2B36C, 2 = 0x2B38E, 4 = 0x2B434). Act 0: the
+  partner `+$70` (the player); if the player's `+$82` is 4 go to act 4, else call 0x16B36 with d0 = 1, `+$06 += 2`,
+  `+$62 = 0` and fall into act 2. Act 2 (and 4, without the placing): the partner must be alive, in mode 2, sub 4
+  (grabbing) and frame class `+$2E == 0xC`; if not, release (0x2B464: `+$50 = 0`, floor snap 0x3140C, `+$7B = 0x20`,
+  continue at 0x2B54E). Placing (act 2 only, when the high byte of the player's `+$60` is negative): the table
+  pointer is `long[0x2D0E0 + player +$20]`, the word offset is read at `+ enemy +$84 / 2`, the row is
+  `(+$60 & 0x3F) * 8` bytes further, `(dx, dy, anim, facing)`: X = player X + dx (dx negated and the facing bit
+  flipped when the player faces left, `+$24 == 0`), Y = player Y + dy, Z = player Z, `+$24` = the facing, and the
+  animation is word `anim` of the table `0x2E724[enemy +$84]` loaded with 0x1236 (the grabbed animations; the hit
+  animations are 0x2E68C). MAME shows state 0x0206 act 2 for the held thug (explore frame 461, obstacle 206).
+  0x2B54E, 0x2B478 (the wait `+$7A` by 0x2B8C4), 0x2B4BA (`+$80` by 0x2B614 / 0x2B604) and 0x2B506 (wrap X by
+  0x400 at the camera edges) follow in the same listing. The held-player tables of the other direction are
+  `held_offsets` (0x2CBE0, already extracted); 0x2D0E0.. still has to go through `dino-extract`.
+- **HUD weapon display (flow / HUD port):** `hud_weapon` 0x2389C..0x23EDA is a stub. It draws the weapon icon, name
+  and ammo digits as scroll1 cells at `HUD area + 0x5C` (rows of the player's message area, 0x80 bytes apart) when
+  the held kind (`+$B6 & 0xFF` - 4) or the ammo (`+$6C` of `+$B4`) changed (caches G.-$70A8 and G.-$70A0 per player,
+  dirty flag G.-$7098 `weapon_dirty`). All fields it reads are in the player and traced. In the weapon scenarios the
+  scroll1 differences are exactly the frames of a pick-up and of an ammo change.
+- **Effects (effects port, task 7 and phase 5):** the recoil of the bazooka calls 0x92E5E (d0 = 2, pool C class 7,
+  handler 0x92ECC) every other frame while the player slides (`player_recoil`, guns2 frames 105 to 122); the item
+  side already skips the dust of thrown weapons. The shots spawn the muzzle classes 0x1F / 0x21 (handlers 0x96800 /
+  0x96B78); they keep the pool C free list apart (`global.free_count`), the diff shows them as `effect class
+  0x01 [ported]` rows in `guns`, `guns2`, `empty` and `armed`.
+- **Items that hurt players (0x10DCC, `pass_10dcc` is still a stub in `enemy_combat.rs`):** attackers in the list
+  0x671A (frame class 4: swung or thrown weapons and containers) hurt a player of another `+$02` (friendly fire of
+  1 HP with 2 or 3 players; items owned by an enemy, `+$02` negative, use the damage of the attack record) and set
+  the hurt state 0x02020000 like `pass_10664` does, but the weapon is dropped without the Hannah exception of 0x1177A
+  (`+$B6 = 0`, `+$C5 = 1`, 0x10EA2). Needed for stage 1 with 2 or 3 players. No recording exercises it (the harness
+  has no join yet).
+- **Not weapons, but in the player code:** the extra life pose (states 0x18 / 0x1A, `+$10E`, started by the score
+  table 0x6B98 when the score passes a threshold, calls 0x1843C / 0xA4CA / 0x162F8), the two-player tie-up (0x6728..
+  0x6922: state 0x1A with the partner, run state 4 0x1A330, `+$C8` 0x12), the scripted states 0x2A / 0x2C, the air
+  states 0x18 / 0x1A / 0x1C / 0x22..0x26 and 0x34.
+- **`DINO_STEP_PLAYERS` is obsolete** (README). New fields in the trace: none (everything the weapon states touch was
+  traced: `+$B4..+$BA`, `+$C4`, `+$C5`, `+$EA`, `+$F8`, `+$10F` and the split layer `+$30..+$3F`).
+- **Layer quirk to keep in mind:** the offsets of the upper body come from `+$38 + 4 * (signed +$35)`. `+$38` is
+  set by 0x5CA6, 0x5F76 and 0x1A0F0, and 0x19B60 starts the layer *before* 0x5F76: with `+$38 == 0` the first walking
+  fire reads the ROM vector table (`dx3c` = 0x00FF, `dy3e` = 0x0E66 in MAME). Reproduced; `draw.rs` already draws the
+  split body.
+

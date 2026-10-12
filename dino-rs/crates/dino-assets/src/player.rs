@@ -113,6 +113,15 @@ pub struct PlayerData {
     pub score_bcd: Vec<u32>,
     /// 0x1C8A6: the two flames of a burn knockdown: (dx, dy, var).
     pub burn_flames: [[i16; 3]; 2],
+    /// Small tables of the held-weapon poses, by ROM address (`dino-extract/src/player.rs` TABLES):
+    /// the animation ids by weapon type (0x5C36, 0x5D2C, 0x5EDE, 0x5FF2, 0x1A15C, 0x1A228) and the
+    /// offsets of the split body (0x5D1C, 0x1A164, 0x1BE86). The 68000 code indexes them by byte
+    /// offset, so they are kept as bytes (`ByteTables::u16(table, offset)`).
+    pub t: crate::enemy::ByteTables,
+    /// 0x11D220: the 4 extra bytes per composition (wading clip counts, shadow type), indexed by
+    /// composition word / 4. The split-body layer loader 0x1564 reads it at the frame's first
+    /// word `w0` (the frame loaders 0x143E / 0x1236 prefer the second word, see `Frame::extra`).
+    pub comp_extra: Vec<[u8; 4]>,
 }
 
 /// ROM address of `PlayerData::held_offsets[0]`.

@@ -858,6 +858,43 @@ reaction 8 (enemy code, out of scope). Throw damage is the 0x0A entry.
   weapon is dropped (`$B6 = 0`, 0x19980). Where `$6C` is decremented is item code [U].
 - Getting hit drops the weapon (`0x1177A` sets `$C5 = 1, $B6 = 0`, except some 0x2xx cases) [O].
 
+#### 4.9.1 Weapon states in detail (phase 1 task 3, ported in `player_weapon.rs`) [O]
+
+Held kinds (`+$B6`, the item's `+$A0`, see `item.rs` / `item/weapon.rs`): 0x201 throwable (bombs, empty pistol / Uzi /
+shotgun), 0x202 club or stick, 0x203 bat and heavy weapons (and an empty rifle or M-16), 0x204 pistol, 0x205 rifle, 0x206 Uzi,
+0x207 M-16, 0x208 shotgun, 0x209 bazooka, 0x20A heavy object (containers). The attack button with a weapon in hand
+(`weapon_attack_entry` 0x198DC) starts, by kind:
+
+| kind | state (step) | entry / handler | what it does |
+|---|---|---|---|
+| 0x206, 0x207 | 0x1C standing fire, 0x1E walking fire | 0x19AB0 (aim 0x64F6, `+$81 = 3`) -> 0x19ACC / 0x19B60; 0x19AEA / 0x19B90 | the item fires on the rising edge of `+$2C`; `+$81` counts 3 frames of grace after the animation; out of ammo (`+$6C` of the item is 0) the gun is let go (a club 0x203 stays); jump button -> jump |
+| 0x209 | 0x22 recoil | 0x19CE0 / 0x19D5E | `vx = RECOIL[chr]` (0x19CD8) against the facing, `ax = 0x100` the other way; moves only while `|vx| >= 0x20`; dust every other frame; airborne -> fall |
+| 0x203 | 0x20 charge | 0x19C36 / 0x19C62 | `+$80` counts attack frames to 60; on release `+$2F = 1` when `+$80 >= 8`, one more animation step when `>= 0x2D` |
+| other (0x201, 0x202, 0x204, 0x205, 0x208, 0x20A) | 0x16 | 0x198DC / 0x19954 | pose by kind (0x5E5C); the item swings or throws on `+$2C` = 1 / 2; a club (0x202) swings only when an enemy is in reach (0x6248), else the pose of 0x201 (a throw); at the end a non-club without ammo is let go |
+
+All of them set `+$C4 = 1` (cleared by the idle entry and by the item that used it) and `+$C8 = 0x10` (0x1E does not
+set `+$C8`); 0x16 / 0x1C / 0x20 / 0x22 clear `+$25`; 0x16 and 0x22 also clear the item's `+$A8`. Running with a club or a throwable (0x201 / 0x202) and pressing
+attack is the run swing (state 0x202, entry 0x1A174 / 0x1A18C, handler 0x1A2F2; item `+$A8 = 1` makes the item throw on
+its frame 2); any other kind is the dash attack. A heavy object jump (0x1A5D0 -> 0x1B038) is air state 0x1E (vector
+class 0xC, animation `0x1B0C6[chr]`, no jump attacks), landing 0x20 (`0x1B0F2[chr]`); falling with it uses
+`0x1A902[chr]` (set 5).
+
+Poses (animation set 5 by kind, tables `0x5C46` idle, `0x5D3C` walk, `0x5EEE` swing (17 words per character: the
+12 kinds, then variants of the heavy object at `+$26 + 0x18`), `0x6002` gun walk): 0x5BDC idle (static, no step), 0x5CA6
+walk (+ legs), 0x5E5C swing, 0x5F76 gun walk, 0x1A0F0 run. All four first test: kind not 0, `+$B4` alive and in its held
+state (sub 8), else `+$B4 = +$B6 = 0` and the plain animation. **Split body**: with `+$25` bit 0 the main frame (`+$28`)
+is the upper body drawn at `(+$3C, +$3E)` (mirrored by the facing) and the layer `+$30` (set 0, animations 0xB / 0x10 /
+0x18, 12 byte frames like the main ones) is the legs; the layer has its own timer `+$37`, frame bytes `+$34 / +$35`
+and extra bytes (`+$4C..`, read at the frame's first word). The offsets table `+$38` (0x5D9C.., 0x1BE86..) is
+indexed by `+$35` (signed, 4 bytes per entry). Walk with the layer: the layer's end restarts the walk (0x192C6).
+
+Pick-up (`find_pickup` 0x5AA2): see `player_find_pickup`. Pick-up state 0x14: voice 0x9C20, anim set 0 #0xA (#0x16 for
+0x20A), the item gets `+$02` = the player, sub 4, `+$70` = the player; a kind with high byte 2 becomes the held item
+(the old one: sub 0xC, `+$C5 = 0`); `+$10F != 0` refills the new gun at once (0x284E2); at the end `+$BC = 0`,
+`+$F8 = 40`, `+$00 = 2`, `+$F9 = INV[8 + chr]`, idle. A hit (0x1177A) clears `+$B6` and sets `+$C5 = 1`, except that
+Hannah keeps the guns 0x204..0x208 and Mess keeps the bazooka; knockdown and burn do the same; being held by an enemy
+and dying clear only `+$B6`; a special attack clears `+$B4`, `+$B6` and `+$C5`. A player that joins mid-stage (respawn reset with `+$07 == 0`) gets a bazooka (0x65A4, 4 rockets).
+
 ### 4.10 Command move: down, up + attack (0x6AC8) [O]
 
 ```rust

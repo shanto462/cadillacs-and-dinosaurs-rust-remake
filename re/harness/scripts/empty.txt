@@ -1,0 +1,14 @@
+# Phase 1 task 3 (player weapons): pokes/empty.lua. Jack empties the Uzi (hold A, also walking: the empty gun is let go)
+# and the M-16 (the empty gun is a club: a charge swing).
+0-12:L
+15-16:A
+50-120:A
+122-160:LA
+162-440:A
+460-600:R
+602-603:A
+620-700:A
+702-740:RA
+742-1050:A
+1060-1090:A
+1100-1101:A

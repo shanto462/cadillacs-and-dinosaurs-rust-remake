@@ -67,7 +67,22 @@ Compare in `MODE=step` with `DINO_STEP_PLAYERS=1` (see below).
 | `ammo` | `scripts/ammo.txt`, `pokes/ammo.lua` | 220 | pistol, two ammo boxes (refill, then 1000 points for a full gun) |
 
 MAME's lag frame (frame 1064 of `items`) is ignored by the comparison. Result with the port of task 2: only frames where the player's own state machine changes (pick-up,
-throw, first frame of a swing, the player side is task 3) differ in the item classes.
+throw, first frame of a swing, the player side is task 3) differ in the item classes. **Since phase 1 task 3 the player is ported: run these in plain `MODE=step`, without
+`DINO_STEP_PLAYERS`** (see below); the player and every pool E class then match for the whole run in all nine.
+
+Player weapon scenarios (phase 1 task 3). Keep a key release between two presses of the same direction at least 2 frames long (the game cooks the inputs and merges a gap of one frame). Same way: `DINO_POKE=re/harness/pokes/NAME.lua DINO_SYNC=control+86 re/harness/record.sh re/harness/scripts/NAME.txt NAME FRAMES`
+(the poke has the name given in the table; `empty` uses `pokes/empty.lua`). Weapons placed more than 0x200 right of the camera free themselves at once (0x1760), so
+keep them left of x 0x580 at the start.
+
+| NAME | script / poke | FRAMES | what it covers |
+| --- | --- | --- | --- |
+| `melee` | `scripts/melee.txt`, `pokes/melee.lua` | 820 | club, bat, stick, heavy weapon, fire bomb: pick-up, run swing (state 0x202 with a club and with a bomb), charge swings of 2, 16 and 56 frames (state 0x20), jump, walk and run with a bat, the club-throw pose (no enemy near) |
+| `heavy` | `scripts/heavy.txt`, `pokes/heavy.lua` | 420 | containers (kind 0x20A): lift with the stick towards it, idle and walk with it (legs layer), standing and walking heavy jump (states 0x1E, 0x20), no run, throw; variant 6 lifted without the stick |
+| `gunwalk` | `scripts/gunwalk.txt`, `pokes/gunwalk.lua` | 600 | Uzi, M-16, rifle, shotgun: standing fire (0x1C), walking fire both ways (0x1E, the legs layer, the first one with a stale `+$38`), jump while firing, run with a gun (the run pose 0x1A0F0) |
+| `empty` | `scripts/empty.txt`, `pokes/empty.lua` | 1150 | an Uzi and an M-16 emptied by holding A (the empty Uzi is let go, the empty M-16 is a club: charge swing) |
+| `pickups` | `scripts/pickups.txt`, `pokes/pickups.lua` | 360 | an ammo box with no gun (`+$10F`), the refill of the next gun at its pick-up, taking a weapon while holding one (the old one is dropped) |
+| `melee_hannah`, `melee_mustapha`, `melee_mess`, `heavy_*`, `gunwalk_*` | the scripts and pokes above, `DINO_BOOT=re/harness/scripts/boot_hannah.txt` (or `boot_mustapha.txt`, `boot_mess.txt`) | 820, 420, 600 | the same runs with the other three characters (the select screen order is Jack, Hannah, Mustapha, Mess; the port reads the character from the snapshot): the per-character pose, run and jump tables, Hannah cannot jump with a heavy object |
+| `armed` | `scripts/armed.txt`, `pokes/armed.lua` | 1000 | the stage1_fight script with a bat: swings that hit enemies and a prop, the bat breaks into a stick, a club swing at an enemy in reach, hit while holding (the weapon is dropped), picked up again |
 
 ```sh
 DINO_SYNC=control+86 re/harness/record.sh re/harness/scripts/stage1_fight.txt stage1_fight 1400
@@ -94,6 +109,11 @@ after its own players' update, just before pool E runs, so the items see the sam
 classes then compare exactly, but the player fields themselves are copied, not tested, and
 the score the items add to the player shows doubled in the diff (the loaded player already contains it).
 Use it only for the item scenarios.
+
+**Obsolete since phase 1 task 3.** The player port runs the real pick-up, throw, swing and fire states, and a plain `MODE=step` run now matches for the player and every
+pool E class. With `DINO_STEP_PLAYERS=1` the item scenarios still show differences on the frames where the item itself changes the player (a throw clears `+$B6`, a shot
+clears `+$C4`, an empty gun sets a new `+$B6`): MAME's record of the frame already has those changes, so the loaded player tells the item "I do not hold you" before it
+runs. The flag is still in the code, but do not use it.
 
 ## Checking one routine against the original code
 

@@ -82,7 +82,7 @@ session. If the build breaks in a file you do not own, wait and retry instead of
 | terrain collision (shared, phase 1 task 1) | `game/terrain.rs`, `dino-assets/src/terrain.rs`, `dino-extract/src/terrain.rs`; checked by `re/harness/terrain_oracle.py` |
 | main session | `game/mod.rs`, `body.rs`, `collide.rs`, `combat.rs`, `palette.rs`, `render.rs`, `main.rs`, `input.rs`, `viewer.rs`, both `lib.rs` files, `rom.rs`, `gfx.rs`, `sprites.rs` |
 | stage / camera port | `game/camera.rs`, `game/vram.rs`, `present.rs`, `dino-assets/src/stage.rs`, `dino-extract/src/stage.rs` |
-| player port | `game/player.rs`, `game/player_combat.rs`, `dino-assets/src/player.rs`, `dino-extract/src/player.rs` |
+| player port | `game/player.rs`, `game/player_combat.rs`, `game/player_weapon.rs` (a child module of `player.rs`, declared there with `#[path]`), `dino-assets/src/player.rs`, `dino-extract/src/player.rs` |
 | draw / effects port | `game/draw.rs`, `game/effect.rs`, `dino-assets/src/effect.rs`, `dino-extract/src/effect.rs` |
 | enemy port | `game/enemy.rs`, `enemy_combat.rs`, `prop.rs`, `item.rs`, `spawn.rs`, `rank.rs`, `dino-assets/src/enemy.rs`, `dino-extract/src/enemy.rs` |
 | sound port | `crates/dino-sound/`, `dino-game/src/audio.rs`, `dino-assets/src/sound.rs`, `dino-extract/src/sound.rs` |

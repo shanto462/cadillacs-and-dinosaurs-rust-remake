@@ -9,11 +9,15 @@
 //! * A few checks (special move 0x63AA, jump attack 0x1A704, wall jump 0x1A744) pop the caller's
 //!   return address in the original. Here they return `true` and the caller returns at once.
 //! * Character ids (+$03): 0 Jack, 1 Mustapha, 2 Hannah, 3 Mess.
-//! * Unported neighbours (items, weapons, effects, scripted scenes) are marked `TODO(...)`.
+//! * Held weapons, pick-up and the split-body layer are in `player_weapon.rs` (a child module).
+//! * Unported neighbours (effects, scripted scenes) are marked `TODO(...)`.
 
 use super::body::Body;
 use super::{Game, Handle, Slot, slot_of};
 use dino_assets::player::PlayerData;
+
+#[path = "player_weapon.rs"]
+mod weapon;
 
 /// Input bits (G.$16..$18, active high).
 pub const RIGHT: u8 = 1;
@@ -198,6 +202,22 @@ impl Game {
         self.players[i].b.tick_anim(s)
     }
 
+    /// 0x1426 plus the low byte of the 68000's d0 at its return: the composition word of the
+    /// frame that was loaded when the timer ran out (`w1` unless it is negative, else `w0`), else
+    /// 0 (the low byte of the Z motion left in d0 by 0x189C). 0x1BD94 ends with it, and a caller
+    /// stores it (0x1A220: `move.b d0,$b2(a6)`).
+    fn player_pstep_d0(&mut self, i: usize) -> (bool, u8) {
+        let loaded = self.players[i].b.timer.wrapping_sub(1) == 0;
+        let carry = self.player_pstep(i);
+        let d0 = if loaded {
+            let f = self.assets.sprites.frame(self.players[i].b.frame);
+            (if (f.w1 as i16) >= 0 { f.w1 } else { f.w0 }) as u8
+        } else {
+            0
+        };
+        (carry, d0)
+    }
+
     /// 0x189C.
     fn player_pmove(&mut self, i: usize) {
         self.players[i].b.motion();
@@ -253,8 +273,9 @@ impl Game {
         tab[(off as usize / 4) & 7]
     }
 
-    /// 0x1BD94 walk_move: face, take the direction's speed, move, animate.
-    fn player_walk_move(&mut self, i: usize, nib: u8) {
+    /// 0x1BD94 walk_move: face, take the direction's speed, move, animate. Returns the low byte
+    /// of d0 the 68000 routine leaves behind (`player_pstep_d0`).
+    fn player_walk_move(&mut self, i: usize, nib: u8) -> u8 {
         self.player_face_input_nib(i, nib);
         let [off, dir] = self.player_pd().walk_dir[nib as usize & 15];
         self.players[i].b.dir = dir;
@@ -263,7 +284,7 @@ impl Game {
         p.b.vx = vx;
         p.b.vz = vz;
         self.player_pmove(i);
-        self.player_pstep(i);
+        self.player_pstep_d0(i).1
     }
 
     fn player_face_input_nib(&mut self, i: usize, nib: u8) {
@@ -644,8 +665,11 @@ impl Game {
         p.b.act = 4;
         p.b.facing = 1;
         p.set_b80(0x3C);
-        // 0x65A4 (first spawn only, $07 == 0): stage helper. 0x18C5E: spawns the "1UP" marker
-        // (pool B class 0x48). TODO(effects port).
+        // 0x18BC0: a player that joins in the middle of a stage (+$07 == 0) gets a bazooka (0x65A4).
+        if self.players[i].b.step == 0 {
+            self.item_give_bazooka(i);
+        }
+        // 0x18C5E: spawns the "1UP" marker (pool B class 0x48). TODO(effects port).
     }
 
     /// 0x62D6: place a player that drops in near the camera. The X offset depends on the number
@@ -953,8 +977,14 @@ impl Game {
                     self.player_idle_entry(i);
                 }
             }
-            // 0x14 pickup, 0x16..0x22 weapons, 0x18/0x1A timed status, 0x2A/0x2C scripted:
-            // only reachable with items / stage scripts. TODO(item port, flow port).
+            0x14 => self.player_pickup(i),
+            0x16 => self.player_weapon_attack(i),
+            0x1C => self.player_gun_stand(i),
+            0x1E => self.player_gun_walk(i),
+            0x20 => self.player_charge(i),
+            0x22 => self.player_recoil(i),
+            // 0x18/0x1A timed status (extra life pose), 0x2A/0x2C scripted: only reachable from
+            // the score table 0x6B98 and stage scripts. TODO(flow port).
             _ => self.player_idle_entry(i),
         }
     }
@@ -982,24 +1012,6 @@ impl Game {
         self.player_idle(i);
     }
 
-    /// 0x5BDC idle animation: weapon idle pose, else drop the item pointers and anim set0 #0.
-    fn player_idle_anim(&mut self, i: usize) {
-        // TODO(item port): with a valid held weapon (+$B4 alive, item +$05 == 8) the weapon idle
-        // animation comes from table 0x5C36 (set 5). Items do not exist yet.
-        let p = &mut self.players[i];
-        p.item = 0;
-        p.item_type = 0;
-        self.player_panim(i, 0, 0);
-    }
-
-    /// 0x5CA6 walk animation (weapon walk pose TODO), else anim set0 #1.
-    fn player_walk_anim(&mut self, i: usize) {
-        let p = &mut self.players[i];
-        p.item = 0;
-        p.item_type = 0;
-        self.player_panim(i, 0, 1);
-    }
-
     /// 0x1916E idle.
     fn player_idle(&mut self, i: usize) {
         if self.w.scripted == 0 && self.players[i].b10e != 0 {
@@ -1020,7 +1032,10 @@ impl Game {
             if p.combo != 0 && p.combo_t != 0 {
                 return self.player_chain_continue(i);
             }
-            // G.$506 (no pickups) assumed 0.
+            // 0x191C4: G.$506 (set by scripted scenes): no pick-up and no weapon, a jab.
+            if self.w.no_clamp != 0 {
+                return self.player_jab_entry(i, 0);
+            }
             if p.item_type != 0x20A {
                 self.player_find_pickup(i);
                 if (self.players[i].cand_type as i16) >= 0 {
@@ -1106,6 +1121,9 @@ impl Game {
             if p.combo_t != 0 {
                 return self.player_chain_continue(i);
             }
+            if self.w.no_clamp != 0 {
+                return self.player_jab_entry(i, 0); // 0x19356
+            }
             if p.item_type != 0x20A {
                 self.player_find_pickup(i);
                 if (self.players[i].cand_type as i16) >= 0 {
@@ -1124,7 +1142,10 @@ impl Game {
         if d == 0 {
             return self.player_idle_entry(i);
         }
-        // 0x1542 weapon overlay layer: not ported (no weapons yet).
+        // 0x193AE: with the split body the legs layer steps; its end restarts the walk (0x192C6).
+        if self.players[i].b.draw_flags & 1 != 0 && self.player_layer_tick(i) {
+            return self.player_walk_reenter(i);
+        }
         self.player_walk_move(i, d);
     }
 
@@ -1677,29 +1698,6 @@ impl Game {
         }
         false
     }
-
-    // ---------------------------------------------------------------------------------------
-    // Items and weapons (item side not ported yet)
-    // ---------------------------------------------------------------------------------------
-
-    /// 0x5AA2 find_pickup. TODO(item port): scan the item list (combat list 0x69EE) for items
-    /// in state 2/0 overlapping in Z/X, with Y within 16 px of `Y - 8`; keep the lowest item
-    /// type (+$A0); 0x20A needs the stick toward it; weapons are skipped while $F8 != 0.
-    fn player_find_pickup(&mut self, i: usize) {
-        let p = &mut self.players[i];
-        p.cand_type = 0x8000;
-        p.cand = 0;
-    }
-
-    /// 0x19832 pickup. Unreachable until `find_pickup` finds items.
-    fn player_pickup_entry(&mut self, i: usize) {
-        self.player_jab_entry(i, 0);
-    }
-
-    /// 0x198DC weapon attacks. Unreachable until items exist.
-    fn player_weapon_attack_entry(&mut self, i: usize) {
-        self.player_jab_entry(i, 0);
-    }
 }
 
 impl Game {
@@ -1714,7 +1712,8 @@ impl Game {
         }
         match self.players[i].b.step {
             0 => self.player_run(i),
-            // 0x02 run + melee weapon, 0x04 (outside entry), 0x06: TODO(item port).
+            2 => self.player_run_swing(i),
+            // 0x04 (the two-player tie-up, entered from 0x6866) and 0x06 (0x1E1EE): not ported.
             _ => self.player_idle_entry(i),
         }
     }
@@ -1726,11 +1725,19 @@ impl Game {
             let p = &mut self.players[i];
             p.run_t = 0xF0;
             p.run_cd = 5;
+        }
+        self.player_run_entry_tail(i);
+    }
+
+    /// 0x19FDE: the rest of the run entry (also where the run swing 0x1A2F2 starts the run again).
+    fn player_run_entry_tail(&mut self, i: usize) {
+        {
+            let p = &mut self.players[i];
             p.b.draw_flags = 0;
             p.action = 0;
             p.set_b80(0);
         }
-        // 0x1A0F0 weapon overlay: no weapons yet.
+        self.player_run_overlay(i); // 0x1A0F0: the pose of a held weapon
         {
             let p = &mut self.players[i];
             p.b.set_state(0x0200_0200);
@@ -1776,7 +1783,7 @@ impl Game {
         self.player_set_speed_class(i, class);
         let p = &self.players[i];
         if p.pressed & ATK != 0 {
-            return self.player_dash_attack_entry(i); // 0x1A174 (melee weapons TODO)
+            return self.player_run_attack_entry(i); // 0x1A174
         }
         if p.pressed & JMP != 0 {
             return self.player_running_jump_entry(i);
@@ -1792,6 +1799,8 @@ impl Game {
             self.players[i].atk_hold = 0;
             return self.player_idle_entry(i);
         }
+        // 0x1A0DE: the legs layer of the held weapon steps.
+        self.player_layer_tick(i);
     }
 
     // ---------------------------------------------------------------------------------------
@@ -1814,6 +1823,8 @@ impl Game {
             0x28 => self.player_run_jump_attack_1(i),
             0x2A => self.player_run_jump_attack_2(i),
             0x2C => self.player_run_jump_attack_3(i),
+            0x1E => self.player_heavy_jump(i),
+            0x20 => self.player_heavy_land(i),
             0x2E => self.player_drop(i),
             0x30 => self.player_command_move(i),
             0x32 => {
@@ -1825,15 +1836,17 @@ impl Game {
                     self.player_idle_entry(i);
                 }
             }
-            // 0x18/0x1A timed status, 0x1C, 0x1E/0x20 heavy object, 0x22..0x26 partner moves,
-            // 0x34 scripted jump to a point: TODO.
+            // 0x18/0x1A timed status, 0x1C, 0x22..0x26 partner moves, 0x34 scripted jump to a
+            // point: TODO.
             _ => self.player_fall_entry(i),
         }
     }
 
     /// 0x1A5D0 jump_entry (falls through).
     fn player_jump_entry(&mut self, i: usize) {
-        // carrying 0x20A: 0x1B038 heavy jump (items TODO)
+        if self.players[i].item_type == 0x20A {
+            return self.player_heavy_jump_entry(i); // 0x1A5D0 -> 0x1B038
+        }
         {
             let p = &mut self.players[i];
             p.b.set_state(0x0200_0400);
@@ -2007,8 +2020,12 @@ impl Game {
         p.b.draw_flags = 0;
         p.b83 = 0;
         p.action = 1;
-        // carrying 0x20A: anim set5 heavy_fall_anim (items TODO)
-        self.player_panim(i, 0, 4);
+        if self.players[i].item_type == 0x20A {
+            let anim = self.player_pd().heavy_fall_anim[self.players[i].b.id as usize & 3];
+            self.player_panim(i, 5, anim as u16); // 0x1A8AA
+        } else {
+            self.player_panim(i, 0, 4);
+        }
         self.player_fall(i);
     }
 
@@ -3674,8 +3691,13 @@ impl Game {
         }
     }
 
-    /// Enemy type +$84 (name id * 4). TODO(enemy port): read `Enemy` once the field exists.
-    pub fn player_enemy_w84(&self, _h: Handle) -> u16 {
-        0
+    /// Enemy type +$84 (name id * 4), read from the attacker (a pool A enemy; a pool E item keeps
+    /// whatever its +$84 holds). Other objects read 0.
+    pub fn player_enemy_w84(&self, h: Handle) -> u16 {
+        match slot_of(h) {
+            Some(Slot::Enemy(i)) => self.enemies.slots[i].m.w(super::enemy::off::W84),
+            Some(Slot::Item(i)) => self.items.slots[i].m.w(0x84),
+            _ => 0,
+        }
     }
 }

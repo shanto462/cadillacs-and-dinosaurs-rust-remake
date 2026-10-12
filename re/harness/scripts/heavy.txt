@@ -1,0 +1,14 @@
+# Phase 1 task 3 (player weapons): pokes/heavy.lua. Jack lifts the barrel (stick towards it), walks with it, jumps with it
+# (standing and walking), tries to run, throws it; then lifts the container variant 6 (no stick needed) and throws it.
+0-12:L
+13-14:LA
+70-110:R
+120-121:J
+170-171:J
+170-190:R
+230-231:L
+233-260:L
+270-271:A
+290-340:R
+342-343:A
+390-391:A

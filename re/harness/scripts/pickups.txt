@@ -1,0 +1,13 @@
+# Phase 1 task 3 (player weapons): pokes/pickups.lua. Jack takes the ammo box (no gun: +$10F), walks left, takes the Uzi (the
+# waiting refill), walks right, takes the pistol and then the rifle (the held weapon is dropped each time) and fires.
+0-12:L
+15-16:A
+50-75:L
+77-78:A
+110-111:A
+130-180:R
+182-183:A
+220-221:A
+230-270:R
+272-273:A
+310-311:A

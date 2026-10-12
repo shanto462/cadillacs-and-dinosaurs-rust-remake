@@ -1,0 +1,27 @@
+# Phase 1 task 3 (player weapons): pokes/melee.lua. Jack takes the club, runs left and swings it while running (the club
+# flies), walks back right, takes the bat (charge swings of 2, 16 and 56 frames, a jump, a run), the stick (a throw),
+# the heavy weapon (two swings, charged) and the fire bomb (a run attack with a throwable).
+0-12:L
+15-16:A
+52-53:L
+56-95:L
+64-65:A
+100-208:R
+210-211:A
+232-233:A
+262-277:A
+312-367:A
+400-401:J
+452-453:R
+456-472:R
+476-477:A
+512-513:A
+520-560:R
+562-563:A
+590-591:A
+620-650:A
+660-690:R
+692-693:A
+730-731:L
+734-775:L
+742-743:A

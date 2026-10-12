@@ -1,0 +1,21 @@
+# Phase 1 task 3 (player weapons): pokes/gunwalk.lua. Jack takes the Uzi and fires it standing, walking (both ways), then
+# runs with it (double tap), takes the M-16, the rifle and the shotgun, walks while firing them and jumps with them.
+0-12:L
+15-16:A
+50-80:A
+90-130:LA
+140-160:RA
+170-200:A
+210-211:A
+215-216:J
+300-301:R
+304-330:R
+332-333:A
+340-345:A
+350-390:RA
+400-401:J
+430-431:J
+440-470:R
+472-473:A
+480-520:RA
+530-531:A

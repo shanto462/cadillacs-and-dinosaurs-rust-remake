@@ -10,6 +10,22 @@ const ATTACK_COUNTS: [u32; 4] = [60, 62, 60, 61];
 /// 0xA2EA4 enemy attack records, up to the next table (0xA320C).
 const ENEMY_ATTACKS: (u32, u32) = (0xA2EA4, 0xA320C);
 
+/// Small tables of the held-weapon poses (ROM address, length, user).
+const TABLES: &[(u32, u32, &str)] = &[
+    (0x0, 0x200, "ROM start (the vector table): the split-body layer reads its offsets at +$38 + 4 * index, and +$38 is still 0 before the first weapon walk (0x19B60 starts the layer before 0x5F76 sets it)"),
+    (0x5C36, 0x70, "idle pose: 4 pointers, then 12 words per character: set 5 animation by weapon type (0x5BDC)"),
+    (0x5D1C, 0x140, "walk pose: 4 split-body offset table pointers (0x5D1C), 4 animation table pointers (0x5D2C), 12 words per character (0x5D3C), 12 offsets of (dx, dy) per character (0x5D9C) (0x5CA6)"),
+    (0x5EDE, 0xA0, "swing pose: 4 pointers, then 17 words per character by weapon type and heavy object variant (0x5E5C); variant 0xC of the last character reads 2 bytes past the last table, into the code that follows"),
+    (0x5FF2, 0x20, "gun walk pose: 4 pointers, then 2 words per character by weapon type 6 / 7 (0x5F76)"),
+    (0x1A15C, 0x18, "run pose: set 5 animation by character and weapon class (0x1A15C), 4 split-body offset table pointers (0x1A164) (0x1A0F0)"),
+    (0x1A228, 8, "run swing pose: set 5 animation by character (0x1A1EA)"),
+    (0x1BE86, 0x80, "split-body offsets of the run pose: 8 (dx, dy) per character (0x1A164)"),
+];
+
+/// Number of compositions (word at 0xFFFF8) and the per-composition extra bytes (0x11D220).
+const COMP_COUNT_PTR: u32 = 0x0FFFF8;
+const COMP_EXTRA: u32 = 0x11D220;
+
 fn attack(rom: &Rom, a: u32) -> AttackRecord {
     AttackRecord {
         damage: rom.u8(a) as i8,
@@ -79,6 +95,8 @@ pub fn extract(rom: &Rom) -> PlayerData {
         held_offsets: (dino_assets::player::HELD_OFFSETS_BASE..0x2D0E0).map(|a| rom.u8(a)).collect(),
         ..Default::default()
     };
+    d.comp_extra = (0..rom.u16(COMP_COUNT_PTR) as u32).map(|i| rom.u32(COMP_EXTRA + 4 * i).to_be_bytes()).collect();
+    d.t.blobs = TABLES.iter().map(|&(a, n, _)| (a, (a..a + n).map(|x| rom.u8(x)).collect())).collect();
     for k in 0..16u32 {
         d.speed_ptr[k as usize] = rom.u32(0x5064 + 4 * k);
         d.speed_heavy_ptr[k as usize] = rom.u32(0x50A4 + 4 * k);

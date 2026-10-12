@@ -1,0 +1,8 @@
+-- Phase 1 task 3 (player weapons): an Uzi (type 3, 48 shots) left of Jack (x 0x400) and an M-16 (type 4, 48 shots) at
+-- x 0x440, a rifle (type 0) at 0x470 and a shotgun (type 5) at 0x4A0, all in Jack's row (z 0x128).
+local DINO = ...
+local s = DINO.spawn_item
+s(0x00, 0x06, 0x400, 0x128)  -- Uzi
+s(0x00, 0x08, 0x440, 0x128)  -- M-16
+s(0x00, 0x00, 0x470, 0x128)  -- rifle
+s(0x00, 0x0A, 0x4A0, 0x128)  -- shotgun

@@ -267,7 +267,7 @@ impl Game {
     /// refill row in the table 0x2855A): the ammo (+$6C of the gun) goes to the maximum, a gun
     /// that was already full scores 1000. The gun's kind / +$A2 are taken from the table row.
     /// Returns the carry-clear result: true = refilled (a gun was held).
-    pub(super) fn item_ammo_refill(&mut self, p: usize, who: u8) -> bool {
+    pub(in crate::game) fn item_ammo_refill(&mut self, p: usize, who: u8) -> bool {
         let (gun, kind) = (self.players[p].item, self.players[p].item_type);
         if kind == 0 || kind & 0xF00 != 0x200 {
             return false;

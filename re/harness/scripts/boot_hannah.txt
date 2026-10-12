@@ -1,0 +1,6 @@
+# Power on to stage 1 with player 1 as hannah (the select screen cursor starts on Jack; Hannah is the 2nd position, Mustapha the 3rd, Mess the 4th).
+# Same as boot_jack.txt, with 1 press(es) of R before the character is accepted.
+600-607:C   # coin 1
+700-705:S   # start 1
+800-803:R   # cursor to the right
+900-905:A   # choose the character under the cursor

@@ -3,6 +3,8 @@
 Files (player port owns them):
 - `dino-rs/crates/dino-game/src/game/player.rs`: Player struct, frame loop, whole state machine.
 - `dino-rs/crates/dino-game/src/game/player_combat.rs`: collision passes, damage, hit effects on players.
+- `dino-rs/crates/dino-game/src/game/player_weapon.rs`: held weapons, pick-up and the split-body layer (a child
+  module of `player.rs`, so it sees the private helpers of the state machine; phase 1 task 3).
 - `dino-rs/crates/dino-assets/src/player.rs` + `dino-extract/src/player.rs`: all player/combat tables
   (`AssetPack::player`).
 
@@ -33,6 +35,12 @@ Character ids: 0 Jack, 1 Mustapha, 2 Hannah, 3 Mess (SPEC.md has a correction ba
 - Held by enemy 0x1D2BE: mash, escape attack 0x1D3F8 (Mustapha reverses the hold), stumble 0x1D48E,
   follow 0x1D4EA (table 0x2CBE0 kept as a byte blob).
 - Death 0x1BF42, lives / continue 0x1BFD0.
+- Weapons and pick-up (`player_weapon.rs`, phase 1 task 3): find_pickup 0x5AA2, pick-up state 0x14 (0x19832 /
+  0x198B4), weapon attack state 0x16 (0x198DC / 0x19954), guns 0x1C / 0x1E (0x19AB0, 0x19B60, aim 0x64F6), charge
+  0x20 (0x19C36), recoil 0x22 (0x19CE0), run swing 0x202 (0x1A174 / 0x1A18C / 0x1A2F2, run pose 0x1A0F0), heavy
+  object jump / landing 0x1E / 0x20 (0x1B038 / 0x1B0CA) and fall (0x1A8AA), the poses 0x5BDC / 0x5CA6 / 0x5E5C /
+  0x5F76 and the split-body layer 0x1506 / 0x1564 / 0x1542, the bazooka of a joining player 0x65A4
+  (`item_give_bazooka`). Details in `plan/phase-01-stage1-complete.md` (task 3) and SPEC.md section 4.9.
 - Combat (player_combat.rs): `pass_10664` (player vs player), `pass_107f8` (probe 0x108FA, grab
   0x1084A/0x108AE, attack 0x10962/0x109C2), `player_damage` 0x2B904, `enemy_damage` 0x6422,
   `player_grab_hit` 0x12526, special HP cost 0x10B08, score add 0xFFC8 (BCD table 0x10292),
@@ -41,27 +49,32 @@ Character ids: 0 Jack, 1 Mustapha, 2 Hannah, 3 Mess (SPEC.md has a correction ba
 
 ## Stubbed (TODO markers in the code)
 
-- Items / weapons: `player_find_pickup` (0x5AA2) always finds nothing; pickup 0x19832 and weapon
-  states 0x14..0x22 and run state 0x202 fall back to a jab; weapon idle/walk anims (0x5BDC/0x5CA6),
-  overlay layer 0x1542, heavy object 0x20A jumps (0x1B038).
-- Enemy fields not exposed yet: `player_enemy_w84` (+$84) returns 0, `player_enemy_b87` (+$87, guard
-  0x10B50) returns 0, `player_g4f3` (G.$4F3) returns 3 (player vs player off), 0x6606 downed claim,
-  0x1128E multi-part boss link.
+- Weapons: the dust of the recoil (0x92E5E, `TODO(effects port)` in `player_recoil`), the water ripples 0x60E2
+  in the gun walk, the extra life pose (states 0x18 / 0x1A, `+$10E`, started by 0x6B98), the two-player
+  tie-up (0x6866, state 0x1A, run state 4 0x1A330) and the HUD weapon display 0x2389C (`hud.rs`, not the player).
+- Enemy fields not exposed yet: `player_g4f3` (G.$4F3) returns 3 (player vs player off), 0x6606 downed claim,
+  0x1128E multi-part boss link. (`player_enemy_w84` and `player_enemy_b87` read the enemy since task 3.)
 - Scripted control G.$4DD input (0x1DB5E), vehicle wait G.$505 (state 0x432 waits forever), states
-  0x18/0x1A/0x2A/0x2C and air 0x18..0x26/0x34, sound codes (the voice routines 0x95CE..0x9C0C are ported in `snd.rs`; pan and volume are not recorded),
+  0x2A/0x2C and air 0x18..0x26/0x34, sound codes (the voice routines 0x95CE..0x9C0C are ported in `snd.rs`; pan and volume are not recorded),
   respawn sparkle 0x958E4, dust 0x92E5E, water ripple 0x60E2, DIP lives (fixed 2).
 
 ## Next steps (in order)
 
 1. Screenshots for jump (`J`), run (double tap `R`), jab chain into an enemy, special (`AJ`);
    compare frame by frame against MAME where possible.
-2. Wire the enemy port: replace `player_enemy_w84` / `player_enemy_b87`, call `player_hit_by_enemy`
-   from its pass 0x115B0, test grabs and hurt reactions against real enemies.
+2. Wire the enemy port: (`player_enemy_w84` / `player_enemy_b87` read the enemy since task 3 and the pass 0x115B0
+   calls `player_hit_by_enemy`), test grabs and hurt reactions against real enemies; port `enemy_grabbed` 0x2B35A
+   (notes in `plan/phase-01-stage1-complete.md`, findings of task 3).
 3. (done in phase 1 task 1: `Game::terrain`, `terrain.rs`.)
-4. Items: port find_pickup / pickup / weapon states once pool E items expose their type (+$A0).
+4. (done in phase 1 task 3: `player_weapon.rs`.) Not yet recorded: a player hurt by an item of another player
+   (pass 0x10DCC, a stub in `enemy_combat.rs`) and the bazooka of a joining player (0x65A4) need a second player.
 5. Scripted control 0x1DB0C/0x1DB5E and the vehicle entrance (G.$505) with the flow port.
 
 ## Known issues / not yet verified
+
+- Weapons are verified against MAME for the whole run in step and follow mode (README scenarios `melee`, `heavy`,
+  `gunwalk`, `empty`, `pickups`, `armed` and the item scenarios): no player or item difference except what the
+  unported neighbours cause (HUD weapon cells, muzzle effects, dust, the first wave's props).
 
 - Verified at wrap-up: `cargo build` green, `cargo test -p dino-game player` 5/5 pass, screenshot
   `re/out/shots/p_walk.png` (Jack placed at the stage 1 start, walks right, jab frame shown, HUD bar).

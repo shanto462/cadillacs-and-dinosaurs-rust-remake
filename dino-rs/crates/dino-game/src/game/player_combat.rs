@@ -152,9 +152,12 @@ impl Game {
         p.score = bcd_add(p.score, v);
     }
 
-    /// Enemy +$87 custom hit handler flag. TODO(enemy port): read `Enemy` once the field exists.
-    fn player_enemy_b87(&self, _h: Handle) -> u8 {
-        0
+    /// Enemy +$87 guard flag (a pool A enemy; 0 for any other object).
+    fn player_enemy_b87(&self, h: Handle) -> u8 {
+        match slot_of(h) {
+            Some(Slot::Enemy(i)) => self.enemies.slots[i].m.b(super::enemy::off::B87),
+            _ => 0,
+        }
     }
 
     /// G.$4F3, copied from G.$4FB by the enemy census (0x32440); 3 or more disables player vs

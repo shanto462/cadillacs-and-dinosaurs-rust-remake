@@ -59,7 +59,6 @@ const CHAIN: u32 = 0x26408;
 const HIT_CHANCE: u32 = 0x2CBA0;
 const BREAK_MASKS: u32 = 0x2CB80;
 const GUN_KIND_FLAG: u32 = 0x2494A;
-const NEAR_ENEMY: u32 = 0x62AE;
 
 impl Game {
     /// 0x24D44 weapon.
@@ -514,26 +513,10 @@ impl Game {
         }
     }
 
-    /// 0x6248: is an enemy (the list of the previous frame) in front of the weapon within the
-    /// reach of the character's box (table 0x62AE: 5 words per character)?
+    /// 0x6248 for a weapon: is an enemy (the list of the previous frame) in front of the weapon
+    /// within the reach of the character's box?
     pub(super) fn weapon_enemy_near(&self, it: &Item) -> bool {
-        let t = &self.assets.enemy.t;
-        let row = it.b.id as u32 * 10;
-        let (dx, xoff, xw, zoff, zw) = (t.i16(NEAR_ENEMY, row), t.i16(NEAR_ENEMY, row + 2), t.u16(NEAR_ENEMY, row + 4), t.i16(NEAR_ENEMY, row + 6), t.u16(NEAR_ENEMY, row + 8));
-        for &a1 in self.combat.get(0x69BA) {
-            let e = self.body(a1);
-            let d = if it.b.facing != 0 { dx } else { dx.wrapping_neg() };
-            let x = d.wrapping_add(it.b.xi()).wrapping_sub(e.xi()).wrapping_add(xoff) as u16;
-            if x >= xw {
-                continue;
-            }
-            let z = it.b.zi().wrapping_sub(e.zi()).wrapping_add(zoff) as u16;
-            if z >= zw {
-                continue;
-            }
-            return true;
-        }
-        false
+        self.item_enemy_near(&it.b)
     }
 
     /// 0x193E for an item (it keeps the object inside the play area).
