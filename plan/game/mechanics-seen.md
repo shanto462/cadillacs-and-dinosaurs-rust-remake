@@ -210,3 +210,67 @@ STUB (empty named function), MISSING (no code), UNKNOWN (original not understood
 | C03 | Parallax (scroll 3), vertical scenes, sub-areas | st 7 | DONE | |
 | C04 | Object clamp to the camera (0x193E) | st 6.8 | DONE | |
 | C05 | Palette fades: area end, stage start, boss | st 2.4 | DONE | |
+
+## I. Rows added by the design phase (merged by the main session; D5 sorts them into the groups above)
+
+### From `design/D2a-player-moves.md` (D2a player moves), 14 rows
+
+| ID | Mechanic | Source | Port | Notes |
+| --- | --- | --- | --- | --- |
+| P43 | Tag team: both heroes still and overlapped (less than 32 px in X, 0 to 15 in Z, no input, class 0) for 90 frames; initiator swings the partner (Jack: partner runs 43 frames at super speed and can attack with id 0x1A; Mustapha, Hannah, Mess: partner is thrown up and forward, vx 3 px/f, vy 6.5 px/f, can air attack with id 0x10); both blink invulnerable 180 frames | R: 0x6728..0x6922, M: d2a_tie | MISSING | D2a section 9; replaces the STUB row P11 |
+| P44 | Friendly fire is active when fewer than 3 enemies are alive (`G.$4F3` is the enemy census count), depth window -1..1 / 0..1 / 0 by count, 1 HP per hit with the record's reaction, special immune | R: 0x10664, 0x106F2, M: d2a_D ff_* | PARTIAL (gate constant 3) | corrects P12 and the HANDOFF note |
+| P45 | 1UP pose per hero (set 0 id 0xE): Jack, Mess ground state 0x18; Mustapha, Hannah air states 0x418, 0x41A; starts when idle within 240 frames after crossing the extra life score; invulnerable, then 180 frame blink | R: 0x6B98, 0x19996, M: d2a_D oneup_* | PARTIAL (score hook ported in `hud.rs`, pose states MISSING) | extra life thresholds (500000, 1000000 for the default setting) belong to D2b |
+| P46 | Frames without a hurt box: special, throw, pick up, 1UP pose, tag team swing, drop in; dash recovery and dive landing for Mustapha and Hannah (Mess: zero size box at the feet) | R: dump | PARTIAL (data driven) | D2a section 15 |
+| P47 | Dive kick window is 2 to 3 frames at the top of the jump (Jack and Mess top = split height) | M: d2a_basic jattack_* | DONE (data driven) | |
+| P48 | Dive (0x0E) and running jump attack (0x10) deal 1.5 times the record damage to almost all enemy types (table 0xA32FA) | R: 0x2B904 | DONE | |
+| P49 | Attack power factor `$C6` is 32 in 27 of 32 rolls at HP >= 75, re-rolled when the hero is hit; 64 possible below 25 HP | R: 0x11738, 0x2C9B6 | DONE | |
+| P50 | Wall jump needs terrain wall bit 4 (or 0x18, 0x1C), found in Episode 1 areas 0 to 2, Episode 5 area 0, Episode 6 area 0, Episode 8 area 1; the triangle kick is the jump attack during the wall jump | R: 0x1A744, M: d2a_wallscan, d2a_wj | PARTIAL | D3e or D4c to list real spots |
+| P51 | Thrown enemies hurt other enemies for 5 damage (enemy attack row 0x11), knock down | R: 0x1185A | DONE | |
+| P52 | Score per hit from the record's score code: 100 / 200 / 300 / 400 / 700 / 800 / 1000 | R: 0x10292 | DONE | |
+| P53 | Hannah's knife stab rate comes from her 5 frame swing animation; the item flashes red when an enemy is in reach; all heroes swing it at close range | M: d2a_D knife_* | DONE (D2c) | web statement corrected |
+| P54 | Scripted player states 0x2A (two hops) and 0x2C (pose with an effect, leader only) and the scripted special (0x1E2EE) | R: 0x19EA6, 0x19F40, 0x1E2EE | MISSING | D4c |
+| P55 | Stage clear and idle: no pose, no taunt; heroes idle during the tally | M: d2a_D clear_* | DONE | |
+| P56 | Run start burst (7 frames Jack, 5 others at class 8 speed), double tap window 12 frames, run lasts 240 frames | R + M: d2a_dtap3 | DONE | |
+
+### From `design/D3e-pool-b-inventory.md` (D3e pool B and area walk part 1), 12 rows
+
+| ID | Mechanic | Source | Port | Notes |
+| --- | --- | --- | --- | --- |
+| W27 | Steam pipes in the end wall of Episode 1 area 0: break with one punch (hero depth 296 to 320), then steam puffs forever (6 pieces alive) | M e1-pipez*, e1-pipebreak; R 0x836A4 | MISSING | B40, pieces ported. Answers W25 for Episode 1 |
+| W28 | Episode 1 end door of area 0 is smashed by the hero during the scripted walk (dust, black doorway) | M e1a0-door; R 0x1DD30, 0x789C8 | MISSING | B11 |
+| W29 | Hall double door opens at the start of wave 1; the hall window shatters when the scripted hero kicks it; the next area starts with a hole in the facade and later a wooden door bursts open | M e1a1-hall, e1a2-enter; R 0x78B52, 0x7B0BE | MISSING | B12, B14; flag G.$506 arms the window |
+| W30 | Respawn air strike: five bombs fall in a line, white blast, explosions around the dropping hero, speech bubble | M respawn; R 0x18B9C, 0x7B65E | MISSING | B18 (not a 1UP marker: corrects P40 and P22) |
+| W31 | Breakable family of pool B: classes 0 (generic wall panel, 15 variants), 1 (chain-link fence), 3 (wall), 12 var 4 (window), 40 (steam pipes), 45 (flame vent, HP 0x30, can be destroyed); only these 6 register in the player hit list 0x4BFA; one hit always breaks | R static search | MISSING | no pool B class hurts players |
+| W32 | Episode 2 ambient life: small blue bird flocks (B72, A46 with A48 trail) harmless; ground critters (A78, A80) harmless; jungle sound maker (B80, sound 0x78) | M e2-birds2; R | MISSING | |
+| W33 | Tile animation family of pool B: periodic scroll2, scroll3 or palette writers (23 classes), some keyed to a global tile clock G.$7AE | R | MISSING | one generic block table driver can run most |
+| W34 | Class 69 is a debug object (frees itself unless G.$4AA); class 66 has an anti tamper check (0x86B3C); class 96 starts the area music (table 0xA582) | R | n/a (69, 66 check), MISSING (96) | |
+| W35 | Class 95 blends 3 palettes toward a target set along the Episode 3 road (sky colours); classes 83, 84, 85 are debris showers with quake (Episode 8 lair, ending) | R | MISSING | |
+| W36 | Container variants of E class 5: 0 pail, 2 drum, 4 barrel, 6 stone, 8 boulder, 0xA armor statue (solid), 0xC tire stack | M cont0 .. cont12 | DONE (pool E) | names only |
+| W37 | "STAGE CLEARED!" and digits 1 to 8 are frames of pool C class 9 (0x93184); 1P, 2P, 3P tags are B68; red pillars are B64; fences are B1 | R | MISSING | answers N1 of the asset catalog for those groups |
+| W38 | Treasures of Episode 2 area 0 sit at depth 16, height 64, behind the big yellow trunks (E class 9 var 2, 8, 0xE, 0xD) | M e2-treasure | DONE (pool E) | |
+
+### From `design/D4d-front-end-and-story.md` (D4d front end and story), 21 rows
+
+| ID | Mechanic | Source | Port | Notes |
+| --- | --- | --- | --- | --- |
+| F25 | The attract state is kept across games: after a game over the loop resumes in the state it was in, after one ranking screen | M: d4d-b16 | MISSING | 3.1 |
+| F26 | Boot screens end early when player 1 or 2 presses attack or jump (after 30 frames) | M: d4d-b14 | MISSING | section 2 |
+| F27 | Debug mode at power on (P1 up, right, attack, jump, coin 1): DIP bits become cheats, a pause task; the skip-wait task 0x9E38C doubles sleep speed in scripted scenes while a button is held | R: 0xA6C0, 0x9E38C | n/a | section 1 and 10 |
+| F28 | Continue countdown: 20 lasts 100 frames, others 60; attack or jump skips one number per press from 17 (mode 0x10) or 18 (in level); coins only add credits | M: d4d-b3 | MISSING | 6.3 (replaces P33 notes) |
+| F29 | Join and continue also add stage time (+3:30 join, +4:00 continue, cap 4:00), +600 frames to the wave timer, +1 point to the score of all three players, and cost 1 credit (2 in the "2 coins start" mode, continue 1) | M: d4d-b19, d4d-b3 | MISSING | 6.2 |
+| F30 | Tally rules: (HP − 1) * 100 or 20000 at HP 100; kills * 100; final blow 20000; M.V.P. 10000 for the most damage (ties share); count down 100 per frame; end frame = 177 + max_total / 100 + 268 | M: d4d-b7, b8, b5 | STUB | 9.1 (replaces F10 notes) |
+| F31 | Name entry exists (game over and ending): 30 glyphs (A to Z, comma, point, RUB, END), 3 letters, 420 frame idle and 20 second limits, profanity filter, parked during the ending | M: d4d-b4, b6, b18 | MISSING | 7 (replaces F20 notes) |
+| F32 | The ending is independent of hero and player count (only the explosion randomness differs); fixed cast Mustapha and Mess walk, Jack and Hannah drive | M: d4d-b5 | MISSING | 8 |
+| F33 | The demo resets the random generator (G.$4 to G.$E = 0, G.$14 = 0x1C3) and replays recorded input streams (30 streams, 0xC869A) | R: 0x99F10, 0x9A146 | MISSING | 3.6 |
+| F34 | Anti-tamper checks (0x6A73A at the title, 0xD860 in the tally, 0x1F18A in the first panel, 0x86B3C in the join task, 0x104F6) never fire on a real ROM: do not port | R | n/a | replaces F23 |
+| F35 | The rank at the start of a game depends on the frames the machine waited with a credit (G.$4F6 counted by the system task, bands 720, 3600, 10800) | R: 0x1827A, 0x17F8A | PARTIAL (`rank.rs` has the bands, no feeder) | resolves F12 |
+| F36 | Free play: no press-start screen, start works at once from any attract moment, FREE PLAY texts; credits are capped at 9; SERVICE adds one credit to every player | M: d4d-b15, R | MISSING | 3.10, 4.1 |
+| F37 | In the select, no two players can hold the same hero, cursors skip taken heroes, joining resets the timer to 10, auto pick presses attack for all at 0, pans 0x00, 0x0B, 0x15, 0x20 for sounds 0x32 and 0x33 | M: d4d-b4 | STUB | 5 |
+| F38 | The map panel appears twice: at the end of the tally (slides in, marker blinks 120 frames) and in the intro card of the next episode (slides in, typed EPISODE title 141 frames, slides out, HUD slides in) | M: d4d-b5, b9 | MISSING | 9 |
+| F39 | The sound filter: in attract and demo only codes 0xFFxx and 0x0030 reach the sound chip unless the demo sound setting is on (factory: off) | R: 0x610 | MISSING | 3.11 |
+| F40 | In-level prompts of absent players alternate INSERT COIN and JOIN-IN when there is no credit (128 frame cycle), JOIN-IN only with a credit (64 frame cycle) | M: d4d-b13 | STUB | 6.1 (extends F18) |
+| P57 | Join: attack alone also joins a player with a credit (three chute mode, not in the Japan set); the strip starts on the player's previous hero; a hero is held only by players in strip or play state | M: d4d-b20, b3 | MISSING | 6.2 (was P43 in D4d-front-end-and-story.md)|
+| P58 | A joining or continuing player gets HP 100, extra lives (1), a bazooka, 360 frames of blinking invulnerability, drops in at camera X + 0xC0 | M: d4d-b3 | PARTIAL (`item_give_bazooka`) | 6.2 (was P44 in D4d-front-end-and-story.md)|
+| P59 | The hero can be chosen at three moments only: select, join strip, continue strip | M, R | STUB | 6.5 (answers P41) (was P45 in D4d-front-end-and-story.md)|
+| F41 | Story panels: Episodes 4 and 7 show the first unused hero as the speaker, Episodes 4 and 5 use the first player's hero name, Episode 6 shows the first player's portrait (blank for Hannah alone); attack skips any panel | M: d4d-b21, R: 0xE034, 0xE0AA, 0xDFCC | MISSING | 9.3 |
+| P60 | The continue screen keeps the level frozen and restores it after a continue (about 41 frames after the press) | M: d4d-b3/k-coin-late | MISSING | 6.3 (was P46 in D4d-front-end-and-story.md)|
