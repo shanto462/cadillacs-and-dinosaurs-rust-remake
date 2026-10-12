@@ -59,6 +59,7 @@ STUB (empty named function), MISSING (no code), UNKNOWN (original not understood
 | P39 | Per hero voices on hit, attack, special | sound SPEC | MISSING | no sound in the port |
 | P40 | Respawn flash (pool C class 0x38), sparkle (0x5C), 1UP marker (pool B class 0x48) | pl 5.8 | STUB | |
 | P41 | Players can pick which hero they play at the start and at a continue (can change hero) | M | STUB | |
+| P42 | Idle behaviour during play: what a hero does when the player does not touch the controls (idle animation or pose, if any), and the idle "GO" hint after 600 f (W23) | user 2026-10-12 | UNKNOWN | D2a: check in MAME with no input for 2000 f per hero; D4c: the hint |
 
 ## B. Enemies (humans and mutants)
 
@@ -155,6 +156,8 @@ STUB (empty named function), MISSING (no code), UNKNOWN (original not understood
 | W22 | Garage props (Episode 4), doors, gates | stage scripts | MISSING | pool B 0, 1, 59 |
 | W23 | The "GO" burst arrow at the right edge and the idle hint after 600 f | M, en 8.3, ph1 | MISSING | pool B 20 is the hint |
 | W24 | Pool B classes with unknown role: 59 distinct in the scripts, 57 not ported | stage scripts | MISSING | D3 list |
+| W25 | Breakable parts of the background: pipes in walls (the user saw them), and probably windows, signs, wall panels and other scenery that break when hit and may drop items. How they work is unknown: a pool B object with a hit box that rewrites scroll2 tiles, or a container variant drawn as background | user 2026-10-12 | UNKNOWN | D3e: walk every area of every episode in MAME, hit every wall and background object, and list each breakable or interactive part: where, how it is hit, what it shows, what it drops, which class or routine does it |
+| W26 | Catch-all: every other interactive thing in the levels (switches, doors, things that fall or roll when touched, objects that react to the players or to enemies) | user 2026-10-12 ("and many things") | UNKNOWN | D3e and D4c: the area-by-area walk above lists them all; nothing in a level is "background only" until checked |
 
 ## F. Flow, time, HUD
 

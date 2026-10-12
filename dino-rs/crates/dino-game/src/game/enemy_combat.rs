@@ -25,7 +25,67 @@ impl Game {
     pub fn pass_10dcc(&mut self) {}
     pub fn pass_1132a(&mut self) {}
     pub fn pass_10cd0(&mut self) {}
-    pub fn pass_11962(&mut self) {}
+
+    /// 0x11962: player attacks (frame class 4 or 6) against the objects of the attacker list 0x671A that
+    /// are alive (+$00 bit 0): containers, and weapons lying about, whose frame class can be hit
+    /// (0, 2, 4, 6, 0xC). This is how a punch breaks a container.
+    pub fn pass_11962(&mut self) {
+        for a2 in self.combat.get(0x6718).to_vec() {
+            let Some(Slot::Player(i)) = slot_of(a2) else { continue };
+            if !matches!(self.players[i].b.kind, 4 | 6) {
+                continue;
+            }
+            for a3 in self.combat.get(0x671A).to_vec() {
+                let Some(Slot::Item(j)) = slot_of(a3) else { continue };
+                if self.items.slots[j].b.live & 1 == 0 {
+                    continue;
+                }
+                self.player_hits_item(i, a2, j, a3);
+            }
+        }
+    }
+
+    /// 0x119BA / 0x11A06: one player attack against one item. An item that this swing hit already
+    /// (same attacker and serial) is skipped. A hit: serial, credited player, attacker, HP minus the
+    /// damage byte of the player's attack record, reaction `+$7B` / `+$06`, hit stop on both, the hit
+    /// sound, the score, spark type 1, and the item turns away from the player.
+    fn player_hits_item(&mut self, i: usize, a2: Handle, j: usize, a3: Handle) {
+        let (ab, ib) = (self.players[i].b.clone(), self.items.slots[j].b.clone());
+        if ib.attacker == a2 && ab.serial == ib.serial {
+            return;
+        }
+        if ab.attack_box == 0 || ib.body_box == 0 || !matches!(ib.kind, 0 | 2 | 4 | 6 | 0xC) {
+            return;
+        }
+        let Some((ha, hb)) = collide::boxes_hit(&self.assets.sprites, &ab, ab.attack_box, &ib, ib.body_box) else {
+            return;
+        };
+        let ch = (ab.k20 / 4) as usize & 3;
+        let r = self.assets.sprites.player_attacks[ch][(ab.atk / 2) as usize];
+        {
+            let it = &mut self.items.slots[j];
+            it.b.serial = ab.serial;
+            it.b.who = ab.who;
+            it.m.sb(0x7A, 0);
+            it.b.attacker = a2;
+            it.b.hp_prev = it.b.hp;
+            let hp = (it.b.hp as i16).wrapping_sub(r.damage as i16);
+            it.b.hp = if hp > 0 { hp as u16 } else { 0 };
+            it.b.reaction = r.reaction;
+            it.b.act = r.reaction;
+            it.b.step = 0;
+            it.b.hitstop = r.hit_stop;
+        }
+        self.players[i].b.hitstop = r.hit_stop;
+        if r.sound != 0 {
+            self.snd_hit(r.sound); // 0x962A
+        }
+        self.player_add_score(i, r.score); // 0xFFC8
+        self.items.slots[j].b.b9a = r.b7;
+        self.spawn_hit_spark(a2, a3, ha, hb, 1);
+        let px = ab.xi();
+        self.items.slots[j].b.facing = (px > self.items.slots[j].b.xi()) as u8;
+    }
     pub fn pass_11a9e(&mut self) {}
     pub fn pass_11e56(&mut self) {}
     pub fn pass_11cec(&mut self) {}
@@ -1307,5 +1367,64 @@ mod tests {
         g.body_mut(victim).kind = 6;
         g.pass_1185a();
         assert_eq!(g.body(victim).hp, 0x40);
+    }
+
+    /// 0x11962: a player attack (frame class 4) hits an item of the attacker list 0x671A (a container) with the
+    /// damage of the player's attack record; the same attacker with the same serial hits it only once; the
+    /// frame classes that cannot be hit (8, 0xA, 0xE) and the player's frame classes other than 4 / 6 do nothing.
+    #[test]
+    fn a_player_attack_hits_an_item_of_the_attacker_list() {
+        let mut a = AssetPack::default();
+        a.sprites.hitboxes = HitBoxBank { base: 0x100000, words: vec![0, 0, 0, 0, 0, 0, 0, 0x20, -0x10, 0x20, 0, 0x40] }; // box 1
+        a.sprites.player_attacks[0] = vec![AttackRecord { damage: 4, stun: 1, reaction: 2, hit_stop: 9, sound: 0, score: 0, spark: 1, b7: 5 }; 2];
+        a.enemy.t.blobs = vec![(0x10292, vec![0; 0x90])];
+        let mut g = Game::new(Box::leak(Box::new(a)));
+        let (me, item) = (Game::player_handle(0), g.items.handle(3));
+        {
+            let p = &mut g.players[0].b;
+            p.live = 1;
+            p.box_table = 0x100000;
+            p.attack_box = 1;
+            p.kind = 4;
+            p.serial = 5;
+            p.who = 0;
+            p.set_xi(0x100);
+            p.set_zi(0x50);
+        }
+        {
+            let it = &mut g.items.slots[3].b;
+            it.live = 1;
+            it.box_table = 0x100000;
+            it.body_box = 1;
+            it.hp = 4;
+            it.set_xi(0x108);
+            it.set_zi(0x50);
+        }
+        g.combat.push(0x6718, me);
+        g.combat.push(0x671A, item);
+        g.pass_11962();
+        let it = &g.items.slots[3].b;
+        assert_eq!((it.hp, it.hp_prev, it.hitstop, it.serial, it.attacker), (0, 4, 9, 5, me));
+        assert_eq!((it.act, it.reaction, it.b9a, it.who, it.facing), (2, 2, 5, 0, 0));
+        assert_eq!(g.players[0].b.hitstop, 9);
+        assert_eq!(g.effects.free_count(), 47, "a spark");
+        // The same swing does not hit twice.
+        g.items.slots[3].b.hp = 4;
+        g.pass_11962();
+        assert_eq!(g.items.slots[3].b.hp, 4);
+        // A new swing (new serial) does; a frame class that cannot be hit does not.
+        g.players[0].b.serial = 6;
+        g.items.slots[3].b.kind = 8;
+        g.pass_11962();
+        assert_eq!(g.items.slots[3].b.hp, 4);
+        g.items.slots[3].b.kind = 0xC;
+        g.pass_11962();
+        assert_eq!(g.items.slots[3].b.hp, 0);
+        // The player's frame class 0 is not an attack.
+        g.items.slots[3].b.hp = 4;
+        g.players[0].b.serial = 7;
+        g.players[0].b.kind = 0;
+        g.pass_11962();
+        assert_eq!(g.items.slots[3].b.hp, 4);
     }
 }

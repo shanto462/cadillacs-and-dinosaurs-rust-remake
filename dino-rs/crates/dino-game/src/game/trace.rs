@@ -787,7 +787,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 /// `pool_c_update`, `pool_e_update`.
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
-    ("enemy", &[2, 10, 20, 49, 50, 54, 55]),
+    ("enemy", &[2, 10, 14, 15, 20, 34, 41, 49, 50, 54, 55, 60]),
     ("prop", &[15, 73]),
     (
         "item",

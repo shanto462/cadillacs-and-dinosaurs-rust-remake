@@ -95,6 +95,27 @@ Pool A class scenarios (phase 1 task 4a). Record with `DINO_POKE=re/harness/poke
 | `c20b` | `scripts/c20b.txt` (`genscript.py 21 2400 --hits 8`), `pokes/c20b.lua` | 2400 | (task 4a) eight waiting Punk / Thug, Jack's HP 0x190: all actions and attacks. `c20b_hannah`, `c20b_mustapha`, `c20b_mess` with `DINO_BOOT` |
 | `c10b`, `c10c` | `scripts/c10b.txt` (`genscript.py 7 1500 --hits 8`), `scripts/c10c.txt` (`genscript.py 11 2400 --hits 8`), `pokes/c10b.lua` / `c10c.lua` | 1500, 2400 | (task 4a) five and eight class 10 thugs that wake up near Jack, Jack's HP raised to 0x190: all attack kinds, the paired attack, the stomp walk, deaths. `c10c_hannah`, `c10c_mustapha`, `c10c_mess` with `DINO_BOOT=re/harness/scripts/boot_NAME.txt` |
 
+Class 14 scenarios (phase 1 task 4a2: BLADE / RAZOR, three pool A slots each, and the pieces they throw). Record with
+`DINO_POKE=re/harness/pokes/NAME.lua DINO_SYNC=control+86 re/harness/record.sh re/harness/scripts/NAME.txt NAME FRAMES`; each with the three other
+characters too (`DINO_BOOT=re/harness/scripts/boot_hannah.txt` ..., names `c14b_hannah`, `c14b_mustapha`, `c14b_mess`; the script and poke keep the
+base name). Jack's HP is raised to 0x190 in all of them. A BLADE is `+$26` 0x00ee, a RAZOR 0x02ee (`ee` = the entrance: 0 walk in, 2 / 4 stand and wait
+0x4B0 / 0x1E0 frames, 6 jump in from above, 8 jump in beside the target, 0xA / 0xC walk in with two knives).
+
+| NAME | script / poke | FRAMES | what it covers |
+| --- | --- | --- | --- |
+| `c14a` | `scripts/c14a.txt` (`genscript.py 5 1200 --hits 8`), `pokes/c14a.lua` | 1200 | a Blade that walks in and a Razor and a Blade that wait: the AI states, the guard and its back step, hits, grabs, throws, knives dropped by a hit Blade (class 34), thrown blades (class 41) |
+| `c14b` | `scripts/c14b.txt` (`genscript.py 7 2400 --hits 9`), `pokes/c14b.lua` | 2400 | two Blades and two Razors waiting (entrances 2 and 4): the fight to their deaths (death, drops, the parts) |
+| `c14c` | `scripts/c14c.txt` (`genscript.py 11 2400 --hits 9`), `pokes/c14c.lua` | 2400 | the entrances 6, 8, 0xA, 0xC (jump in from above and beside the target, walk in with two knives: the parts, knife throws, the run at the target) |
+| `c14d` | `scripts/c14d.txt` (`genscript.py 13 2400 --hits 9`), `pokes/c14d.lua` | 2400 | three waiting OFF SCREEN (camera X 0x381, screen X 0x369..0x501): the flee timer and the run state 0x36 |
+| `c14e` | `scripts/c14e.txt` (`genscript.py 17 1500 --hits 9`), `pokes/c14e.lua` | 1500 | two walk in against containers (the obstacle bit: swing state 0x34, containers destroyed by a Blade) |
+| `c14f` | `scripts/c14f.txt` (`genscript.py 19 3000 --hits 10`), `pokes/c14f.lua` | 3000 | four with drop rows, entrances 0, 4, 0xA, 0xC, fought one after the other to their deaths |
+| `c14g` | `scripts/c14g.txt` (Jack stands still 1100 frames, then `genscript.py 23`), `pokes/c14g.lua` | 1400 | five waiting off screen on both sides: the states 0x36 and the chase 0x38 (the run goes away from the screen in 3 of 16 cases) |
+| `c14h` | `scripts/c14h.txt` (A every 8 frames), `pokes/c14h.lua` | 2000 | Jack punches all the time against three with two knives: thrown blades are hit and fall (class 41 sub 2 / 8), knives, guard |
+| `c15a` | `scripts/c15a.txt`, `pokes/c15a.lua` | 300 | the five rows of the flying pieces (pool A class 15), both facings (the poke writes `+$0C` and `+$24` after `spawn_enemy`) |
+
+Union of the states reached (`cover.py`): 24 of the 30 states of class 14 (never: 0, 2, 4, 0x10, 0x12, 0xC: no reachable code enters them), the hit reactions, held,
+thrown, death. `check.sh` stops with the panic message when the port panics (the trace is shorter than FRAMES then; look at `compared N records`).
+
 ```sh
 DINO_SYNC=control+86 re/harness/record.sh re/harness/scripts/stage1_fight.txt stage1_fight 1400
 for m in run follow step; do MODE=$m re/harness/port.sh re/harness/scripts/stage1_fight.txt stage1_fight 1400; done
@@ -132,10 +153,11 @@ runs. The flag is still in the code, but do not use it.
 
 ## Helper scripts (phase 1 task 4a)
 
-- `regress.sh [NAME ...]`: the step runs of all the recorded scenarios of phase 1 (a quick check that nothing broke: the number of
-  (class, field) pairs in ported classes per scenario, 0 is the goal; `armed` has 3 known ones, `intro` the scripted player).
+- `regress.sh [NAME ...]`: the step runs of all the recorded scenarios of phase 1 (49 with the class 14 scenarios, about 40 s) (a quick check that nothing broke: the number of
+  (class, field) pairs in ported classes per scenario, 0 is the goal; `armed` has 4 known ones (the prop hit at frame 564 and the class 15 pieces that the unported prop B#40 spawns), `intro` the scripted player and the scene spawns, `c14c_mustapha` 8 (a hit spark in another pool C slot because of the unported dizzy stars)).
 - `check.sh MODE NAME [diff.py options]`: runs the port in `step` / `follow` / `run` mode on a recorded scenario (the
-  script and frame count come from a small table in the script, or from `SCRIPT=` and `FRAMES=`) and prints the diff report.
+  script and frame count come from a small table in the script, or from `SCRIPT=` and `FRAMES=`) and prints the diff report. It stops with
+  the message when the port panics (before task 4a2 a panic only shortened the trace and was not noticed).
 - `objhex.py TRACE ADDR LEN FIRST [LAST]`: hex dump of one object (or any RAM range) at a frame, then the changed bytes
   of every later frame (MAME or port trace). `cover.py TRACE [enemy|prop] [CLASS...]`: which state words (+$04..+$07) a class
   reaches in a recording (how much of its code a scenario runs).

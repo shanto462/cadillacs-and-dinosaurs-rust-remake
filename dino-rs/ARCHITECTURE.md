@@ -70,6 +70,7 @@ Helpers that only need your own object can be methods on your own type or free f
 | camera | `g.cam.s2.cam_x/cam_y` (G.$744/$748), lock state `g.cam.s2.lock78`, release with `g.camera_go()` |
 | palettes | `g.pal` (palette memory), `g.load_obj_palettes()`, fades in `palette.rs` |
 | text layer | `g.vram.scroll1` cells (`Vram::index1(col,row)`) |
+| enemy library 0x32xxx (aim, face, slots round the target, screen test, distance class, target check) | `lib_*` in `game/enemy/lib32.rs` (`lib_aim_at_target`, `lib_face_target`, `lib_slot3_new`, `lib_slot6_new`, `lib_off_screen`, `lib_distance_class`, ...), sounds with a toggle `snd_9d44` / `snd_9732` / `snd_96ce` |
 | terrain | `g.terrain_collide(&mut body, handle, is_item)` = 0x12CB4 (enemies, props, items; returns the obstacle for +$94), `terrain_player` = 0x12CAC, `terrain_floor_only` 0x12D4E, `terrain_effect_floor` 0x12DAC, `terrain_collide_free` 0x12E20; take the body out of its slot first (`std::mem::take`) when it lives in `g` |
 
 ## File ownership (parallel work)

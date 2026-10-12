@@ -34,7 +34,8 @@ phase: the port must match the original frame by frame (checked with the phase 0
 | 2 Items (pool E) | Done (2026-10-12), no item differences in step runs |
 | 3 Weapons and pickup (player side) | Done (2026-10-12), no player or item differences in 15 step runs |
 | 3b Enemy grab (enemy_grabbed 0x2B35A), throw into enemies | Done (2026-10-12), grab differences gone |
-| 4a Pool A: birds, opening scene objects, classes 10 (Hammer T. / Blk Elmer / Wrench T.) and 20 (Punk, Thug) | Done (2026-10-12), step runs match; class 14 (Blade, Razor, with its parts) still open |
+| 4a Pool A: birds, opening scene objects, classes 10 (Hammer T. / Blk Elmer / Wrench T.) and 20 (Punk, Thug) | Done (2026-10-12), step runs match |
+| 4a2 Pool A class 14 (Blade, Razor) with its parts (classes 60, 34, 41), class 15 pieces, the shared library 0x32xxx, player pass 0x11962 | Done (2026-10-12), 33 new scenarios (with all four characters) match in step mode; 16 / 17 (stage 2 truck) not ported |
 | 4 Remaining stage 1 enemies and props (4b: pool B) | In progress |
 | 5-9 Vice T., join prompts, leftovers, stage flow, exactness pass | Pending |
 

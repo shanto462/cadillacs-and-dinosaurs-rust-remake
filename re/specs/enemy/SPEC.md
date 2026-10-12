@@ -1555,3 +1555,59 @@ Port: `dino-rs/crates/dino-game/src/game/enemy/` (`scenery.rs`, `class10*.rs`, `
   level band). 8 fall (anim 0x16 then 0xF). Death: the class 2 routine (0x46A2E).
 - The quirks: 0x46B0E turns by +6 only (the -6 branch is dead); 0x45FF8 jumps when the 0x46BE0 window test fails; the sound 0x9C20 is the
   0xE0 / 0xE1 toggle (bit 6 of G.$43A) for non-players.
+
+### 17.5 Class 14: BLADE (name 6, variant 0) / RAZOR (name 0x14, variant 2), 0x4020E (phase 1 task 4a2)
+- **Three objects per script record.** Init sub 0 (0x40224) takes two more pool A slots (`$65F8` must be at least 2), sorts the three handles
+  (signed long compares of sign extended words: ascending), turns the MIDDLE one into the real object (`+$20 = 0x38`, copies `+$26`, `+$96`, `+$22`
+  word, the integer words of X / Y / Z, `+$A8` / `+$AA` = the other two handles, `+$05 = 2`) and the other two into class 60 (`+$20 = 0xF0`,
+  `+$26 = 0` and `0x200`, `+$40 = 0x6FB6A`, `+$A0` = the master as a sign extended long). The object that runs the init may be any of the three.
+  Sub 2 (0x402E4) is the real init (id 6 / 0x14, `+$84` 0x18 / 0x50, anim tables 0x6DA40 / 0x6DF2A, speed 7, HP, `+$B8 = 0xFED4`, `+$AF = 0x1E`,
+  slot 0x32D90, target, aim 0x32A70), then the entrance by `+$27` (table 0x403E8): 0 walk in (state 0x30, 0x48 frames), 2 / 4 stand and wait 0x4B0 /
+  0x1E0 frames (states 0x28 / 0x2A, anim 0x11 / 0x12, until the distance class of the target is below 3), 6 jump in from above (0x120 high, state
+  0x2E), 8 jump in beside the target, 0xA / 0xC walk in with two knives (the latter level with the target in Z).
+- **Alive** (0x403F6): 0x326F8, then by `+$05`: 0 the AI frame 0x40700, 2 hit reaction 0x2A606, 6 held 0x2B35A; then 0x40428 (a hit Blade in the
+  air with knives left spawns a class 34 knife, once per reaction, only while G.$4FA < 2), 0x41D6E (places the parts) and 0x193E. Death = mode 4
+  (0x41E38): `rand() & 0x3F` (the 1 / 64 anti tamper call 0x2A5B6 does nothing), kill score 0x325E6, 60 frames of blinking (drawn on odd
+  counts), then freed at once (0x41E90). Recover from a hit (table 0x2B56C entries 0x18 / 0x50) = 0x408E8.
+- **AI frame 0x40700**: `+$BA` (a block happened) starts the back step 0x41646; `+$79` poise timer; 0x12CB4; hit stop `+$59` or wait `+$7A` end the frame
+  (drawn); `+$BF` guard timer counts to 0 (0x404B0); the tick `+$AF` decides which checks run (`& 7 == 0`: wall 0x10 = ledge hop 0x4146A, airborne
+  = 0x41470, slot refresh 0x32D86, target check 0x32F56, obstacle bit 7 = 0x41430). The state handler of `+$06` (table 0x407F8), then 0x40834 (tick
+  0xA..1, face the target, close in X and level in Z = stand and wait 0x4178E; far = the second chance 0x41C8C), 0x405CA (a new slot every 0xB4
+  frames), 0x4062C (the flee timer `+$B8`: counts -300 up to 0, then 0x3C..0x78 down to 0, from the second cycle on an object that is off screen
+  and free turns the point round and runs, 0x41A96) and the "target is in a hit reaction" back off 0x412F6.
+- **States** (`+$06`; entry routines set `+$A0` busy, `+$A6` timer): 6 stand wait; 8 side step (0x412F6, speeds `+$B0` / `+$B4`); 0xA throw;
+  0xC walk round (never chosen: the decision table has no value 5); 0xE short wait; 0x14 attack animation (0x415AA, attack ids 0x17 and 0x1A,
+  chains `+$BC` of the table 0x4162E); 0x16 approach (0x41278); 0x18 side step in X (speed table 0x413B8); 0x1A side step in Z; 0x1C / 0x1E / 0x20
+  take one / two knives (parts appear: `+$BE`); 0x22 jump kick flight; 0x24 run at the target throwing knives; 0x26 jump kick wind up; 0x28 / 0x2A
+  entrance waits; 0x2C back step after a block; 0x2E jump in; 0x30 walk in; 0x32 dash; 0x34 swing at an obstacle; 0x36 run (in or away) when
+  off screen; 0x38 chase when still off screen; 0x3A reload wait. States 0, 2, 4, 0x10 and 0x12 are never entered by reachable code.
+- **Decisions.** 0x41BE8: speed 5, `+$A5` = distance class of the target (0x3293C), `rand() & 0x1F`, byte of 0x73214 (variant * 0x100 + rand * 8 +
+  class): 1 side step (8), 2 approach, 3 side step X, 4 side step Z, 5 walk round. 0x41CD0: first 0x41C46 (same facing and `rand() & 0x1F >=
+  table 0x73494`: decision 1 instead), then the table of the number of knives held (`+$BE`: 0x73514, 0x73714, 0x73914; index `rand() & 0xE8` +
+  class + variant * 0x80): 1..3 take knives, 4..8 attack kind 0..4, 9 throw, 0xA run and throw, 0xB jump kick. The second decision is reached from
+  state 6 (stand wait) and from 0x41C8C.
+- **Guard** (the table 0x10B50 by `+$84`, called by the player's hit pass 0x109C2 when `+$87 != 0`; Blade and Razor set `+$87 = 1`): 0x404CA says
+  "block" (carry) when the object is on the ground, in sub 0, not in state 0xE / 0x14 / 0x22, the target faces the other way, `+$BF` is 0 and
+  `rand() & 0xF < table 0x74298[aggression + variant * 4]`; the block time `+$BF` = `table 0x742A8[variant * 16] + table[1 + rand() & 0x1F]`,
+  `+$BA = 1`. While `+$BF > 0` a hit blocks again with the chance `0x742EA[...]`, otherwise `+$BF` = minus the word of 0x742FA[aggression * 2 +
+  variant * 8] (a pause). A block plays 0x9732 and spawns hit spark type 2; the attacker's hit stop is 1.
+- **Parts and thrown things.** Class 60 (0x580C6): draws only (draw flags 0x10), placed by 0x41D6E from the master's frame byte `+$2D` (tables 0x58178
+  / 0x58308, 8 bytes: dx, dy, dz, animation), shown while `+$BE` of the master is 1 (first part) or 2 (both), freed when the master's mode is 4 or
+  more. Class 34 (0x5129E, the dropped knife): thrown up (`+$16 = 0x680`), falls, and where it lands becomes a pool E weapon (class 0, variant 4)
+  unless G.$4FA >= 2 (or stage 7 area 1 X >= 0xB80). Class 41 (0x55866, the thrown blade): spawned by state 0xA at the frame byte 0x2F (sound 0x9D44),
+  flies at 6 px per frame with attack id 0x19, ends on a wall (`+$50` bit 7), a hit stop or off screen; a hit by a player (sub 2, 0x559CC) makes it
+  fall (sub 8) and land as a knife item.
+- **Library 0x32xxx** (shared with classes 3, 4, 6, 7, 8, 13 and the bosses; ported in `enemy/lib32.rs`): 0x32A58 / 0x32A70 aim at the target,
+  0x32A88 aim at a point beside it, 0x32B68 face it (biased compare), 0x32B94 its input byte, 0x32F56 target check, 0x3282A off screen test
+  (camera X - 0x18 .. + 0x180), 0x3293C distance classes (8 X windows of 24 px steps, 4 Z windows of 32 px), 0x32C5E six slots round the target
+  (tables 0x32CF0 / 0x32CFE; also returns d4 = 3 or more enemies on a side), 0x32D90 / 0x32D86 three slots (table 0x32DF8), 0x9D44 sound 0xE3 / 0x64
+  (toggle bit 7 of G.$43A), 0x9732 sound 0xFC / 0x7B (bit 2), 0x96CE sound 0xE4 / 0x65 (bit 1). Pans are not modeled.
+- **Classes 15, 16, 17** (0x41F1A, 0x420EA, 0x423A4) share the address range with class 14 but are not its parts. Class 15 = the flying pieces
+  (debris) that the pool B prop B#40 (0x836A4, stage 1) throws through the spawner 0x41EEA (`enemy_spawn_piece`): `+$26` is the word offset into the
+  row table 0x42050 (5 rows: start offset, three speeds, an attack flag that no row sets), the animation table is 0x4200E, the piece lives until its
+  animation ends; the init falls into the alive code in the same frame. Ported (`enemy/class15.rs`). Classes 16 / 17 are the truck of stage 2
+  (script record A#16 of stage 2 area 0; class 16 makes two class 17 objects and moves the players with it, G.$504 / $505 / $4DD / $4E2 tests, sounds
+  0x80 and 0x8F): not ported (phase 6).
+- **Pass 0x11962** (found with a Mess run): player attacks of frame class 4 / 6 hit the objects of the attacker list 0x671A (containers and weapons
+  that lie about: frame class 0, 2, 4, 6, 0xC) with the player's attack record: HP minus the damage, `+$7B` / `+$06` = the reaction byte, hit stop on both,
+  sound 0x962A, score 0xFFC8, hit spark type 1, the item turns away. This is how a punch breaks a container.

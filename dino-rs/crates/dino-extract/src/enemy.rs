@@ -30,7 +30,7 @@ const TABLES: &[(u32, u32, &str)] = &[
     // damage player -> enemy (0x2BA2A)
     (0xA320C, 0x100, "counter-hit factor by enemy attack id"),
     (0xA32FA, 0xA0, "weak-point attack ids and factors by +$84"),
-    (0x2BECE, 0x27 * 8 + 0x20, "damage scale by +$84*8 + level"),
+    (0x2BECE, 0x4E0, "damage scale by +$84*8 + level (+$84 = name * 4, up to 0x98; the table ends at 0x2C3AE)"),
     (0x2BC4E, 0x240, "HP bar factor"),
     (0x2BB4E, 0x100, "in-bar HP factor"),
     // class 2 (FERRIS / GNEISS / DRIVER)
@@ -84,6 +84,37 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x47224, 0x20, "class 20 walk speed ids by variant row and aggression"),
     (0x45C62, 8, "class 20 fade destination"),
     (0x45C6E, 0x20, "class 20 fade source palette pointers by variant and step"),
+    // class 14 (BLADE / RAZOR, 0x4020E) and its parts: classes 60 (0x580C6), 34 (0x5129E), 41 (0x55866)
+    (0x40D88, 0x10, "class 14 pause after a block by aggression (read as bytes: the even bytes are 0xFF)"),
+    (0x40EA8, 0x14, "class 14 attack animation by +$BB * 4"),
+    (0x4162E, 0x14, "class 14 attack starts: +$BB, +$BC, animation, pad (4 bytes per kind)"),
+    (0x413B8, 0x40, "class 14 side step speeds by rand"),
+    (0x4177E, 0x10, "class 14 knives to throw by rand"),
+    (0x417E2, 0x20, "class 14 wait random add by rand"),
+    (0x410CC, 0x20, "class 14 pause after a dash by rand"),
+    (0x406C0, 0x40, "class 14 flee timers: 0x406C0 positive, 0x406E0 negative, by rand & 0x1E"),
+    (0x7441A, 0x40, "class 14 pause at a point by level"),
+    (0x7445A, 0x40, "class 14 stand wait by level"),
+    (0x74DA2, 0x40, "class 14 reload time by rand"),
+    (0x74EA2, 0x40, "class 14 reload time add by level"),
+    (0x73214, 0x200, "class 14 decision 1 by variant, rand and distance class"),
+    (0x73414, 0x80, "class 14 chance to start decision 2 (near)"),
+    (0x73494, 0x80, "class 14 chance to start decision 2 (same facing)"),
+    (0x73514, 0x200, "class 14 decision 2 without knives"),
+    (0x73714, 0x200, "class 14 decision 2 with one knife"),
+    (0x73914, 0x200, "class 14 decision 2 with two knives"),
+    (0x74298, 0x10, "class 14 guard: chance by aggression and variant"),
+    (0x742A8, 0x42, "class 14 guard: duration by variant"),
+    (0x742EA, 0x10, "class 14 guard: chance to keep blocking by aggression and variant"),
+    (0x742FA, 0x20, "class 14 guard: pause after the block by aggression and variant"),
+    (0x58178, 0x190, "class 60 part placement for BLADE: dx, dy, dz, animation by the frame byte"),
+    (0x58308, 0x190, "class 60 part placement for RAZOR"),
+    // class 15 (flying pieces, 0x41F1A): five rows of 20 bytes after a header of five offsets
+    (0x42050, 0x6E, "class 15 piece rows: dx, dy, dz, vx, vy, vz, attack flag"),
+    // shared pool A library 0x32xxx
+    (0x32988, 0x30, "distance class tables (0x3293C)"),
+    (0x32CF0, 0x1C, "six slots round the target: dx, dz (0x32C5E)"),
+    (0x32DF8, 0x10, "three slots round the target: dx (0x32D90); 0x32D86 reads it with +$BD up to 6 (the slot of 0x32C5E): the code bytes after the table are read on purpose"),
     // pool B class 73 (bird spawner)
     (0x89B32, 16, "bird variants by random 0..7"),
     // class 55 (opening scene thugs)

@@ -189,8 +189,7 @@ no difference. Add the class to `PORTED_CLASSES` in `dino-game/src/game/trace.rs
      jump), the attack script (table 0x463F6: punches, the jump kick, the lunge, the leaping dive with the division by 0x33) and
      the recoveries; death is the class 2 routine. Hit recover entries 0x20 / 0x24 -> 0x45D74.
    - New tools: `re/harness/{check.sh, regress.sh, objhex.py, cover.py, genscript.py}`, `re/tools/{dj.py, d2, dc.py}` (README).
-   **Not done: class 14 (0x4020E, BLADE / RAZOR) with its parts (classes 60, 34, 41, 15, 16, 17)**; it stays `[NOT PORTED]`
-   (frozen in step runs). What the analysis found is in "Findings of task 4a" below and in `re/specs/enemy/HANDOFF.md`.
+   **Class 14 (0x4020E, BLADE / RAZOR) was not part of 4a: it is task 4a2 below** (the analysis is in "Findings of task 4a").
    **Checks (`re/harness/regress.sh` repeats the step runs):** `cargo build` / `cargo test` green (80 + 4 tests, 5 new: the `add.b` of 0x103A, the 0x6606 claim rules, the division of the dive; the extractor test now uses 0x57D88 as the unregistered
    frame). Plain `MODE=step` runs: `stage1_jack`, `stage1_late`, `explore`, `stage1_fight`, `obstacle`, `melee`, `grabs` and the
    other `grabs*` runs: 0 differences in ported classes; `armed`: the 2 known ones (the prop B#40 hit at frame 564, the
@@ -212,6 +211,49 @@ no difference. Add the class to `PORTED_CLASSES` in `dino-game/src/game/trace.rs
    G.$755C `shake_req` (the landing of a thrown or diving enemy asks for a shake, `screen_shake` 0x222D6 is still a stub of
    the camera port); `armed` frame 564 (the prop hit); the opening scene classes 56 (0x57C9C) and 57 (0x57D94) (only in the
    `intro` scenario).
+4a2. **Class 14 BLADE / RAZOR with its parts and class 15 (enemy area). DONE (2026-10-12).** Ported, each checked in step mode against MAME
+   (`MODE=step`, 0 differences in every ported class except one explained case below):
+   - Class 14 (0x4020E) in `game/enemy/class14{,_ai,_states,_entry,_parts}.rs`: the three-object init (0x40224: two more pool A slots, the
+     three handles sorted, the middle one becomes the object, the others class 60 parts that follow `+$BE`), the real init (0x402E4), the seven
+     entrances by `+$27` (table 0x403E8: walk in, two stand waits, jump in from above, jump in beside the target, walk in with two knives),
+     the alive frame (0x403F6 / 0x40700 with the tick `+$AF`, the guard timer, the slot and flee timers 0x405CA / 0x4062C / 0x40834), the 24
+     reachable states of the table 0x407F8 (0x40940..0x41154), the state entries (0x41278..0x41A1C and the word tables 0x41C3A / 0x41D56),
+     the decisions 0x41BE8 / 0x41CD0 / 0x41C46 / 0x41C8C with the ROM tables 0x73214 / 0x73414 / 0x73494 / 0x73514 / 0x73714 / 0x73914, the knife
+     parts placing 0x41D6E, the recover 0x408E8 (entry 0x18 / 0x50 of 0x2B56C), the death 0x41E38 (one `rand()`, kill score, 60 frames of blinking)
+     and **the guard 0x404CA**: Blade and Razor block player attacks (`+$87 = 1`; the player's hit pass 0x109C2 calls it through the table
+     0x10B50 by `+$84`; `player_combat.rs` has a three line hook: block = sound 0x9732 and spark type 2).
+   - The parts and thrown things: class 60 (0x580C6, the two knife parts), class 34 (0x5129E, the knife a hit Blade drops: it becomes a pool E
+     knife, variant 4) and class 41 (0x55866, the blade Razor and Blade throw: flies, a hit makes it fall into a knife item).
+   - Class 15 (0x41F1A, the flying pieces of the stage 1 prop B#40, spawner 0x41EEA = `enemy_spawn_piece` for the pool B port).
+     **Classes 16 / 17 (0x420EA / 0x423A4) are not parts of class 14**: they are the truck of stage 2 (record A#16) and are not ported.
+   - The shared library 0x32xxx in `game/enemy/lib32.rs` (`lib_*`): 0x32A58 / 0x32A70 / 0x32A88 / 0x32B68 / 0x32B94 / 0x32C5E / 0x32D86 / 0x32D90 /
+     0x32F56, 0x3282A, 0x3293C, and the sounds 0x9D44 / 0x9732 / 0x96CE. Classes 10 and 20 had no private copies of them.
+   - Found on the way: **pass 0x11962** (player attacks against the objects of the attacker list 0x671A: how a punch breaks a container; the
+     stub was empty, a Mess run showed it: `pass_11962` / `player_hits_item` in `enemy_combat.rs`); the extractor table 0x2BECE (damage scale
+     by `+$84 * 8 + level`) was far too short (a Razor hit by a weapon item panicked: now 0x4E0 bytes); `check.sh` now stops on a panic of the port
+     (a panic used to end the trace early and the diff compared only the frames that existed: it hid two missing tables for a while).
+   **Checks:** `cargo build` / `cargo test` green (89 + 4 tests, 9 new: the three-object init in all positions of the handles, the pool
+   check, the turn limit 0x412B0, the leap speed 0x4150A, the distance classes, the slot side rule, the guard tables, the knife sounds, pass
+   0x11962). `re/harness/regress.sh` (now 49 scenarios, 36 s): every scenario has 0 ported-class pairs except the known `armed` (3, and now 4: the class 15 pieces that the
+   unported prop B#40 spawns in MAME at frame 566 and every 18 frames; the pieces themselves match frame by frame, only the frames of the spawn
+   differ, like classes 54 / 55 in `intro`; it goes away with task 4b) and `intro` 14, and `c14c_mustapha` 8 (one hit spark that MAME puts into a slot that an unported dizzy star effect, class 0x13, still holds in
+   the port; see "Remaining differences"). 33 new scenarios, all with full length traces and no panic: `c14a` (walk in and wait, 1200 frames),
+   `c14b` (four waiters, 2400), `c14c` (the four jump in entrances 6 / 8 / 0xA / 0xC, 2400), `c14d` (waiters off screen: the run states 0x36,
+   2400), `c14e` (containers in the path: state 0x34, 1500), `c14f` (four with drop rows, to their deaths, 3000), `c14g` (five off screen, Jack
+   still for 1100 frames: states 0x36 and 0x38, 1400), `c14h` (Jack punches all the time: thrown blades are hit, knives, guard, 2000), each also
+   with Hannah, Mustapha and Mess (`c14x_hannah` ...), and `c15a` (the five rows of class 15, both facings). Reached (`cover.py`, union of all
+   runs): of the 30 states 0..0x3A, 24 (6, 8, A, E, 0x14 .. 0x3A), the hit reactions 0 .. 0x1C, held and thrown, death (modes 4), class 34 (0 / 2 / 4)
+   and class 41 (flight, hit, fall, free). **Never reached: states 0, 2, 4, 0x10 and 0x12 (no reachable code writes them) and 0xC (the table
+   0x73214 has no value 5)**, the ledge hop `+$50 == 0x10` (0x4146A), the attack flag branch of class 15 (no row sets it), the retarget of
+   0x32F56 and the second player's side of 0x32B94 (no second player in a recording). `follow` runs (the random number state copied from
+   MAME): 0 pairs in class 14 / 34 / 41 / 60 / 15, the player and the items in all 33; in 16 of them hit sparks (effect class 1) and the wave controller
+   sit in other pool slots, a consequence of the unported effect classes 0x13 / 0x15 and pool B classes. `explore` and `stage1_fight`
+   (`follow`, `run`): the same counts as at task 4a (9 / 10 and 28 / 225): the first waves do not reach class 14.
+   **Remaining differences (all causes):** `c14c_mustapha` frame 836 and the follow runs: the unported effect classes 0x13 (dizzy stars 0x94338) and
+   0x15 (0x94672) keep pool C slots that MAME frees, so a new hit spark lands in another slot; the pool B classes of task 4b (0x14, 0x1F, 0x28, 0x42,
+   0x4A) and the special object; pan and volume of the sounds 0x9D44 / 0x9732 / 0x96CE are not compared (the harness does not see them yet).
+   Edits in files owned by others (for review): `player_combat.rs` (the guard hook), `trace.rs` (`PORTED_CLASSES`), `dino-extract/src/sprites.rs`
+   (anim tables), `re/harness/{check.sh, regress.sh}`.
 4. **Remaining stage 1 enemies (enemy area).** Pool A classes (handlers from table 0x2346C):
    10 0x3B828, 14 0x4020E, 20 0x457B0, 49 0x56A70 (three off-screen bird controllers, present at the
    first frame), 50 0x56C80 (birds spawned at run time, one `rand()` each), and the opening scene
@@ -248,7 +290,7 @@ and stage clear screen match the original.
 
 ## Status
 
-In progress. Tasks 1 to 3b done and 4a partly done (2026-10-12). Handoff notes: `re/specs/enemy/HANDOFF.md`,
+In progress. Tasks 1 to 3b, 4a and 4a2 done (2026-10-12). Handoff notes: `re/specs/enemy/HANDOFF.md`,
 `re/specs/player/HANDOFF.md`, `re/specs/flow/HANDOFF.md`.
 Tasks 1 to 3, 6 and 7 come from the phase 0 comparison (2026-10-12).
 
@@ -393,3 +435,26 @@ Tasks 1 to 3, 6 and 7 come from the phase 0 comparison (2026-10-12).
   (0x89B90.., `+$20 = 0xD8`) and probably 55 / 56 / 57. Class 66 (0x86D76) draws one `rand()` at frame 30 of every recording and is the
   first source of the `run` drift.
 
+
+### Findings of task 4a2 for the later tasks
+
+- **For 4b (pool B).** The stage 1 prop B#40 (0x836A4, pool B class 0x28) throws the pool A class 15 pieces: every 6 frames it calls
+  `enemy_spawn_piece((x, y, z), kind, facing)` (0x41EEA, in `enemy/class15.rs`) with kind 0 and kind 2, the facing from the byte table 0x83786 by
+  `+$26 >> 2`. The hit passes of pool B props are still empty stubs in `enemy_combat.rs`: `pass_10cd0` (players against the list 0x671C: the props
+  register with 0x4BFA from 0x75022, 0x752AC, 0x76450, 0x79008, 0x8371A, 0x83E70; B#40 is one of them: this is the `armed` frame 564 difference),
+  and `pass_1132a`, `pass_11a9e`, `pass_11e56`, `pass_11cec` (the list 0x6B64 that 0x4C0A fills from 20 class handlers), `pass_10dcc` (items hurting
+  players). `pass_11962` (players against the attacker list 0x671A) is ported now.
+- **Guard hook.** The table 0x10B50 (called by the player's hit pass 0x109C2 for `+$87 != 0`) has entries for the names 8, 0x18, 0x48, 0x4C, 0x50, 0xA4:
+  0x404CA (Blade, Razor, done), 0x3DFC6 (names 8, 0x48, 0x4C: not ported, `player_hits_enemy` has the TODO) and 0x55A18 (0xA4: sets `+$AF` = 1 and
+  the carry; which class has `+$84` = 0xA4 is not known; class 41 has 0x5C). The table 0x10C10 (items hitting enemies, 0x11008) is `rts` everywhere
+  except the same entry 0xA4 (0x55A18).
+- **Library state.** Routines of 0x32xxx that other classes use and `lib32.rs` has not got yet: 0x32D0C / 0x32D16 (the slot table 0x32D7E), 0x32E00 /
+  0x32E0A (the slot table 0x32EA4 / 0x32EB2), 0x32EC0 / 0x32ECA (0x32F32), 0x32AAC, 0x32AC4, 0x32AE4 (random side points). `lib_slot3_keep` (0x32D86)
+  reads the table 0x32DF8 with the slot number of 0x32C5E (up to 6) after the run states of class 14: the bytes after the table (instruction words)
+  are read on purpose and the extractor keeps them (a quirk of the original).
+- **Method.** `check.sh` stops on a panic now (it used to hide it: the trace ended early and `diff.py` compared only the frames that existed). A
+  step run is only a proof when `compared N records` shows the whole length: `regress.sh` does not print it, so look at a new scenario once by hand.
+  Missing table bytes show up as `ROM table byte 0x... was not extracted`: the extractor lists address ranges (`TABLES`), size them by the largest index
+  the code can build (the table 0x2BECE was indexed by `+$84 * 8`, not by the name id).
+- **Unported effect classes show up as one drift.** The dizzy stars (effect class 0x13, 0x94338; also 0x15 0x94672) keep a pool C slot in the port that
+  MAME frees, and the next hit spark lands in another slot (`c14c_mustapha` frame 836). It is the first thing to fix in the effects port (task 7).

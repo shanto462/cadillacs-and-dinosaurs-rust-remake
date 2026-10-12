@@ -43,6 +43,9 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x3D150, 0x3D400, 0x3D6B0, 0x2F480, 0x2F5E2, 0x2F744, 0x30E34, 0x30E80, 0x30ECC,
     // Class 20 (PUNK 0x47244, THUG 0x475FE) and their hit (0x2E68C) / grabbed (0x2E724) tables.
     0x47244, 0x475FE, 0x2FFAA, 0x30132, 0x31048, 0x31094,
+    // Class 14 (BLADE 0x6DA40, RAZOR 0x6DF2A), the parts and thrown knives (classes 60 / 34 / 41, 0x6FB6A) and the hit / grabbed tables.
+    0x6DA40, 0x6DF2A, 0x6FB6A, 0x2F8A6, 0x2FA44, 0x30F18, 0x30F64,
+    0x4200E, // class 15 flying pieces (0x41F2E)
     // Pool E (items, phase 1 task 2). Containers 0x28C8A..0x28D1C, one table per variant.
     0x2995E, // container var 0
     0x2998C, // var 2

@@ -10,6 +10,14 @@ use super::body::Body;
 use super::{Game, Handle, Slot, slot_of};
 
 mod claim;
+mod class14;
+mod class14_ai;
+mod class14_entry;
+mod class14_parts;
+mod class14_states;
+#[cfg(test)]
+mod class14_tests;
+mod class15;
 mod class20;
 mod class20_ai;
 mod class20_attack;
@@ -19,6 +27,7 @@ mod class10_ai;
 mod class10_hold;
 mod class10_lib;
 mod class10_moves;
+mod lib32;
 mod scenery;
 
 /// Bytes of an object beyond the shared header, addressed by the original offset.
@@ -158,11 +167,16 @@ impl Game {
             match e.b.k20 / 4 {
                 2 => self.enemy_class2(&mut e, h),
                 10 => self.enemy_class10(&mut e, h),
+                14 => self.enemy_class14(&mut e, h),
+                15 => self.enemy_class15(&mut e, h),
                 20 => self.enemy_class20(&mut e, h),
+                34 => self.enemy_class34(&mut e, h),
+                41 => self.enemy_class41(&mut e, h),
                 49 => self.enemy_class49(&mut e, h),
                 50 => self.enemy_class50(&mut e, h),
                 54 => self.enemy_class54(&mut e, h),
                 55 => self.enemy_class55(&mut e, h),
+                60 => self.enemy_class60(&mut e, h),
                 _ => self.enemy_class_unported(&mut e, h, i),
             }
             self.enemies.slots[i] = e;
@@ -1613,11 +1627,12 @@ impl Game {
     }
 
     /// 0x2B56C (table by +$84): the class' own "back to the AI" routine. Ported: 0xC, 0x28, 0x2C
-    /// (class 10, 0x3BC38), 0x20 / 0x24 (class 20, 0x45D74). Entries of classes that are not ported yet: back to AI state 0.
+    /// (class 10, 0x3BC38), 0x20 / 0x24 (class 20, 0x45D74), 0x18 / 0x50 (class 14, 0x408E8). Entries of classes that are not ported yet: back to AI state 0.
     pub fn enemy_recover_other(&mut self, e: &mut Enemy, h: Handle, w84: u16) {
         match w84 {
             0x0C | 0x28 | 0x2C => self.c10_reset_ai(e, h),
             0x20 | 0x24 => self.c20_reset_ai(e, h), // 0x45D74
+            0x18 | 0x50 => self.c14_408e8(e),       // 0x408E8 class 14
             _ => e.b.set_state(0x0200_0000),
         }
     }

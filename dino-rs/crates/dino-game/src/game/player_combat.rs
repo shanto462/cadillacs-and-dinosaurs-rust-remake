@@ -358,7 +358,12 @@ impl Game {
         if self.player_enemy_b87(e) != 0 && p.b.kind != 6 && p.action != 0x13 && p.action != 0x12 {
             self.players[i].b.hitstop = 1;
             // 0x10B50[enemy +$84]: guard handler; carry = blocked (sound 0x9732, spark type 2).
-            // TODO(enemy port): only enemy +$84 == 0xA4 can block.
+            // Ported: BLADE / RAZOR (0x404CA). TODO(enemy port): the entries 0x3DFC6 (names 8, 0x48, 0x4C).
+            if self.enemy_has_guard_c14(e) && self.enemy_guard_c14(e) {
+                self.snd_9732();
+                self.spawn_hit_spark(me, e, ha, hb, 2); // 0x10B42 -> 0x12720 with d5 = 2
+                return;
+            }
         }
         let rec = self.player_attack_record(i);
         let r1 = self.rand();

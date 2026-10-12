@@ -46,9 +46,17 @@ Code: `dino-rs/crates/dino-game/src/game/{enemy.rs, enemy_combat.rs, spawn.rs, r
 - **Class 20 (0x457B0, phase 1 task 4a)**, `game/enemy/class20{,_ai,_attack,_lib}.rs`: PUNK / THUG complete (state 0xA is never
   entered in the listing). Recover entries 0x20 / 0x24 (0x2B56C) -> `c20_reset_ai` (0x45D74).
 
+- **Class 14 (0x4020E, phase 1 task 4a2)**, `game/enemy/class14{,_ai,_states,_entry,_parts}.rs`, `class15.rs`, `lib32.rs`: BLADE / RAZOR complete (three
+  objects per record, seven entrances, 24 reachable states, decisions with the ROM tables, guard 0x404CA wired into the player's hit pass, death, drops
+  through the shared code), its parts class 60 (0x580C6), class 34 (0x5129E, dropped knife) and class 41 (0x55866, thrown blade), and class 15 (0x41F1A,
+  the flying pieces of the prop B#40; `enemy_spawn_piece` is the spawner 0x41EEA for the pool B port). Classes 16 / 17 (0x420EA / 0x423A4, the truck of stage 2)
+  are not ported. `lib32.rs` is the shared library 0x32xxx (aim, face, slots, screen test, distance class) and the sounds 0x9D44 / 0x9732 / 0x96CE.
+  `enemy_combat.rs`: pass 0x11962 (`player_hits_item`: player attacks against the attacker list 0x671A, how a punch breaks a container).
+  Details: `SPEC.md` section 17.5. Scenarios `c14a` .. `c14h` (+ the three other characters) and `c15a` (`re/harness/README.md`).
+
 ## Stubbed (TODO markers in the code)
-- Pool A classes other than 2, 10, 20, 49, 50, 54, 55 are freed at once (`enemy_class_unported`): next is 14 (BLADE / RAZOR, with parts
-  60 / 34 / 41 / 15..17), then 18 (Vice T.), 56 and 57 (opening scene). Analysis in the plan file, "Findings of task 4a".
+- Pool A classes other than 2, 10, 14, 15, 20, 34, 41, 49, 50, 54, 55, 60 are freed at once (`enemy_class_unported`): next is 18 (Vice T.), then 56 and
+  57 (opening scene), and 16 / 17 (the truck of stage 2).
   `enemy_recover_other` (0x2B56C for other classes) only resets to state 0.
 - Pool B classes other than 15 and 73 are freed at once (props, scenery, B#12/#14/#20/#31/#40/#66/#69/#73/#74).
 - **item.rs**: done in phase 1 task 2 (see `plan/phase-01-stage1-complete.md`); only class 6 (0x29B06, glow of weapon type 11), the RADIO event 0x8BD24 and the dust trail 0x92E5E are missing.
@@ -76,7 +84,7 @@ Code: `dino-rs/crates/dino-game/src/game/{enemy.rs, enemy_combat.rs, spawn.rs, r
    the player port is documented at the top of item.rs.
 4. (done) Container hits: passes 0x11F86 / 0x1201C / 0x120D2 in `item/hits.rs`.
 5. Uncomment `player_hit_by_enemy(p, e)` in `pass_115b0` once the player port has it.
-6. Stage 1 classes: (#10 and #20 done) #14 BLADE/RAZOR (0x4020E), #18 VICE T. (0x42590, notes in SPEC section 12) and pool B class 22 (0x7BEF6); then
+6. Stage 1 classes: (#10, #14 and #20 done) #18 VICE T. (0x42590, notes in SPEC section 12) and pool B class 22 (0x7BEF6); then
    Shivat (#24, 0x4838C). Each needs its anim tables added to OBJECT_ANIM_TABLES.
 7. Stage 1 pool B props (B#12/#14/#20/#31/#40/#66/#69/#73/#74): read their handlers (table 0x2362E).
 8. Ask the player port for a shared floor collision (they have `floor_lookup` / floor segments).
