@@ -138,7 +138,7 @@ STUB (empty named function), MISSING (no code), UNKNOWN (original not understood
 | W04 | Treasure gives 1000 to 10000 points; hidden behind trees in Episode 2 | en 13.4, W:aqm | DONE | |
 | W05 | Drop rolls: enemy table and container table, guns reroll to ammo or a treasure | en 13.3 | DONE | |
 | W06 | Dropped weapons last 3600 f; items bounce back in from the screen edge up to 5 times | en 13.3 | DONE | |
-| W07 | RADIO in Episode 3 calls the Cadillac and triggers kill-all | en 13.4, ph1 | MISSING | pool B class 0x58 |
+| W07 | RADIO in Episode 3 calls the Cadillac and triggers kill-all | en 13.4, ph1, U | MISSING | pool B class 0x58; see W15 for the drive (user description) |
 | W08 | Torches set enemies on fire | W:aqm | PARTIAL | burn reaction DONE; torch overlay class 6 missing |
 | W09 | Fire bombs, dynamite, grenades, bazooka rockets explode with splash | en 13, ph1 | DONE | effect objects (debris, smoke) partly missing |
 | W10 | Falling rocks on the mountain side (Episode 5) | W:aqm | MISSING | pool B 48? |
@@ -146,7 +146,7 @@ STUB (empty named function), MISSING (no code), UNKNOWN (original not understood
 | W12 | Flame jets in the sewers, lure enemies into them (Episode 8) | W:aqm | MISSING | |
 | W13 | Barrels rolling down the cave slope (Episode 8), rolling drums with items in the library (Episode 7) | W:aqm | MISSING | |
 | W14 | Elevator ride with enemies riding in at each stop (Episode 7) | W:aqm, st 6.6 | PARTIAL | camera mode 5 DONE, scroll 1 background MISSING |
-| W15 | Cadillac drive: camera mode 8, car state G.$518, special collision passes, runs over enemies and barrels | st HANDOFF, W:hg101 | MISSING | |
+| W15 | Cadillac drive: camera mode 8, car state G.$518, special collision passes, runs over enemies and barrels | st HANDOFF, W:hg101, U (2026-10-12) | MISSING | **User:** in Episode 3, when the RADIO is taken, the Cadillac appears with Jack (or another hero) and from then on the episode is driven by car; the boss (Hogg) can bomb the car and kick heroes off it; otherwise the car can be used to eliminate the boss. D4c measured the start (car HP 120 drives in at 5 px/f, heroes aboard 280 f after the pick up, camera 11 px/f, section ends when the car HP is 0). **D3c must cover the whole drive:** who drives and who rides, how the players steer, accelerate, brake and attack from the car, what the car does to enemies, barrels and the boss (damage, ramming), Hogg's bombs and kicks against the car and the heroes, car HP and what breaks it, what happens when heroes are kicked off or the car breaks, and how the boss fight ends in both cases (car or on foot) |
 | W16 | Row scroll (road bends) in Episode 3 | st 7.3 | MISSING | needs a per line clip in the renderer |
 | W17 | Mine lamps (palette cycling), rain | st 2.5, W:aqm | MISSING | |
 | W18 | Screen shake on stomps, landings, the lift (0x222D6) | st 6.7 | STUB | struct and logic are documented |
