@@ -409,3 +409,11 @@ Source: `gpt_suggestions.md` in the repo root (a summary of walkthroughs, not de
 | G17 | Dash attacks per hero: Jack a low slide, Hannah a flying knee, Mustapha a long flying kick, Mess a flying body dive | W:gpt | UNKNOWN | D2a (check) |
 | G18 | Food and treasure names: pizza, burger, hot dog, steak, meat, cake, chocolate, coffee; jewels, coins, diamonds, a dinosaur egg | W:gpt | UNKNOWN | D4a |
 | G19 | Continue screen: an armed gangster seen in first person with the countdown | W:gpt | UNKNOWN | D4d (check) |
+
+## K. More notes from the user (2026-10-12)
+
+| ID | Mechanic | Source | Port | Notes |
+| --- | --- | --- | --- | --- |
+| U01 | Some enemies pick up weapons and items lying on the ground and go away with them (the user calls them "russels"; no such name is in the ROM name table 0x17DC2, so it is a nickname: probably one of the thug types). A dropped weapon can be lost this way | U | UNKNOWN | D3a: find which classes pick up items (the enemy state name list has HIROI = pick up, `re/specs/enemy/SPEC.md` line 549), what they take, whether they use the weapon, how they leave the screen, and whether hitting them makes them drop it |
+| U02 | A weapon may vanish if the hero is beaten up while holding it, "maybe after 2 times" (user not sure) | U, D2c section 8 | DONE (item side, ported in task 2) | Answered by D2c: a weapon breaks only when the hero drops it because of a hit or death and it lands; the chance comes from its wear (+0x20 per shot, swing or throw): 0 percent when new, then 19, 38, 50, 63, 75, 88 and 100 percent after 7 or more uses. So an often used weapon usually breaks on the first drop, a new one never does |
+
