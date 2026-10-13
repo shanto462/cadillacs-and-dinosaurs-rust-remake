@@ -691,6 +691,110 @@ fn story_slides_wait_counter_matches_mame() {
     assert_eq!(counted as usize, 6458 - s - 10, "the counts of 1790 frames");
 }
 
+/// A9 (M1-09), the opening movie up to the jungle: the routine 0x9BF50 with its timeline engine, the helpers and the
+/// handlers of the counters 10, 200 and 500 (the first caption, the crawl, the Capcom sign) in the two runs it has in
+/// `attract3.mame.trc` (called at the records 11664 and 24769, the frame the ranking of state 6 returns). From the
+/// call to the record before the pass of the counter 600 (698 frames later, 12361 and 25466) every record equals the
+/// recording: the three tilemaps (the clear, the captions of the tall font, the 16 step fades, the blocks and the sign
+/// of the Capcom part), the four palette banks, the sprite list (none: nothing is spawned before the jungle), the layer
+/// control, the sound codes (the stop code of the end of the ranking), the six scroll shadows (scroll2 X -12 in the Capcom
+/// part), the attract state byte, the counter G.-$7004 and the index G.-$7002. The jungle is a stub that lasts as long as
+/// the real movie, so the routine returns 1745 frames after its call (13409 and 26514, the records the state byte changes).
+#[test]
+fn opening_movie_part1_runs_like_the_original() {
+    let Some(a) = assets() else { return };
+    let trace = "../../../re/out/traces/attract3.mame.trc";
+    if !Path::new(trace).exists() {
+        eprintln!("mame_check: {trace} is missing, skipped");
+        return;
+    }
+    let runs = [11664usize, 24769];
+    let mut returned = Vec::new();
+    let mut was_up = false;
+    let mut problems: Vec<String> = Vec::new();
+    // the random number state G.$14 at the first and the last record that is compared
+    let mut rng = std::collections::BTreeMap::new();
+    let (_, rows) = compare_power_on_with(
+        a,
+        trace,
+        26514,
+        |_| [0; 3],
+        |k, g, prev| {
+            // the demo stub (4 runs) and the movie stub play none of their random numbers (see `ranking_runs_like_the_original`)
+            if [4668, 11239, 13409, 17773, 24344, 26514].contains(&k) {
+                g.w.rng = ram16(prev, 0xFF8014);
+            }
+        },
+        |k, g, ram, _| {
+            let up = g.flow.front.stub == super::attract::Stub::Movie;
+            if was_up && !up {
+                returned.push(k as usize);
+            }
+            was_up = up;
+            for &s in &runs {
+                let k = k as usize;
+                if k > s + 2 && k < s + 698 && problems.len() < 6 {
+                    let (m, p) = ((ram16(ram, 0xFF0FFC), ram16(ram, 0xFF0FFE)), (g.flow.front.task.count, g.flow.front.task.sub));
+                    if m != p {
+                        problems.push(format!("record {k}: counter and index (MAME) {m:?} (port) {p:?}"));
+                    }
+                }
+                if k == s || k == s + 697 {
+                    rng.insert(k, (g.w.rng, ram16(ram, 0xFF8014)));
+                }
+            }
+        },
+    );
+    assert!(problems.is_empty(), "{problems:?}");
+    for s in runs {
+        let bad: Vec<(usize, &Differences)> = rows
+            .iter()
+            .enumerate()
+            .take(s + 698)
+            .skip(s)
+            .filter(|(_, d)| d.s1 + d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some() || d.sounds.is_some() || d.cams.is_some() || d.state.is_some())
+            .collect();
+        assert!(bad.is_empty(), "movie run {s}: {} records differ, first {:?}", bad.len(), &bad[..bad.len().min(3)]);
+        // no random number is drawn before the jungle: G.$14 is the same at both ends of the compared part
+        let (first, last) = (rng[&s], rng[&(s + 697)]);
+        assert_eq!((first.0, first.1), (last.0, last.1), "movie run {s}: the random number state changed: {first:04X?} {last:04X?}");
+    }
+    assert_eq!(returned, runs.map(|s| s + 1745), "the routine returns 1745 frames after its call");
+}
+
+/// The wait counter G.$4F6 through the first part of the opening movie with free play on (`m109_free`: the same
+/// recording as `m108_free`, 12500 records): the counts since the call of the routine (11664) are equal in every record
+/// to the one before the jungle starts (12361). The movie loses one count at each clear (the first, and the three
+/// of the handlers), nothing else.
+#[test]
+fn opening_movie_wait_counter_matches_mame() {
+    let Some(a) = assets() else { return };
+    let trace = "../../../re/out/traces/m109_free.mame.trc";
+    if !Path::new(trace).exists() {
+        eprintln!("mame_check: {trace} is missing (record it like `m108_free` with 12500 records), skipped");
+        return;
+    }
+    let s = 11664usize;
+    let mut series = Vec::new();
+    compare_power_on_with(a, trace, (s + 697) as i32, |_| [0; 3], |k, g, prev| {
+        if k == 99 {
+            g.flow.front.sys.free_play = true; // the poke
+        }
+        if [4668, 11239].contains(&k) {
+            g.w.rng = ram16(prev, 0xFF8014); // the demo stub
+        }
+    }, |k, g, ram, _| {
+        if k as usize >= s {
+            series.push((k as usize, ram16(ram, 0xFF84F6), g.rank.w4f6));
+        }
+    });
+    let (m0, p0) = (series[0].1, series[0].2);
+    let bad: Vec<_> = series.iter().filter(|&&(_, m, p)| m.wrapping_sub(m0) != p.wrapping_sub(p0)).take(4).collect();
+    assert!(bad.is_empty(), "the counts since record {s} differ (record, MAME, port): {bad:?}");
+    let counted = series.last().unwrap().1.wrapping_sub(m0);
+    assert_eq!(counted as usize, 697 - 4, "698 frames, 4 passes missed (one at each clear)");
+}
+
 /// Diagnostic for M1-07: for each ranking run of `attract3.mame.trc` the number of writes of the draw
 /// (`Game::ranking_ops`) the original has done when the first frame after the call ends (the record S + 1: the
 /// smallest and the largest count that give the recording's tilemaps and scroll2 Y). These are the `CUTS` of

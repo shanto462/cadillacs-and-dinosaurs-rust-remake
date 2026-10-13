@@ -16,9 +16,10 @@
 //!
 //! The title is real (`boot.rs`), and so are the profile cards (0x9A7E6, `profiles.rs`, M1-05), the ranking
 //! (0x1516C through 0x983D8, `ranking.rs`, M1-07) and the story slides (0x988C0, `slides.rs`, M1-08). The demo
-//! (0x99E88, M1-12) and the opening movie (0x9BF50, M1-09) are stubs: a blank screen with a label that lasts
-//! exactly as long as the real screen did in the MAME recording `attract3.mame.trc`, so the state byte
-//! changes at the same frames (video frames 2744, 6874, 9311, 13411, 15848, 19979, 22416, 26516, 28953).
+//! (0x99E88, M1-12) is a stub and so is the jungle part of the opening movie (0x9BF50, the first 698 frames with
+//! the captions and the Capcom sign are real, `movie.rs`, M1-09; the rest is M1-10 and M1-11): a blank screen with a
+//! label that lasts exactly as long as the real screen did in the MAME recording `attract3.mame.trc`, so the state
+//! byte changes at the same frames (video frames 2744, 6874, 9311, 13411, 15848, 19979, 22416, 26516, 28953).
 //! The lengths are measured, not computed: the original takes a few frames more or less on some passes
 //! (one clear of all layers needs 1.3 frames of CPU time, the demo drops frames), which the port does
 //! not model. Each stub says where its numbers come from; the real screens replace them.
@@ -47,10 +48,11 @@ pub enum Stub {
 /// `flow_attract_clear_step`); the middle of the range that the cycle count allows is used.
 const CLEAR3_FIRST: usize = 3000;
 /// The demo with its last picture and the fade (1200 game frames, 5 frames of setup, 100 frozen,
-/// 16 of fade) and the opening movie (to the end of the routine). The story slides are real
-/// (`slides.rs`, 1779 frames from the call to the return).
+/// 16 of fade) and the opening movie (from the call of the routine to its return; the stub starts at the pass of the
+/// counter 600, 698 frames after the call, `movie.rs`). The story slides are real (`slides.rs`, 1779 frames from the
+/// call to the return).
 const DEMO_FRAMES: u16 = 1325;
-const MOVIE_FRAMES: u16 = 1745;
+pub(super) const MOVIE_FRAMES: u16 = 1745;
 
 impl Game {
     /// A stretch of CPU time of the original that the port writes as a sleep: `frames` until the
@@ -96,7 +98,7 @@ impl Game {
 
     /// A wait of `frames` frames (more than the 255 the kernel sleep byte holds: the original writes
     /// such waits as loops, here they are chained sleeps) before the script goes on in `next`.
-    fn flow_attract_wait(&mut self, frames: u16, next: u16) {
+    pub(super) fn flow_attract_wait(&mut self, frames: u16, next: u16) {
         let t = &mut self.flow.front.task;
         if frames <= 255 {
             t.wait(frames, next);
@@ -262,9 +264,9 @@ impl Game {
         }
         let s = self.flow.front.attract_state & 0x3E;
         if s == 6 {
-            // 0x97D34: the opening movie 0x9BF50, then the state byte is 0
-            self.flow_attract_stub(Stub::Movie, "OPENING MOVIE");
-            self.flow_attract_wait(MOVIE_FRAMES, st::MOVIE_END);
+            // 0x97D34: the opening movie 0x9BF50 (`movie.rs`, its handlers from the counter 600 on are a stub of the
+            // measured length), then the state byte is 0
+            self.flow_movie_start();
         } else {
             // 0x97D00 / 0x97CFC / 0x97DB8: the state steps by 2
             self.flow.front.attract_state = self.flow.front.attract_state.wrapping_add(2);
@@ -280,7 +282,7 @@ impl Game {
     }
 
     /// Starts a stub screen: clears the layers and writes the label.
-    fn flow_attract_stub(&mut self, stub: Stub, label: &str) {
+    pub(super) fn flow_attract_stub(&mut self, stub: Stub, label: &str) {
         self.flow.front.stub = stub;
         self.flow_clear_screen();
         // centred in row 46 of the scroll1 map (the rows 32 to 63 are the ones the screen shows)

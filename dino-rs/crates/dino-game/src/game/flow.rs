@@ -27,6 +27,8 @@ pub mod join;
 #[cfg(test)]
 #[path = "flow/mame_check.rs"]
 mod mame_check;
+#[path = "flow/movie.rs"]
+pub mod movie;
 #[path = "flow/picture.rs"]
 pub mod picture;
 #[path = "flow/profiles.rs"]
@@ -127,6 +129,8 @@ pub struct Flow {
     pub intro: Intro,
     pub clear: Clear,
     pub front: front::Front,
+    /// The opening movie's own state (`movie.rs`).
+    pub movie: movie::Movie,
     pub join: [join::Join; 3],
 }
 
