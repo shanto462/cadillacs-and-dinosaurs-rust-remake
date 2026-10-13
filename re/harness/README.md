@@ -1369,3 +1369,176 @@ Traces are git-ignored, under `re/out/sound/`:
 Frame 0 is the first video frame after the ring write. The value is `(0xD000 << 8) | 0xD001`, which is what helper `0x0A13` commits. `SQ_FRAMES` is the window in video frames (default 240, about 4 seconds). `SQ_TIMEOUT` is the process limit in seconds (default 600). `SQ_SOUND` forces the MAME `-sound` value. A looping tune keeps writing after the default window. The same code recorded alone and recorded after another code can sit on a different sequencer step, so those two files need not match. Two runs of the same list do match.
 
 The shell prints one line per code, `sound 0030: N lines, flushed 1`. The status file is `re/out/sound/qs-status.txt`.
+
+## Flow transitions, end chains, links and ending references (M3-28)
+
+The `m328_` recipes prepare M3-29. They contain scenario inputs and RAM writes,
+not ROM tables. The runtime `jump` helper reads the user's `dino.zip`.
+
+| File under `scripts/` | Scenarios | Coverage |
+| --- | ---: | --- |
+| `m328_areas.txt` | 13 | D4c A4, every measured area change in section 5.7 |
+| `m328_end_chain.txt` | 8 | D4c A9, `f_ep1` through `f_ep8` |
+| `m328_links.txt` | 7 | D4d A19, `link-ep2` through `link-ep8` |
+| `m328_ending.txt` | 8 | D4d A20 and A21, four heroes, mixed party, 3P, high score, object audit and fine cuts |
+| `m328_power.txt` | 1 | Power-on ending entry using `pokes/m328_power.txt` |
+
+`m328_scenarios.tsv` gives the requested game-frame length of every probe
+scenario. The power reference records 7200 video frames. Run each MAME batch
+in the foreground, sequentially. Both record tools use SDL dummy drivers.
+
+```sh
+DINO_SYNC=power DINO_POKES=re/harness/pokes/m328_power.txt \
+  re/harness/record.sh re/harness/scripts/m328_power.txt m328_power 7200
+for group in areas end_chain links ending; do
+  PR_SHEET=0 re/harness/probe/probe_record.sh \
+    re/harness/scripts/m328_$group.txt all || break
+done
+```
+
+The probe scenarios snapshot at the end of `jump`, before the tested writes.
+Keys and timed writes after the snapshot use the game clock. `snapshot keep`
+keeps the setup's player protection; every later protection, kill-all and
+script-entry write goes into the `.pokes.txt` sidecar. `port.sh` loads that
+sidecar automatically. There are no post-snapshot spawns. The area scripts
+stop shortly after control returns, before held kill-all reaches later boss
+flow. D4c's lift entry is the specified script-16 poke; the other twelve area
+changes use the design's natural movement and attack recipes.
+
+Every `watch 1 G` line logs `t`, power frame `f` and game-frame counter `gf`,
+plus camera, lock, GO, area, clock, scripted mask, script id and clear flags.
+Use the first nonzero scripted mask in the old area as S, then subtract its
+`gf` from the area-load and control-release `gf`. This is the section 5.7
+clock. The ending batch also watches object states, the ending flag and name
+entry state. `end-fine` records every game frame for the fine cuts; no pictures
+are requested, as specified for this lane B task. RAM traces stay under ignored
+`re/out/`.
+
+```sh
+tail -n +2 re/harness/scripts/m328_scenarios.tsv |
+while read -r name frames group; do
+  MODE=run re/harness/port.sh re/out/traces/$name.input.txt "$name" "$frames" \
+    > "re/out/$name.port.log" 2>&1
+  re/.venv/bin/python -I re/harness/diff.py \
+    "re/out/traces/$name.mame.trc" "re/out/traces/$name.port.trc" \
+    > "re/out/$name.diff.log" 2>&1
+done
+```
+
+A port panic leaves a partial trace. Count its records to report the last
+completed frame, and include the panic's source file and line. `port.sh` uses
+a pipeline, so its shell status alone does not prove that the game finished.
+Check the log and trace length. The power trace is a boot reference and is
+separate from these snapshot replays.
+
+## QSound register compare (M4-09)
+
+`re/harness/sound_cmp.py` compares a MAME `.qs.trc` with the port driver's register write trace for the same code. Both sides use the text from the section "QSound register traces (M4-01)":
+
+```
+# sound code=0030 d1=00000000 d2=00000000 frames=240
+f <frame> r <hh> v <hhhh>
+f <frame> b <hh>
+```
+
+`r` is a commit on Z80 port `0xD002` (register, value `(0xD000 << 8) | 0xD001`, helper `0x0A13`). `b` is a write to port `0xD003` (ROM bank, the driver stores `0x80 | bank`). Frame 0 is the first video frame after the ring write. Blank lines and `#` comments other than that header are ignored.
+
+The port example `dump_regs CODE [d1] [d2]` will live in `crates/dino-sound` and print this same text to stdout. That crate is not in the tree yet (the driver starts at M4-02). Until it exists, both inputs are `.qs.trc` files. Redirect the example when it lands:
+
+```
+dump_regs 0x30 > re/out/sound/port/0030.qs.trc
+```
+
+From the repo root:
+
+```
+re/.venv/bin/python -I re/harness/sound_cmp.py MAME.qs.trc PORT.qs.trc
+re/.venv/bin/python -I re/harness/sound_cmp.py --align-first MAME.qs.trc PORT.qs.trc
+re/.venv/bin/python -I re/harness/sound_cmp.py --mame re/out/sound --port re/out/sound-port 0x00 0x30
+re/.venv/bin/python -I re/harness/sound_cmp.py --mame DIR --port DIR --list codes.txt
+```
+
+A list line is `sound CODE [d1] [d2]`, `CODE`, or `CODE:d1:d2`. Numbers are decimal or `0x` hex, the same rule as `sound.sh`. The file name is `CODE.qs.trc` (four hex digits), or `CODE_D1_D2.qs.trc` when d1 or d2 is not 0.
+
+The report gives the difference count and the first write that differs: 1-based index, video frame, register (or bank), both values, and a few writes on either side (`--context N`, default 2). The count is every write that does not match, in order, plus each write that only one side has. Time is that video frame. The millisecond figure uses 59.6374 Hz (MAME, sound spec section 2). A later `result` line is one record per pair for scripts. Exit 0 when every pair matches. Exit 1 when a write differs. Exit 2 when a file is missing or a line cannot be parsed.
+
+`--align-first` reads the frame of the first register commit (`r`, not a bank write) on each side and subtracts the difference from every frame of the port file. M4-01 records one code on its own and the same code after another code on different sequencer steps, so the writes can sit about one video frame apart. The option removes that constant offset. A different register or value still counts. The shift is printed. If either file has no register write, the frames stay as they are. Two runs of the same `sound.sh` list already match without this option.
+
+### M3-28 partial report (2026-10-13)
+
+The 36 probe scenarios and the power-on script and poke file are prepared.
+Recording is incomplete. The first area batch completed `m328_e1a0` (2600),
+`m328_n1a1` (4200), `m328_e2a0n` (3000), `m328_e2a1n` (3000) and
+`m328_e4a0n` (3000). These are the initial, longer recordings. The power
+reference completed 7200 video frames. The current manifest bounds the area
+runs earlier, so rerun the area batch after stopping the stalled process.
+
+The initial `m328_e4a1n` recording reached area 2 and returned control, then
+held kill-all reached a later boss lock. Its game-frame counter stopped at
+4425 while video callbacks kept running. The 900-second process alarm did
+not end MAME. A direct signal was rejected by the workspace sandbox with
+`operation not permitted`. The worker requested that the user stop only
+MAME PID 19523 before any replacement MAME batch starts. If that process is
+still alive, do not start another MAME process. Evidence is in
+`re/out/m328_stall.log` and the initial area batch's log directory.
+
+The first five snapshot scenarios ran through `port.sh` at the current
+bounded lengths, with all sidecar writes applied:
+
+| Scenario | Port frames completed | First differing frame | First difference |
+| --- | ---: | ---: | --- |
+| `m328_e1a0` | 1000 | 18 | Unported pool D special animation fields |
+| `m328_n1a1` | 1800 | 33 | Unported pool B class 66 caption state |
+| `m328_e2a0n` | 1200 | 100 | RNG, while unported objects are held |
+| `m328_e2a1n` | 1000 | 45 | RNG, while unported objects are held |
+| `m328_e4a0n` | 900 | 18 | Unported pool D special animation fields |
+
+These five snapshots agree at frame -1. No port panic occurred in these
+runs. The exact source of the two RNG call differences remains for M3-29.
+The power reference also ran through `port.sh` for 7200 frames with all six
+pokes applied. Its first difference is frame -1: importing power-frame-1
+RAM reports uninitialized free-list pointers and initializes port fields.
+That snapshot replay is not a boot-equality result.
+
+G1, G2 and G4 were skipped under the lane B instructions. The build inside
+`port.sh` ran as part of the requested replay. G3 is incomplete: 5 of 36
+probe recordings finished, plus the power reference; the replacement area
+batch, all eight end chains, all seven links and all eight ending runs still
+need recording and port replay. G5 applies to scripts only: no game routine,
+ROM table, Rust code or allow rule was added. No commit or push was made.
+
+Open questions: the remaining port panic locations are not known until their
+references can be recorded; the Episode 4 area 1 probe hang needs a separate
+harness investigation if the shorter recipe still hangs. Logs are
+`re/out/m328_*.record.log`, `re/out/m328_*.port.log` and
+`re/out/m328_*.diff.log`. The ignored `re/out/m328_audit.py` audits complete
+recordings and writes `m328_inventory.tsv` and `m328_events.log` after replay.
+
+
+## Whole-episode recordings for Jack, Episodes 2 to 8 (M10-01)
+
+M10-01 provides scripted full runs of Episodes 2 through 8 for Jack (Episode 1 exists from M5-17).
+Each recording starts at power on with the documented story-panel poke (`DINO_POKES=re/harness/pokes/epN_boot.txt`)
+and syncs at the first controllable frame (`DINO_SYNC=control`).
+
+The scripts follow natural play rules only:
+- No cheats, no god mode, no kill-all, and no HP pokes after the start.
+- Continues and coins are natural player actions. The scripts insert coins (`1C`) and press start (`1S`) periodically.
+- Holding direction `1R` continuously avoids horizontal edge transitions on the continue strip, locking player 1 to Jack upon continue.
+- Navigation uses a four-phase Z cycle (Down, neutral, Up, neutral) alternating with walk windows and combat chains (punches, jump kicks, special moves). This allows navigating terrain boundaries, breaking gates (such as gate B#1 in Episode 7 Area 2), and defeating enemy waves without stalling.
+- Episode 3 picks up the radio item (pool E class 9) to summon the playable Cadillac (pool B class 88), driving across the desert before fighting Hogg.
+
+### Episode recording summary
+
+| Episode | Script | Boot poke | Recorded frames | Boss defeated | Tally start (`sub=4`) | Tally exit (`sub=6`) | Transition / Area reached |
+| --- | --- | --- | ---: | --- | ---: | ---: | --- |
+| Episode 2 | `ep2_jack.txt` | `ep2_boot.txt` | 42,000 | Butcher | 41,432 | 41,796 | Transitions to Stage 2 (Episode 3) |
+| Episode 3 | `ep3_jack.txt` | `ep3_boot.txt` | 10,500 | Hogg | 9,185 | 9,463 | Transitions to Stage 3 (Episode 4) |
+| Episode 4 | `ep4_jack.txt` | `ep4_boot.txt` | 28,000 | Slice | 27,206 | 27,490 | Transitions to Stage 4 (Episode 5) |
+| Episode 5 | `ep5_jack.txt` | `ep5_boot.txt` | 65,000 | Morgan / Morgue | 53,916 | 54,200 | Transitions to Stage 5 (Episode 6) |
+| Episode 6 | `ep6_jack.txt` | `ep6_boot.txt` | 70,000 | Tyrog | 65,185 | 65,469 | Transitions to Stage 6 (Episode 7) |
+| Episode 7 | `ep7_jack.txt` | `ep7_boot.txt` | 60,000 | Slisaurs | 53,059 | 53,333 | Transitions to Stage 7 (Episode 8) |
+| Episode 8 | `ep8_jack.txt` | `ep8_boot.txt` | 70,000 | Fessenden (Forms 1 and 2) | 62,646 | 62,842 | Transitions to Ending (Mode 0x1C) |
+
+Each recording has a complete MAME trace (`re/out/traces/epN_jack.mame.trc`) and snapshot (`re/out/traces/epN_jack.state`).
+All seven recordings successfully reach the clear tally of their episode (`G.$4D1` steps 4 and 6).
