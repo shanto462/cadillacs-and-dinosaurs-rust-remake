@@ -9,6 +9,7 @@ pub mod frontend;
 pub mod gfx;
 pub mod player;
 pub mod rom;
+pub mod script;
 pub mod sprites;
 pub mod stage;
 pub mod terrain;
@@ -54,6 +55,7 @@ pub fn extract_with(rom_path: &Path, extra: &ExtraFrames) -> Result<AssetPack, S
         text: text::extract(&rom),
         terrain: terrain::extract(&rom),
         frontend: frontend::extract(&rom),
+        script: script::extract(&rom),
     })
 }
 
