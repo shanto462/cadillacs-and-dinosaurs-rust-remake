@@ -9,6 +9,11 @@
 //!   they play the master's act list, and fall back to the shared hit reaction 0x2A606 and the
 //!   shared grab 0x2B35A when a player hits them.
 //!
+//! * class 56 (0x57C9C, M2-11): the flying cast member of the opening scene (X 0x4E0, height 0x60, depth 0x131). It is
+//!   invisible while the master (pool B class 74, `prop/b74.rs`) is in its first two steps; in the third (the master's `+$05`
+//!   is 6 when it looks) it makes a pool A class 57 object (`enemy/class57.rs`: the animation of the table 0x57E0E with the
+//!   sound 0xE7) at (0x4E5, 0x6C, 0x131), is drawn for that one frame and then only waits to be freed (0x57D56).
+//!
 //! None of these touches the census (`+$7D = 0xFF`) except class 54. Offsets used here keep
 //! the original meaning of the class (they differ from class 2's); the trace names of the raw
 //! bytes are those of class 2, a byte is a byte (see `trace.rs`).
@@ -38,6 +43,8 @@ mod o {
     pub const SPEED_Z: usize = 0xAC;
     pub const GRAVITY: usize = 0xB0; // long
     pub const SPEED_Y: usize = 0xB4; // long
+    /// Class 56: the child (class 57) has been made.
+    pub const CHILD_MADE: usize = 0xA8;
     pub const SOUND_DONE: usize = 0xB8;
     pub const SOUND_T: usize = 0xBA;
 }
@@ -417,6 +424,72 @@ impl Game {
         }
         self.enemy_step(&mut e.b);
         self.enemy_draw_check(&mut e.b, h);
+    }
+
+    // ------------------------------------------------------------------ class 56
+
+    /// 0x57C9C class 56: the flying cast member of the opening scene (jump table 0x57CA8: mode 0 -> 0x57CB0, 2 -> 0x57CDC,
+    /// 4 and 6 -> 0x57D7E, which is the free routine 0x48FC).
+    pub fn enemy_class56(&mut self, e: &mut Enemy, h: Handle) {
+        match e.b.mode {
+            0 => {
+                // 0x57CB0: the animation table 0x57D84, the flags +$A0 .. +$A1, +$A3 and +$A8 clear, the terrain (0x12CB4), animation 0
+                e.b.live = 2;
+                e.b.anim_table = 0x57D84;
+                e.m.sw(WA0, 0);
+                e.m.sb(o::ONCE, 0);
+                e.m.sb(o::CHILD_MADE, 0);
+                self.enemy_floor_collision(e);
+                self.enemy_anim(&mut e.b, 0);
+                e.b.mode += 2;
+                self.enemy_c56_frame(e, h); // falls into 0x57CDC
+            }
+            2 => self.enemy_c56_frame(e, h),
+            _ => {
+                let i = self.enemy_index(h);
+                self.enemy_free_pool_a(e, i);
+            }
+        }
+    }
+
+    /// 0x57CDC: follow the master (0x57D5C, the same routine as class 54's 0x577AA), then the routine of `+$05` (table 0x57CEE).
+    fn enemy_c56_frame(&mut self, e: &mut Enemy, h: Handle) {
+        let m = self.enemy_scene_master_sub(e);
+        if m != e.m.b(o::MASTER_SUB) {
+            e.m.sb(o::ONCE, 0);
+            e.b.sub = e.b.sub.wrapping_add(2);
+            e.m.sb(o::MASTER_SUB, m);
+        }
+        match e.b.sub {
+            0 | 2 => {} // 0x57CFE: rts (no animation step and no picture)
+            4 => {
+                // 0x57D00: once, the class 57 object at (0x4E5, 0x6C, 0x131) that remembers this object in `+$A4`; the animation
+                // step and the draw list
+                if e.m.b(o::CHILD_MADE) == 0 {
+                    if let Some(c) = self.spawn_alloc(0) {
+                        let b = self.body_mut(c);
+                        b.live = 1;
+                        b.k20 = 0xE4;
+                        b.var26 = 0;
+                        b.set_xi_keep(0x4E5);
+                        b.set_yi_keep(0x6C);
+                        b.set_zi_keep(0x131);
+                        let i = self.enemy_index(c);
+                        self.enemies.slots[i].m.sl(o::MASTER, 0xFFFF_0000 | h as u32); // move.l a6,$a4(a0)
+                    }
+                    e.m.sb(o::CHILD_MADE, 1);
+                }
+                self.enemy_step(&mut e.b);
+                self.enemy_draw_check(&mut e.b, h);
+            }
+            6 | 8 | 0xA | 0xC => {
+                // 0x57D50: jmp 0x173C
+                let i = self.enemy_index(h);
+                self.enemy_despawn_if_far(e, i);
+            }
+            0xE => e.b.mode += 2, // 0x57D56: freed in the next frame
+            _ => {} // the table has 8 entries (sub 0 to 0xE); the master never goes further
+        }
     }
 
     // ------------------------------------------------------------------ class 55

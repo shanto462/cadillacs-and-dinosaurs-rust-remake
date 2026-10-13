@@ -55,6 +55,9 @@ mod class32;
 mod class66;
 #[path = "prop/class72.rs"]
 mod class72;
+// Pool B class 74 (M2-11): the master of the Episode 1 opening scene (it makes the pool A cast 54, 55, 56).
+#[path = "prop/b74.rs"]
+mod b74;
 // Pool B class 31 (M2-13): the stage clock (it keeps its sprite list in a pool D slot).
 #[path = "prop/b31.rs"]
 mod b31;
@@ -116,6 +119,7 @@ impl Game {
                 68 => self.prop_class68(&mut p, i),
                 72 => self.prop_class72(&mut p, i),
                 73 => self.prop_bird_spawner(&mut p, i),
+                74 => self.prop_class74(&mut p, i),
                 86 => self.prop_class86(&mut p, i),
                 89 => self.prop_class89(&mut p, i),
                 93 => self.prop_class93(&mut p, i),

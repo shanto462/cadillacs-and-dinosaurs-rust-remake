@@ -38,6 +38,7 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x577D2, // class 54 opening scene bystander
     0x57BA4, // class 55 scripted thug, Ferris
     0x57C20, // class 55, Gneiss
+    0x57D84, // class 56 the flying cast member of the opening scene (M2-11)
     // Class 10 (phase 1 task 4a): animations, then the hit tables (0x2E68C by +$84) and the grabbed
     // tables (0x2E724) of the names HAMMER T. (0xC), BLK ELMER (0x28), WRENCH T. (0x2C).
     0x3D150, 0x3D400, 0x3D6B0, 0x2F480, 0x2F5E2, 0x2F744, 0x30E34, 0x30E80, 0x30ECC,

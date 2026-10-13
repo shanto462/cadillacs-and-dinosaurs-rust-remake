@@ -839,8 +839,8 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 /// `pool_c_update`, `pool_e_update`.
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
-    ("enemy", &[2, 10, 14, 15, 20, 34, 41, 49, 50, 54, 55, 60]),
-    ("prop", &[15, 31, 73]),
+    ("enemy", &[2, 10, 14, 15, 20, 34, 41, 49, 50, 54, 55, 56, 57, 60]),
+    ("prop", &[15, 31, 66, 73, 74]),
     (
         "item",
         &[
@@ -1373,12 +1373,28 @@ impl Game {
         // Slot 2 (0x20): the game task sleeps G.$4D6 & 15 frames between runs.
         let (st, cnt) = task(2);
         self.flow.wait = if st == 1 { cnt } else { 0 };
-        // Slot 3 (0x30): stage intro or stage clear task.
+        // Slot 3 (0x30): stage intro or stage clear task. Both keep their state in the struct G.$735E (loaded with the globals). The
+        // intro task (0xB9BE) is the one while the level runs and the stage is not cleared (game mode 0xC, G.$4D1 = 0); it is taken
+        // over with the sleep counter of the snapshot. The clear task (0xB97E) is not (the tally is M2-28).
         let (st, cnt) = task(3);
         self.flow.intro.live = false;
         self.flow.clear.live = false;
         if st != 0 {
-            warn.push(format!("task slot 0x30 (intro / clear) is active (state {st}, sleep {cnt}): not taken over"));
+            if self.flow.mode == 0xC && self.flow.sub == 0 && self.flow.intro.state <= 6 {
+                let it = &mut self.flow.intro;
+                it.live = true;
+                it.sleep = if st == 1 { cnt as u16 } else { 1 };
+                it.init = false;
+                // The task sleeps once inside 0xCC58 (`jsr 0xA76`, then the HUD redraw 0x162AE): in the first frame after it saw G.$4E3 the
+                // sleep counter of the snapshot is the same as in the next one. The redraw is still to come while the rank of the hero
+                // (+$10A, 0x33 at the start, set by the redraw) is untouched.
+                it.redraw = it.state == 4
+                    && it.sub == 4
+                    && it.w6 == 0
+                    && self.players.iter().any(|p| p.b.live != 0 && p.b10a == 0x33);
+            } else {
+                warn.push(format!("task slot 0x30 (intro / clear) is active (state {st}, sleep {cnt}): not taken over"));
+            }
         }
         // Slot 4 (0x40): fade task.
         let (st, _) = task(4);

@@ -1,0 +1,8 @@
+# M2-10 to M2-12: the Episode 1 opening from power on with MAME pictures (coin 600, start 700, Jack 900 as flow_play.txt).
+segment open
+frames 2300
+600-607:C
+700-705:S
+900-905:A
+snaps 1058,1100,1180,1230,1300,1420,1560,1572,1580,1600,1660,1675,1680,1685,1690,1700,1720,1760
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w

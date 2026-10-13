@@ -193,6 +193,7 @@ impl Game {
                 50 => self.enemy_class50(&mut e, h),
                 54 => self.enemy_class54(&mut e, h),
                 55 => self.enemy_class55(&mut e, h),
+                56 => self.enemy_class56(&mut e, h),
                 57 => self.enemy_class57(&mut e, h),
                 60 => self.enemy_class60(&mut e, h),
                 69 => self.enemy_class69(&mut e, h),

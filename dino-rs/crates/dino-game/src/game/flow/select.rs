@@ -602,6 +602,16 @@ impl Game {
         self.flow_stage_start_staged(phase);
         if phase == 4 {
             self.flow.select_exit = 0; // the mode is 0xC
+            // The loop of the game task goes on at once (the flag G.-$7EAE of the resumed routine: 0xA914 does not sleep, 0x9B6): the
+            // frame counters count and the first level frame runs in this frame. It takes the CPU through the next video frame too (the
+            // area setup, the map, the start of the script): no task runs in that one (the recording: G.$0000 counts in the frame
+            // of the mode 0xC and again 2 frames later).
+            self.w.frame = self.w.frame.wrapping_add(1);
+            self.flow.frame = self.flow.frame.wrapping_add(1);
+            self.flow.wait = self.flow.speed & 0xF;
+            self.game_frame();
+            self.flow_ingame_switch();
+            self.flow.lag = 1;
             return;
         }
         self.flow.wait = 1;

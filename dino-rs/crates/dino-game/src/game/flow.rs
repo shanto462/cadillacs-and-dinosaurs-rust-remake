@@ -78,6 +78,11 @@ pub struct Intro {
     pub dst: u32,
     /// Frames to sleep before the next run.
     pub sleep: u16,
+    /// The task has been created but has not run yet: its first run is 0xB9BE with the init 0xB9F6 (the struct above is still 0 until
+    /// then) and a sleep of one frame.
+    pub init: bool,
+    /// The HUD redraw 0x162AE that follows the `jsr 0xA76` inside 0xCC58: it runs in the frame after the one that saw G.$4E3.
+    pub redraw: bool,
 }
 
 /// Stage clear task 0xB97E (simplified: see `flow_clear_task`).
@@ -143,6 +148,9 @@ pub struct Flow {
     /// The mode routine of the game task sleeps inside itself (`jsr 0xA76` and the other sleeps): its next run goes on in the routine
     /// and does not pass the top of the loop 0xA914 (no counting of G.$0000 and G.$4DA).
     pub resume: bool,
+    /// Video frames in which no task runs (the interrupt code does): a game frame that takes the CPU for more than one frame. The first
+    /// level frame of an episode (the area setup, the map and the script start) takes two (`select.rs`).
+    pub lag: u8,
     /// The phase of 0xAC4E that the character select is in after its fade out (`select.rs`, `flow_stage_start_staged`); 0 = not in it.
     pub select_exit: u8,
     /// The globals of the scripted control (`script.rs`): G.$4D8, G.$4DF, G.$4EC.., G.$4FD, G.$503, G.$514, G.$516.
@@ -210,6 +218,13 @@ impl Game {
     /// One frame of all flow tasks, in task slot order.
     pub fn flow_frame(&mut self) {
         self.flow_coin_isr(); // the interrupt: 0x9D4BE reads the coin inputs before the tasks
+        if self.flow.lag > 0 {
+            // a task keeps the CPU through this video frame: no task runs (the next vertical blank only runs the interrupts)
+            self.flow.lag -= 1;
+            self.flow.front.prev_input = self.w.input;
+            self.flow.front.prev_system = self.w.system;
+            return;
+        }
         self.flow_system_task(); // slot 0
         if self.flow.in_game != 0 {
             self.flow_join_task(); // slot 0x10
@@ -434,6 +449,7 @@ impl Game {
         }
         self.script_area_start(); // 0x1DA10: the start script of the area, the chosen heroes under script
         // 0x49A8.. per-frame lists: player port / main.
+        self.sprites.splash_timer = 1; // 0x49B4: the water splash timer (the phase -$7124 is not reset)
         self.terrain_obstacles_reset(); // 0x4A76
         self.effects = super::Pool::new(super::POOL_C); // 0x4CA4
         self.draw_special_init(); // 0x4CCC: the free stack only, the slots keep their bytes
@@ -485,10 +501,20 @@ impl Game {
             2 => {
                 self.cam.cam1_y = 0x100;
                 self.flow_intro_start();
+                self.flow.intro.sleep = 3; // the task first runs in the frame that finishes the stage start (phase 4), after the game task
                 self.flow_stage_setup_palettes();
             }
-            3 => self.flow_stage_setup_rest(),
-            4 => self.flow_stage_start_tail(),
+            3 => {
+                // The video frame boundary falls inside 0xAA0E, between the pool A init (0x4C48) and the pool B init (0x4C76, 0xAA80): in
+                // this frame the props of the select screen are still in pool B (the recording: they are gone one frame later).
+                let props = std::mem::replace(&mut self.props, super::Pool::new(super::POOL_B));
+                self.flow_stage_setup_rest();
+                self.props = props;
+            }
+            4 => {
+                self.props = super::Pool::new(super::POOL_B); // 0x4C76
+                self.flow_stage_start_tail();
+            }
             _ => {}
         }
     }
@@ -609,9 +635,17 @@ impl Game {
 
     // ---------------------------------------------------------------- stage intro 0xB9BE
 
+    /// 0xAC5E: the task 0xB9BE is created (slot 0x30). Its first run is not in the frame of the creation: the original's frame is taken by
+    /// the stage start (0xAC4E keeps the CPU through the palettes, the rest of 0xA9BE and the area start), so the first run (the struct
+    /// is still 0 until it) comes in the frame that finishes the stage start and runs the first level frame, after the game task.
+    /// After the character select the first run is 2 frames after the creation (`flow_stage_start_staged`: the recording of the Episode 1 start).
     fn flow_intro_start(&mut self) {
-        // 0xB9F6 (stage 0 entry; other stages first show the map panel and the episode title,
-        // states 0..2, not ported: they use the same HUD slide-in below).
+        self.flow.intro = Intro { live: true, sleep: 1, init: true, ..Default::default() };
+    }
+
+    /// 0xB9F6 (the stage 0 entry; the other stages first show the map panel and the episode title, states 0 to 2, not ported: they use
+    /// the same HUD slide-in below): the struct, then `jsr 0xA76` (sleep 1).
+    fn flow_intro_init(&mut self) {
         self.flow.intro = Intro {
             live: true,
             state: 4,
@@ -621,6 +655,8 @@ impl Game {
             src: 0x90A000,
             dst: 0x909800,
             sleep: 1,
+            init: false,
+            redraw: false,
         };
     }
 
@@ -635,6 +671,16 @@ impl Game {
             return;
         }
         self.flow.intro.sleep = 1;
+        if self.flow.intro.init {
+            self.flow_intro_init();
+            return;
+        }
+        if self.flow.intro.redraw {
+            // 0xCC7C: the code after the sleep inside 0xCC58, then the loop's sleep
+            self.flow.intro.redraw = false;
+            self.hud_redraw(); // 0x162AE
+            return;
+        }
         let it = self.flow.intro;
         match (it.state, it.sub) {
             (4, 2) => {
@@ -646,8 +692,7 @@ impl Game {
                     self.flow.intro.sub = 4;
                     self.cam.cam1_x = it.w6;
                     self.cam.cam1_y = 0x100;
-                    self.flow.intro.sleep = 2; // jsr 0xA76 (sleep 1) inside the step
-                    self.hud_redraw(); // 0x162AE
+                    self.flow.intro.redraw = true; // jsr 0xA76 (sleep 1) inside the step; the HUD is drawn after it
                 }
             }
             (4, 4) => {
