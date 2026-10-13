@@ -293,7 +293,8 @@ fn compare_power_on_with(
             d.cams = Some((mc, pc));
         }
         after(k, &mut g, ram, gfx);
-        let (msn, psn) = (mame_sounds(&prev_ram, ram), g.w.sounds.clone());
+        let (msn, mut psn) = (mame_sounds(&prev_ram, ram), g.w.sounds.clone());
+        psn.retain(|&c| c != 0); // the code 0 (the select music) is not told from an empty entry of the ring
         if msn != psn {
             d.sounds = Some((msn, psn));
         }
@@ -2109,6 +2110,245 @@ fn index_ranges(v: &[usize]) -> String {
         k += 1;
     }
     out.join(" ")
+}
+
+/// The values of the character select that a record holds (name, MAME, port): the random number state, G.$4DA and G.$0000, the mode bytes,
+/// the join states of the three players (+$A2), their object present flags, G.$4CD and G.$4E4 and the select struct G.$62C (0x38 bytes).
+fn select_fields(g: &Game, ram: &[u8]) -> Vec<(String, String, String)> {
+    let b = |a: u32| ram[(a - 0xFF0000) as usize];
+    let w = |a: u32| ram16(ram, a);
+    let mut v: Vec<(String, String, String)> = Vec::new();
+    let mut add = |n: &str, m: String, p: String| {
+        if m != p {
+            v.push((n.to_string(), m, p));
+        }
+    };
+    add("rng G.$14", format!("{:04X}", w(0xFF8014)), format!("{:04X}", g.w.rng));
+    add("G.$4DA", format!("{:02X}", b(0xFF84DA)), format!("{:02X}", g.flow.frame));
+    add("G.$0000", format!("{:04X}", w(0xFF8000)), format!("{:04X}", g.w.frame));
+    add("sub", format!("{:02X}", b(0xFF84D1)), format!("{:02X}", g.flow.sub));
+    add("sub2", format!("{:02X}", b(0xFF84D2)), format!("{:02X}", g.flow.sub2 >> 8));
+    for (i, a) in [0xFFB316u32, 0xFFB496, 0xFFB616].into_iter().enumerate() {
+        add(&format!("join state P{}", i + 1), format!("{:02X}", b(a)), format!("{:02X}", g.flow.join[i].state));
+        add(&format!("object live P{}", i + 1), format!("{:02X}", b(0xFFB274 + 0x180 * i as u32)), format!("{:02X}", g.players[i].b.live));
+    }
+    add("G.$4CD", format!("{:02X}", b(0xFF84CD)), format!("{:02X}", g.flow.started));
+    add("G.$4E4", format!("{:02X}", b(0xFF84E4)), format!("{:02X}", g.flow.chosen));
+    let mine = g.flow.front.select.bytes();
+    let theirs: Vec<u8> = (0..0x38).map(|k| b(0xFF862C + k)).collect();
+    if theirs[..] != mine[..] {
+        add("select G.$62C", theirs.iter().map(|x| format!("{x:02X}")).collect::<Vec<_>>().join(""), mine.iter().map(|x| format!("{x:02X}")).collect::<Vec<_>>().join(""));
+    }
+    v
+}
+
+/// Diagnostic for the character select: for the records `DINO_FROM ..= DINO_LAST` of a flow recording (`DINO_FLOW`, a start at `DINO_START`
+/// as in `press_report`, `DINO_KEYS` = "tick:player:bits" list for the inputs of the select, `DINO_COIN`) prints what differs from the
+/// recording: the picture (layers, palettes, sprites) and `select_fields`.
+#[test]
+#[ignore]
+fn select_report() {
+    let Some(a) = assets() else { return };
+    let name = std::env::var("DINO_FLOW").unwrap_or_else(|_| "sel-1p".into());
+    let Some(trace) = flow_trace(&name) else { return };
+    let get = |k: &str| std::env::var(k).ok();
+    let from: usize = get("DINO_FROM").and_then(|v| v.parse().ok()).unwrap_or(700);
+    let last: i32 = get("DINO_LAST").and_then(|v| v.parse().ok()).unwrap_or(800);
+    let parse = |s: Option<String>| -> Vec<(u8, i32, i32)> {
+        s.unwrap_or_default()
+            .split(',')
+            .filter_map(|r| {
+                let (p, r) = r.split_once(':').unwrap_or(("1", r));
+                let (x, y) = r.split_once('-')?;
+                Some((p.parse::<u8>().ok()?, x.parse::<i32>().ok()?, y.parse::<i32>().ok()?))
+            })
+            .collect()
+    };
+    // the segments of the scenario file (script lines of the recording): "a-b:keys" per player as in `re/harness/scripts/flow_select_name.txt`
+    let script = select_script(&name);
+    let _ = parse;
+    let (_, rows) = compare_power_on_with(
+        a,
+        &trace,
+        last,
+        |_| [0; 3],
+        |k, g, _| {
+            g.w.coins = script_bits(&script.coins, k);
+            g.w.system = 8 | script_bits(&script.starts, k);
+            g.w.input = script.input(k);
+        },
+        |k, g, ram, _| {
+            if (k as usize) >= from {
+                for (n, m, p) in select_fields(g, ram) {
+                    println!("record {k}: {n}: MAME {m} port {p}");
+                }
+            }
+        },
+    );
+    for (k, d) in rows.iter().enumerate().skip(from) {
+        if d.s1 + d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some() || d.sounds.is_some() || !d.sys.is_empty() {
+            println!("record {k}: s1 {} s2 {} s3 {} pal {} sprites {:?} layer {:?} sounds {:?} sys {:?}", d.s1, d.s2, d.s3, d.pal, d.sprites, d.layer, d.sounds, d.sys);
+        }
+    }
+}
+
+/// The input script of a flow recording of the select (coins, starts and the buttons of the players), read from the scenario file.
+struct SelectScript {
+    coins: Vec<(u8, i32, i32)>,
+    starts: Vec<(u8, i32, i32)>,
+    /// (player 1 to 3, first, last, bits of G.$16: 1 right, 2 left, 4 down, 8 up, 0x10 attack, 0x20 jump)
+    keys: Vec<(u8, i32, i32, u8)>,
+}
+
+impl SelectScript {
+    fn input(&self, tick: i32) -> [u8; 3] {
+        let mut v = [0u8; 3];
+        for &(p, a, b, bits) in &self.keys {
+            if (a - 1..=b - 1).contains(&tick) {
+                v[p as usize - 1] |= bits;
+            }
+        }
+        v
+    }
+}
+
+/// Reads the segment `name` of `flow_select_name.txt`: lines `a-b:KEYS` (R L U D A J S C and the digits 2, 3 that choose the player).
+fn select_script(name: &str) -> SelectScript {
+    let text = std::fs::read_to_string("../../../re/harness/scripts/flow_select_name.txt").unwrap_or_default();
+    let mut out = SelectScript { coins: vec![], starts: vec![], keys: vec![] };
+    let mut inside = false;
+    for line in text.lines().map(str::trim) {
+        if let Some(n) = line.strip_prefix("segment ") {
+            inside = n == name;
+        } else if inside {
+            let Some((range, keys)) = line.split_once(':') else { continue };
+            let Some((a, b)) = range.split_once('-') else { continue };
+            let (Ok(a), Ok(b)) = (a.parse::<i32>(), b.parse::<i32>()) else { continue };
+            let mut player = 1u8;
+            for c in keys.chars() {
+                match c {
+                    '1'..='3' => player = c as u8 - b'0',
+                    'C' => out.coins.push((player, a, b)),
+                    'S' => out.starts.push((player, a, b)),
+                    'R' => out.keys.push((player, a, b, 1)),
+                    'L' => out.keys.push((player, a, b, 2)),
+                    'D' => out.keys.push((player, a, b, 4)),
+                    'U' => out.keys.push((player, a, b, 8)),
+                    'A' => out.keys.push((player, a, b, 0x10)),
+                    'J' => out.keys.push((player, a, b, 0x20)),
+                    _ => {}
+                }
+            }
+        }
+    }
+    out
+}
+
+/// The first record of a recording in which the game mode G.$4D0 is 0xC after the select (the level), or the last record when the
+/// recording ends in the select (the second value tells which).
+fn first_level_record(trace: &str) -> Option<(i32, bool)> {
+    let mut rd = TraceReader::open(trace).ok()?;
+    rd.next();
+    let mut last = 0;
+    while let Some(f) = rd.next() {
+        let ram = &rd.region("ram").unwrap().data;
+        if f > 600 && ram[0xFF84D0 - 0xFF0000] == 0x0C {
+            return Some((f, true));
+        }
+        last = f;
+    }
+    Some((last, false))
+}
+
+/// The sound requests with their d1 / d2 longs that were queued between two records (the ring G.$3A, entries of 16 bytes: the code word,
+/// d1, d2).
+fn mame_sound_args(prev: &[u8], ram: &[u8]) -> Vec<(u16, u32, u32)> {
+    let (mut a, b) = (ram16(prev, 0xFF8034) & 0x3F0, ram16(ram, 0xFF8034) & 0x3F0);
+    let mut v = Vec::new();
+    while a != b {
+        let e = 0xFF803A + a as u32;
+        v.push((ram16(ram, e), (ram16(ram, e + 2) as u32) << 16 | ram16(ram, e + 4) as u32, (ram16(ram, e + 6) as u32) << 16 | ram16(ram, e + 8) as u32));
+        a = (a + 0x10) & 0x3F0;
+    }
+    v.retain(|e| e.0 != 0);
+    v
+}
+
+/// M2-03 and M2-04, the character select from power on to the level, record by record against the recordings of `flow_select_name` (the
+/// scripts are read from the scenario file): `sel-1p` (the 10 second timer from 725, the auto pick 610 frames after the screen starts, the
+/// palette flash, the 16 end steps, the fade out, mode 0xC 159 records after the pick), `sel-1p-moves` (left and right presses, attack
+/// pick), `sel-same` (player 2 starts the game, player 1 presses start in the fade: it never joins; player 2 moves left and right while
+/// player 1 is an absent player with a credit: the prompt blinks; both pick, no hero twice), `sel-2p-late` (player 2 starts at 841: the
+/// timer goes back to 10, the lock counter of the new record, its panel), `sel-3p-all-left` (three cursors rotate without a clash),
+/// `sel-3p-timeout` (nobody presses: all three pick at 0), `sel-picks-sim` (both pick in the same frame).
+/// Every record from the boot equals the recording in the three layers, the palettes, the sprite list, the layer control, the sound
+/// codes, G.$14, G.$4DA, G.$0000, the mode bytes, the join states, G.$4CD, G.$4E4 and the 0x38 bytes of the struct G.$62C, up to 3 records
+/// before the level (the intro HUD of Episode 1 is the temporary one); the level mode comes in the same record. Known and tolerated: the
+/// first game task iteration counts one frame earlier (G.$0000 and G.$4DA, record 718: mode 0 keeps the CPU), the palette cut of the press
+/// start call in record 610 (2 words, CPU time) and the counters of the first level record. The pans of the sounds 0x32 and 0x33 are the
+/// table 0xB24E by the cursor position (checked in the ring).
+#[test]
+fn character_select_matches_mame() {
+    let Some(a) = assets() else { return };
+    for name in ["sel-1p", "sel-1p-moves", "sel-same", "sel-2p-late", "sel-3p-all-left", "sel-3p-timeout", "sel-picks-sim"] {
+        let Some(trace) = flow_trace(name) else { continue };
+        let (level, has_level) = first_level_record(&trace).expect("the recording opens");
+        // without a level the whole recording is compared (the stage start tail is not in it)
+        let tail = if has_level { 3 } else { -1 };
+        let script = select_script(name);
+        let mut bad: Vec<String> = Vec::new();
+        let mut first = -1;
+        let mut pan_sounds = 0;
+        let mut last_ram: Vec<u8> = Vec::new();
+        let (_, rows) = compare_power_on_with(
+            a,
+            &trace,
+            level,
+            |_| [0; 3],
+            |k, g, _| {
+                g.w.coins = script_bits(&script.coins, k);
+                g.w.system = 8 | script_bits(&script.starts, k);
+                g.w.input = script.input(k);
+            },
+            |k, g, ram, _| {
+                if first < 0 && ram16(ram, 0xFF8000) == 1 {
+                    first = k;
+                }
+                for (n, m, p) in select_fields(g, ram) {
+                    if (n == "G.$4DA" || n == "G.$0000") && (k == first || k == level) {
+                        continue; // the first iteration of the game task and the first level record
+                    }
+                    bad.push(format!("record {k}: {n}: MAME {m} port {p}"));
+                }
+                // the sounds of the cursor: d2 is 0 and d1 the pan of the position (table 0xB24E) of one of the players with a cursor
+                if !last_ram.is_empty() {
+                    let pos: Vec<u8> = (0..3).map(|i| last_ram[0xFF862C + 0xC + 0xC * i + 2 - 0xFF0000]).filter(|&p| p < 4).collect();
+                    for (code, d1, d2) in mame_sound_args(&last_ram, ram) {
+                        pan_sounds += (code == 0x32 || code == 0x33) as usize;
+                        if (code == 0x32 || code == 0x33) && !(d2 == 0 && pos.iter().any(|&p| d1 == g.select_pan(p) as u32)) {
+                            bad.push(format!("record {k}: sound {code:#X} d1 {d1:#X} d2 {d2:#X}, positions {pos:?}"));
+                        }
+                    }
+                }
+                last_ram = ram.to_vec();
+            },
+        );
+        for (k, d) in rows.iter().enumerate().skip(25) {
+            let mut d = d.clone();
+            if k == 610 && d.pal <= 4 {
+                d.pal = 0; // the cut of the brightness loop of the press start call
+            }
+            let picture = (k as i32) < level - tail && (d.s1 + d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some());
+            if picture || d.sounds.is_some() || !d.sys.is_empty() && (k as i32) < level - tail {
+                bad.push(format!("record {k}: {d:?}"));
+            }
+            if !d.sys.is_empty() && (k as i32) >= level - tail && d.sys.iter().any(|s| s.0.starts_with("mode")) {
+                bad.push(format!("record {k}: mode {:?}", d.sys));
+            }
+        }
+        assert!(bad.is_empty(), "{name}: {} problems, first: {:?}", bad.len(), &bad[..bad.len().min(4)]);
+        assert!(pan_sounds >= 1 && rows.len() > 1000, "{name}: {pan_sounds} cursor sounds in {} records", rows.len());
+    }
 }
 
 /// M1-15 diagnostic: the records `DINO_FROM ..= DINO_LAST` of a flow recording (`DINO_FLOW`, for example `c-title`) with the

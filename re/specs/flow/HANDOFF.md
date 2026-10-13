@@ -10,9 +10,8 @@
   hooks (0x12BE4 documented no-op), `start_stage` (direct start, used by --stage / --chars).
 
 ## Stubbed (TODO(port) in code)
-- `flow/front.rs`: character select (mode 4 starts the stage at once with Jack, Mustapha, Hannah for the
-  players that pressed start; M2-03). The system task is `flow/system.rs` (M2-02, complete); the attract loop,
-  title and press start screen are done (`boot.rs`, `attract.rs`).
+- `flow/select.rs`: the character select (M2-03, M2-04) and the join task before the level. The system task is
+  `flow/system.rs` (M2-02, complete); the attract loop, title and press start screen are done (`boot.rs`, `attract.rs`).
 - `flow/join.rs`: join / continue task 0x6C4A, continue mode 0x10 (currently game over).
 - Clear task 0xB97E tally (waits 120 frames), intro states 0-2 (map, EPISODE title), mode 8
   cut-scenes, ending 0x1C, weapon display 0x2389C (needs player +$B4/+$B6).
@@ -421,3 +420,40 @@ play time statistics 0xA6B8A (nothing visible; the test menu is out of scope).
   different in record 483 for the same reason (a coin 25 frames later in the title than A10). Not tested against MAME: SERVICE (the probe has no
   key for it; logic from the code, unit tests, and the end to end test that it brings the screen of three coins).
 * **Input:** `input.rs` maps key 9 (and the gamepad Mode button) to SERVICE, `V` in scripts; TEST (bit 6) stays unmapped.
+
+## M2-03 and M2-04: the character select (2026-10-13)
+
+`flow/select.rs` is game mode 4 (0xAD46: set-up 0xAD5E, main pass 0xAF7C, end 0xB810, the player step 0xB06A, the cursor 0xB122, the panels
+0xB25E with 0xB2A0 / 0xB36A / 0xB3CA / 0xB3F8 / 0xB450, the picked state 0xB6A2) and the part of the join task 0x6C4A that runs before the level
+(`select_join_task`: states 0, 2, 4 and 6 of a player in modes 0 and 4). The state is `Select` (`front.select`, the struct G.$62C: `bytes()` gives the
+0x38 bytes of RAM). Pool B classes: 17 (the frame, `prop/class17.rs`, a raw list frame, `RAW_LISTS` 0x7B5C8), 67 (the two pictures over the group
+picture, `class67.rs`), 68 (the player tags with their palette cycle, `class68.rs`) and 19 (the hero pictures of the 2 player layout, `class19.rs`,
+not measured). Data: `FRONT_TABLES` (select tables, the prompt strings 0x83EB.., the palettes 0xBB2D2.., 0xBC052.., 0xBFE52.., 0xBFF92) and
+`OBJECT_FRAMES` / `OBJECT_ANIM_TABLES` of `dino-extract/src/sprites.rs`.
+
+* **Timeline** (record = video frame - 2, a start at 699 as in `flow_sel-1p`): the game task is created in 717, its first iteration counts in 718 (G.$0000 = 1; the
+  port counts in 719: tolerated), mode 4 comes in 721 together with the first part of the set-up (layer control 0x06D6, the palette set 1), then
+  the routine sleeps 2 frames (`Flow::resume`: the loop counters G.$0000 and G.$4DA do not count in a resumed run), the rest of the set-up and the first main
+  pass are in 723 (sub 2, TIME 10, the pages, the music code 0). The join task first runs in 721 (state 0 -> 2, one random number) and 722 (the join init: one
+  random number, its object is cleared, the prompt erased, state 4). A player's lock counter (+5) runs 10 frames from its first step and holds the timer at
+  10; the number 10 stays up until 793 and 9 comes 60 frames later (not 735 as in D4d). The timer is printed when its 60 frame counter runs out, at 0 the three input
+  bytes get an attack press (`select_main`), so every player who has not chosen picks in that frame (the press counts only when the player did not hold attack
+  in the frame before: the original compares G.$16 with G.$1B, which already holds the injected value). The cursor reads press edges (left, right, attack,
+  jump) and the start edge; moves are allowed during the lock, picks are not; a pick queues 0x33, makes the object present, +3 = hero id, +$20 = id * 4 and,
+  for Jack and Hannah with 3 seconds left, draws one random number (the anti-tamper roll 0x5A454 passes). The picked state flashes the hero's palette for 60
+  frames (6 palettes, 5 rounds of 2 frame steps), the select ends when nobody is busy and a record has finished its flash: sub 4, 16 palette steps (the
+  first after 2 frames, then one a frame; the heroes that were not chosen go dark, the chosen ones bright), 60 frames of sleep, the fade out (0x8840) and the
+  stage start 0xAC4E, which takes 4 frames after the fade is over (`flow_stage_start_staged`: the clear 0xAE0 in 3 stages, the palettes and the camera, the
+  rest of 0xA9BE with the mode byte 4 again, then mode 0xC with the sound stop and the music): mode 0xC comes 159 records after the pick.
+* **Checks** (`mame_check.rs`): `character_select_matches_mame`: `flow_sel-1p`, `sel-1p-moves`, `sel-same`, `sel-2p-late`, `sel-3p-all-left`,
+  `sel-3p-timeout`, `sel-picks-sim`, every record from the boot to 3 records before the level (all three layers, the palettes, the sprite list, the layer control, the
+  sound codes, G.$14, G.$4DA, G.$0000, the mode bytes, the join states, the object present flags, G.$4CD, G.$4E4 and the whole struct G.$62C) and the pans of the
+  sounds 0x32 and 0x33 in the ring (table 0xB24E by the cursor position: 0x00, 0x0B, 0x15, 0x20; `Game::sound` records only the code, `select_pan` gives d1 for the sound
+  port). `select_report` (ignored) prints what differs for one recording (`DINO_FLOW`, `DINO_FROM`, `DINO_LAST`). Unit tests in `select.rs` (rules, lock, timer,
+  class 19).
+* **Known differences:** the first game task iteration counts one frame earlier in MAME (record 718); the palette cut of the press start call in record 610 (2 words);
+  the records after the select: the Episode 1 opening is still the temporary one (the HUD appears at once in the port, G.$4D5 stays 1 in MAME, the first level frame
+  of MAME is 2 frames long). The class 34 sparkle of the plan is not in the select: MAME shows no pool C object there; the palette play is the picked state and the
+  tag palette cycle of class 68. The 2 player layout (G.$4CF, classes 19, pages 3 and 4, the other panel origins) is from the code only. Not ported on purpose: the strip
+  of heroes of an in-level join (0x723E, 0x7476, 0x7F86, state 4 in mode 0xC), the credit line of the in-level HUD (0x82E8), the switch to the continue mode and the states 8 to 0xC
+  of the join task (M2-05 and later); the join task runs only in modes 0 and 4 so far.

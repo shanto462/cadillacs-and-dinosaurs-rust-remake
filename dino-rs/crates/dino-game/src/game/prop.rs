@@ -24,6 +24,15 @@ mod class32;
 mod class66;
 #[path = "prop/class72.rs"]
 mod class72;
+// Pool B classes of the character select (M2-04): the frame (17), the pictures over the group picture (67) and the player tags (68).
+#[path = "prop/class17.rs"]
+mod class17;
+#[path = "prop/class19.rs"]
+mod class19;
+#[path = "prop/class67.rs"]
+mod class67;
+#[path = "prop/class68.rs"]
+mod class68;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -51,8 +60,12 @@ impl Game {
             let mut p = std::mem::take(&mut self.props.slots[i]);
             match p.b.k20 / 4 {
                 15 => self.prop_wave(&mut p, h, i),
+                17 => self.prop_class17(&mut p, i),
+                19 => self.prop_class19(&mut p, i),
                 32 => self.prop_class32(&mut p, i),
                 66 => self.prop_class66(&mut p, i),
+                67 => self.prop_class67(&mut p, i),
+                68 => self.prop_class68(&mut p, i),
                 72 => self.prop_class72(&mut p, i),
                 73 => self.prop_bird_spawner(&mut p, i),
                 86 => self.prop_class86(&mut p, i),

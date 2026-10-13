@@ -31,6 +31,7 @@ const EFFECT_LISTS: &[u32] = &[
 /// Raw-list animations (8-byte records), loaded with 0x16C6.
 const RAW_LISTS: &[u32] = &[
     0x96360, // water ripple, effect $20 = 0x68 (0x96330)
+    0x7B5C8, // the frame of the select screen, pool B class 17 (0x7B554)
 ];
 
 /// Shadow sprite list table used by the shadow pass 0x14EC0 (8 longs).

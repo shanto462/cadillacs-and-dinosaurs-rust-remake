@@ -1,21 +1,12 @@
-//! Front end state: the character select (game mode 4, 0xAD46) and the variables of the front end tasks (the attract
-//! task, the blink and press start tasks, the demo). The system task 0x9D048 with the coins, credits and the credit text
+//! Front end state: the variables of the front end tasks (the attract task, the blink and press start tasks, the demo) and the
+//! character select struct (`select.rs`). The system task 0x9D048 with the coins, credits and the credit text
 //! is in `system.rs` (M2-02). Owner: flow / HUD port. Spec: `D4d-front-end-and-story.md` s3.10, s4, s5.
 
-use crate::game::Game;
 use crate::game::flow::attract::Stub;
 use crate::game::flow::demo::Demo;
 use crate::game::flow::scene::Scene;
+use crate::game::flow::select::Select;
 use crate::game::flow::system::Sys;
-
-/// Character select struct G.$62C (cleared by 0xAD36).
-#[derive(Clone, Copy, Debug, Default)]
-pub struct Select {
-    /// +3 taken cursor bits, +9 seconds left, +$A frame counter.
-    pub taken: u8,
-    pub seconds: u8,
-    pub frames: u8,
-}
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Front {
@@ -69,19 +60,4 @@ pub struct Front {
     pub press_call: u8,
     /// The words of scroll3's palette bank the brightness loop has done when the frame that ends the press start call ends.
     pub press_cut: usize,
-}
-
-impl Game {
-    /// Game mode 4 (0xAD46) character select. TODO(M2-03): screen, cursors, timer (0xAF7C, 0xB06A,
-    /// 0xB122, 0xB25E). For now the players that pressed start get the heroes in order (Jack,
-    /// Mustapha, Hannah) and the stage starts at once.
-    pub fn flow_select_mode(&mut self) {
-        for i in 0..3 {
-            if self.flow.started >> i & 1 != 0 {
-                self.player_join(i, i as u8);
-            }
-        }
-        self.flow.chosen = self.flow.started;
-        self.flow_stage_start();
-    }
 }

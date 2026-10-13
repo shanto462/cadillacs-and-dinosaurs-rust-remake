@@ -9,7 +9,7 @@
 //! `flow_frame` runs them in that order; each task keeps its own "sleep" counter.
 //!
 //! Sub-modules: `system` (the system task: coins, credits, SERVICE, the credit text, the start of a game), `front` (the
-//! state of the front end tasks, the character select), `join` (join / continue task and the all-players-out continue
+//! state of the front end tasks), `select` (the character select and the join task before the level), `join` (join / continue task and the all-players-out continue
 //! mode), and the services of the front end scenes: `scene` (the task runner with sleep counters), `text` (string printers
 //! and the typewriter), `picture` (page loaders, block printers, scene palettes) and `config` (the settings file
 //! `dino.cfg`). `HANDOFF.md` in `re/specs/flow/` shows how a scene script uses them.
@@ -39,6 +39,8 @@ pub mod profiles;
 pub mod ranking;
 #[path = "flow/scene.rs"]
 pub mod scene;
+#[path = "flow/select.rs"]
+pub mod select;
 #[path = "flow/slides.rs"]
 pub mod slides;
 #[path = "flow/system.rs"]
@@ -136,6 +138,13 @@ pub struct Flow {
     /// The opening movie's own state (`movie.rs`).
     pub movie: movie::Movie,
     pub join: [join::Join; 3],
+    /// The join task 0x6C4A (slot 0x10, `select.rs`): created by mode 0.
+    pub join_task: scene::Scene,
+    /// The mode routine of the game task sleeps inside itself (`jsr 0xA76` and the other sleeps): its next run goes on in the routine
+    /// and does not pass the top of the loop 0xA914 (no counting of G.$0000 and G.$4DA).
+    pub resume: bool,
+    /// The phase of 0xAC4E that the character select is in after its fade out (`select.rs`, `flow_stage_start_staged`); 0 = not in it.
+    pub select_exit: u8,
 }
 
 impl Flow {
@@ -202,6 +211,7 @@ impl Game {
         self.flow_system_task(); // slot 0
         if self.flow.in_game != 0 {
             self.flow_join_task(); // slot 0x10
+            self.select_join_task(); // slot 0x10: the states before the level (modes 0 and 4)
             self.flow_game_task(); // slot 0x20
         } else {
             self.flow_attract_task(); // slots 0x10 / 0x20
@@ -278,9 +288,11 @@ impl Game {
         self.flow.wait = self.flow.speed & 0xF;
         // 0xA914..: the frame counters G.$0000 and G.$4DA are incremented before the mode runs,
         // so everything that reads G.$0000 in a game frame (parity tests, spark jitter, ...) sees
-        // the new value.
-        self.w.frame = self.w.frame.wrapping_add(1);
-        self.flow.frame = self.flow.frame.wrapping_add(1);
+        // the new value. A mode routine that slept inside itself goes on without passing here.
+        if !std::mem::take(&mut self.flow.resume) {
+            self.w.frame = self.w.frame.wrapping_add(1);
+            self.flow.frame = self.flow.frame.wrapping_add(1);
+        }
         match self.flow.mode {
             0x00 => self.flow_mode_start(),
             0x04 => self.flow_select_mode(),
@@ -301,10 +313,14 @@ impl Game {
     /// (HUD, mode 4) 2 frames later.
     fn flow_mode_start(&mut self) {
         if self.flow.sub2 != 0 {
-            self.flow_stage_setup(); // 0xA9BE (loads the palettes again)
+            self.flow_stage_setup(); // 0xA9BE (loads the palettes again), sets mode 4
+            // the recording shows the first part of the select (layer control 0x06D6, the palette set 1) in the same frame as the mode
+            self.flow_select_mode();
             return;
         }
         self.flow_join_start(); // task 0x6C4A in slot 0x10
+        self.flow.join_task = scene::Scene::start(0);
+        self.flow.join_task.sleep(2); // the recording: its first pass is two frames after the first pass of mode 0 (mode 0 keeps the CPU)
         self.vram.clear2();
         self.vram.clear3();
         self.sprites.clear();
@@ -321,6 +337,8 @@ impl Game {
     /// `start_stage` uses it).
     fn flow_mode_init(&mut self) {
         self.flow_join_start(); // task 0x6C4A in slot 0x10
+        self.flow.join_task = scene::Scene::start(0);
+        self.flow.join_task.sleep(2); // the recording: its first pass is two frames after the first pass of mode 0 (mode 0 keeps the CPU)
         self.vram.clear2();
         self.vram.clear3();
         self.sprites.clear();
@@ -332,10 +350,21 @@ impl Game {
 
     /// 0xA9BE: setup shared by game start and every stage start.
     fn flow_stage_setup(&mut self) {
+        self.flow_stage_setup_palettes();
+        self.flow_stage_setup_rest();
+    }
+
+    /// The first part of 0xA9BE: the palettes of the stage and the full brightness.
+    fn flow_stage_setup_palettes(&mut self) {
         self.load_all_palettes(); // 0x8A44
         self.brightness_full(); // 0x892C
+    }
+
+    /// The rest of 0xA9BE: the scroll controllers, the select struct, the rank, the layer control, the HUD, the area start and the mode
+    /// byte (4, sub 0).
+    fn flow_stage_setup_rest(&mut self) {
         self.flow_scroll_reset(); // 0x20402
-        self.flow.front.select = Default::default(); // 0xAD36
+        self.flow.front.select.clear(); // 0xAD36
         self.rank_stage_start(); // 0x1800E
         self.w.layer_ctrl = 0x12D6;
         self.w.stage_clear = 0;
@@ -440,6 +469,29 @@ impl Game {
         self.cam.cam1_y = 0x100;
         self.flow_intro_start(); // task 0xB9BE in slot 0x30
         self.flow_stage_setup(); // 0xA9BE
+        self.flow_stage_start_tail();
+    }
+
+    /// 0xAC4E as it runs after the character select (`select.rs`), in the frames of the recording (`flow_sel-1p`, the fade out is over in
+    /// 1487): phase 0 (1488) the clear 0xAE0 starts (the sprites and scroll1 now, scroll2 and scroll3 in the next two frames, `flow_attract_clear`),
+    /// phase 2 (1490) the camera, the intro task and the palettes of the stage with full brightness, phase 3 (1491) the rest of 0xA9BE
+    /// (the mode byte is 4 again), phase 4 (1492) the mode 0xC, the sound stop and the music.
+    pub(super) fn flow_stage_start_staged(&mut self, phase: u8) {
+        match phase {
+            0 => self.flow_attract_clear(),
+            2 => {
+                self.cam.cam1_y = 0x100;
+                self.flow_intro_start();
+                self.flow_stage_setup_palettes();
+            }
+            3 => self.flow_stage_setup_rest(),
+            4 => self.flow_stage_start_tail(),
+            _ => {}
+        }
+    }
+
+    /// 0xAC6E to the end of 0xAC4E: the game mode 0xC, the players of the level, the sound stop and the music of the stage.
+    fn flow_stage_start_tail(&mut self) {
         self.flow.mode = 0xC;
         self.flow_count_players();
         for p in self.players.iter_mut() {

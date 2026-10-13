@@ -54,6 +54,9 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     // The brown dinosaur (class 30, 0x4FB24) and the two pieces of the big one (class 69, 0x5C2EC).
     0x4FC22, 0x718C2,
     0x8B5E6, // pool B class 86, the Cadillac of the ranking screen (0x8B43C)
+    // Pool B class 19, the hero pictures of the select screen on the 2 player layout (0x7B7C6): the tables of the four cursor positions
+    // (pointers at 0x7B85E; animation 0 = standing, 1 = picked).
+    0x7B86E, 0x7B872, 0x7B876, 0x7B87A,
     0x42516, // pool A class 17, the two heroes in the Cadillac (0x423B8)
     // Pool E (items, phase 1 task 2). Containers 0x28C8A..0x28D1C, one table per variant.
     0x2995E, // container var 0
@@ -90,7 +93,12 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
 ];
 
 /// Single frame records items load directly (0x1236): the ammo box picture.
-pub const OBJECT_FRAMES: &[u32] = &[0x285DC];
+pub const OBJECT_FRAMES: &[u32] = &[
+    0x285DC,
+    // Pool B class 67 (the golden man and the others of the select screen, 0x8881A, pointers at 0x88872) and class 68 (the player
+    // tags 1P, 2P, 3P, 0x888B2, pointers at 0x88A54).
+    0x88882, 0x8888E, 0x8889A, 0x888A6, 0x88A60, 0x88A6C, 0x88A78,
+];
 
 pub fn extract(rom: &Rom, extra: &crate::ExtraFrames) -> SpriteData {
     let mut data = SpriteData { compositions: compositions(rom), ..Default::default() };
