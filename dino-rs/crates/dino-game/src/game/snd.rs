@@ -8,6 +8,22 @@
 
 use super::Game;
 
+/// 0xA63C: one entry of the sound queue, the code word and the two longs the sound port reads: d1 (the pan mode in the
+/// high word, the pan byte in the low byte, 0x10 = no pan) and d2 (volume and the like). `Game::sound` records the
+/// code only; `Game::snd_request` records the whole entry. Interim record until `sound_ex` of M4-13 carries d1 and d2
+/// on every request.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SndRequest {
+    pub code: u16,
+    pub d1: u32,
+    pub d2: u32,
+}
+
+/// The ring of the original has 64 entries of 16 bytes (0xA650: `andi #$3F0`) and is full at 63 (0xA658 does not move
+/// the write index when it would meet the read index, so the new entry is lost).
+#[allow(dead_code)] // the break sound helper is used by the scenery props of M3, the ring by the sound port of M4
+const SND_RING: usize = 63;
+
 /// 0x610..0x69E: does the sound flush send this queued code to the sound chip? A code whose high
 /// byte is 0xFF (0xFF00 stop, 0xFF05, 0xFF07 fade, 0xFF0B reset) always goes. Any other code goes
 /// only in a game (G.$4CC is not 0, which includes the press-start-to-select moment), or when it
@@ -34,6 +50,57 @@ impl Game {
         let old = self.w.snd_toggle >> bit & 1 != 0;
         self.w.snd_toggle ^= 1 << bit;
         old
+    }
+
+    /// `bchg.b #bit,$43B(a5)`: flips the bit of the toggle byte of the item and prop sounds and returns what it was
+    /// (`bne` taken when true). The item sounds (`item/shared.rs`) flip the same byte.
+    #[allow(dead_code)] // used by the scenery props of M3
+    pub fn snd_toggle_b(&mut self, bit: u8) -> bool {
+        let old = self.spawn.g.snd_toggle_b >> bit & 1 != 0;
+        self.spawn.g.snd_toggle_b ^= 1 << bit;
+        old
+    }
+
+    /// 0xA63C with its three registers: queue the code and keep the entry (code, d1, d2) for the sound port. A full
+    /// ring loses the new entry (see `SND_RING`).
+    #[allow(dead_code)] // used by the scenery props of M3
+    pub fn snd_request(&mut self, code: u16, d1: u32, d2: u32) {
+        self.sound(code);
+        if self.spawn.g.snd_ring.len() < SND_RING {
+            self.spawn.g.snd_ring.push(SndRequest { code, d1, d2 });
+        }
+    }
+
+    /// The entries queued with `snd_request` since the last call, oldest first (the sound port takes them each frame).
+    #[allow(dead_code)] // read by the sound port of M4
+    pub fn snd_take_requests(&mut self) -> Vec<SndRequest> {
+        std::mem::take(&mut self.spawn.g.snd_ring)
+    }
+
+    /// 0x9E64..0x9E84 (the same lines are in 0x9EA2, 0x9EDC and 0x9F12): the pan byte of an object at world X `x`.
+    /// The screen position `x - camera X` (G.$744) is 0 when it is negative and 0x17F at 0x180 or more (`bcs`,
+    /// unsigned), then `(pos & 0x1F8) >> 3` indexes the table 0xA66A of 48 bytes (0 at the left edge to 0x20 at the
+    /// right edge, 0x10 in the middle).
+    #[allow(dead_code)] // used by the scenery props of M3
+    pub fn snd_pan_x(&self, x: i16) -> u8 {
+        let mut d = x.wrapping_sub(self.cam.s2.cam_x as i16); // sub.w $744(a5),d0
+        if d < 0 {
+            d = 0; // bpl
+        }
+        if d as u16 >= 0x180 {
+            d = 0x17F;
+        }
+        self.assets.enemy.t.u8(0xA66A, ((d as u16 & 0x1F8) >> 3) as u32)
+    }
+
+    /// 0x9E60: the break sound of walls, doors and weapons with the pan of the object at world X `x` (+$08): code 0x6F, or
+    /// 0xF6 when bit 0 of G.$43B was clear (`bchg`, so the first request after a clear is 0xF6 and they alternate; the
+    /// item code flips the same bit), d1 = the pan byte, d2 = 0.
+    #[allow(dead_code)] // used by the scenery props of M3
+    pub fn snd_break(&mut self, x: i16) {
+        let pan = self.snd_pan_x(x);
+        let old = self.snd_toggle_b(0);
+        self.snd_request(if old { 0x6F } else { 0xF6 }, pan as u32, 0);
     }
 
     /// 0xA502 (called at the start of 0x18834): each player's voice bank +$118 from which
@@ -155,6 +222,13 @@ mod tests {
         Game::new(Box::leak(Box::new(a)))
     }
 
+    /// A game whose pan table 0xA66A (48 bytes, `enemy.t`) counts 0, 1, 2 ... (synthetic: no ROM bytes).
+    fn game_with_pan_table() -> Game {
+        let mut a = AssetPack::default();
+        a.enemy.t = dino_assets::enemy::ByteTables { blobs: vec![(0xA66A, (0..0x30).collect())] };
+        Game::new(Box::leak(Box::new(a)))
+    }
+
     /// 0x95CE and 0x9BCE alternate with `bchg`: the first request after a clear takes the second
     /// code, and the toggle bits are shared per bit, not per routine (0x9B60 and 0x9BCE share bit 5).
     #[test]
@@ -226,5 +300,53 @@ mod tests {
         }
         g.snd_update_voice_banks();
         assert_eq!(g.players[0].voice, 3);
+    }
+
+    /// 0x9E60 as D4e acceptance 9 describes the toggle: two breaks give 0xF6 then 0x6F (the first request after a
+    /// clear takes the second code), or the other order when bit 0 of G.$43B was set; the byte is shared with the
+    /// item sounds, and the other bits stay. The ring keeps d1 (the pan byte) and d2.
+    #[test]
+    fn the_break_sound_alternates_with_the_toggle_of_g43b() {
+        let mut g = game_with_pan_table();
+        g.cam.s2.cam_x = 0x100;
+        g.snd_break(0x100 + 8 * 5);
+        g.snd_break(0x100 + 8 * 5);
+        g.snd_break(0x100 + 8 * 5);
+        assert_eq!(g.w.sounds, vec![0xF6, 0x6F, 0xF6]);
+        assert_eq!(g.spawn.g.snd_toggle_b, 1);
+        g.spawn.g.snd_toggle_b = 0b0100_0001; // bit 0 already set: the other order, other bits untouched
+        g.w.sounds.clear();
+        g.snd_break(0x100);
+        g.snd_break(0x100);
+        assert_eq!(g.w.sounds, vec![0x6F, 0xF6]);
+        assert_eq!(g.spawn.g.snd_toggle_b, 0b0100_0001, "two flips");
+        let ring = g.snd_take_requests();
+        assert_eq!(ring.len(), 5);
+        assert_eq!((ring[0], ring[1].code, ring[3].d1), (SndRequest { code: 0xF6, d1: 5, d2: 0 }, 0x6F, 0));
+        assert!(g.snd_take_requests().is_empty(), "taken");
+    }
+
+    /// The pan: the screen position is clamped to 0 .. 0x17F, then one table byte per 8 pixels.
+    #[test]
+    fn the_pan_follows_the_screen_position() {
+        let mut g = game_with_pan_table();
+        g.cam.s2.cam_x = 0x300;
+        assert_eq!(g.snd_pan_x(0x2F0), 0, "left of the screen");
+        assert_eq!(g.snd_pan_x(0x300), 0);
+        assert_eq!(g.snd_pan_x(0x307), 0);
+        assert_eq!(g.snd_pan_x(0x308), 1);
+        assert_eq!(g.snd_pan_x(0x300 + 0x17F), 0x2F);
+        assert_eq!(g.snd_pan_x(0x300 + 0x180), 0x2F, "right of the screen");
+        assert_eq!(g.snd_pan_x(0x300 + 0x7000), 0x2F);
+    }
+
+    /// A full ring (63 entries) loses new entries; the codes are still recorded for the harness.
+    #[test]
+    fn a_full_ring_drops_new_entries() {
+        let mut g = game_with_tables(Vec::new());
+        for k in 0..70 {
+            g.snd_request(k, 0, 0);
+        }
+        assert_eq!((g.snd_take_requests().len(), g.w.sounds.len()), (63, 70));
     }
 }

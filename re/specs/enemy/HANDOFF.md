@@ -94,3 +94,41 @@ Code: `dino-rs/crates/dino-game/src/game/{enemy.rs, enemy_combat.rs, spawn.rs, r
 - `pick_target` uses player +$A0 as (held << 8 | previous input), which is what the original reads.
 - The original adds a hit spark via `spawn_hit_spark` (effects port) in 0x11008; it is called.
 - Anti-tamper checks (0x2A5B6, 0x29ADE) are not ported on purpose (always pass with a genuine ROM).
+
+## How to build a scenery prop with tile_block (T-B0, M2-05 and M2-06)
+
+The shared service for the pool B tile props (door smashes, breaking walls, tile animations, one shot tile changes).
+Read the module doc of `game/prop/tile_block.rs` first (it has the three code shapes with the addresses of classes 11,
+12 and 40) and the top of `game/prop.rs` (the prop contract and the hit pass).
+
+What exists:
+
+| need | use |
+| --- | --- |
+| write tiles | `TilePos::at(0x90F288)` (an address of the original code) or `TilePos::new(Layer::Scroll2, col, row)` (ring, wraps at 64) or `TilePos::scroll2_at_world(x, y)` (0x75208); `prop_tile_put`, `prop_tile_code`, `prop_tile_attr(keep, or)`, `prop_tile_block(at, cols, rows, rom_addr, TileMode)`, `prop_tile_attr_block` |
+| animation | `BlockTable { table, count, at, cols, rows, mode, period, looped }`, `start(p, delay)` in mode 0, `prop_block_table_step(p, &table)` every frame (state in `+$A0` timer and `+$A2` index, as class 12 has it) |
+| a prop that can be hit | `p.hit_init(box_table, hp)` in mode 0, `prop_register_hit(handle)` every idle frame (0x4BFA), the break in mode 4. The pass `pass_10cd0` does the rest |
+| break sound | `snd_break(x)` (0x9E60: 0xF6 / 0x6F by bit 0 of G.$43B, pan from X); the request with d1 and d2 is in `snd_take_requests()` for the sound port |
+| script action spawns a prop | `spawn_script_prop(0x40 / 0x46 / 0x24)` or the generic `spawn_prop(class, var, Some((x, y, z)))` |
+
+Steps for a new prop class:
+1. Extract its data: add the tile code tables and the box table (12 bytes a box) to `TABLES` in `dino-extract/src/enemy.rs`
+   (exact copies, no bytes in source). The writer panics when a table byte was not extracted, so a wrong address shows up
+   in the first test run.
+2. New file `game/prop/bNN.rs`, declared in `prop.rs` with `#[path]`, one dispatch line in `pool_b_update`, the class number in
+   `PORTED_CLASSES` ("prop") of `trace.rs`. Name the original address of every routine in its doc comment.
+3. Test with synthetic tables (`AssetPack::default()`, `enemy.t.blobs`), as `tile_block.rs` and `prop.rs` do.
+
+Things found while building it:
+- A block that is taller than the rest of its page runs on into the next column, as the 68000 address does. `down(n)` keeps that.
+- The hit box bank (`assets.sprites.hitboxes`) holds 0x100000 to 0x11D220 only, but the prop box tables are in program ROM
+  (0x8380A, 0x750B4, 0x76666 ...). The hit pass reads the prop box from `enemy.t` (`prop_body_box`) and has its own copy of the
+  three range tests of 0x128F8 (`collide::overlap` is private). If the main session makes `HitBoxBank` cover those tables,
+  `prop_box_hit` becomes `collide::boxes_hit`.
+- The harness holds unported props as MAME had them but never registers them in the hit list, and its `Prop::trace_visit` does not
+  load `+$44`, `+$48` or `+$6C` into the `Body`. So an unported breakable prop cannot be hit in a harness run until its class is ported
+  (the `armed` scenario shows this at frame 564, the jump kick on B40).
+- D3e part 1 section 1.4 has the scroll3 row formula wrong: the high row bits are `(i >> 9) & 7`, not `(i >> 10) & 3`
+  (`Vram::index3` is right).
+- The hero's attack box is not always 8 deep: the jab and kick boxes are about 8 deep, the others differ per frame. The rule
+  "Z + 8 >= start and Z <= end" of D3e part 3 section 2.6 is the summary for the jab; the pass runs the real box test.

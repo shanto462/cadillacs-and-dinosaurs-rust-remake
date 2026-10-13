@@ -1,11 +1,42 @@
 //! Pool B: controllers and props (0x23604): the wave controller (class 15, 0x7B336) and the boss
 //! reinforcement controller (class 22, 0x7BEF6). Owner: enemy port. See SPEC section 8.2.
+//!
+//! # Props the players can hit (T-B0: the prop contract, the hit list and the hit pass)
+//!
+//! A breakable prop (steam pipes, wall panels, the hall window, the fence, the flame vents) follows one contract, and
+//! the collision pass `pass_10cd0` (0x10CD0) does the rest:
+//!
+//! - Init (mode 0): `Prop::hit_init(box_table, hp)` = body box index `+$48 = 1`, no attack box `+$49 = 0`, the box
+//!   table `+$44` and the HP `+$6C` and `+$6E`. The prop box tables are in program ROM (0x8380A, 0x76666, 0x750B4 ...):
+//!   the class adds its table (12 bytes a box) to `TABLES` of `dino-extract/src/enemy.rs`, and the pass reads the box
+//!   from `assets.enemy.t` (the hit box bank only holds 0x100000 to 0x11D220).
+//! - Every frame it can be hit (mode 2): `Game::prop_register_hit(handle)` = 0x4BFA, the list 0x6724 with the count
+//!   0x671C. The list is emptied every frame (0x105E8): a prop that stops registering cannot be hit any more.
+//! - The pass: for every player attack box of the list 0x6718 whose frame class `+$2E` is 4 or 6, and every
+//!   registered prop that is not in a reaction (`+$00` bit 1 clear), when the swing is new (the serials `+$5E` differ)
+//!   and the box test 0x128F8 hits (attack box `+$49` against body box `+$48`), the hit is taken: serial, player
+//!   `+$02`, the state long `+$04 = 0x04000000` (mode 4, sub 0), `+$7A = 0`, the attacker `+$68`, HP `+$6E = +$6C`
+//!   and `+$6C` minus the damage of the player's attack record (floor 0), hit stop `+$59` on both, the hit sound
+//!   0x962A, the score 0xFFC8, `+$9A` and the hit spark 0x12720. **The pass never looks at the HP: one hit that
+//!   overlaps the box always breaks the prop** (only the flame vents, class 45, count their HP themselves).
+//! - The reach rule is the ordinary box test 0x128F8 (`collide::boxes_hit`) of the attack frame against the prop's
+//!   body box, nothing special for props. D3e part 3 section 2.6 sums it up for the common jab and kick boxes (about
+//!   8 deep): a hero at depth Z hits a prop whose box depth range is `[start, end]` when `Z + 8 >= start` and
+//!   `Z <= end`, and the X and height ranges overlap. The mine wall (Z 0x60, range 32 to 128) is hit from Z 32 and not
+//!   from Z 16, a vent whose range starts at Z 832 from Z 824 and not from Z 816 (the tests of this file).
+//! - Mode 4 (the break) is the prop's own: tiles (`tile_block.rs`), sound (`Game::snd_break`), effect, then free.
 
 use super::body::Body;
+use super::collide;
 use super::enemy::Ram;
 use super::spawn::clear_header;
-use super::{Game, Handle};
+use super::{slot_of, Game, Handle, Slot};
 use dino_assets::enemy::Wave;
+use dino_assets::HitBox;
+
+// The tile block writer and the block table driver of the scenery props (T-B0, M2-05 / M2-06).
+#[path = "prop/tile_block.rs"]
+pub mod tile_block;
 
 // Pool B classes of the front end (M1-06): the profile card board (93) and its scroll (94).
 #[path = "prop/class93.rs"]
@@ -38,6 +69,19 @@ mod class68;
 pub struct Prop {
     pub b: Body,
     pub m: Ram,
+}
+
+impl Prop {
+    /// The prop contract of a breakable prop (class 40 init 0x836B8, class 12 var 4 init 0x78FC0): body box index
+    /// `+$48 = 1`, attack box `+$49 = 0`, box table `+$44`, HP `+$6C = +$6E`. The hit pass 0x10CD0 never reads the HP.
+    #[allow(dead_code)] // used by the breakable props of M3
+    pub fn hit_init(&mut self, box_table: u32, hp: u16) {
+        self.b.body_box = 1;
+        self.b.attack_box = 0;
+        self.b.box_table = box_table;
+        self.b.hp = hp;
+        self.b.hp_prev = hp;
+    }
 }
 
 /// Wave controller fields (pointer +$A0 kept as group / record indexes).
@@ -77,6 +121,97 @@ impl Game {
             self.props.slots[i] = p;
         }
         self.prop_area_walk_fallback();
+    }
+
+    /// 0x4BFA: the prop can be hit by the players this frame (the list 0x6724 and its count 0x671C; the passes
+    /// visit the newest entry first). Call it every frame from the prop's idle mode.
+    #[allow(dead_code)] // used by the breakable props of M3
+    pub fn prop_register_hit(&mut self, h: Handle) {
+        self.combat.push(0x671C, h);
+    }
+
+    /// 0x10CD0: player attacks against the registered props (see the module doc). Called by `collision` (0x10546)
+    /// after the pass against enemies, before the pass against containers.
+    pub fn pass_10cd0(&mut self) {
+        let props = self.combat.get(0x671C).to_vec(); // 0x10CE2: no props, nothing to do
+        if props.is_empty() {
+            return;
+        }
+        for a2 in self.combat.get(0x6718).to_vec() {
+            let Some(Slot::Player(i)) = slot_of(a2) else { continue };
+            // 0x10D16 by the frame class +$2E: only 4 and 6 attack; for the others 0x10D26 ends the prop loop (clr.w d7).
+            if !matches!(self.players[i].b.kind, 4 | 6) {
+                continue;
+            }
+            for &a3 in &props {
+                self.prop_hit_by_player(i, a2, a3);
+            }
+        }
+    }
+
+    /// The body box of a prop: the record `+$48` of the box table `+$44`, read from the extracted byte tables
+    /// (`dino-extract/src/enemy.rs` `TABLES`, 12 bytes a box). The prop tables are in program ROM (0x75414, 0x8380A,
+    /// 0x76666 ...), outside the region of `assets.sprites.hitboxes` (0x100000 to 0x11D220), so each prop class adds its
+    /// table to `TABLES`. Single box tables only (+$4A = 0), which is all the props use.
+    fn prop_body_box(&self, b: &Body) -> HitBox {
+        let a = (b.box_table & 0xFF_FFFF) + 12 * b.body_box as u32;
+        let t = &self.assets.enemy.t;
+        let w = |k: u32| t.i16(a, 2 * k);
+        HitBox { zoff: w(0), zsize: w(1), xoff: w(2), xsize: w(3), yoff: w(4), ysize: w(5) }
+    }
+
+    /// 0x128F8 for a player's attack box (`collide::boxes`, the hit box bank) against the body box of a prop
+    /// (`prop_body_box`): the same three unsigned range tests as `collide::boxes_hit`, whose `overlap` is private. Returns
+    /// the first overlapping pair for the spark, as it does.
+    fn prop_box_hit(&self, attacker: &Body, prop: &Body) -> Option<(HitBox, HitBox)> {
+        fn axis(a0: i16, asz: i16, b0: i16, bsz: i16) -> bool {
+            (a0.wrapping_sub(b0).wrapping_add(asz) as u16) <= (asz.wrapping_add(bsz) as u16)
+        }
+        let hb = self.prop_body_box(prop);
+        collide::boxes(&self.assets.sprites, attacker, attacker.attack_box)
+            .into_iter()
+            .find(|ha| {
+                axis(attacker.zi().wrapping_add(ha.zoff), ha.zsize, prop.zi().wrapping_add(hb.zoff), hb.zsize)
+                    && axis(collide::left(attacker, ha), ha.xsize, collide::left(prop, &hb), hb.xsize)
+                    && axis(attacker.yi().wrapping_add(ha.yoff), ha.ysize, prop.yi().wrapping_add(hb.yoff), hb.ysize)
+            })
+            .map(|ha| (ha, hb))
+    }
+
+    /// 0x10D2A: player `i` (object `a2`) against the prop `a3`.
+    fn prop_hit_by_player(&mut self, i: usize, a2: Handle, a3: Handle) {
+        let Some(Slot::Prop(pi)) = slot_of(a3) else { return };
+        let ab = self.players[i].b.clone();
+        let pb = &self.props.slots[pi].b;
+        // 0x10CF2: a prop in a reaction (+$00 bit 1) is skipped; 0x10D2A: one swing hits it once; the two box indexes.
+        if pb.live & 2 != 0 || ab.serial == pb.serial || ab.attack_box == 0 || pb.body_box == 0 {
+            return;
+        }
+        let Some((ha, hb)) = self.prop_box_hit(&ab, pb) else {
+            return;
+        };
+        // 0x10D78: the record of the player's attack, 8 bytes at 0xA26FC[character] + +$58 * 4.
+        let ch = (ab.k20 / 4) as usize & 3;
+        let r = self.assets.sprites.player_attacks[ch].get((ab.atk / 2) as usize).copied().unwrap_or_default();
+        {
+            let p = &mut self.props.slots[pi];
+            p.b.serial = ab.serial;
+            p.b.who = ab.who;
+            p.b.set_state(0x0400_0000); // routine 4, sub 0: the break
+            p.m.sb(0x7A, 0);
+            p.b.attacker = a2;
+            p.b.hp_prev = p.b.hp;
+            let hp = (p.b.hp as i16).wrapping_sub(r.damage as i16);
+            p.b.hp = if hp > 0 { hp as u16 } else { 0 }; // bgt / clr.w: the floor is 0
+            p.b.hitstop = r.hit_stop; // 0x10DA2: +$59 of both
+            p.b.b9a = r.b7;
+        }
+        self.players[i].b.hitstop = r.hit_stop;
+        if r.sound != 0 {
+            self.snd_hit(r.sound); // 0x962A
+        }
+        self.player_add_score(i, r.score); // 0xFFC8
+        self.spawn_hit_spark(a2, a3, ha, hb, r.spark); // 0x12720 (bra)
     }
 
     /// Classes not ported yet (props, scenery, event objects): freed at once.
@@ -303,5 +438,173 @@ impl Game {
         if self.spawn.g.area_walk && self.cam.s2.lock78 == 1 {
             self.camera_go();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dino_assets::{AssetPack, AttackRecord, HitBoxBank};
+
+    /// Hit box tables (synthetic, 6 words a box, 12 bytes). The hero's attack box (in the hit box bank, as the real ones)
+    /// is 8 deep like D3e's summary of the jab: depth 0 to 8, X 0x10 to 0x30, height 0x10 to 0x30. The prop tables are
+    /// byte tables of `enemy.t`, as the prop classes extract them: the mine wall box is [Z - 64, Z + 32] (depth range
+    /// 32 to 128 for Z 0x60), 0x20 wide from X, 0x80 high; the vent box starts at its Z and is 32 deep.
+    const HERO: u32 = 0x100000;
+    const WALL: u32 = 0x83A00;
+    const VENT: u32 = 0x83A18;
+
+    fn game() -> Game {
+        let mut a = AssetPack::default();
+        let hero: Vec<i16> = [[0, 0, 0, 0, 0, 0], [0, 8, 0x10, 0x20, 0x10, 0x20]].concat();
+        a.sprites.hitboxes = HitBoxBank { base: HERO, words: hero };
+        let bytes = |w: [i16; 12]| w.iter().flat_map(|v| v.to_be_bytes()).collect::<Vec<u8>>();
+        a.enemy.t.blobs = vec![
+            (WALL, bytes([0, 0, 0, 0, 0, 0, -64, 96, 0, 0x20, 0, 0x80])),
+            (VENT, bytes([0, 0, 0, 0, 0, 0, 0, 32, 0, 0x20, 0, 0x80])),
+        ];
+        a.sprites.player_attacks[0] = vec![AttackRecord { damage: 3, stun: 1, reaction: 2, hit_stop: 9, sound: 0, score: 0, spark: 1, b7: 5 }; 4];
+        Game::new(Box::leak(Box::new(a)))
+    }
+
+    /// One swing of hero 0 (depth `hero_z`, X 0x100, attack frame class 4, serial 5) against the prop in slot 23 with the
+    /// box table `table` at depth `prop_z`; the prop is registered as its idle mode does. Returns the game.
+    fn swing(table: u32, prop_z: i16, hero_z: i16) -> Game {
+        let mut g = game();
+        let me = Game::player_handle(0);
+        {
+            let p = &mut g.players[0].b;
+            p.live = 1;
+            p.box_table = HERO;
+            p.attack_box = 1;
+            p.kind = 4;
+            p.serial = 5;
+            p.set_xi(0x100);
+            p.set_zi(hero_z);
+        }
+        let i = g.props.alloc().unwrap();
+        let h = g.props.handle(i);
+        {
+            let p = &mut g.props.slots[i];
+            p.b.live = 1;
+            p.b.set_xi(0x120);
+            p.b.set_zi(prop_z);
+            p.hit_init(table, 8);
+        }
+        g.combat.push(0x6718, me);
+        g.prop_register_hit(h);
+        g.pass_10cd0();
+        g
+    }
+
+    fn broken(g: &Game) -> bool {
+        g.props.slots[23].b.state() == 0x0400_0000
+    }
+
+    /// D3e part 3 section 2.6, the mine wall (Z 0x60, box depth 32 to 128): a hero at depth 32 hits, one at 16
+    /// misses; the edges are `Z + 8 >= start` and `Z <= end`.
+    #[test]
+    fn the_reach_rule_of_the_mine_wall() {
+        assert!(broken(&swing(WALL, 0x60, 32)));
+        assert!(!broken(&swing(WALL, 0x60, 16)));
+        assert!(broken(&swing(WALL, 0x60, 79)));
+        assert!(broken(&swing(WALL, 0x60, 24)), "24 + 8 reaches 32");
+        assert!(!broken(&swing(WALL, 0x60, 23)));
+        assert!(broken(&swing(WALL, 0x60, 128)), "the end is included");
+        assert!(!broken(&swing(WALL, 0x60, 129)));
+    }
+
+    /// The flame vents (B45, box depth from 832): a hero at the back limit side 824 hits, 816 misses.
+    #[test]
+    fn the_reach_rule_of_the_vents() {
+        assert!(broken(&swing(VENT, 832, 824)));
+        assert!(broken(&swing(VENT, 832, 831)));
+        assert!(!broken(&swing(VENT, 832, 816)));
+    }
+
+    /// The hit itself (0x10D2A): the state long, serial, player, attacker, HP floor 0 with the old HP kept, hit stop
+    /// on both, +$9A, a spark; the prop never looks at its HP.
+    #[test]
+    fn a_hit_takes_the_prop_into_its_break() {
+        let g = swing(WALL, 0x60, 40);
+        let p = &g.props.slots[23].b;
+        assert_eq!((p.state(), p.serial, p.who, p.attacker), (0x0400_0000, 5, 0, Game::player_handle(0)));
+        assert_eq!((p.hp, p.hp_prev, p.hitstop, p.b9a), (5, 8, 9, 5));
+        assert_eq!(g.players[0].b.hitstop, 9);
+        assert_eq!(g.effects.free_count(), 47, "a spark");
+        // A prop with 1 HP: the damage 3 takes it to the floor 0 (and it breaks like any other).
+        let mut g = game();
+        g.players[0].b = swing(WALL, 0x60, 40).players[0].b.clone();
+        let i = g.props.alloc().unwrap();
+        g.props.slots[i].b.live = 1;
+        g.props.slots[i].b.set_xi(0x120);
+        g.props.slots[i].b.set_zi(0x60);
+        g.props.slots[i].hit_init(WALL, 1);
+        g.combat.push(0x6718, Game::player_handle(0));
+        g.prop_register_hit(g.props.handle(i));
+        g.pass_10cd0();
+        assert_eq!((g.props.slots[i].b.hp, g.props.slots[i].b.hp_prev), (0, 1));
+    }
+
+    /// One swing hits once; a new swing (a new serial) hits again; frame classes other than 4 and 6, a prop that is not
+    /// registered, a prop in a reaction and a missing box index do nothing.
+    #[test]
+    fn the_rules_of_the_pass() {
+        let mut g = swing(WALL, 0x60, 40);
+        let h = g.props.handle(23);
+        let reset = |g: &mut Game| {
+            g.props.slots[23].b.set_state(0x0200_0000);
+            g.props.slots[23].b.hp = 8;
+            g.combat.clear(0x671C);
+            g.prop_register_hit(h);
+        };
+        reset(&mut g);
+        g.pass_10cd0();
+        assert!(!broken(&g), "the same swing (serial 5) does not hit again");
+        g.players[0].b.serial = 6;
+        g.pass_10cd0();
+        assert!(broken(&g), "a new swing does");
+        for kind in [0, 2, 8, 0xA] {
+            reset(&mut g);
+            g.players[0].b.serial = 7;
+            g.players[0].b.kind = kind;
+            g.pass_10cd0();
+            assert!(!broken(&g), "frame class {kind}");
+        }
+        g.players[0].b.kind = 6; // 6 attacks too
+        reset(&mut g);
+        g.pass_10cd0();
+        assert!(broken(&g));
+        reset(&mut g);
+        g.players[0].b.serial = 8;
+        g.combat.clear(0x671C);
+        g.pass_10cd0();
+        assert!(!broken(&g), "not registered this frame");
+        g.prop_register_hit(h);
+        g.props.slots[23].b.live = 2;
+        g.pass_10cd0();
+        assert!(!broken(&g), "in a reaction");
+        g.props.slots[23].b.live = 1;
+        g.props.slots[23].b.body_box = 0;
+        g.pass_10cd0();
+        assert!(!broken(&g), "no body box");
+        g.props.slots[23].b.body_box = 1;
+        g.players[0].b.attack_box = 0;
+        g.pass_10cd0();
+        assert!(!broken(&g), "no attack box");
+        g.players[0].b.attack_box = 1;
+        g.pass_10cd0();
+        assert!(broken(&g));
+    }
+
+    /// The list is emptied every frame (0x105E8), so a prop that stops registering cannot be hit.
+    #[test]
+    fn the_hit_list_is_per_frame() {
+        let mut g = game();
+        g.prop_register_hit(g.props.handle(3));
+        g.prop_register_hit(g.props.handle(5));
+        assert_eq!(g.combat.get(0x671C), &[g.props.handle(5), g.props.handle(3)], "newest first");
+        g.combat_lists_reset();
+        assert!(g.combat.get(0x671C).is_empty());
     }
 }

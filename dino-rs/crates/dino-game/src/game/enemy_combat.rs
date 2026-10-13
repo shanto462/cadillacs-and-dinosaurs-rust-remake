@@ -24,7 +24,6 @@ mod th {
 impl Game {
     pub fn pass_10dcc(&mut self) {}
     pub fn pass_1132a(&mut self) {}
-    pub fn pass_10cd0(&mut self) {}
 
     /// 0x11962: player attacks (frame class 4 or 6) against the objects of the attacker list 0x671A that
     /// are alive (+$00 bit 0): containers, and weapons lying about, whose frame class can be hit

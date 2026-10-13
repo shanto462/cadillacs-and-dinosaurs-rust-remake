@@ -163,6 +163,7 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x9E5C, 4, "bazooka sound by voice bank (0x9E08)"),
     (0xA498, 6, "shotgun sound by voice bank (0xA442)"),
     (0x9FAA, 12, "eating sound by voice bank, normal and Hannah rows (0x9F54)"),
+    (0xA66A, 0x30, "pan byte by screen X / 8 (0x9E60 break sound, 0x9EA2, 0x9EDC, 0x9F12)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {
