@@ -1,4 +1,4 @@
-//! Pool C (effects, sparks, shots; update 0x237B2) and pool D (special, not ported).
+//! Pool C (effects, sparks, shots; update 0x237B2) and pool D (special: the stage clock's sprite list, `Special`).
 //!
 //! An effect is a pool C object (allocator 0x4884, free 0x4964) whose class word +$20 selects
 //! its handler from the long table at 0x237E6. Handlers dispatch on +$04 like every object:
@@ -9,6 +9,7 @@
 //! * `0x10` water splash when landing in water, 0x92A48 (spawned by the player code 0x606E).
 //! * `0x20` burning flames attached to a body, 0x92FB4 (player 0x1C86E, enemy 0x2AD98).
 //! * `0x68` water ripple around a wading body, 0x9631C (player code 0x60E2), raw-list frames.
+//! * `0x70` the words TIME and OVER of the stage time out, 0x96488 (`effect/fx_time_over.rs`, made by `rank_time_over`).
 //! * `0x80` cloud of the ranking screen, 0x96A7E (`effect/fx_cloud.rs`, made by the pool B class 89).
 //!
 //! Any other class is freed on its first update (logged once in debug builds) until it is ported.
@@ -25,12 +26,16 @@
 //! * [`Game::fx_spawn_flame`] = one iteration of the loops at 0x1C876 / 0x2ADAE
 
 use super::body::Body;
+use super::enemy::Ram;
 use super::{Game, Handle, POOL_C, Slot, collide, slot_of};
 
 // Pool C classes of the front end (M1-07): the clouds of the ranking screen.
 #[path = "effect/fx_cloud.rs"]
 mod fx_cloud;
-use dino_assets::effect::EffectData;
+// Pool C class 28 (M2-14): the words TIME and OVER.
+#[path = "effect/fx_time_over.rs"]
+mod fx_time_over;
+use dino_assets::effect::{EffectData, RawSprite};
 use dino_assets::{FrameId, HitBox};
 
 /// Effect classes (+$20) ported here.
@@ -38,6 +43,7 @@ pub const FX_SPARK: u16 = 0x04;
 pub const FX_WATER_SPLASH: u16 = 0x10;
 pub const FX_FLAMES: u16 = 0x20;
 pub const FX_RIPPLE: u16 = 0x68;
+pub const FX_TIME_OVER: u16 = 0x70;
 pub const FX_CLOUD: u16 = 0x80;
 
 /// Hit spark animation table (0x924BE stores it in +$40).
@@ -59,7 +65,7 @@ pub struct Effect {
     pub owner_class: u16,
     /// +$5C index of the effect in its spawn loop (flames: start frame = index & 3).
     pub w5c: u16,
-    /// +$60 owner of an attached effect (flames).
+    /// +$60 owner of an attached effect (flames); the words TIME and OVER (class 0x70) keep their hold counter in this word.
     pub owner60: Handle,
     /// +$62 / +$64 offset from the owner (X mirrored by the owner's facing).
     pub off_x: i16,
@@ -68,9 +74,49 @@ pub struct Effect {
     pub speed60: i32,
 }
 
+/// A pool D slot (allocator 0x48A8, free 0x4994, 0x80 bytes, `Game::draw_special_alloc`): a passive record that the
+/// object which took it fills and draws itself (D3f section 3). The stage clock (pool B class 31, `prop/b31.rs`) keeps a
+/// raw sprite list in it: the draw record (a long pointer to the list, four parameter bytes) at +$00 and the list at +$0A
+/// (count, number of sprites, then dx, dy, attr, code of each). The slot is a byte image (`m`, original offsets), as
+/// the free routine does not clear it: a freed slot keeps its stale bytes, `+$00` among them. `b` is only the common
+/// header the pool lookup (`Game::body`) hands out.
 #[derive(Clone, Debug, Default)]
 pub struct Special {
     pub b: Body,
+    pub m: Ram,
+}
+
+/// Bytes of a pool D slot.
+pub const SPECIAL_SIZE: usize = 0x80;
+
+impl Special {
+    /// The sprites of the raw list the record at +$00 points to (0x147FE reads `movea.l (a1),a1`: the pointer is a RAM
+    /// address, here its low word is `handle + offset`). A list that does not lie inside the slot gives no sprites.
+    pub fn sprites(&self, handle: Handle) -> Vec<RawSprite> {
+        let off = (self.m.l(0) as u16).wrapping_sub(handle) as usize;
+        if off + 4 > SPECIAL_SIZE {
+            return Vec::new();
+        }
+        let n = self.m.w(off + 2) as usize;
+        (0..n)
+            .map_while(|k| {
+                let e = off + 4 + 8 * k;
+                (e + 8 <= SPECIAL_SIZE).then(|| RawSprite {
+                    dx: self.m.w(e) as i16,
+                    dy: self.m.w(e + 2) as i16,
+                    attr: self.m.w(e + 4),
+                    code: self.m.w(e + 6),
+                })
+            })
+            .collect()
+    }
+
+    /// 0x16C6 on a record in the slot: the four parameter bytes (+$04..+$07, the last one without its bit 7) that go to
+    /// +$2C..+$2F of the object.
+    pub fn record_params(&self) -> (u8, u8, u8, u8) {
+        let [a, b, c, d] = self.m.l(4).to_be_bytes();
+        (a, b, c, d & 0x7F)
+    }
 }
 
 /// 0x160A: load a frame record, copying only +$2C..+$2F (no boxes, no extra bytes).
@@ -194,6 +240,7 @@ impl Game {
                 FX_WATER_SPLASH => self.fx_water_splash(i),
                 FX_FLAMES => self.fx_flames(i),
                 FX_RIPPLE => self.fx_ripple(i),
+                FX_TIME_OVER => self.fx_time_over(i),
                 FX_CLOUD => self.fx_cloud(i),
                 // TODO(port): remaining classes (handler addresses from the table at 0x237E6):
                 // 0x00 0x923E0, 0x08 0x92808, 0x0C 0x929B8, 0x14 0x92B7A, 0x18 0x92C9A,

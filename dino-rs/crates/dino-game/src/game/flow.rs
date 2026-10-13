@@ -433,7 +433,7 @@ impl Game {
         // 0x1DA10 (player scripts for the area), 0x49A8.. per-frame lists: player port / main.
         self.terrain_obstacles_reset(); // 0x4A76
         self.effects = super::Pool::new(super::POOL_C); // 0x4CA4
-        self.specials = super::Pool::new(super::POOL_D); // 0x4CCC
+        self.draw_special_init(); // 0x4CCC: the free stack only, the slots keep their bytes
         self.spawn_area_reset_objects(); // pools A, B; pool E loop; G.$4F1.. cleared
         self.rank_area_start(); // 0x18048
         self.hook_aae2(); // 0x1031A, 0x12BE4, 0xFBE8

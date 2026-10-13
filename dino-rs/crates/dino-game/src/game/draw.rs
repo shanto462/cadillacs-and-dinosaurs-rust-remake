@@ -13,7 +13,8 @@
 
 use super::body::Body;
 use super::camera::VIDEO_LATENCY;
-use super::{Game, Handle, collide, slot_of};
+use super::enemy::Ram;
+use super::{Game, Handle, Slot, collide, slot_of};
 use crate::render::{Gpu, Layer};
 use dino_assets::effect::{EffectData, RawSprite};
 use dino_assets::{Composition, Frame, FrameDraw, FrameId, SpriteData};
@@ -30,6 +31,20 @@ pub struct ObjEntry {
     /// Not in the original entry: handle of the object that drew it (harness: which entries come
     /// from classes the port does not run). 0 = none.
     pub src: Handle,
+}
+
+/// Tag of a frame id (+$28) that names a pool D slot: the object's draw record and its raw sprite list are the bytes of
+/// that slot (the stage clock, 0x81096..0x810A0), the low byte is the slot index. The original's +$28 is the slot's RAM
+/// address; `trace.rs` converts. It is neither an effect frame nor a raw frame of the ROM.
+pub const SLOT_FRAME: dino_assets::FrameId = 0x2000_0000;
+
+/// The frame id of pool D slot `i`.
+pub fn slot_frame(i: usize) -> dino_assets::FrameId {
+    SLOT_FRAME | i as dino_assets::FrameId
+}
+
+pub fn is_slot_frame(id: dino_assets::FrameId) -> bool {
+    id & 0xE000_0000 == SLOT_FRAME
 }
 
 /// Camera base used by the draw code: $69B6 = camera X - 0x40, $69B8 = camera Y.
@@ -68,6 +83,8 @@ pub struct SpriteList {
     pub splash_phase: u16,
     /// Handle of the object being drawn (stored into `ObjEntry::src`).
     pub cur_src: Handle,
+    /// The raw list of the pool D slot of the object being drawn (`Game::draw_plain` fills it for a slot frame).
+    slot_sprites: Vec<RawSprite>,
     /// What the screen shows of the lists: see `latch`. `None` until the first frame ends.
     shown: Option<Shown>,
 }
@@ -88,7 +105,16 @@ struct Shown {
 impl Default for SpriteList {
     fn default() -> SpriteList {
         // 0x49A8 draw list reset: -$7126 = 1.
-        SpriteList { entries: Vec::new(), debug_boxes: false, debug_rects: Vec::new(), splash_timer: 1, splash_phase: 0, cur_src: 0, shown: None }
+        SpriteList {
+            entries: Vec::new(),
+            debug_boxes: false,
+            debug_rects: Vec::new(),
+            splash_timer: 1,
+            splash_phase: 0,
+            cur_src: 0,
+            slot_sprites: Vec::new(),
+            shown: None,
+        }
     }
 }
 
@@ -214,12 +240,19 @@ impl SpriteList {
     /// 0x147FE: frames that are raw sprite lists (obj+$25 bit 6, 8-byte records).
     fn draw_raw(&mut self, fr: Frames, b: &Body, cam: DrawCamera, flash: u8) {
         let Some(fx) = fr.fx else { return };
-        if !EffectData::is_raw_frame(b.frame) {
+        // the list: a ROM record's, or the one the object keeps in its pool D slot (`movea.l (a1),a1`, 0x147FE)
+        let own;
+        let list: &[RawSprite] = if is_slot_frame(b.frame) {
+            own = std::mem::take(&mut self.slot_sprites);
+            &own
+        } else if EffectData::is_raw_frame(b.frame) {
+            &fx.raw(b.frame).sprites
+        } else {
             return;
-        }
+        };
         let (d4, d5) = base(b, cam);
         let d5 = screen_y(d5);
-        for e in &fx.raw(b.frame).sprites {
+        for e in list {
             let mut attr = e.attr;
             if b.palette_override & 0x80 != 0 {
                 attr = (attr & 0xFFE0) | (b.palette_override as u16 & 0x1F);
@@ -363,6 +396,33 @@ pub fn screen_y(d5: i16) -> i16 {
 }
 
 impl Game {
+    /// 0x4CCC pool D init (part of every area start, 0xAA8C): the free stack is rebuilt (slot 0 is pushed first, so the
+    /// first request gets slot 15); the bytes of the slots stay as the last user left them.
+    pub fn draw_special_init(&mut self) {
+        self.specials.reset_free();
+    }
+
+    /// 0x48A8 pool D allocator: takes a slot and stores its handle in `+$98` of the caller (`caller` = the caller's bytes
+    /// beyond the common header). `None` = no slot left (carry set, `+$98` cleared).
+    pub fn draw_special_alloc(&mut self, caller: &mut Ram) -> Option<usize> {
+        let slot = self.specials.alloc();
+        caller.sw(0x98, slot.map_or(0, |i| self.specials.handle(i)));
+        slot
+    }
+
+    /// 0x498C (the check on `+$98`) and 0x4994 pool D free: the slot goes back on the stack and `+$98` is cleared. The slot
+    /// is not cleared: its bytes, `+$00` included, stay as they were.
+    pub fn draw_special_free(&mut self, caller: &mut Ram) {
+        let h = caller.w(0x98);
+        if h == 0 {
+            return;
+        }
+        if let Some(Slot::Special(i)) = slot_of(h) {
+            self.specials.release(i);
+        }
+        caller.sw(0x98, 0);
+    }
+
     fn draw_frames(&self) -> Frames<'static> {
         Frames { s: &self.assets.sprites, fx: Some(&self.assets.effects) }
     }
@@ -402,6 +462,10 @@ impl Game {
     fn draw_plain(&mut self, fr: Frames, h: Handle, cam: DrawCamera) {
         let mut b = std::mem::take(self.body_mut(h));
         let frame = b.frame;
+        if b.draw_flags & 0x40 != 0 && is_slot_frame(frame) {
+            let i = (frame & 0xFF) as usize;
+            self.sprites.slot_sprites = self.specials.slots.get(i).map(|s| s.sprites(self.specials.handle(i))).unwrap_or_default();
+        }
         self.sprites.draw_frame(fr, &mut b, frame, cam, 0);
         if self.sprites.debug_boxes {
             self.sprites.debug_body(fr.s, &b, cam);

@@ -3711,7 +3711,7 @@ impl Game {
             p.b.hp_bar = 100;
             p.b.facing = facing;
             p.b.step = 2;
-            // 0x10482: adds BCD time to the stage clock (flow port).
+            self.rank_respawn_time(); // 0x1C010: jmp 0x10482, +3:30 on the stage clock and 600 frames of wave time
         } else {
             let p = &mut self.players[i];
             p.b.live = 0;

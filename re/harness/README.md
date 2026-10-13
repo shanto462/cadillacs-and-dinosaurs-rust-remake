@@ -1651,3 +1651,31 @@ The port side of the poke is `dino-game --poke 1000:FFF57A:2:5 --trace OUT --fra
 `g.flow.front.demo_counter` at record 1000. `cargo test -p dino-game demo_report -- --ignored --nocapture` (`DINO_TRACE`, `DINO_POKE_COUNTER`,
 `DINO_LAST`, `DINO_DEMO`) lists, per demo, the first record (relative to the call A) where each kind of difference shows; `re/harness/diff.py MAME PORT
 --from 3300 --frames N --at FRAME` lists the player object fields at the checkpoints (G.$0 = 60, 300, 600).
+
+## Stage clock and TIME OVER scenarios (M2-13, M2-14)
+
+`pokes/m213_clock.txt` is a probe batch (record it like the M5-15 batches, one MAME process): `m213_clock` (2400 frames: Jack stands
+still, the clock is poked to 3:02 before the snapshot and to 2:31, 1:01 and 0:17 after it, so the clock shows at 3:00, 2:30, 1:00 and
+0:15, beeps every second in the last 15 seconds, runs out into TIME OVER, Jack dies and respawns with +3:30) and `m213_over_life`,
+`m213_over_nolife`, `m213_over_2p_one`, `m213_over_2p_both` (600 frames each: D2b S21 long enough to reach the respawn). The `snaps`
+line of `m213_clock` takes ten pictures (3:00, 2:30, 2:29, red 1:00, red 0:15, red 0:12, the words flying in, stopped and held).
+
+```sh
+re/harness/probe/probe_record.sh re/harness/pokes/m213_clock.txt all
+for n in m213_clock:2400 m213_over_life:600 m213_over_nolife:600 m213_over_2p_one:600 m213_over_2p_both:600; do
+  MODE=step re/harness/port.sh re/out/traces/${n%%:*}.input.txt ${n%%:*} ${n##*:}     # MODE=run too (m213_clock)
+  re/.venv/bin/python -I re/harness/diff.py re/out/traces/${n%%:*}.mame.trc re/out/traces/${n%%:*}.step.trc
+done
+# pictures: the port at the same frame (N = probe t - 9), then the contact sheet and the pixel count
+dino-rs/target/release/dino-game --rom dino.zip --load-state re/out/traces/m213_clock.state --poke-file re/out/traces/m213_clock.pokes.txt \
+  --input-file re/out/traces/m213_clock.input.txt --screenshot re/out/shots/m213/f00109.png --frames 100
+re/.venv/bin/python -I re/harness/probe/shotdiff.py re/out/probe/m213_clock-rec/m213_clock re/out/shots/m213 --frames 109,319,779,1129
+```
+
+Result (2026-10-13): no difference in the class 31 object, in the pool D slot 15 (the first 0x48 bytes, every frame), in the words
+(pool C class 0x70), in the clock word and the wave timer G.$50C at the respawns, or in the 27 sound requests 0x34 (frame and d1 = 0x10,
+d2 = 0) in `m213_clock`, in `MODE=run` as in `MODE=step`. What differs belongs to unported classes: the GO hint (pool B 20), the respawn air
+strike (pool B 18, from the respawn on), the respawn sparkles and dust (pool C), the continue screen (`m213_over_nolife`), and the lag frames
+of `m213_over_2p_both` (53 slowdown frames in MAME). The pictures equal MAME in the clock rectangle (x 160 to 232, y 48 to 80) and in the band of
+the words (y 100 to 150) for all ten frames; the rest of the picture differs by up to 2.4 percent in the top line (the join prompts of players
+2 and 3, which blink in another phase) and in the flying bird.

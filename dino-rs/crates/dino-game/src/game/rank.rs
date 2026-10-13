@@ -366,7 +366,9 @@ impl Game {
         self.rank.time_div = 0x32;
     }
 
-    /// 0x103FE: when the time is 0, every player with +$04 < 4 loses all HP.
+    /// 0x103FE: when the time is 0, the words TIME and OVER fly in (0x96450) and every player with +$04 < 4 loses all HP
+    /// (0x1046A, in the same frame: the heroes of the scenes `m515_s12`, `m515_s21` have HP 0 in the frame the lock G.$4EB
+    /// is set). The lock stays set until a top up (0x104A8) clears it.
     fn rank_time_over(&mut self) {
         let r = &self.rank;
         if self.spawn.g.b4d5 != 0 || self.w.scripted != 0 || r.time_lock != 0 || r.time_min != 0 || r.time_sec != 0 || r.time_div != 0 {
@@ -378,13 +380,21 @@ impl Game {
             return;
         }
         self.rank.time_lock = 1;
-        // 0x96450: time-over sound/message [U]. Then 0x1046A per player.
+        self.fx_spawn_time_over(); // 0x96450 (a full pool of effects makes fewer words, the heroes die anyway)
         for i in 0..3 {
             let b = &mut self.players[i].b;
             if b.live != 0 && b.mode < 4 {
                 b.hp = 0;
             }
         }
+    }
+
+    /// 0x10482 (the end of the lives check 0x1BFD0, called by `player_dead_continue` for a hero who respawns, once per hero):
+    /// 600 frames more for the wave time budget G.$50C and 3:30 on the stage clock (at most 4:00; the lock G.$4EB is
+    /// cleared, which also ends the words TIME OVER).
+    pub fn rank_respawn_time(&mut self) {
+        self.spawn.g.wave_timer = self.spawn.g.wave_timer.wrapping_add(0x258);
+        self.rank_add_time(0x330);
     }
 
     /// 0x104A8: add BCD time `v` (high byte minutes, low byte seconds), capped at 04:00.
@@ -449,6 +459,57 @@ fn bcd_sub(a: u8, b: u8) -> (u8, bool) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dino_assets::AssetPack;
+
+    fn game() -> Game {
+        Game::new(Box::leak(Box::new(AssetPack::default())))
+    }
+
+    /// 0x103FE: at 0:00 with the divider at 0 and the lock clear, the lock is set, the words TIME and OVER are made (0x96450,
+    /// pool C class 0x70, variants 0 and 1) and every hero whose state byte is below 4 loses all HP in that frame (0x1046A); a
+    /// dying hero keeps his HP. The lock stops a second time over.
+    #[test]
+    fn time_over_makes_the_words_and_kills_the_heroes() {
+        let mut g = game();
+        for p in g.players.iter_mut().take(3) {
+            p.b.live = 1;
+            p.b.hp = 100;
+        }
+        g.players[1].b.mode = 2;
+        g.players[2].b.mode = 4;
+        g.rank.time_div = 1; // not yet
+        g.time_limit();
+        assert_eq!((g.rank.time_lock, g.effects.free_count()), (0, 48));
+        g.rank.time_div = 0;
+        g.time_limit();
+        assert_eq!(g.rank.time_lock, 1);
+        assert_eq!(g.players.iter().map(|p| p.b.hp).collect::<Vec<_>>(), [0, 0, 100]);
+        let words: Vec<(u16, u16)> = g.effects.slots.iter().filter(|e| e.b.live != 0).map(|e| (e.b.k20, e.b.var26)).collect();
+        assert_eq!(words, [(0x70, 1), (0x70, 0)], "slot 46 holds OVER, slot 47 TIME");
+        g.time_limit();
+        assert_eq!(g.effects.free_count(), 46, "the lock: no second pair");
+    }
+
+    /// 0x10482: a respawning hero adds 3:30 to the clock (at most 4:00) and 600 frames to G.$50C, and clears the lock; two heroes
+    /// add it twice.
+    #[test]
+    fn a_respawn_tops_up_the_clock_once_for_each_hero() {
+        let mut g = game();
+        g.rank.time_lock = 1;
+        g.spawn.g.wave_timer = 0x10;
+        g.rank_respawn_time();
+        assert_eq!((g.rank.time_min, g.rank.time_sec, g.rank.time_lock, g.spawn.g.wave_timer), (3, 0x30, 0, 0x268));
+        g.rank_respawn_time();
+        assert_eq!((g.rank.time_min, g.rank.time_sec, g.spawn.g.wave_timer), (4, 0, 0x4C0), "capped at 4:00");
+        g.rank.time_min = 0;
+        g.rank.time_sec = 0x45;
+        g.rank_respawn_time();
+        assert_eq!((g.rank.time_min, g.rank.time_sec), (4, 0), "0:45 + 3:30 = 4:15, capped");
+        g.rank.time_min = 0;
+        g.rank.time_sec = 0x20;
+        g.rank_respawn_time();
+        assert_eq!((g.rank.time_min, g.rank.time_sec), (3, 0x50));
+    }
 
     #[test]
     fn bcd() {

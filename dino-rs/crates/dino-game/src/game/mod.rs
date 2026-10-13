@@ -110,6 +110,12 @@ impl<T> Pool<T> {
         self.free.push(i);
     }
 
+    /// Rebuilds the free stack as a pool init routine does (slot 0 pushed first) and leaves the slots as they are
+    /// (0x4CCC pool D: the init only writes the stack, the slot bytes stay).
+    pub fn reset_free(&mut self) {
+        self.free = (0..self.slots.len()).collect();
+    }
+
     /// Free slot count ($65F4 / $65F6 / $65F8 / $65FA / $65FC).
     pub fn free_count(&self) -> usize {
         self.free.len()

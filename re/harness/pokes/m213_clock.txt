@@ -1,0 +1,57 @@
+# M2-13 / M2-14: the stage clock display (pool B class 31, pool D slot 15), its beep, the words TIME OVER and the top up.
+# One scenario: Jack stands still in Episode 1 (no enemies before the camera moves). The clock is poked after the
+# snapshot (the probe writes them to NAME.pokes.txt, the port repeats them): 3:02 at the snapshot (the clock is hidden
+# above 3:00), 3:00 shows it for 5 seconds, 2:31 gives the 2:30 mark, 1:01 the red 1:00 mark, 0:17 the steady last 15
+# seconds with a beep every second, and the clock runs out into TIME OVER, the death, the respawn and +3:30.
+segment m213_clock
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 lives 2
+0 time 3:02
+9 snapshot
+0-2399:
+250 time 2:31
+700 time 1:01
+1000 time 0:17
+snaps 109,319,329,779,1129,1259,1905,1908,1912,1929,2009
+trace 2400
+
+# D2b S21 (the M5-15 scenarios stop at frame 300, before the respawn): the clock runs out at 0:02, TIME OVER kills every hero,
+# a hero with a life respawns and the clock goes from 0:00 to 3:30 once for each respawning hero (2 heroes: 4:00 at most).
+segment m213_over_life
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 lives 2
+0 time 0:02
+9 snapshot
+0-599:
+trace 600
+
+segment m213_over_nolife
+jump 1 0 897 char=jack
+rank 0 ; level 0
+0 lives 0
+0 time 0:02
+9 snapshot
+0-599:
+trace 600
+
+segment m213_over_2p_one
+jump 1 0 897 char=jack,hannah
+rank 0 ; level 0
+0 lives 2 P1
+0 lives 0 P2
+0 time 0:02
+9 snapshot
+0-599:
+trace 600
+
+segment m213_over_2p_both
+jump 1 0 897 char=jack,hannah
+rank 0 ; level 0
+0 lives 2 P1
+0 lives 2 P2
+0 time 0:02
+9 snapshot
+0-599:
+trace 600

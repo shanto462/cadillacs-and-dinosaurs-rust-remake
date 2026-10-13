@@ -18,7 +18,8 @@ use super::enemy::{Enemy, Ram};
 use super::item::{Item, class};
 use super::player::Player;
 use super::prop::Prop;
-use super::{Game, POOL_A, POOL_B, POOL_C, POOL_D, POOL_E, PLAYERS, Pool};
+use super::draw::{is_slot_frame, slot_frame};
+use super::{Game, POOL_A, POOL_B, POOL_C, POOL_D, POOL_E, PLAYERS, Pool, Slot, slot_of};
 use dino_assets::effect::EffectData;
 use dino_assets::{AssetPack, FrameId};
 
@@ -138,7 +139,10 @@ impl<'a> F<'a> {
 /// ROM address of a frame id (0 if unknown).
 pub fn frame_addr(a: &AssetPack, id: FrameId) -> u32 {
     let fx = &a.effects;
-    if EffectData::is_effect_frame(id) {
+    if is_slot_frame(id) {
+        // a pool D slot: `movea.w` made its RAM address 0xFFFFxxxx
+        0xFFFF_0000 | POOL_D.0.wrapping_add(POOL_D.1 * (id & 0xFF) as u16) as u32
+    } else if EffectData::is_effect_frame(id) {
         fx.frames.get((id & 0x3FFF_FFFF) as usize).map(|f| f.rom_addr).unwrap_or(0)
     } else if EffectData::is_raw_frame(id) {
         fx.raw_frames.get((id & 0x3FFF_FFFF) as usize).map(|f| f.rom_addr).unwrap_or(0)
@@ -149,6 +153,11 @@ pub fn frame_addr(a: &AssetPack, id: FrameId) -> u32 {
 
 /// Frame id of a ROM frame record address.
 pub fn frame_id(a: &AssetPack, addr: u32, effects: bool, raw: bool) -> Option<FrameId> {
+    if addr >> 16 == 0xFFFF {
+        if let Some(Slot::Special(i)) = slot_of(addr as u16) {
+            return Some(slot_frame(i));
+        }
+    }
     let fx = &a.effects;
     let s = a.sprites.frame_by_addr.get(&addr).copied();
     let e = fx.frame_by_addr.get(&addr).copied();
@@ -591,6 +600,14 @@ impl Prop {
             f.u16(0x80, "wave_timer", &mut t);
             self.m.sw(0x80, t);
         }
+        if f.all() || self.b.k20 == 31 * 4 {
+            // The stage clock (0x81046): its pool D slot, the clock word shown last and the display window.
+            for (off, name) in [(0x98, "clock_slot"), (0xA0, "clock_time"), (0xA2, "clock_window")] {
+                let mut v = self.m.w(off);
+                f.u16(off as u32, name, &mut v);
+                self.m.sw(off, v);
+            }
+        }
         if f.all() || self.b.k20 == 15 * 4 {
             let mut t = self.m.w(0x80);
             f.u16(0x80, "wave_timer", &mut t);
@@ -677,10 +694,34 @@ impl Effect {
     }
 }
 
+/// The words of a pool D slot the stage clock fills (0x81088 copies 18 longs): the draw record at +$00 (a long pointer and
+/// four parameter bytes) and the sprite list from +$0A. Names by offset.
+const SPECIAL_WORDS: [&str; 32] = [
+    "w08", "w0a", "w0c", "w0e", "w10", "w12", "w14", "w16", "w18", "w1a", "w1c", "w1e", "w20", "w22", "w24", "w26", "w28", "w2a",
+    "w2c", "w2e", "w30", "w32", "w34", "w36", "w38", "w3a", "w3c", "w3e", "w40", "w42", "w44", "w46",
+];
+
 impl Special {
-    /// Pool D is not ported yet: only the header.
+    /// A pool D slot (0x48A8) is a byte image (`m`): the first 0x48 bytes are modeled, as the words of `SPECIAL_WORDS`
+    /// after the two longs of the draw record. `b.live` mirrors the byte +$00 (the high byte of the list pointer, 0xFF for the
+    /// clock's slot, which the free routine 0x4994 does not clear); the pool visit looks at it to tell a free slot (only +$00
+    /// is compared) from a used one. When loading, all the bytes come first (stale ones too).
     pub fn trace_visit(&mut self, f: &mut F) {
-        self.b.trace_header(f, true);
+        self.m.trace_load_all(f, super::effect::SPECIAL_SIZE);
+        self.b.live = self.m.b(0);
+        let mut v = self.m.l(0);
+        f.u32(0, "list_ptr", &mut v);
+        self.m.sl(0, v);
+        let mut v = self.m.l(4);
+        f.u32(4, "record", &mut v);
+        self.m.sl(4, v);
+        for (k, name) in SPECIAL_WORDS.into_iter().enumerate() {
+            let off = 8 + 2 * k;
+            let mut v = self.m.w(off);
+            f.u16(off as u32, name, &mut v);
+            self.m.sw(off, v);
+        }
+        self.b.live = self.m.b(0);
     }
 }
 
@@ -788,7 +829,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 20, 34, 41, 49, 50, 54, 55, 60]),
-    ("prop", &[15, 73]),
+    ("prop", &[15, 31, 73]),
     (
         "item",
         &[
@@ -805,8 +846,9 @@ pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
             class::ATTACK_BOX,
         ],
     ),
-    ("effect", &[0x04 / 4, 0x10 / 4, 0x20 / 4, 0x68 / 4]),
-    ("special", &[]),
+    ("effect", &[0x04 / 4, 0x10 / 4, 0x20 / 4, 0x68 / 4, 0x70 / 4]),
+    // a pool D slot has no class word: the diff tool reads +$20 of the slot, which is 0 for the clock's slot (a sprite word)
+    ("special", &[0]),
 ];
 
 /// Free list stacks: (count G.x, pointer G.x, stack end G.x) for pools E, B, A, C, D.

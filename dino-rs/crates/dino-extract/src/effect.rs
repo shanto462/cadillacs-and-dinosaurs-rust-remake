@@ -32,6 +32,8 @@ const EFFECT_LISTS: &[u32] = &[
 const RAW_LISTS: &[u32] = &[
     0x96360, // water ripple, effect $20 = 0x68 (0x96330)
     0x7B5C8, // the frame of the select screen, pool B class 17 (0x7B554)
+    0x96546, // the word TIME, effect $20 = 0x70 variant 0 (0x964B8)
+    0x96550, // the word OVER, effect $20 = 0x70 variant 1 (0x964DA)
 ];
 
 /// Shadow sprite list table used by the shadow pass 0x14EC0 (8 longs).
