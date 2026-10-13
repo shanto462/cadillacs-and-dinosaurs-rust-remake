@@ -1628,3 +1628,26 @@ The initial long Ep4 a1 trace reached a later boss lock under held kill-all and 
 G1, G2 and G4 were skipped under the lane B instructions. The release build inside `port.sh` ran as part of replay; no standalone cargo build, cargo test, regress or game screenshot run was requested. G5 is a script task: no ported routine, ROM table, Rust code or ROM-derived source data was added. No commit or push was made.
 
 Outputs: `re/out/traces/m328_*`, `re/out/probe/m328_GROUP-rec/`, `re/out/m328_GROUP.record.log`, `re/out/m328_NAME.port.log`, `.step.log`, `.diff.log`, `.step.diff.log`, `m328_inventory.tsv`, `m328_replay.tsv` and `m328_events.log`. The two ignored audit helpers are `m328_audit.py` and `m328_report.py`. The open questions are the old/new setup-clock timing offsets, G.$514 replay support, and the remaining flow, fade, tile and HUD differences for M3-29.
+
+## M1-12 and M1-13: the demo recordings
+
+Power-on batch recordings (`record.sh --batch`, one MAME process each, SDL dummy drivers; record k = video frame k + 2 like the plain power-on
+traces, a script line f reaches the game at record f - 1):
+
+```sh
+DINO_TIMEOUT=1500 re/harness/record.sh --batch re/harness/scripts/m112_demo.txt m112_demo re/harness/scripts/m112_demo_pokes.txt
+DINO_TIMEOUT=2400 re/harness/record.sh --batch re/harness/scripts/m113_long.txt m113_long re/harness/scripts/m113_long_pokes.txt
+```
+
+| trace (`re/out/traces/`) | what | used by |
+| --- | --- | --- |
+| `flow_m112-row5` | G.$757A poked to 4 at power frame 1000: the first demo is row 5 (Episode 6 area 1), 4900 records | `demo_rows_5_and_0_set_up_and_run_in_step_with_mame` |
+| `flow_m112-row0` | G.$757A poked to 5: the first demo is row 0 (Episode 1 area 1, the sixth demo of the loop), 4900 records | same |
+| `flow_m113-coin` | a coin at 4000 to 4007 in the first demo, 4600 records | `coin_during_the_demo_matches_mame` |
+| `flow_m113-freestart` | free play (G.$46B = 1 at frame 100), a start at 4000 to 4005 in the first demo, 4600 records | `start_during_the_demo_goes_to_select` |
+| `flow_m113-long` | 32000 records from power on, no input: the demos 1 to 5 (Episodes 2, 3, 8, 5, 6) | `demos_set_up_and_run_in_step_with_mame`, `attract_loop_32000_frames_match_mame` |
+
+The port side of the poke is `dino-game --poke 1000:FFF57A:2:5 --trace OUT --frames 4700` (power frames); in the tests `before(k, g)` sets
+`g.flow.front.demo_counter` at record 1000. `cargo test -p dino-game demo_report -- --ignored --nocapture` (`DINO_TRACE`, `DINO_POKE_COUNTER`,
+`DINO_LAST`, `DINO_DEMO`) lists, per demo, the first record (relative to the call A) where each kind of difference shows; `re/harness/diff.py MAME PORT
+--from 3300 --frames N --at FRAME` lists the player object fields at the checkpoints (G.$0 = 60, 300, 600).

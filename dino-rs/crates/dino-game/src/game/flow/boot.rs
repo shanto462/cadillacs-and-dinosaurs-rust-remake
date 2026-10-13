@@ -268,6 +268,12 @@ impl Game {
                         return;
                     }
                 }
+                s if super::demo::dst::owns(s) => {
+                    self.flow_demo_script(); // the demo (`demo.rs`)
+                    if self.flow.front.task.sleeping() > 0 {
+                        return;
+                    }
+                }
                 s if super::slides::sst::owns(s) => {
                     self.flow_slides_script(); // the story slides (`slides.rs`)
                     if self.flow.front.task.sleeping() > 0 {

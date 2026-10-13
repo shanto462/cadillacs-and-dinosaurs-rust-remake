@@ -1,5 +1,5 @@
-//! The attract task 0x97C20: its state byte (G.-$7030), the routines of the states and the screens
-//! that are not ported yet. Owner: flow / HUD port (M1-04). Spec: `D4d-front-end-and-story.md` s3.1,
+//! The attract task 0x97C20: its state byte (G.-$7030) and the routines of the states, which call the screens.
+//! Owner: flow / HUD port (M1-04, M1-13). Spec: `D4d-front-end-and-story.md` s3.1,
 //! s3.2, s13 A3.
 //!
 //! The task is the slot 0x10 scene of `boot.rs` (`front.task`); this file holds its script from the
@@ -14,20 +14,18 @@
 //! | 8 | 0x97D42 | ranking only (not reachable) |
 //! | 0xA | 0x97DBE | state = 0 (not reachable) |
 //!
-//! The title is real (`boot.rs`), and so are the profile cards (0x9A7E6, `profiles.rs`, M1-05), the ranking
-//! (0x1516C through 0x983D8, `ranking.rs`, M1-07) and the story slides (0x988C0, `slides.rs`, M1-08). The demo
-//! (0x99E88, M1-12) is the only stub left: a blank screen with a label that lasts exactly as long as the real
-//! screen did in the MAME recording `attract3.mame.trc`, so the state byte changes at the same frames (video frames 2744,
-//! 6874, 9311, 13411, 15848, 19979, 22416, 26516, 28953). The opening movie (0x9BF50) is real (`movie.rs`, M1-09 to M1-11).
-//! The lengths are measured, not computed: the original takes a few frames more or less on some passes
-//! (one clear of all layers needs 1.3 frames of CPU time, the demo drops frames), which the port does
-//! not model. Each stub says where its numbers come from; the real screens replace them.
+//! Every screen of the loop is real: the title (`boot.rs`), the profile cards (0x9A7E6, `profiles.rs`, M1-05), the ranking
+//! (0x1516C through 0x983D8, `ranking.rs`, M1-07), the story slides (0x988C0, `slides.rs`, M1-08), the opening movie (0x9BF50,
+//! `movie.rs`, M1-09 to M1-11) and the demo (0x99E88, `demo.rs`, M1-12 and M1-13). The state byte changes at the frames of the
+//! MAME recording `flow_m113-long.mame.trc` (video frames 2744, 6874, 9311, 13411, 15848, 19979, 22416, 26516, 28953; the
+//! demo takes the byte out of RAM for 3 frames in between and puts it back). The lengths of the clears 0xAE0 are measured, not
+//! computed: the original needs 1.3 frames of CPU time for one, which the port writes as waits (`flow_attract_busy`).
 
 use super::boot::st;
 use crate::game::Game;
 use crate::game::flow::scene::Scene;
 
-/// The screen that is up and not a plain title: the profile cards (real), the stubs.
+/// The screen that is up and not a plain title (the profile cards, the ranking, the demo, the slides, the movie).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Stub {
     #[default]
@@ -39,17 +37,11 @@ pub enum Stub {
     Movie,
 }
 
-/// Frames of the stubs, measured in `attract3.mame.trc` (records = video frames - 2): from the
-/// frame the original calls the routine to the frame it returns.
 /// The cells of scroll3 the clear 0xAE0 has done when the frame it clears scroll2 in ends (the
 /// original clears the maps one after the other, 4096 cells at about 32 cycles each). Any value from
 /// 1072 to 3576 gives what the recording shows (56 of the 216 board cells left, see
 /// `flow_attract_clear_step`); the middle of the range that the cycle count allows is used.
 const CLEAR3_FIRST: usize = 3000;
-/// The demo with its last picture and the fade (1200 game frames, 5 frames of setup, 100 frozen,
-/// 16 of fade). The story slides (`slides.rs`, 1779 frames from the call to the return) and the opening movie (`movie.rs`,
-/// 1745 frames) are real.
-const DEMO_FRAMES: u16 = 1325;
 
 impl Game {
     /// A stretch of CPU time of the original that the port writes as a sleep: `frames` until the
@@ -80,7 +72,8 @@ impl Game {
         match self.flow.front.clear_stage {
             1 => {
                 self.vram.clear2();
-                for c in self.vram.scroll3.iter_mut().take(CLEAR3_FIRST) {
+                let cut = std::mem::take(&mut self.flow.front.clear3_cut);
+                for c in self.vram.scroll3.iter_mut().take(if cut != 0 { cut } else { CLEAR3_FIRST }) {
                     (c.code, c.attr) = (0x1C00, 0);
                 }
                 self.flow.front.clear_stage = 2;
@@ -94,7 +87,9 @@ impl Game {
     }
 
     /// A wait of `frames` frames (more than the 255 the kernel sleep byte holds: the original writes
-    /// such waits as loops, here they are chained sleeps) before the script goes on in `next`.
+    /// such waits as loops, here they are chained sleeps) before the script goes on in `next`. (The demo stub
+    /// of M1-04 used it; the screens of the loop are all real now, it is kept for the next long wait.)
+    #[allow(dead_code)]
     fn flow_attract_wait(&mut self, frames: u16, next: u16) {
         let t = &mut self.flow.front.task;
         if frames <= 255 {
@@ -183,15 +178,11 @@ impl Game {
                 self.flow_profile_start();
             }
             _ => {
-                // 2 and 6: 0x98330 (the World set re-creates the INSERT COIN blink task), the demo
-                // counter G.$757A + 1 (0x97D6C / 0x97D78), then the demo 0x99E88
+                // 2 and 6: 0x98330 (the World set re-creates the INSERT COIN blink task), the demo counter G.$757A + 1
+                // (0x97D6C / 0x97D78), then the demo 0x99E88 (`demo.rs`); it returns in `st::DEMO_END`
                 self.flow_warning_picture();
                 self.flow.front.demo_counter = self.flow.front.demo_counter.wrapping_add(1);
-                self.flow_attract_stub(Stub::Demo, "DEMO");
-                // the demo sets the layer control of a game screen (G.$28 = 0x12D6 in all of its runs); the
-                // slides that follow it do not set it before slide 4 (M1-12 plays the demo itself)
-                self.w.layer_ctrl = 0x12D6;
-                self.flow_attract_wait(DEMO_FRAMES, st::DEMO_END);
+                self.flow_demo_start();
             }
         }
     }
@@ -275,18 +266,5 @@ impl Game {
         self.flow.front.stub = Stub::None;
         self.flow.front.attract_state = 0;
         self.flow.front.task.state = st::PASS;
-    }
-
-    /// Starts a stub screen: clears the layers and writes the label.
-    fn flow_attract_stub(&mut self, stub: Stub, label: &str) {
-        self.flow.front.stub = stub;
-        self.flow_clear_screen();
-        // centred in row 46 of the scroll1 map (the rows 32 to 63 are the ones the screen shows)
-        let text = format!("{label} (NOT PORTED)");
-        let col = 24 - text.len().min(46) / 2;
-        let at = 0x90A000 + (col as u32) * 0x80 + 14 * 4;
-        for (i, c) in text.bytes().enumerate() {
-            self.hud_put(at + 0x80 * i as u32, c as u16, 0x180);
-        }
     }
 }

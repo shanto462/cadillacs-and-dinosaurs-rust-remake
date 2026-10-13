@@ -1,0 +1,17 @@
+# M1-12 / M1-13: the demo rows 5 and 0 (the demo counter G.$757A is poked before the first demo), a coin
+# during the demo, a free play start during the demo. Power-on recordings. See re/harness/README.md.
+# G.$757A + 1 selects the row: 4 -> row 5 (Episode 6, area 1), 5 -> row 0 (Episode 1, area 1).
+
+segment m112-row5
+frames 4900
+
+segment m112-row0
+frames 4900
+
+segment m113-coin
+frames 4600
+4000-4007:C
+
+segment m113-freestart
+frames 4600
+4000-4005:S

@@ -112,6 +112,7 @@ pub const FRONT_TABLES: &[(u32, u32, &str)] = &[
     (0x15FF4, 0xF0, "name entry glyph tiles (0x15FB4)"),
     (0x161B2, 0x28, "name entry profanity lists (0x1616C)"),
     (0xC869A, 0x184C, "demo input streams (0x9A146)"),
+    (0x222B6, 0x20, "demo start event index per stage and area, 4 bytes per stage (0x2228A)"),
 ];
 
 impl FrontendData {

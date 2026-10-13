@@ -1,0 +1,12 @@
+# Timed writes by segment: frame hexaddr size value. See re/harness/README.md.
+
+segment m112-row5
+1000 FFF57A 2 4
+
+segment m112-row0
+1000 FFF57A 2 5
+
+segment m113-coin
+
+segment m113-freestart
+100 FF846B 1 1

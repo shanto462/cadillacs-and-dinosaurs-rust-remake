@@ -464,6 +464,19 @@ impl Game {
         }
     }
 
+    /// 0x2228A: the demo's start of the scroll2 controller (the demo setup 0x99F10 calls it after
+    /// 0xAC6A). The event index `first_event` comes from the table 0x222B6 by stage and area; the
+    /// event is loaded (0x2099A) and the pointer to the next event is left on the loaded event (the
+    /// normal start 0x206EA adds 0x10 to it, this one does not); the task state is set to 2, so the
+    /// init 0x206EA (palettes, timers +$71 / +$75 / +$72 / +$73, the area of mode 0) is skipped; then
+    /// the area is set up (0x20766). Added for M1-12 (`flow/demo.rs`).
+    pub fn flow_demo_camera_init(&mut self, first_event: u8) {
+        self.cam.s2.event_idx = first_event; // move.b (a4), $6c(a6)
+        self.load_event_index(); // bsr 0x2099A
+        self.cam.s2.state = 2; // move.b #2, 4(a6)
+        self.area_setup(); // bra 0x20766
+    }
+
     /// 0x2099A: load the event at the current event index.
     fn load_event_index(&mut self) {
         self.cam.s2.next_event = self.cam.s2.event_idx as usize;
@@ -521,16 +534,43 @@ impl Game {
         self.vram.clear3();
         let (mut x, y) = (self.cam.s2.sx46, self.cam.s2.sy48);
         // When the area starts at X = 0 the original also pre-draws one screen at a fixed VRAM
-        // offset (+0xBC8); its purpose is unknown and it is not ported.
+        // offset (+0xBC8); its purpose is unknown.
         let ncols = if x != 0 {
             x = x.wrapping_sub(0x20);
             19
         } else {
+            self.predraw_screen2(y);
             17
         };
         for _ in 0..ncols {
             self.draw_column2(x, y.wrapping_add(0x140), 0xD);
             x = x.wrapping_add(0x20);
+        }
+    }
+
+    /// 0x20856..0x2086E and 0x20520: the area starts at X = 0, so the first screen of the area (id of the screen at
+    /// (0, `y`)) is drawn once more at 0xBC8 bytes (754 cells) after the cell of (0, `y`): 8 times the first 8 block words
+    /// of the screen (0x20572 loads the screen base again for each of the 8 outer steps, so the first block column
+    /// is repeated), 2x2 cells each, 2 cells further down for each block and 32 cells further on for each outer step. The
+    /// writes are not wrapped: cells past the end of scroll2 land in scroll3 (0x910000).
+    fn predraw_screen2(&mut self, y: u16) {
+        let id = self.screen_id2(0, y) as usize;
+        let start = vram2(0, y) + 0xBC8 / 4;
+        for outer in 0..8 {
+            for row in 0..8 {
+                let st = &self.assets.stages.stages[self.w.stage as usize];
+                let blk = st.scroll2_screen_words.get(id * 64 + row).copied().unwrap_or(0);
+                let cells = st.scroll2_blocks.get(((blk << 4) as i16 / 16) as usize).copied().unwrap_or([Cell::default(); 4]);
+                let i = start + 32 * outer + 2 * row;
+                for (k, d) in [0usize, 1, 16, 17].into_iter().enumerate() {
+                    let at = i + d;
+                    if at < 4096 {
+                        self.vram.scroll2[at] = cells[k];
+                    } else if at - 4096 < 4096 {
+                        self.vram.scroll3[at - 4096] = cells[k];
+                    }
+                }
+            }
         }
     }
 

@@ -20,6 +20,8 @@ pub mod attract;
 pub mod boot;
 #[path = "flow/config.rs"]
 pub mod config;
+#[path = "flow/demo.rs"]
+pub mod demo;
 #[path = "flow/front.rs"]
 pub mod front;
 #[path = "flow/join.rs"]

@@ -12,6 +12,7 @@
 
 use crate::game::Game;
 use crate::game::flow::attract::Stub;
+use crate::game::flow::demo::Demo;
 use crate::game::flow::scene::Scene;
 
 /// Character select struct G.$62C (cleared by 0xAD36).
@@ -90,6 +91,8 @@ pub struct Front {
     pub attract_state: u8,
     /// G.$757A the demo counter (the demo row, M1-12).
     pub demo_counter: u16,
+    /// The demo's own variables: G.$757C, the input playback, the pad bytes (`demo.rs`).
+    pub demo: Demo,
     /// Slot 0: the system task 0x9D048.
     pub sys_task: Scene,
     pub sys: Sys,
@@ -111,9 +114,15 @@ pub struct Front {
     /// The part of the clear 0xAE0 still to do in the next frames of the attract task (0 none, 1
     /// scroll2 and scroll3, 2 scroll3).
     pub clear_stage: u8,
+    /// The cells of scroll3 the clear has done when the frame it clears scroll2 in ends (0: the usual `CLEAR3_FIRST`).
+    pub clear3_cut: usize,
     /// The game over ranking of 0x97C94 is up: the pass goes on after it.
     pub after_ranking_pass: bool,
 }
+
+/// The cells of scroll3 the clear 0xAE0 of the game start has done in the frame it clears scroll2 in (the recording
+/// `flow_m113-freestart`, a start during the demo: cells 3077 to 3586 of its scroll3 go in that frame, 3587 to 3790 in the next).
+const CLEAR3_FIRST_START: usize = 3587;
 
 /// Script positions of the system task.
 mod sst {
@@ -123,6 +132,8 @@ mod sst {
     pub const CLEAR: u16 = 1;
     /// After the clear: the game task is created.
     pub const CREATE: u16 = 2;
+    /// The rest of the pass that created the press start screen, which took the system task 3 frames (0x983EE).
+    pub const TAIL: u16 = 3;
 }
 
 impl Game {
@@ -236,6 +247,11 @@ impl Game {
     /// The system task 0x9D048: one pass per frame (conversion, the attract part 0x9D074, the wait
     /// counter 0x1827A, sleep 1), or the start of a game (the task sleeps through the fade out).
     pub fn flow_system_task(&mut self) {
+        // a clear of all layers that the original needs more than a frame for (0xAE0, here by the game start) goes on at the start
+        // of the frame; the system task is the first task of the frame
+        if self.flow.in_game != 0 {
+            self.flow_attract_clear_step(); // (with nobody playing, the attract task does this)
+        }
         if !self.flow.front.sys_task.tick() {
             return;
         }
@@ -257,9 +273,18 @@ impl Game {
                 self.flow_sys_pass_end();
             }
             sst::CLEAR => {
-                // 0x9D174: sleep 1 after the fade, then 0xAE0 (1.3 frames)
-                self.flow_clear_screen();
+                // 0x9D174: sleep 1 after the fade, then 0xAE0 (1.3 frames: the sprite buffers and scroll1 now, scroll2 in the next
+                // frame, scroll3 in the one after, see `flow_attract_clear`; the step runs at the start of each frame below)
+                self.flow_attract_clear();
+                self.flow.front.clear3_cut = CLEAR3_FIRST_START; // measured: the clear starts later in the frame here
                 self.flow.front.sys_task.wait(2, sst::CREATE);
+            }
+            sst::TAIL => {
+                // the rest of the pass: the start detection and the end of the pass
+                if self.flow_sys_attract_tail() {
+                    return;
+                }
+                self.flow_sys_pass_end();
             }
             _ => {
                 // 0x9D180: the press start flag is cleared, the game task 0xA870 is created in slot
@@ -304,11 +329,23 @@ impl Game {
                 self.flow.front.sys.press_up = 0xFF;
                 self.flow_press_start_screen(); // 0x983EE
                 self.flow.front.sys.redraw = true;
+                // the call takes the system task 3 frames of CPU time (the recording of a coin during the demo: G.$4CD, which
+                // the demo set, is cleared by the next lines 3 frames after the call): the rest of the pass runs then
+                self.flow.front.sys_task.wait(3, sst::TAIL);
+                return true;
             }
-            if self.flow.front.sys.redraw {
-                // 0x9D102: the credit text and the prompts (0x9D66A, 0x9D752): M2-02
-                self.flow.front.sys.redraw = false;
-            }
+        }
+        self.flow_sys_attract_tail()
+    }
+
+    /// 0x9D102 to the end of 0x9D074: the credit text and the prompts, then the start detection. True when a game starts.
+    fn flow_sys_attract_tail(&mut self) -> bool {
+        if self.flow.in_game != 0 {
+            return false;
+        }
+        if !self.flow.front.sys.free_play && self.flow.front.sys.redraw {
+            // 0x9D102: the credit text and the prompts (0x9D66A, 0x9D752): M2-02
+            self.flow.front.sys.redraw = false;
         }
         // 0x9D124: who pressed start?
         self.flow.started = 0;

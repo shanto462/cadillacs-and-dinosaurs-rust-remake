@@ -198,6 +198,8 @@ fn mame_sounds(prev: &[u8], ram: &[u8]) -> Vec<u16> {
         v.push(ram16(ram, 0xFF803A + a as u32));
         a = (a + 0x10) & 0x3F0;
     }
+    // a RAM clear (the demo setup 0x99F10) resets the index and zeroes the ring: the empty entries it passes are not requests
+    v.retain(|&c| c != 0);
     v
 }
 
@@ -222,7 +224,7 @@ fn compare_power_on_with(
     last: i32,
     input: impl Fn(i32) -> [u8; 3],
     mut before: impl FnMut(i32, &mut Game, &[u8]),
-    mut after: impl FnMut(i32, &Game, &[u8], &[u8]),
+    mut after: impl FnMut(i32, &mut Game, &[u8], &[u8]),
 ) -> (Game, Vec<Differences>) {
     let mut rd = TraceReader::open(trace).expect("the recording opens");
     rd.next(); // record -1, the sync state
@@ -271,7 +273,7 @@ fn compare_power_on_with(
         if mc != pc {
             d.cams = Some((mc, pc));
         }
-        after(k, &g, ram, gfx);
+        after(k, &mut g, ram, gfx);
         let (msn, psn) = (mame_sounds(&prev_ram, ram), g.w.sounds.clone());
         if msn != psn {
             d.sounds = Some((msn, psn));
@@ -542,10 +544,12 @@ fn profile_cards_run_like_the_original() {
 /// (set 4 and the fade of the title after it), the sprite list (the Cadillac with its two heroes, the clouds),
 /// the layer control, the sound codes (the stop code, the music 0x80 at the second frame, the ambient 0x70 when the
 /// car has arrived), the six scroll shadows (the desert goes by, 8 and 4 pixels a frame), the wait counter G.$7018
-/// and the random number state G.$14 (one per hero a frame, the clouds) equal the recording. The demo (4 runs) is a
-/// stub that plays none of its random numbers, so the state G.$14 is set to the recording's value in the frame it
-/// returns (M1-12 removes this). The story slides, the profile cards and the opening movie draw their own (the slides
-/// none, see `story_slides_run_like_the_original`), so no ranking needs the state set in its own frame.
+/// and the random number state G.$14 (one per hero a frame, the clouds) equal the recording. The demos (4 runs) are real since
+/// M1-12 and draw their numbers, but the levels they play are not complete: the objects of the classes the port does not run draw
+/// numbers the port does not (the generator first differs 12 to 239 frames into each demo, see `demo_report`). So the state G.$14 is
+/// still set to the recording's value in the frame the demo returns, until the levels are real (M10-03 to M10-05 remove this). The
+/// story slides, the profile cards and the opening movie draw their own (the slides none, see
+/// `story_slides_run_like_the_original`), so no ranking needs the state set in its own frame.
 #[test]
 fn ranking_runs_like_the_original() {
     let Some(a) = assets() else { return };
@@ -566,9 +570,10 @@ fn ranking_runs_like_the_original() {
         28528 + 423,
         |_| [0; 3],
         |k, g, prev| {
-            // the demo (M1-12) is a stub that plays none of its random numbers: the state it leaves is set from the
-            // recording in the frame the stub returns (the frame the story slides start or the clear before the
-            // ranking of state 6). The slides, the profile cards and the movie play theirs.
+            // the demos (M1-12) play their random numbers, but not those of the objects of classes the port does not run
+            // yet (M10-03 to M10-05): the state they leave is set from the recording in the frame the demo returns (the frame
+            // the story slides start or the clear before the ranking of state 6). The slides, the profile cards and the movie
+            // play theirs.
             if [4668, 11239, 17773, 24344].contains(&k) {
                 g.w.rng = ram16(prev, 0xFF8014);
             }
@@ -1334,4 +1339,408 @@ fn game_over_resumes_the_attract_state() {
     }
     assert_eq!(events, ["Ranking", "Title", "Profiles", "Ranking", "state 2"]);
     assert_eq!(g.flow.front.game_over_flag, 0, "the flag was cleared after the ranking");
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// The demo (M1-12, M1-13)
+// ---------------------------------------------------------------------------------------------------------------------
+
+/// The game variables of a level frame that the demo test compares: (name, MAME, port).
+fn demo_globals(g: &Game, ram: &[u8]) -> Vec<(&'static str, u16, u16)> {
+    let b = |a: u32| ram[(a - 0xFF0000) as usize] as u16;
+    [
+        ("G.$14 random", ram16(ram, 0xFF8014), g.w.rng),
+        ("G.$0 frame", ram16(ram, 0xFF8000), g.w.frame),
+        ("G.$757C left", ram16(ram, 0xFFF57C), g.flow.front.demo.left),
+        ("G.$757A counter", ram16(ram, 0xFFF57A), g.flow.front.demo_counter),
+        ("G.$4D0 mode", b(0xFF84D0), g.flow.mode as u16),
+        ("G.$4D9 stage", b(0xFF84D9), g.w.stage as u16),
+        ("G.$786 area", b(0xFF8786), g.cam.s2.area as u16),
+        ("G.$4DA frame", b(0xFF84DA), g.flow.frame as u16),
+    ]
+    .into_iter()
+    .filter(|&(_, m, p)| m != p)
+    .collect()
+}
+
+/// The modeled bytes of the three player objects (0xFFB274 + 0x180 * i) that differ: (player, offset, MAME, port).
+fn player_diffs(g: &mut Game, ram: &[u8]) -> Vec<(usize, usize, u8, u8)> {
+    let c = g.trace_ram();
+    let mut out = Vec::new();
+    for i in 0..3 {
+        for o in 0..0x180 {
+            let a = 0xB274 + 0x180 * i + o;
+            if c.mask[a] != 0 && c.ram[a] != ram[a] {
+                out.push((i, o, ram[a], c.ram[a]));
+            }
+        }
+    }
+    out
+}
+
+/// What one record of a demo shows.
+#[derive(Clone, Debug, Default)]
+struct DemoRecord {
+    /// The record number (video frame - 2) and the frames since the demo call (A).
+    k: usize,
+    rel: usize,
+    d: Differences,
+    globals: Vec<(&'static str, u16, u16)>,
+    /// Modeled bytes of the player objects that differ, only collected at the checkpoints.
+    players: Vec<(usize, usize, u8, u8)>,
+    /// Palette words that have the colour of MAME's word but another brightness nibble (a fade that is not in step).
+    bright: usize,
+}
+
+/// Runs the port from power on against `trace` up to `last` and collects the records of the demos: for each demo the
+/// frame A the title returned (the demo counter G.$757A of the recording steps) and the records A ..= A + 1326. Returns
+/// (A, records) per demo. `check` lists the demo frames (G.$0) at which the player objects are compared too.
+fn run_demos(
+    a: &'static AssetPack,
+    trace: &str,
+    last: i32,
+    before: impl FnMut(i32, &mut Game, &[u8]),
+    checks: &[u16],
+) -> (Game, Vec<(usize, Vec<DemoRecord>)>) {
+    let mut demos: Vec<(usize, Vec<DemoRecord>)> = Vec::new();
+    let mut counter = 0u16;
+    let mut prev_state = 0u8;
+    let mut extra: Vec<Option<DemoRecord>> = Vec::new();
+    let (g, rows) = compare_power_on_with(a, trace, last, |_| [0; 3], before, |k, g, ram, gfx| {
+        // the call of the demo: the counter G.$757A steps in the record where the attract state byte goes to 0 (the
+        // sweeps of the RAM clear take it out); a poke of the counter alone is not a demo
+        let c = ram16(ram, 0xFFF57A);
+        let state = ram[0xFF0FD0 - 0xFF0000];
+        if c != counter {
+            if state == 0 && prev_state != 0 {
+                demos.push((k as usize, Vec::new()));
+            }
+            counter = c;
+        }
+        prev_state = state;
+        let rel = demos.last().map(|(s, _)| k as usize - s).unwrap_or(usize::MAX);
+        let mut r = None;
+        if rel <= 1326 {
+            let mut rec = DemoRecord { k: k as usize, rel, globals: demo_globals(g, ram), ..Default::default() };
+            rec.bright = (0..2048)
+                .filter(|&i| {
+                    let m = u16::from_be_bytes([gfx[PALETTES + 2 * i], gfx[PALETTES + 2 * i + 1]]);
+                    m & 0x0FFF == g.pal.words[i] & 0x0FFF && m & 0xF000 != g.pal.words[i] & 0xF000
+                })
+                .count();
+            if checks.contains(&ram16(ram, 0xFF8000)) && ram16(ram, 0xFF8000) == g.w.frame && rel > 5 {
+                rec.players = player_diffs(g, ram);
+            }
+            r = Some(rec);
+        }
+        extra.push(r);
+    });
+    for (k, e) in extra.into_iter().enumerate() {
+        if let Some(mut rec) = e {
+            rec.d = rows[k].clone();
+            if let Some((_, v)) = demos.iter_mut().rev().find(|(s, _)| *s <= k) {
+                v.push(rec);
+            }
+        }
+    }
+    (g, demos)
+}
+
+/// Diagnostic report of the demos of a recording: for each demo the first record (relative to the call A) where each kind
+/// of difference shows, and the number of records. `DINO_TRACE` (default attract3), `DINO_LAST` (default 24400, the end
+/// of the fourth demo), `DINO_DEMO` (the demo to list in full, by position).
+#[test]
+#[ignore]
+fn demo_report() {
+    let Some(a) = assets() else { return };
+    let trace = std::env::var("DINO_TRACE").unwrap_or_else(|_| "../../../re/out/traces/attract3.mame.trc".into());
+    let last = std::env::var("DINO_LAST").ok().and_then(|v| v.parse().ok()).unwrap_or(24400);
+    let full: Option<usize> = std::env::var("DINO_DEMO").ok().and_then(|v| v.parse().ok());
+    // `DINO_POKE_COUNTER`: the demo counter G.$757A is set at record 1000 (the recordings `flow_m112-row5` and `-row0`)
+    let poke: Option<u16> = std::env::var("DINO_POKE_COUNTER").ok().and_then(|v| v.parse().ok());
+    let (_, demos) = run_demos(
+        a,
+        &trace,
+        last,
+        |k, g, _| {
+            if let (1000, Some(c)) = (k, poke) {
+                g.flow.front.demo_counter = c;
+            }
+        },
+        &[60, 300, 600],
+    );
+    for (n, (start, recs)) in demos.iter().enumerate() {
+        println!("demo {n}: call at record {start}, {} records", recs.len());
+        let kinds: [(&str, Box<dyn Fn(&DemoRecord) -> bool>); 10] = [
+            ("scroll1", Box::new(|r| r.d.s1 > 0)),
+            ("scroll2", Box::new(|r| r.d.s2 > 0)),
+            ("scroll3", Box::new(|r| r.d.s3 > 0)),
+            ("palette", Box::new(|r| r.d.pal > 0)),
+            ("sprites", Box::new(|r| r.d.sprites.is_some())),
+            ("layer", Box::new(|r| r.d.layer.is_some())),
+            ("counter", Box::new(|r| r.d.counter.is_some())),
+            ("state", Box::new(|r| r.d.state.is_some())),
+            ("sounds", Box::new(|r| r.d.sounds.is_some())),
+            ("globals", Box::new(|r| !r.globals.is_empty())),
+        ];
+        for (name, f) in &kinds {
+            let hits: Vec<usize> = recs.iter().filter(|r| f(r)).map(|r| r.rel).collect();
+            if let Some(first) = hits.first() {
+                // the runs of consecutive records, the first six
+                let mut runs: Vec<(usize, usize)> = Vec::new();
+                for &h in &hits {
+                    match runs.last_mut() {
+                        Some(r) if r.1 + 1 == h => r.1 = h,
+                        _ => runs.push((h, h)),
+                    }
+                }
+                let shown: Vec<String> = runs.iter().take(6).map(|&(a, b)| if a == b { format!("{a}") } else { format!("{a}..{b}") }).collect();
+                println!("  {name:8} first at A+{first}, {} records in {} runs: {}{}", hits.len(), runs.len(), shown.join(" "), if runs.len() > 6 { " ..." } else { "" });
+            }
+        }
+        for r in recs {
+            if r.rel <= 12 && (!r.d.none() || !r.globals.is_empty()) {
+                println!("  A+{}: {:?} {:?}", r.rel, r.d, r.globals);
+            }
+            if !r.players.is_empty() {
+                println!("  A+{} (G.$0 checkpoint): {} player bytes differ, first {:?}", r.rel, r.players.len(), &r.players[..r.players.len().min(8)]);
+            }
+        }
+        if let Some(r) = recs.iter().find(|r| r.rel == 1326) {
+            println!("  A+1326: {:?} {:?}", r.d, r.globals);
+        }
+        if let Some(first) = recs.iter().find(|r| r.rel >= 10 && r.globals.iter().any(|g| g.0.starts_with("G.$14"))) {
+            println!("  the generator first differs at A+{}: {:?}", first.rel, first.globals);
+        }
+        if full == Some(n) {
+            for r in recs {
+                println!("  A+{}: {:?} {:?}", r.rel, r.d, r.globals);
+            }
+        }
+    }
+}
+
+/// The recording of 32000 frames from power on with no input (`re/harness/scripts/m113_long.txt`, `record.sh --batch`).
+const TRACE_LONG: &str = "../../../re/out/traces/flow_m113-long.mame.trc";
+/// The first demo with the counter G.$757A poked at power frame 1000 (`re/harness/scripts/m112_demo.txt`): `-row5` (counter 4:
+/// Episode 6 area 1) and `-row0` (counter 5: Episode 1 area 1).
+const TRACE_ROW5: &str = "../../../re/out/traces/flow_m112-row5.mame.trc";
+const TRACE_ROW0: &str = "../../../re/out/traces/flow_m112-row0.mame.trc";
+
+/// What has to be equal in every demo: the setup, the frame counters and the end. `known` names the globals that are allowed to
+/// differ (the generator draws numbers for objects the port does not run yet, G.$757C is read in the middle of a pass in the
+/// first records).
+fn assert_demo(n: usize, start: usize, recs: &[DemoRecord]) {
+    assert_eq!(recs.len(), 1327, "demo {n}: the records from the call to the first record of the next screen");
+    for r in recs.iter().filter(|r| r.rel <= 1325) {
+        let what = format!("demo {n} (call at record {start}) record A+{}", r.rel);
+        // the setup is equal in every layer, palette, sprite list, sound code and variable (A + 9 and A + 10: the frame boundary
+        // falls inside the draw of the map and of the HUD, which the port draws whole; the first pass of Episode 1 starts in A + 9)
+        if (2..=8).contains(&r.rel) {
+            assert!(r.d.none() && r.globals.is_empty(), "{what}: {:?} {:?}", r.d, r.globals);
+        }
+        // the layer control, the title counter G.-$7022, the attract state byte, the frame counters G.$0 and G.$4DA, the demo
+        // counter, the mode, the stage and the area are equal in every record, from the call to the fade
+        assert!(r.d.layer.is_none() && r.d.counter.is_none() && r.d.state.is_none(), "{what}: {:?}", r.d);
+        let bad: Vec<_> = r
+            .globals
+            .iter()
+            .filter(|g| !g.0.starts_with("G.$14") && !(g.0.starts_with("G.$757C") && r.rel <= 12))
+            .collect();
+        assert!(bad.is_empty(), "{what}: {bad:?}");
+        // the fade out of the last picture is in step (the colours may differ: objects of the level that the port does not run
+        // have not loaded their palettes)
+        if r.rel >= 1200 {
+            assert_eq!(r.bright, 0, "{what}: palette words with the colour of MAME's but another brightness");
+        }
+    }
+}
+
+/// M1-12, the six demo rows: the setup of the demo from the call to the first pass (the RAM clear, the staged clear of the
+/// screen, the palettes, the stage setup, the map, the HUD, the sound codes: D4d 3.6, A7), then in every record the layer control,
+/// the attract state byte, the frame counters, the mode, the stage and the area, and the end (100 frozen frames and the fade).
+/// The 5 demos of `flow_m113-long` (counters 1 to 5: Episodes 2, 3, 8, 5 and 6; the first runs and the later ones are timed
+/// differently, see `demo.rs`).
+#[test]
+fn demos_set_up_and_run_in_step_with_mame() {
+    let Some(a) = assets() else { return };
+    if !Path::new(TRACE_LONG).exists() {
+        eprintln!("mame_check: {TRACE_LONG} is missing, skipped");
+        return;
+    }
+    let (_, demos) = run_demos(a, TRACE_LONG, 31000, |_, _, _| {}, &[]);
+    assert_eq!(demos.iter().map(|d| d.0).collect::<Vec<_>>(), [3343, 9914, 16448, 23019, 29553], "the frames the title returned");
+    for (n, (start, recs)) in demos.iter().enumerate() {
+        assert_demo(n, *start, recs);
+    }
+    // the INSERT COIN blink task (the text at the bottom, on for 30 frames and off for 30) runs in the demos of Episode 2 (the first demo:
+    // scroll1 is equal to the recording for 500 frames, ten blinks) and is killed in Episode 6 (the fifth: no text, scroll1 equal for 300 frames)
+    let quiet = |n: usize, to: usize| demos[n].1.iter().filter(|r| (10..=to).contains(&r.rel)).all(|r| r.d.s1 == 0);
+    assert!(quiet(0, 500), "the blink text of the first demo");
+    assert!(quiet(4, 300), "no blink text in Episode 6 (stage 5)");
+}
+
+/// M1-12, the rows that the loop of the recording does not reach early: the counter G.$757A is set at record 1000 so that the
+/// first demo is Episode 6 (row 5, counter 4) or Episode 1 (row 0, counter 5; the sixth demo, the counter wraps to 0).
+#[test]
+fn demo_rows_5_and_0_set_up_and_run_in_step_with_mame() {
+    let Some(a) = assets() else { return };
+    for (trace, counter) in [(TRACE_ROW5, 4u16), (TRACE_ROW0, 5)] {
+        if !Path::new(trace).exists() {
+            eprintln!("mame_check: {trace} is missing, skipped");
+            continue;
+        }
+        let (_, demos) = run_demos(
+            a,
+            trace,
+            4700,
+            |k, g, _| {
+                if k == 1000 {
+                    g.flow.front.demo_counter = counter;
+                }
+            },
+            &[],
+        );
+        assert_eq!(demos.iter().map(|d| d.0).collect::<Vec<_>>(), [3343], "{trace}");
+        assert_demo(counter as usize, 3343, &demos[0].1);
+    }
+}
+
+/// Diagnostic: a coin (and, with `DINO_START`, a start) during the demo against the recordings of M1-13. `DINO_CASE` is `coin`
+/// (`flow_m113-coin`: coin at 4000 to 4007) or `free` (`flow_m113-freestart`: free play, start at 4000 to 4005).
+#[test]
+#[ignore]
+fn demo_input_report() {
+    let Some(a) = assets() else { return };
+    let case = std::env::var("DINO_CASE").unwrap_or_else(|_| "coin".into());
+    let last = std::env::var("DINO_LAST").ok().and_then(|v| v.parse().ok()).unwrap_or(4590);
+    let (name, free) = if case == "coin" { ("m113-coin", false) } else { ("m113-freestart", true) };
+    let Some(trace) = flow_trace(name) else { return };
+    let (_, rows) = compare_power_on(a, &trace, last, |_| [0; 3], |k, g| {
+        if free && k == 99 {
+            g.flow.front.sys.free_play = true;
+        }
+        g.w.coins = (case == "coin" && (3999..=4006).contains(&k)) as u8;
+        g.w.system = 8 | (free && (3999..=4004).contains(&k)) as u8;
+    });
+    println!("s1      {}", ranges(&rows, |d| d.s1 > 0));
+    println!("s2      {}", ranges(&rows, |d| d.s2 > 0));
+    println!("s3      {}", ranges(&rows, |d| d.s3 > 0));
+    println!("palette {}", ranges(&rows, |d| d.pal > 0));
+    println!("sprites {}", ranges(&rows, |d| d.sprites.is_some()));
+    println!("layer   {}", ranges(&rows, |d| d.layer.is_some()));
+    println!("counter {}", ranges(&rows, |d| d.counter.is_some()));
+    println!("sounds  {}", ranges(&rows, |d| d.sounds.is_some()));
+    println!("state   {}", ranges(&rows, |d| d.state.is_some()));
+    println!("sys     {}", ranges(&rows, |d| !d.sys.is_empty()));
+    let from: usize = std::env::var("DINO_FROM").ok().and_then(|v| v.parse().ok()).unwrap_or(3990);
+    for (k, d) in rows.iter().enumerate().skip(from) {
+        if !d.none() || !d.sys.is_empty() {
+            println!("record {k}: {d:?}");
+        }
+    }
+}
+
+/// M1-13, a coin during the demo (`flow_m113-coin`: the coin at 4000 to 4007, the demo of Episode 2 is half way): the system
+/// task kills the attract tasks and calls the press start screen 0x983EE, which takes it 3 frames (records 4008 to 4010, the
+/// staged clear and palette load of the call are not modelled, as in A10); the demo does not finish. From the first run of the press
+/// start task (record 4011) the layers, the palettes, the sprite list, the layer control, the sound codes and all the variables of the
+/// system task equal the recording; scroll1 holds the prompts of the system task (M2-02). G.$4CD, which the demo set, is cleared in the
+/// tail of the pass of the system task, 3 frames after the call (record 4011).
+#[test]
+fn coin_during_the_demo_matches_mame() {
+    let Some(a) = assets() else { return };
+    let Some(trace) = flow_trace("m113-coin") else { return };
+    let (_, rows) = compare_power_on(a, &trace, 4590, |_| [0; 3], |k, g| g.w.coins = (3999..=4006).contains(&k) as u8);
+    let bad: Vec<String> = rows
+        .iter()
+        .enumerate()
+        .skip(3343)
+        .filter(|(k, d)| {
+            !d.core_sys().is_empty()
+                || d.state.is_some()
+                || d.counter.is_some()
+                || (*k >= 4011 && (d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some() || d.sounds.is_some()))
+        })
+        .map(|(k, d)| format!("record {k}: {d:?}"))
+        .collect();
+    assert!(bad.is_empty(), "{} records differ, first {:?}", bad.len(), &bad[..bad.len().min(3)]);
+}
+
+/// M1-13, a start during the demo (`flow_m113-freestart`: free play from power frame 100, the start at 4000 to 4005): the game starts at
+/// once from any moment of the loop, the demo ends where it is: sound 0x31, the fade out of the demo picture in 16 steps (records
+/// 3999 to 4014, the palette words equal), the clear of all layers (the sprite buffers and scroll1 in 4015, scroll2 and the first part of
+/// scroll3 in 4016, the rest of scroll3 in 4017), the game task (G.$4CC, G.$4CD, G.$4D5, G.$4D0 = 0 in 4017) and the select (mode 4) in 4021.
+/// Every watched system variable equals up to the select (the select itself is a stub, M2-03); the layers equal from the end of the clear.
+#[test]
+fn start_during_the_demo_goes_to_select() {
+    let Some(a) = assets() else { return };
+    let Some(trace) = flow_trace("m113-freestart") else { return };
+    let (_, rows) = compare_power_on(a, &trace, 4021, |_| [0; 3], |k, g| {
+        if k == 99 {
+            g.flow.front.sys.free_play = true; // the poke
+        }
+        g.w.system = 8 | (3999..=4004).contains(&k) as u8;
+    });
+    let bad: Vec<String> = rows
+        .iter()
+        .enumerate()
+        .skip(3343)
+        .filter(|(k, d)| {
+            !d.sys.is_empty()
+                || d.state.is_some()
+                || d.counter.is_some()
+                || (*k >= 3999 && *k <= 4014 && d.pal > 0)
+                || (*k == 4017 || *k == 4018) && !d.none()
+                || (*k >= 4015 && d.sprites.is_some())
+        })
+        .map(|(k, d)| format!("record {k}: {d:?}"))
+        .collect();
+    assert!(bad.is_empty(), "{} records differ, first {:?}", bad.len(), &bad[..bad.len().min(3)]);
+}
+
+/// A3 (M1-13), the whole loop for 32000 frames from power on with no input (`flow_m113-long`): the attract state byte equals the recording
+/// in every record, so the state change frames equal it (records 2742, 6872, 9309, 13409, 15846, 19977, 22414, 26514, 28951 = the video
+/// frames 2744 ... 28953 of D4d s3.2), and so does the demo counter G.$757A, which steps in the records 3343, 9914, 16448, 23019 and
+/// 29553 (the video frames 3345, 9916, 16450, 23021, 29555: counters 1 to 5). The title, the layers of the screens that are real
+/// and the sounds of the real screens are compared by the tests of those screens; the demos by `demos_set_up_and_run_in_step_with_mame`.
+#[test]
+fn attract_loop_32000_frames_match_mame() {
+    let Some(a) = assets() else { return };
+    if !Path::new(TRACE_LONG).exists() {
+        eprintln!("mame_check: {TRACE_LONG} is missing, skipped");
+        return;
+    }
+    let (mut mame_state, mut port_state) = (Vec::new(), Vec::new());
+    let (mut mame_counter, mut port_counter) = (Vec::new(), Vec::new());
+    let (mut last_m, mut last_p) = ((0u8, 0u16), (0u8, 0u16));
+    let (_, rows) = compare_power_on_with(a, TRACE_LONG, 31990, |_| [0; 3], |_, _, _| {}, |k, g, ram, _| {
+        let m = (ram[0xFF0FD0 - 0xFF0000], ram16(ram, 0xFFF57A));
+        let p = (g.flow.front.attract_state, g.flow.front.demo_counter);
+        if m.0 != last_m.0 {
+            mame_state.push((k, m.0));
+        }
+        if p.0 != last_p.0 {
+            port_state.push((k, p.0));
+        }
+        if m.1 != last_m.1 {
+            mame_counter.push((k, m.1));
+        }
+        if p.1 != last_p.1 {
+            port_counter.push((k, p.1));
+        }
+        (last_m, last_p) = (m, p);
+    });
+    let state = ranges(&rows[25..], |d| d.state.is_some());
+    assert!(state.is_empty(), "the attract state byte differs at records {state}");
+    assert_eq!(port_state, mame_state, "the state changes (the RAM clear of the demo takes the byte out for 3 frames, hence the 0s)");
+    assert_eq!(port_counter, mame_counter, "the demo counter steps");
+    // the counter steps at the call of each demo and goes back to 0 for the sixth (not in these 32000 frames)
+    let counter_steps: Vec<(i32, u16)> = port_counter.iter().copied().filter(|&(_, c)| c != 0).collect();
+    assert_eq!(counter_steps, [(3343, 1), (9914, 2), (16448, 3), (23019, 4), (29553, 5)]);
+    // D4d s3.2: the state byte changes at the video frames 2744, 6874, 9311, 13411, 15848, 19979, 22416, 26516 and 28953
+    let steps: Vec<i32> = port_state.iter().map(|&(k, _)| k).collect();
+    for expected in [2742, 6872, 9309, 13409, 15846, 19977, 22414, 26514, 28951] {
+        assert!(steps.contains(&expected), "state change at record {expected} (video frame {}) is missing in {steps:?}", expected + 2);
+    }
 }

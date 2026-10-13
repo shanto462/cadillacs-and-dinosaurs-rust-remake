@@ -311,6 +311,47 @@ where the first run of the profile cards does two passes in one frame (its sprit
 `game/flow/slides.rs` ports the slide script 0x988C0 (5 slides, 8 x 6 and 4 x 3 blocks, tall font captions,
 4 fades, the hard cut, the 49-frame pan, music 0x24 / 0x25, layer control changes), 1779 frames from call to
 return. No objects (B91 / B92 are not used) and no rand(). Test `story_slides_run_like_the_original` compares
-both slide runs of `attract3` record by record. The ranking test still injects G.$14 where the demo (4) and
-movie (2) stubs return; M1-09 to M1-12 remove those. Details and the D4d corrections: the module doc and
+both slide runs of `attract3` record by record. The ranking test still injects G.$14 where the demo (4) returns (the movie
+injections went with M1-11; the demo is real since M1-12 but its levels are not complete, see the last section). Details and the D4d corrections: the module doc and
 `plan/game/design/D5-errata.md`.
+
+## M1-12 and M1-13: the demo (2026-10-13)
+
+The last stub of the attract loop is gone: `flow/demo.rs` is the routine 0x99E88 (setup 0x99F10, frame loop, end) with the rows
+(0x9A1E2 / 0x9A1EE), the 30 input streams (0xC869A..) and their playback (0x9A146, 0x9A0CE). The module comment has the timeline of
+the setup frame by frame and the table of what is cleared. The state is `front.demo` (`Demo`: G.$757C, the playback state of the three
+heroes, the pad bytes G.$77A4..6) and `front.demo_counter` (G.$757A). Data: the rows, the pointer tables and the streams were already in
+`FRONT_TABLES` (M1-02a); new: 0x222B6 (the first camera event by stage and area, 32 bytes, read by 0x2228A).
+
+* **RAM clear.** The port has no memory image, so `flow_demo_clear_ram` builds a fresh `Game` and moves into it what the original's
+  sweeps leave alone (inputs, video registers, video memory, palettes, fade state, the system task and the attract task `front`, the
+  settings, the high score table). A new state field that lives in RAM outside those ranges is cleared by it without any edit; one that
+  lives in the kept ranges (G.$16..33, G.$44A..4AB, G.$6EDE..6F1D, G.$700E..735D, G.$757A, G.$777A..) must be added there.
+* **Timing.** The setup takes about 10 frames of CPU time. The visible steps are waits of the measured length, in two variants: the first
+  demo after power on (and the poked first demos of the recordings) and the later ones differ by a frame in the middle (`dst`, module
+  comment); Episode 1 (row 0, the sixth demo) starts its first pass one frame earlier. The loop itself never loses a frame (1 game frame per
+  video frame, G.$0 = 1 in A + 10, 1201 passes, the picture stays 100 frames, 16 fade steps, back in A + 1325 as the old stub did).
+* **Input playback.** The pad bytes replace `w.input` for the object update only (`flow_demo_frame`): the player port reads G.$77A4..6,
+  which is the cooked input in a game and the stream byte in the demo. No hook in `player.rs` or `input.rs` was needed. G.$16 itself is not
+  changed (`lib_target_input`, 0x32B94, reads it; none of its callers is ported: when one is, give it the real input, `flow.demo` keeps none). The routine
+  also writes 4 hex digits at the top left of scroll1 (0x18F8, a debug display of the hero number or FFFF) that are in every demo picture.
+* **Camera hook.** `camera.rs`: `flow_demo_camera_init` is 0x2228A (event index from the table, state 2 at once: the palettes and the timers
+  of the normal init 0x206EA are skipped, the pointer to the next event stays on the loaded one), and `reinit_map` draws the pre-draw of
+  0x20520 now (areas that start at X = 0 draw their first screen a second time at +0xBC8; 256 cells at the end of scroll2, they were the
+  unported cells of Episode 2 / 8). **Not done, known:** `write_cell3` skips areas without a far layer (the original writes 1C00/0010 cells
+  hidden behind scroll2: 187 cells in Episode 1 area 1).
+* **Start of a game after a demo / coin in the demo.** `front.rs`: the system task needs 3 frames for the call of the press start screen
+  0x983EE (`sst::TAIL`: the rest of the pass, G.$4CD cleared, runs 3 frames later), and the clear 0xAE0 of the game start is staged like the
+  attract task's (`flow_attract_clear`, scroll3 cut at 3587 cells, `Front::clear3_cut`). The press start call itself is still done at once (the
+  recording shows it in three frames: sprites and scroll1, scroll2, scroll3 and palettes; also in the title case): the three records are
+  excluded in the tests.
+* **Checks** (`mame_check.rs`): `demos_set_up_and_run_in_step_with_mame` (5 demos of `flow_m113-long`), `demo_rows_5_and_0_...` (poked first
+  demos), `attract_loop_32000_frames_match_mame` (A3), `coin_during_the_demo_matches_mame`, `start_during_the_demo_goes_to_select`;
+  `demo_report` and `demo_input_report` (ignored) print the differences per demo (`DINO_TRACE`, `DINO_POKE_COUNTER`, `DINO_DEMO`, `DINO_CASE`).
+  Recordings: `re/harness/scripts/m112_demo.txt` (+ `_pokes`) and `m113_long.txt` (+ `_pokes`), `record.sh --batch`, see the harness README.
+* **What differs (all causes are things the port does not have yet):** the heroes of Episode 1 area 1, Episode 2, 3, 4, 5, 6 and 8 start in
+  a scripted walk-in (G.$4DD = 7, 0x1DA10, M2-07 to M2-09) or the car scene (Episodes 2 and 4: the heroes are hidden until it ends), so the player
+  objects differ from the first frame in position, state and timers, and the sprite list has the heroes where MAME has none; the objects of
+  classes the port does not run draw random numbers, so G.$14 first differs 12 to 239 frames into each demo and at the end of every demo (the ranking
+  test still sets it in the frame the demo returns); Episode 3 (stage 2) uses its own scroll tasks (0x22398 ...). `demo_report` lists the first frame
+  of each kind per demo.

@@ -1,0 +1,4 @@
+# M1-13: 32000 frames from power on with no input (D4d A3). One segment, its own MAME process.
+
+segment m113-long
+frames 32000

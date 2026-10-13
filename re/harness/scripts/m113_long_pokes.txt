@@ -1,0 +1,3 @@
+# Timed writes by segment: frame hexaddr size value. See re/harness/README.md.
+
+segment m113-long
