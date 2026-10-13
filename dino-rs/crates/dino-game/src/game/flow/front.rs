@@ -118,6 +118,11 @@ pub struct Front {
     pub clear3_cut: usize,
     /// The game over ranking of 0x97C94 is up: the pass goes on after it.
     pub after_ranking_pass: bool,
+    /// The press start call 0x983EE is under way (it takes the system task 3 frames): 2 = the next frame clears scroll2 (and the
+    /// first part of scroll3), 1 = the next frame clears the rest of scroll3 and does the rest of the call (`flow_press_start_rest`).
+    pub press_call: u8,
+    /// The words of scroll3's palette bank the brightness loop has done when the frame that ends the press start call ends.
+    pub press_cut: usize,
 }
 
 /// The cells of scroll3 the clear 0xAE0 of the game start has done in the frame it clears scroll2 in (the recording
@@ -249,8 +254,15 @@ impl Game {
     pub fn flow_system_task(&mut self) {
         // a clear of all layers that the original needs more than a frame for (0xAE0, here by the game start) goes on at the start
         // of the frame; the system task is the first task of the frame
-        if self.flow.in_game != 0 {
+        if self.flow.in_game != 0 || self.flow.front.press_call != 0 {
             self.flow_attract_clear_step(); // (with nobody playing, the attract task does this)
+        }
+        if self.flow.front.press_call != 0 {
+            // 0x983EE goes on in the second and third frame of its call (see `flow_press_start_screen`)
+            self.flow.front.press_call -= 1;
+            if self.flow.front.press_call == 0 {
+                self.flow_press_start_rest();
+            }
         }
         if !self.flow.front.sys_task.tick() {
             return;

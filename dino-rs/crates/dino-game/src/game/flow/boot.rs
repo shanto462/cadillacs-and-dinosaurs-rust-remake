@@ -82,6 +82,12 @@ const TITLE_RUNS: [(u8, u16, u8); 10] =
 /// Frames the title shows (the counter G.-$7022 runs to 600, 0x9A536).
 const TITLE_FRAMES: u16 = 0x258;
 
+/// The words of scroll3's palette bank the brightness loop 0x8982 has done when the frame of the press start call ends (M1-15).
+const PRESS_CALL_CUT: usize = 154;
+/// The same, and the cells of scroll3 the clear has done in the frame it clears scroll2 in, when the call comes from the demo.
+const PRESS_CALL_CUT_DEMO: usize = 139;
+const PRESS_CALL_CLEAR3_DEMO: usize = 3584;
+
 impl Game {
     // ------------------------------------------------------------------ power on
 
@@ -604,20 +610,45 @@ impl Game {
     /// ends the attract task before it): clear all, palette set 0, the screen task 0x978EE in slot
     /// 0x20, layer control 0x12D6, clear scroll1, the scroll2 / scroll3 base shadows (not modelled),
     /// layer control 0x1396, brightness.
+    ///
+    /// The call takes the system task 3 frames (M1-15; before it was written in one frame): the clear 0xAE0 needs 1.3 frames
+    /// of CPU time, so the recording shows the sprite buffers and scroll1 blank after the frame of the call, scroll2 (and
+    /// scroll3 up to a cell) in the next frame, and in the third frame the rest of scroll3 and everything after the clear (the
+    /// palette set 0, the new task, the layer control, the second clear of scroll1, the brightness). The staging is the one of
+    /// `flow_attract_clear` (`front.press_call` counts the frames, the system task runs them at the start of its pass).
+    /// Records 458 to 460 of `flow_c-title`, 4008 to 4010 of `flow_m113-coin`.
     #[allow(dead_code)] // the system task calls it (M1-04); the press start test of `mame_check.rs` does now
     pub fn flow_press_start_screen(&mut self) {
-        self.flow_clear_screen(); // 0xAE0
-        self.flow_scene_palettes(0);
+        // The cuts by the video frame boundary depend on how late in the frame the system task runs: in the demo (the interrupt
+        // has built a game frame) later than in the title (`flow_c-title`: scroll3 is empty there, the palette cut is 154 words;
+        // `flow_m113-coin`: the first part of the clear of scroll3 ends at cell 3584 at the latest and the palette cut is 139).
+        let from_demo = self.flow.front.stub == super::attract::Stub::Demo;
+        self.flow_attract_clear(); // 0xAE0 (the first frame of it)
+        if from_demo {
+            self.flow.front.clear3_cut = PRESS_CALL_CLEAR3_DEMO;
+        }
+        self.flow.front.press_cut = if from_demo { PRESS_CALL_CUT_DEMO } else { PRESS_CALL_CUT };
         self.flow.front.blink.kill(); // the new task replaces the one of slot 0x20
-        // The call takes about 3 frames of CPU time (the clears and the palette load): the new task
-        // first runs 3 frames later in the recording (the scene is ticked in this frame too).
+        self.flow.front.press_call = 2;
+    }
+
+    /// The rest of 0x983EE, in the third frame of the call: after the clear 0xAE0 the palette set 0 (0x89E6), the screen task
+    /// 0x978EE in slot 0x20 (it first runs the next frame; its pass is ticked in this frame too), the layer control 0x12D6,
+    /// scroll1 cleared again (0xB52), the base shadows, layer control 0x1396 and the brightness (0x892C).
+    pub(super) fn flow_press_start_rest(&mut self) {
+        self.flow_scene_palettes(0);
         let mut press = Scene::start(0);
-        press.sleep(4);
+        press.sleep(2);
         self.flow.front.press = press;
         self.w.layer_ctrl = 0x12D6;
         self.flow_clear_scroll1(); // 0xB52
         self.w.layer_ctrl = 0x1396;
         self.brightness_full(); // 0x892C
+        // The video frame boundary falls in the middle of the brightness loop 0x8982 (an OR of 0xF000 into every word, bank by bank):
+        // the words of scroll3's bank from the 154th (title) or 139th (demo) on get theirs at the start of the next frame (records
+        // 460 and 461 of `flow_c-title`, 4010 and 4011 of `flow_m113-coin`; the task's first run sets the full brightness again).
+        let cut = self.flow.front.press_cut;
+        self.pal.bank_mut(3).iter_mut().skip(cut).for_each(|w| *w &= 0x0FFF);
     }
 
     /// 0x978EE: the press start screen task: the same green background as the title (lists 0x97A20
@@ -658,7 +689,9 @@ impl Game {
 
     /// Slot 0x10 (boot task, attract task) and slot 0x20 (blink task or press start task).
     pub fn flow_attract_task(&mut self) {
-        self.flow_attract_clear_step();
+        if self.flow.front.press_call == 0 {
+            self.flow_attract_clear_step(); // (during the press start call the system task runs the clear)
+        }
         self.flow_boot_task();
         self.flow_blink_task();
         self.flow_press_start_task();

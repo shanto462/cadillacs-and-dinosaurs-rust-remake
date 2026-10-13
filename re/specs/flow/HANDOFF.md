@@ -355,3 +355,12 @@ heroes, the pad bytes G.$77A4..6) and `front.demo_counter` (G.$757A). Data: the 
   classes the port does not run draw random numbers, so G.$14 first differs 12 to 239 frames into each demo and at the end of every demo (the ranking
   test still sets it in the frame the demo returns); Episode 3 (stage 2) uses its own scroll tasks (0x22398 ...). `demo_report` lists the first frame
   of each kind per demo.
+
+## M1-15 attract acceptance (2026-10-13): M1 done
+
+`attract_loop_two_loops_match_mame` runs the port from power on for 26,600 records against `attract3`: all
+21,276 records outside the demos equal MAME (tilemaps, palettes, sprite list, layer control, sounds, state byte,
+scroll shadows, G.$14). `re/harness/allow/m1.txt` lists every remaining difference with its cause (the demo level
+content until M10, single-frame picture latch differences in the first run, the movie shake until M3-10). The press
+start call now takes 3 staged frames like the original; `write_cell3` writes the hidden scroll3 cells too (the
+earlier "not done" note is obsolete). 369 of 416 compared video frames are pixel exact.

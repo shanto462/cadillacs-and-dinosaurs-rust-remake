@@ -7,6 +7,12 @@
 //! the recording; they pass without doing anything when either is missing (both are git-ignored).
 //!
 //! The record numbers are the frames where the original draws each screen (D4d section 3).
+//!
+//! The acceptance of the attract loop (M1-15) is `attract_loop_two_loops_match_mame`: two whole loops from power on against
+//! `attract3.mame.trc`, record by record, with no allowed difference outside the demos. Its diagnostics (ignored tests) are
+//! `loop_report` (the records outside the demos that differ), `press_report` (the records of a flow recording with a coin or
+//! a start, cell ranges per layer) and `demo_report` (the demos). The field by field comparison of the same loop with
+//! `re/harness/diff.py` has its approved differences, with causes, in `re/harness/allow/m1.txt`.
 
 use crate::game::Game;
 use crate::harness::TraceReader;
@@ -1042,8 +1048,10 @@ fn title_timeline_numbers() {
 fn press_start_screen_matches_mame() {
     let Some(a) = assets() else { return };
     let (g, rows) = compare_power_on(a, TRACE_COINSTART, 697, |_| [0; 3], |k, g| {
-        if k == 607 {
-            g.flow.front.task.kill(); // the system task ends the attract task
+        if k == 608 {
+            // the system task ends the attract task and calls the screen inside frame 607 (the staged call of M1-15 does its
+            // second step at the start of the next frame's system task, so a call before tick 608 stands for one in frame 607)
+            g.flow.front.task.kill();
             g.flow_press_start_screen();
         }
     });
@@ -1202,7 +1210,9 @@ fn coin_and_start_match_mame() {
         if !d.sys.is_empty() || d.sounds.is_some() || d.state.is_some() || d.counter.is_some() {
             bad.push(format!("record {k}: {:?} sounds {:?} state {:?} counter {:?}", d.sys, d.sounds, d.state, d.counter));
         }
-        let picture = if k < 458 {
+        // 458 to 460 are the three frames of the call 0x983EE (the clear, the palette load, the brightness loop cut by the frame
+        // boundary): equal in everything; from 461 scroll1 holds the credit text of the system task (M2-02)
+        let picture = if k < 461 {
             d.s1 + d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some()
         } else if k >= 461 && k < 599 {
             d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some()
@@ -1642,10 +1652,11 @@ fn demo_input_report() {
 }
 
 /// M1-13, a coin during the demo (`flow_m113-coin`: the coin at 4000 to 4007, the demo of Episode 2 is half way): the system
-/// task kills the attract tasks and calls the press start screen 0x983EE, which takes it 3 frames (records 4008 to 4010, the
-/// staged clear and palette load of the call are not modelled, as in A10); the demo does not finish. From the first run of the press
-/// start task (record 4011) the layers, the palettes, the sprite list, the layer control, the sound codes and all the variables of the
-/// system task equal the recording; scroll1 holds the prompts of the system task (M2-02). G.$4CD, which the demo set, is cleared in the
+/// task kills the attract tasks and calls the press start screen 0x983EE, which takes it 3 frames (records 4008 to 4010: sprites and
+/// scroll1, then scroll2 and the first part of scroll3, then the rest of scroll3, the palette load and the new task, M1-15); the demo
+/// does not finish. From the record 4008 the palettes, the sprite list, the layer control and the sound codes equal the recording
+/// and from 4010 the layers too (until then the level cells of the demo that are not cleared yet differ: the level is not complete);
+/// all the variables of the system task equal it; scroll1 holds the prompts of the system task (M2-02). G.$4CD, which the demo set, is cleared in the
 /// tail of the pass of the system task, 3 frames after the call (record 4011).
 #[test]
 fn coin_during_the_demo_matches_mame() {
@@ -1660,7 +1671,10 @@ fn coin_during_the_demo_matches_mame() {
             !d.core_sys().is_empty()
                 || d.state.is_some()
                 || d.counter.is_some()
-                || (*k >= 4011 && (d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some() || d.sounds.is_some()))
+                // 4008 to 4010 are the three frames of the call: the level cells of the demo that are not cleared yet differ (the
+                // level is not complete, M10), the palette load, the sprite list, the layer control and the sounds equal
+                || (*k >= 4008 && (d.pal > 0 || d.sprites.is_some() || d.layer.is_some() || d.sounds.is_some()))
+                || (*k >= 4010 && d.s2 + d.s3 > 0)
         })
         .map(|(k, d)| format!("record {k}: {d:?}"))
         .collect();
@@ -1742,5 +1756,191 @@ fn attract_loop_32000_frames_match_mame() {
     let steps: Vec<i32> = port_state.iter().map(|&(k, _)| k).collect();
     for expected in [2742, 6872, 9309, 13409, 15846, 19977, 22414, 26514, 28951] {
         assert!(steps.contains(&expected), "state change at record {expected} (video frame {}) is missing in {steps:?}", expected + 2);
+    }
+}
+
+/// The demo calls of `attract3.mame.trc` (the records where G.$757A steps) and the records the demo routine returns in (A + 1325).
+const LOOP_DEMOS: [(usize, usize); 4] = [(3343, 4668), (9914, 11239), (16448, 17773), (23019, 24344)];
+
+/// What the whole loop of `attract3.mame.trc` is compared with: the records `from ..= last` of the loop from power on, the random
+/// number state G.$14 set from the recording in the frame each demo returns (the levels of the demos are not complete, M10-03 to
+/// M10-05: the objects of the classes the port does not run draw numbers the port does not), per record all differences of
+/// `Differences` (tilemaps, palettes, sprite list, layer control, title counter, sound codes, attract state byte, the six scroll
+/// shadows) and the system variables, and G.$14 itself.
+fn run_loop(a: &'static AssetPack, trace: &str, last: i32) -> (Vec<Differences>, Vec<(i32, u16, u16)>) {
+    let mut rng_bad: Vec<(i32, u16, u16)> = Vec::new();
+    let (_, rows) = compare_power_on_with(
+        a,
+        trace,
+        last,
+        |_| [0; 3],
+        |k, g, prev| {
+            if LOOP_DEMOS.iter().any(|&(_, e)| e == k as usize) {
+                g.w.rng = ram16(prev, 0xFF8014);
+            }
+        },
+        |k, g, ram, _| {
+            let in_demo = LOOP_DEMOS.iter().any(|&(s, e)| (s..e).contains(&(k as usize)));
+            if k >= 25 && !in_demo && g.w.rng != ram16(ram, 0xFF8014) {
+                rng_bad.push((k, ram16(ram, 0xFF8014), g.w.rng));
+            }
+        },
+    );
+    (rows, rng_bad)
+}
+
+/// A1 to A9 (M1-15), the whole attract loop from power on, no input: the port is run for 26600 records (two loops of the four states
+/// and the title of the third, 13104 records a loop) and compared with `attract3.mame.trc` record by record: the three tilemaps,
+/// the four palette banks, the sprite list, the layer control, the title counter, the sound codes, the attract state byte, the six
+/// scroll shadows, the variables of the system task, and G.$14. Records 25 on (0 to 24 are the reset code clearing the video RAM).
+///
+/// The boot, the title, the profile cards, the ranking, the story slides and the opening movie (all four runs of it) are equal in
+/// EVERY record, without exception. The only records that differ are those of the four demos (A .. A + 1325: the levels are not
+/// complete, `demo_report` lists the first record of each kind of difference per demo, causes in `re/harness/allow/m1.txt`) and the
+/// two records after each demo, where the clear 0xAE0 of the next screen is still under way and video memory holds the demo's last
+/// picture (scroll2 in the first, scroll3 in the first two, the palette of the demo in the fade of the last). G.$14 is set from the
+/// recording in the frame each demo returns, so it is not compared inside a demo.
+#[test]
+fn attract_loop_two_loops_match_mame() {
+    let Some(a) = assets() else { return };
+    let trace = "../../../re/out/traces/attract3.mame.trc";
+    if !Path::new(trace).exists() {
+        eprintln!("mame_check: {trace} is missing, skipped");
+        return;
+    }
+    let last = 26600;
+    let (rows, rng_bad) = run_loop(a, trace, last);
+    let mut compared = 0;
+    let mut bad: Vec<String> = Vec::new();
+    for (k, d) in rows.iter().enumerate().skip(25) {
+        if LOOP_DEMOS.iter().any(|&(s, e)| (s..e).contains(&k)) {
+            continue;
+        }
+        compared += 1;
+        let after_demo = LOOP_DEMOS.iter().any(|&(_, e)| k == e || k == e + 1);
+        let mut d = d.clone();
+        if after_demo {
+            // the clear of the next screen is under way: the cells and colours of the demo's last picture
+            (d.s2, d.s3, d.pal) = (0, 0, 0);
+        }
+        if !d.none() || d.cams.is_some() || !d.core_sys().is_empty() {
+            bad.push(format!("record {k}: {d:?}"));
+        }
+    }
+    assert!(bad.is_empty(), "{} of {compared} records differ outside the demos, first: {:?}", bad.len(), &bad[..bad.len().min(3)]);
+    assert!(rng_bad.is_empty(), "the random number state (record, MAME, port) differs outside the demos: {:?}", &rng_bad[..rng_bad.len().min(4)]);
+    assert_eq!(compared, 26601 - 25 - 4 * 1325, "records compared (the loop minus the reset and the four demos)");
+    // the demos are in step in everything that is not level content (`demos_set_up_and_run_in_step_with_mame` has the details)
+    for &(s, e) in &LOOP_DEMOS {
+        let off: Vec<usize> = (s..e).filter(|&k| rows[k].layer.is_some() || rows[k].counter.is_some() || rows[k].state.is_some() || !rows[k].core_sys().is_empty()).collect();
+        assert!(off.is_empty(), "demo {s}: the layer control, the title counter, the state byte or the system variables differ at {:?}", &off[..off.len().min(4)]);
+    }
+}
+
+/// M1-15 diagnostic: the loop of `attract3.mame.trc` (see `run_loop`), the records OUTSIDE the demos that differ, by kind. With
+/// `DINO_FROM=n` the records from n on are listed in full. `cargo test -p dino-game loop_report -- --ignored --nocapture`.
+#[test]
+#[ignore]
+fn loop_report() {
+    let Some(a) = assets() else { return };
+    let trace = std::env::var("DINO_TRACE").unwrap_or_else(|_| "../../../re/out/traces/attract3.mame.trc".into());
+    let last: i32 = std::env::var("DINO_LAST").ok().and_then(|v| v.parse().ok()).unwrap_or(29490);
+    let (mut rows, rng_bad) = run_loop(a, &trace, last);
+    drop_demo_blips(&mut rows);
+    for (s, e) in LOOP_DEMOS {
+        for d in rows.iter_mut().take(e).skip(s) {
+            *d = Differences::default();
+        }
+    }
+    for d in rows.iter_mut().take(25) {
+        *d = Differences::default();
+    }
+    println!("s1      {}", ranges(&rows, |d| d.s1 > 0));
+    println!("s2      {}", ranges(&rows, |d| d.s2 > 0));
+    println!("s3      {}", ranges(&rows, |d| d.s3 > 0));
+    println!("palette {}", ranges(&rows, |d| d.pal > 0));
+    println!("sprites {}", ranges(&rows, |d| d.sprites.is_some()));
+    println!("layer   {}", ranges(&rows, |d| d.layer.is_some()));
+    println!("counter {}", ranges(&rows, |d| d.counter.is_some()));
+    println!("sounds  {}", ranges(&rows, |d| d.sounds.is_some()));
+    println!("state   {}", ranges(&rows, |d| d.state.is_some()));
+    println!("cams    {}", ranges(&rows, |d| d.cams.is_some()));
+    println!("sys     {}", ranges(&rows, |d| !d.core_sys().is_empty()));
+    println!("rng     {:?}", &rng_bad[..rng_bad.len().min(8)]);
+    let from: usize = std::env::var("DINO_FROM").ok().and_then(|v| v.parse().ok()).unwrap_or(999999);
+    for (k, d) in rows.iter().enumerate().skip(from) {
+        if !d.none() || d.cams.is_some() || !d.core_sys().is_empty() {
+            println!("record {k}: {d:?}");
+        }
+    }
+}
+
+/// Index ranges "a..=b" of a list of cell numbers (sorted).
+fn index_ranges(v: &[usize]) -> String {
+    let mut out: Vec<String> = Vec::new();
+    let mut k = 0;
+    while k < v.len() {
+        let s = k;
+        while k + 1 < v.len() && v[k + 1] == v[k] + 1 {
+            k += 1;
+        }
+        out.push(if s == k { format!("{}", v[s]) } else { format!("{}..={}", v[s], v[k]) });
+        k += 1;
+    }
+    out.join(" ")
+}
+
+/// M1-15 diagnostic: the records `DINO_FROM ..= DINO_LAST` of a flow recording (`DINO_FLOW`, for example `c-title`) with the
+/// inputs `DINO_COIN` / `DINO_START` (ranges "a-b" of the port's tick) and `DINO_FREE=1` (free play poked at 99): for each
+/// record the cell ranges of each layer and the palette words that differ from the recording.
+#[test]
+#[ignore]
+fn press_report() {
+    let Some(a) = assets() else { return };
+    let name = std::env::var("DINO_FLOW").unwrap_or_else(|_| "c-title".into());
+    let Some(trace) = flow_trace(&name) else { return };
+    let get = |k: &str| std::env::var(k).ok();
+    let range = |s: Option<String>| {
+        s.and_then(|s| {
+            let (x, y) = s.split_once('-')?;
+            Some((x.parse::<i32>().ok()?, y.parse::<i32>().ok()?))
+        })
+    };
+    let (coin, start) = (range(get("DINO_COIN")), range(get("DINO_START")));
+    let free = get("DINO_FREE").is_some();
+    // `DINO_POKE_COUNTER`: the demo counter G.$757A is set at record 1000 (the recordings `flow_m112-row5` and `-row0`)
+    let poke: Option<u16> = get("DINO_POKE_COUNTER").and_then(|v| v.parse().ok());
+    let from: usize = get("DINO_FROM").and_then(|v| v.parse().ok()).unwrap_or(450);
+    let last: i32 = get("DINO_LAST").and_then(|v| v.parse().ok()).unwrap_or(470);
+    let (_, rows) = compare_power_on_with(a, &trace, last, |_| [0; 3], |k, g, _| {
+        if k == 99 && free {
+            g.flow.front.sys.free_play = true;
+        }
+        if let (1000, Some(c)) = (k, poke) {
+            g.flow.front.demo_counter = c;
+        }
+        g.w.coins = coin.is_some_and(|(x, y)| (x..=y).contains(&k)) as u8;
+        g.w.system = 8 | start.is_some_and(|(x, y)| (x..=y).contains(&k)) as u8;
+    }, |k, g, _, gfx| {
+        if (k as usize) < from {
+            return;
+        }
+        for layer in 1..=3u8 {
+            let full = diff(g, gfx, layer);
+            let d: Vec<usize> = full.iter().map(|x| x.0).collect();
+            if !d.is_empty() {
+                println!("record {k}: scroll{layer} {} cells: {}", d.len(), index_ranges(&d));
+                if get("DINO_CELLS").is_some() {
+                    println!("    (cell, port code/attr, MAME code/attr) {:04X?}", &full[..full.len().min(6)]);
+                }
+            }
+        }
+        let p = palette_diff(g, gfx, 0xFFFF);
+        if !p.is_empty() {
+            println!("record {k}: palette {} words: {}", p.len(), index_ranges(&p));
+        }
+    });
+    for (k, d) in rows.iter().enumerate().skip(from) {
+        println!("record {k}: sprites {:?} layer {:?} counter {:?} sounds {:?} state {:?} sys {:?}", d.sprites, d.layer, d.counter, d.sounds, d.state, d.sys);
     }
 }

@@ -39,7 +39,12 @@
 //! (A + 10); Episode 1 (row 0, the sixth demo) does not sleep: its first pass starts in A + 9. In all of them the frame ends inside
 //! the draw of the map (later runs: its last 44 cells come in A + 10) or of the HUD (Episode 3: its first 40 cells are
 //! there in A + 9); the port draws both whole (the records A + 9 and A + 10 differ in those cells, see
-//! `demos_set_up_and_run_in_step_with_mame`).
+//! `demos_set_up_and_run_in_step_with_mame`). Measured in `attract3` / `flow_m113-long` (M1-15, not ported: the demos are allowed to
+//! differ until M10, `re/harness/allow/m1.txt`): in the later runs of Episodes 8, 5 and 6 the last 11 blocks (44 cells, a cell range
+//! relative to the 1024 cell column group of the first screen: 490 to 495 and 506 to 543) of the scroll2 map come in A + 10; in
+//! Episode 3 the HUD cuts after its first 40 cells (A + 9), its other 84 cells and the first 165 of the 187 hidden scroll3 cells
+//! (an area without a far layer, `camera.rs` `write_cell3` writes them since M1-15) are in A + 10 and the last 22 in A + 11, and the
+//! first pass of the loop has not started yet in A + 10 (G.$757C is still 1200 there; the frame counters G.$0 and G.$4DA agree).
 //!
 //! The frame loop 0x99EA0 then runs the six routines of the level frame without the rank (0x186CC) and the time limit
 //! (0x103FE, 0x1037E): the objects 0xE90E (the playback of the input streams is part of the player update 0x18834),

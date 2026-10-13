@@ -54,3 +54,9 @@ MAME wins over the design text; the design documents themselves are not edited.
 - D4d s3.6 (input playback): 0x9A146 also writes a debug display, 4 hex digits of d0 at 0x90A000, 0x90A080, 0x90A100, 0x90A180 (scroll1 top left): FFFF in the frame a record changes, else the hero number times 4; the last hero's write stays. It is in every demo picture.
 - D4d s3.6 (heroes): the three player inits (0x4D46 ..) run before the row sets the who / id word and the class of each hero, and 0x18C88 at the setup is done again by the first update of the object in mode 0 (the port relies on that).
 - D4d s3.10 (coin in the demo): the call of the press start screen 0x983EE takes the system task 3 frames, so G.$4CD (set by the demo) is cleared 3 frames after the call. A start from the demo (free play) fades out the demo picture in 16 steps like any start and clears the screens in 3 stages (sprites and scroll1, scroll2 and 97 cells of scroll3, the rest of scroll3); the game task is created 18 frames after the press, G.$0 goes on counting from the demo's value.
+
+## From M1-15 (2026-10-13)
+
+* The press start call 0x983EE takes 3 frames (sprites and scroll1, then scroll2, then scroll3 + palette + new task); the cut points are measured (title case and demo case).
+* camera.rs write_cell3 must also write the scroll3 cells of areas without a far layer (187 hidden cells in Episode 1 area 1 equal MAME now).
+* Demo setup: the frame boundary cuts the map (44 scroll2 cells late) and the HUD (40 cells in Episode 3) draws; numbers in demo.rs.

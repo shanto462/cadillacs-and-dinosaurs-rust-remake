@@ -322,10 +322,11 @@ impl Game {
         id as usize * 64 + ((x & 0xE0) >> 5) as usize * 8 + (7 - ((y & 0xE0) >> 5)) as usize
     }
 
+    /// One tile of scroll3. An area without a far layer (`w == 0`) is written too (M1-15): the screen id of an empty map is 0
+    /// and the cell comes from page 0 of the table, as in the original, which draws these cells hidden behind scroll2 (the
+    /// recording of Episode 1 area 1, 187 cells of 0x1C00 / 0x0010; a map the original reads garbage ids from may give other
+    /// pages there, always hidden).
     fn write_cell3(&mut self, i: usize, p: usize) {
-        if self.s3_map().w == 0 {
-            return; // no far layer in this area (the original reads garbage hidden behind scroll2)
-        }
         let c = self.assets.stages.scroll3_screen_cells.get(p).copied().unwrap_or_default();
         self.vram.scroll3[i % 4096] = c;
     }

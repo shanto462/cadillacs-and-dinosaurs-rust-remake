@@ -1,0 +1,284 @@
+# Approved known differences of milestone 1 (the attract loop from power on), M1-15.
+# One rule per line: a key pattern (fnmatch) and an optional record range, then a "# reason".
+#
+# What is compared (the whole loop, 29475 records, no input, two full loops and the title of the third):
+#   MAME  re/out/traces/attract3.mame.trc   (DINO_CLOCK=video, see re/harness/README.md "Power-on references")
+#   port  dino-game --rom dino.zip --trace re/out/m115/loop.port.trc --frames 29500 --poke-file re/out/m115/rng_at_demo_end.txt
+#   diff  re/.venv/bin/python -I re/harness/diff.py re/out/traces/attract3.mame.trc re/out/m115/loop.port.trc --from 25 --allow re/harness/allow/m1.txt
+# The poke file holds four lines `RECORD 0xFF8014 2 VALUE` (`#!clock game` first): G.$14, the random number state, is set from the
+# recording in the record each demo returns (4668, 11239, 17773, 24344). The demos draw random numbers in objects of classes the
+# port does not run yet (the levels are incomplete until M10-03 to M10-05), so the state they leave is not the original's; without
+# the four lines every screen after the first demo would differ in the random numbers of the clouds and heroes of the ranking.
+# The same four injections are made by the test `attract_loop_two_loops_match_mame` (dino-rs, `cargo test`), which compares the
+# whole loop record by record (tilemaps, palettes, sprite list, layer control, sounds, state byte, scroll shadows, G.$14) with NO
+# allowed difference outside the demos: that test is the gate for the screens, this file lists what the field by field diff shows.
+# The records are trace records (video frame - 2). The demos are the records 3343-4667, 9914-11238, 16448-17772, 23019-24343
+# (A .. A + 1324, A = the record in which the title returned and G.$757A stepped), after them come the clear of the next screen
+# (the records 4668, 11239, 17773, 24344 and the next one).
+#
+# Not compared by this file (the picture of the screen, not the state): the frames where MAME's picture and the port's picture
+# differ although every record is equal are listed at the end, with their causes.
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 1. Fields that the port initialises when it is created and the original only sets in a stage setup (the first demo, 0x99F10,
+#    or a game start): before the first demo the original's RAM holds 0 there (the reset clears it), the port's holds a default
+#    (a list head, a message ring, a frame pointer). Nothing in the attract loop reads them. They keep differing after the first
+#    demo (the leftover of the demo is not the port's), so the rules cover the whole loop.
+global.floor_ptr           # the terrain floor pointer G.$6AC: set by the area setup
+global.free_count          # the free lists of the object pools G.$65F4..: the port's pools start with all slots free, the original's
+global.free_ptr            #   RAM is 0 until the first pool reset of a demo or a game (0x49A8 ..); the title and the profile cards
+global.free_slot           #   allocate from the port's lists as the original's allocator does from its own once they are set
+global.hud_boss_msg        # the HUD message rings (G.-$70BA.., G.$6BDE): the port starts them at 0xFFFF (empty), the original at 0
+global.hud_ring_msg
+global.item_ptr            # G.$69F0 / G.$6A24 / G.$6A28 pool E and obstacle list heads, same reason as the free lists
+global.obst_ptr
+global.obst_prev_ptr
+global.next_event          # G.$792, G.$674, G.$678: the pointers of the stage scripts, set by the stage setup
+global.spawn_list1
+global.spawn_list2
+player.frame               # +$28 animation frame pointer of the three player slots: the port's players exist from the start with a
+                           #   default frame, the original's slots are 0 (not live) until a demo or game creates the players
+
+# The all-zero sprite buffer of the original: while a clear 0xAE0 has blanked the sprite buffers and no sprite list has been built yet
+# (the reset code in the records 25 to 319, then every clear and fade of the loop) the buffer MAME shows has no end marker and is all
+# zero. diff.py reads a buffer without the end marker as 256 entries of 0 and reports that the port, which has an empty list, lacks them;
+# the Rust comparison (`mame_sprites`) reads it as an empty list: equal. These are exactly the records where MAME's buffer is all zero
+# and the port's list is empty (53 runs, found by a script over the two traces; a sprite difference of any other kind is not hidden):
+sprites 25-319
+sprites 919-920
+sprites 1244-1275
+sprites 1605-1636
+sprites 1966-1997
+sprites 2318-2321
+sprites 2742-2743
+sprites 3346-3352
+sprites 4668-6450
+sprites 6872-6877
+sprites 7477-7479
+sprites 7804-7836
+sprites 8167-8199
+sprites 8530-8562
+sprites 8884-8887
+sprites 9309-9314
+sprites 9917-9924
+sprites 11239-11242
+sprites 11664-11666
+sprites 11691-11708
+sprites 11913-11930
+sprites 12245-12262
+sprites 13377-13379
+sprites 13409-13414
+sprites 14014-14016
+sprites 14341-14373
+sprites 14704-14736
+sprites 15067-15099
+sprites 15421-15424
+sprites 15846-15848
+sprites 16451-16457
+sprites 17773-19555
+sprites 19977-19982
+sprites 20582-20584
+sprites 20909-20941
+sprites 21272-21304
+sprites 21635-21667
+sprites 21989-21992
+sprites 22414-22419
+sprites 23022-23028
+sprites 24344-24347
+sprites 24769-24771
+sprites 24796-24813
+sprites 25018-25035
+sprites 25350-25367
+sprites 26482-26484
+sprites 26514-26519
+sprites 27119-27121
+sprites 27446-27478
+sprites 27809-27841
+sprites 28172-28204
+sprites 28526-28529
+sprites 28951-28953
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 2. Bytes of the front end objects that the port does not keep (no effect on any output: sprite list, tilemaps and sounds equal).
+enemy.r82      # +$82 of every pool A object is the pool tag 4, written by the allocator 0x4C48; the port's allocator does not
+               #   write it (0x9C76, the only code that could read it, never does: the thrower's table is never reached)
+enemy.dash_chk # class 17 (the two heroes of the ranking, 0x423A4): +$AC / +$AD hold 0xFF in the original, the port's class does not
+enemy.dash_kind#   keep these bytes (its own fields are elsewhere); nothing else reads them
+enemy.frame    # +$28 animation frame pointer: the port's objects start with a default pointer (a ROM address), the original's +$28
+prop.frame     #   is 0 until the object starts an animation. Seen in the objects that have no picture (pool B classes 89, 93, 94) and
+               #   in the first two records of a pool A class 100 object (the portrait of a profile card)
+effect.off_x   # class 0x20 (the clouds of the ranking, 0x96A7E): the speed (16.16 long at +$60 / +$62) is kept by the port in
+effect.owner60 #   `Effect::speed60`, which the trace does not map onto these two fields; the clouds move equal (sprite list equal)
+prop.mode      # one record (1999): the pool B scroll object class 94 of a profile card (the first run, where the task does two passes
+               #   in one frame, `profiles.rs` `profile_first_run`) is made in record 1998; the port has run its first update
+               #   (mode 0 to 2) one record before the original; live, sprites, tilemaps and the scroll shadows are equal in every record
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 3. The demos (the levels are incomplete until M10-03 to M10-05) and what they leave in RAM.
+#    The demos play Episode 2, 3, 8 and 5 (rows 1 to 4). The port has no class for most of the objects of these levels (the
+#    scripted walk-in of Episode 1 area 1, the car scene of Episodes 2 and 4, many enemies, props and effects), so the objects,
+#    the stage globals, the sprite list and the sound codes differ from the first frame of the level, and the random number
+#    generator, which the missing classes draw from, differs from 12 to 239 frames into each demo. `demo_report` (dino-rs,
+#    ignored test) lists the first record of each kind of difference per demo. Equal in every demo record: the attract state
+#    byte, the layer control, the title counter, the frame counters G.$0 and G.$4DA, the mode, the stage and the area, the
+#    system task variables, the setup (records A + 2 to A + 8) and the end (100 frozen frames, 16 fade steps, return in A + 1325).
+#    What the demo leaves in RAM stays there in both programs (the dead slots of the pools, the stage globals, the HUD state)
+#    until the next RAM clear (0x99F10), so the object and stage fields keep differing through the screens that follow.
+player.*  3343-29500   # the three player objects (the demo's heroes: position, state and timers differ; the leftover too)
+enemy.*   3343-29500   # pool A (the demo's enemies and bosses; the front end classes 98, 100, 17 .. are in the same pool: their
+prop.*    3343-29500   #   own fields are compared in the records 25-3342 above and their output in every record by the test)
+item.*    3343-29500
+effect.*  3343-29500
+global.alive         3343-29500   # world state of the stage setup and the level frame (G.$4F3 .. G.$7B4), of the HUD (G.$6B9C ..),
+global.alive_run     3343-29500   #   of the camera controllers (G.$740 ..) and of the object census: set by the demo's level
+global.attack_serial 3343-29500
+global.b4de          3343-29500
+global.b4fa          3343-29500
+global.b505          3343-29500
+global.car_mode      3343-29500
+global.cam2_mode     3343-29500
+global.cam2_state    3343-29500
+global.cam2_sub      3343-29500
+global.cam2_sx46     3343-29500
+global.cam2_sy48     3343-29500
+global.cam2_w14      3343-29500
+global.cam2_x5a      3343-29500
+global.cam2_y5c      3343-29500
+global.cam3_sx46     3343-29500
+global.event_idx     3343-29500
+global.event_x       3343-29500
+global.event_y       3343-29500
+global.flag70        3343-29500
+global.go            3343-29500
+global.hud_bar_start 3343-29500
+global.hud_delay     3343-29500
+global.hud_ring_r    3343-29500
+global.hud_ring_w    3343-29500
+global.hud_saved_id  3343-29500
+global.hud_timer     3343-29500
+global.hud_tracked   3343-29500
+global.hudcur_attr   3343-29500
+global.hudcur_id     3343-29500
+global.hudcur_kind   3343-29500
+global.hudcur_segs   3343-29500
+global.hudcur_segs_total 3343-29500
+global.item_count    3343-29500
+global.item_slot     3343-29500
+global.killer        3343-29500
+global.lock78        3343-29500
+global.max_x60       3343-29500
+global.max_y62       3343-29500
+global.min_x64       3343-29500
+global.min_y66       3343-29500
+global.no_clamp      3343-29500
+global.obst_slot     3343-29500
+global.push50        3343-29500
+global.scripted      3343-29500
+global.shake_req     3343-29500
+global.snd_toggle    3343-29500
+global.snd_toggle_b  3343-29500
+global.splash_phase  3343-29500
+global.splash_timer  3343-29500
+global.wave_timer    3343-29500
+global.cam3_x         3343-29500
+global.cam_x          3343-29500
+global.b4e3           3343-29500
+global.time_min       3343-29500
+global.time_sec       3343-29500
+global.obst_prev_count 3343-29500
+global.score_dirty    3343-29500
+global.score_dirty_p  3343-29500
+global.hud_step       3343-29500
+global.weapon_dirty   3343-29500
+global.hud_base       3343-29500
+global.hud_idx        3343-29500
+global.floor_base     3343-29500
+global.time_div       3343-29500
+global.spawn_init     3343-29500
+global.floor_only     3343-29500
+global.hud_blink      3343-29500
+global.hud_kind       3343-29500
+global.dizzy          3343-29500
+global.dizzy_prev     3343-29500
+global.b4d5           3343-29500
+global.b4db           3343-29500
+global.kill_all       3343-29500
+global.aggression     3343-29500
+global.level          3343-29500
+global.rank_freeze    3343-29500
+global.b7b2           3343-29500
+global.hudcur_extra   3343-29500
+# the random number state: it differs inside each demo (objects of unported classes draw numbers) and is set from the recording
+# in the record the demo returns (the four injections above), so it is equal from there on
+global.rng 3343-4667
+global.rng 9914-11238
+global.rng 16448-17772
+global.rng 23019-24343
+# the pictures of the demos: the level cells (scroll2, scroll3, the HUD of scroll1), the colours of the objects that are not
+# ported, the sprite list and the sound codes of the missing objects
+scroll1  3343-4667
+scroll2  3343-4667
+scroll3  3343-4667
+palette  3343-4667
+sprites  3343-4667
+sounds   3343-4667
+scroll1  9914-11238
+scroll2  9914-11238
+scroll3  9914-11238
+palette  9914-11238
+sprites  9914-11238
+sounds   9914-11238
+scroll1  16448-17772
+scroll2  16448-17772
+scroll3  16448-17772
+palette  16448-17772
+sprites  16448-17772
+sounds   16448-17772
+scroll1  23019-24343
+scroll2  23019-24343
+scroll3  23019-24343
+palette  23019-24343
+sprites  23019-24343
+sounds   23019-24343
+# the record the demo returns in and the next one: the clear 0xAE0 of the next screen is under way (sprites and scroll1 in the
+# first frame, scroll2 in the second, scroll3 in the third) and video memory still holds the demo's last picture, which differs
+scroll2  4668
+scroll3  4668-4669
+scroll2  11239
+scroll3  11239-11240
+scroll2  17773
+scroll3  17773-17774
+scroll2  24344
+scroll3  24344-24345
+palette  24344-24345   # the demo of Episode 5 is followed by the ranking, which loads its palettes in the third frame
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 4. Picture differences. Not rules of this file (diff.py compares records, and every record outside the demos is equal there); they
+#    are the frames where MAME's picture and the port's picture differ although the records are equal, listed with their causes.
+#    How they were found: 416 video frames of the loop (list: the two probe batches `re/out/probe/m115_loop` and `m115_loop2`, a
+#    `snaps` line, MAME headless) against the port's `--screenshot out.png --frames N` with N = frame - 1 and the poke file above,
+#    `re/harness/probe/shotdiff.py MAME_DIR PORT_DIR --clock f` (exit 1: the frames below). 369 frames are pixel exact: the boot, the
+#    title (every start of it after the first), the four profile cards (first and later runs, every card start), the ranking (every
+#    start after the first), every cut of the five story slides, and the opening movie, three runs of each in both loops.
+#    A picture is made from the tilemaps of the record, the palette of the record before, the scroll registers of the record two
+#    before and the sprite list built two records before (`present.rs`, `camera.rs`, `vram.rs`: the model that fits every normal frame).
+#    The original latches the palette and the video registers in the interrupt; where the CPU is still busy with a pass at that moment
+#    the picture is a frame ahead of or behind the model. All of these frames belong to the FIRST run of a routine after power on (the
+#    first boot, the first profile cards, the first ranking), which the records show running one frame ahead of the later runs; nothing
+#    else in the loop differs:
+#      video frames 322 and 2746 (records 320 and 2744, the first frame of the first title and of the title after the first ranking):
+#        MAME already shows the title's palette (the new colours), the port the palette of the record before
+#      935, 1280 and 1281 (records 933, 1278, 1279, the first run of the profile cards, two passes of the task in one frame): the
+#        sprites of the card (portrait and small hero) and one fade step appear a frame earlier in MAME
+#      2323, 2324 and 2325 (records 2321 to 2323, the start of the first ranking): the video registers did not change in the records 2319
+#        to 2321 in MAME (cpsa scroll3 Y stays 0x93E, the call needs about four frames of CPU time; the registers keep their value
+#        until record 2322), so MAME shows the old palette in 2323 and the scroll3 map shifted by 64 pixels in 2324 (no sky); the
+#        port, which latches every frame, shows the new colours. Tilemaps, palettes, shadows, sprite list: equal in every record
+#      2745 (record 2743, the last frame of the first ranking): the scroll registers are one frame different, a speckled desert
+#    Other differences, all known and not M1 code mistakes:
+#      12900 and 12910 (the shakes of the dinosaur in the movie; M1-11 found 12970, 12980, 13030 and 13040 too: the three shakes, 6
+#        of 106 pictures): `screen_shake` 0x222D6 is a stub until M3-10, the request is made but the scroll2 Y offset is not
+#        applied. Listed, not ported
+#      13380 (record 13378, the last clear of the movie): MAME's picture still shows stale scroll3 cells outside the window that the
+#        renderer hides (tile codes outside 0x1C00..0x1FFF), see D5-errata M1-10 and M1-11
+#      3346 to 4670, 9925 to 11200, 17000 to 17600, 23060 to 24200 (the demos): level content that is not complete, see 3.
