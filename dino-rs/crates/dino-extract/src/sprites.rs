@@ -48,6 +48,11 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x4200E, // class 15 flying pieces (0x41F2E)
     0x71F72, // class 98 title logo (0x6A21E): the "Cadillacs" / "Dinosaurs" letters
     0x71F9E, // class 100 profile card portraits and moves (0x6A608)
+    // The jungle of the opening movie (M1-10): the two hunters (class 11, variants 0 and 1, 0x3D974), the golden raptor
+    // (class 12, 0x3DC70), the puff of the hunter (class 57, 0x57DAA), the flock bird (class 46, 0x56598) and its feather (class 48, 0x5694A).
+    0x3DAF8, 0x3DB00, 0x3DD50, 0x57E0E, 0x5674E, 0x56A56,
+    // The brown dinosaur (class 30, 0x4FB24) and the two pieces of the big one (class 69, 0x5C2EC).
+    0x4FC22, 0x718C2,
     0x8B5E6, // pool B class 86, the Cadillac of the ranking screen (0x8B43C)
     0x42516, // pool A class 17, the two heroes in the Cadillac (0x423B8)
     // Pool E (items, phase 1 task 2). Containers 0x28C8A..0x28D1C, one table per variant.

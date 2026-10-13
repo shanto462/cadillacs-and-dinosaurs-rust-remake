@@ -17,6 +17,13 @@ mod class94;
 mod class86;
 #[path = "prop/class89.rs"]
 mod class89;
+// Pool B classes of the opening movie (M1-10, M1-11): the black bars (32).
+#[path = "prop/class32.rs"]
+mod class32;
+#[path = "prop/class66.rs"]
+mod class66;
+#[path = "prop/class72.rs"]
+mod class72;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -44,6 +51,9 @@ impl Game {
             let mut p = std::mem::take(&mut self.props.slots[i]);
             match p.b.k20 / 4 {
                 15 => self.prop_wave(&mut p, h, i),
+                32 => self.prop_class32(&mut p, i),
+                66 => self.prop_class66(&mut p, i),
+                72 => self.prop_class72(&mut p, i),
                 73 => self.prop_bird_spawner(&mut p, i),
                 86 => self.prop_class86(&mut p, i),
                 89 => self.prop_class89(&mut p, i),

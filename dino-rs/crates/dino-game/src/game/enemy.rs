@@ -20,6 +20,14 @@ mod class14_tests;
 mod class15;
 mod class98;
 mod class100;
+// The jungle of the opening movie (M1-10, M1-11): the hunters (11), the bird (46), its feather (48), the puff (57).
+mod class11;
+mod class12;
+mod class30;
+mod class69;
+mod class46;
+mod class48;
+mod class57;
 mod class17;
 mod class20;
 mod class20_ai;
@@ -170,17 +178,24 @@ impl Game {
             match e.b.k20 / 4 {
                 2 => self.enemy_class2(&mut e, h),
                 10 => self.enemy_class10(&mut e, h),
+                11 => self.enemy_class11(&mut e, h),
+                12 => self.enemy_class12(&mut e, h),
                 14 => self.enemy_class14(&mut e, h),
                 15 => self.enemy_class15(&mut e, h),
                 17 => self.enemy_class17(&mut e, h),
                 20 => self.enemy_class20(&mut e, h),
+                30 => self.enemy_class30(&mut e, h),
                 34 => self.enemy_class34(&mut e, h),
                 41 => self.enemy_class41(&mut e, h),
+                46 => self.enemy_class46(&mut e, h),
+                48 => self.enemy_class48(&mut e, h),
                 49 => self.enemy_class49(&mut e, h),
                 50 => self.enemy_class50(&mut e, h),
                 54 => self.enemy_class54(&mut e, h),
                 55 => self.enemy_class55(&mut e, h),
+                57 => self.enemy_class57(&mut e, h),
                 60 => self.enemy_class60(&mut e, h),
+                69 => self.enemy_class69(&mut e, h),
                 98 => self.enemy_class98(&mut e, h),
                 100 => self.enemy_class100(&mut e, h),
                 _ => self.enemy_class_unported(&mut e, h, i),
