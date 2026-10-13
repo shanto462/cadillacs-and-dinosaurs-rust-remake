@@ -21,7 +21,7 @@ compared with MAME and looked at in the running game before it is committed.
 | M | What the player gets | Agent hours (plan) | State |
 | --- | --- | --- | --- |
 | M0 | Every episode starts | 1.5 | Done (`f8e3c93`) |
-| M1 | Attract loop, exact from power on (boot, title, profiles, ranking, story slides, opening movie, demos) | 24 | In progress: M1-00 power-on references (codex), M1-01 / 02 front end services (Claude) |
+| M1 | Attract loop, exact from power on (boot, title, profiles, ranking, story slides, opening movie, demos) | 24 | Nearly done: every screen is real and matches MAME record by record (the demos as far as their levels exist); M1-15 acceptance left |
 | M2 | Coin, select, Episode 1 opening, clock and TIME OVER, join, continue, game over, name entry, tally, link scenes | 52 | Pending |
 | M3 | The whole game from power on to the ending, every transition and story scene, placeholder fights | 51 | Pending |
 | M4 | Sound: Z80 driver port, QSound mixer, cue wiring | 35 | Pending |
@@ -30,7 +30,7 @@ compared with MAME and looked at in the running game before it is committed.
 | M7 | Episodes 4 and 5 (Slice, Bludge, Zeke, Morgan / Morgue, the burning village) | 50 | Pending |
 | M8 | Episodes 6, 7 and 8 (the foot, the storm, Tyrog, the lift, Slisaurs, the tanks, Fessenden, the ending) | 66 | Pending |
 | M9 | Small things pass over `mechanics-seen.md` | 25 | Pending |
-| M10 | Exactness against MAME and finish | 58 | Pending |
+| M10 | Exactness against MAME and finish | 58 | Pending (all reference recordings exist: every episode with Jack, 3 players and the other heroes) |
 | | Total | 456 listed (about 610 expected) | |
 
 ## Done before the build plan
