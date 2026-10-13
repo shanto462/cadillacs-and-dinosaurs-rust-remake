@@ -21,8 +21,8 @@ compared with MAME and looked at in the running game before it is committed.
 | M | What the player gets | Agent hours (plan) | State |
 | --- | --- | --- | --- |
 | M0 | Every episode starts | 1.5 | Done (`f8e3c93`) |
-| M1 | Attract loop, exact from power on (boot, title, profiles, ranking, story slides, opening movie, demos) | 24 | Nearly done: every screen is real and matches MAME record by record (the demos as far as their levels exist); M1-15 acceptance left |
-| M2 | Coin, select, Episode 1 opening, clock and TIME OVER, join, continue, game over, name entry, tally, link scenes | 52 | Pending |
+| M1 | Attract loop, exact from power on (boot, title, profiles, ranking, story slides, opening movie, demos) | 24 | Done (2026-10-13): two full loops from power on equal MAME outside the demos; the demos match as far as their levels exist |
+| M2 | Coin, select, Episode 1 opening, clock and TIME OVER, join, continue, game over, name entry, tally, link scenes | 52 | In progress |
 | M3 | The whole game from power on to the ending, every transition and story scene, placeholder fights | 51 | Pending |
 | M4 | Sound: Z80 driver port, QSound mixer, cue wiring | 35 | Pending |
 | M5 | Episode 1 for real | 37 | Pending (part done in the old phase 1: terrain, items, weapons, grabs, classes 2, 10, 14, 20) |
