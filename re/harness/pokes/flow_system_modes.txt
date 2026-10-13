@@ -1,0 +1,49 @@
+# Timed writes by segment: frame hexaddr size value. See README.
+# G.$46C (FF846C) 2 coin start, G.$470 / G.$471 (FF8470) coins per credit and credits per coin, G.$472 (FF8472) one chute,
+# G.$474 (FF8474) two players on one chute, G.$4CF (FF84CF) the 2 player layout, G.$46B (FF846B) free play.
+
+segment m-common
+100 FF8472 1 1
+
+segment m-two-player
+100 FF8472 1 1
+100 FF8474 1 1
+100 FF84CF 1 1
+
+segment m-2coins
+100 FF8470 2 513
+
+segment m-1coin2credits
+100 FF8470 2 258
+
+segment m-1coin6credits
+100 FF8470 2 262
+
+segment m-3coins
+100 FF8470 2 769
+
+segment m-common-2coins
+100 FF8472 1 1
+100 FF8470 2 513
+
+segment m-mode8
+100 FF846C 1 1
+100 FF8470 2 257
+
+segment m-mode8-common
+100 FF846C 1 1
+100 FF8470 2 257
+100 FF8472 1 1
+
+segment m-mode8-two-player
+100 FF846C 1 1
+100 FF8470 2 257
+100 FF8472 1 1
+100 FF8474 1 1
+100 FF84CF 1 1
+
+segment m-free-coin
+100 FF846B 1 1
+
+segment m-cap
+100 FF8470 2 513

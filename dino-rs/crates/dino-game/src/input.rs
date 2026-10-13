@@ -1,13 +1,14 @@
 //! Input: keyboard, gamepads and scripted input, cooked into the original's active-high bytes.
 //!
 //! * Players (G.$16 / $17 / $18): 1 right, 2 left, 4 down, 8 up, 0x10 attack, 0x20 jump.
-//! * System (G.$1A, cooked by the vblank input code 0x738): bit0..2 start 1..3.
+//! * System (G.$1A, cooked by the vblank input code 0x738): bit0..2 start 1..3, bit 7 SERVICE (adds a credit for every
+//!   player, the system task 0x9D326). Bit 6 is the TEST button of the original (it leaves for the test menu): not mapped.
 //! * Coins (G.$20): bit0..2 coin slot 1..3.
 //!
 //! Keyboard (player 1 only; Ctrl and Alt are not used, they clash with system shortcuts):
 //! * Move: arrows or W A S D.
 //! * Attack: J or Z. Jump: K or X.
-//! * Start 1/2/3: keys 1/2/3 (Enter also starts player 1). Coin 1/2/3: keys 5/6/7.
+//! * Start 1/2/3: keys 1/2/3 (Enter also starts player 1). Coin 1/2/3: keys 5/6/7. SERVICE: key 9 (MAME's key for it too).
 //! * F1: hit box overlay (debug).
 //!
 //! Players 2 and 3 use gamepads. Gamepads: the first three pads drive players 1-3. D-pad or left stick moves, South (A / Cross)
@@ -15,7 +16,8 @@
 //!
 //! Script (`--input`): `start-end:KEYS,...` per frame, KEYS from U D L R A J, plus S (start)
 //! and C (coin). Keys go to player 1; the digits 1, 2, 3 select the player for the keys that
-//! follow (`0-9:R2L3AS` = P1 right, P2 left, P3 attack and start 3). Example:
+//! follow (`0-9:R2L3AS` = P1 right, P2 left, P3 attack and start 3); V is SERVICE (port only: MAME's `re/harness` scripts have
+//! no such key). Example:
 //! `--input 0-40:R,41-45:A,46-50:,51-55:A`. `--input-file PATH` reads the same format from a
 //! file, where new lines also separate segments and `#` starts a comment (the harness scripts
 //! in `re/harness/scripts/` use it; MAME's `re/harness/record.lua` reads the same format).
@@ -29,6 +31,8 @@ pub const DOWN: u8 = 4;
 pub const UP: u8 = 8;
 pub const ATTACK: u8 = 0x10;
 pub const JUMP: u8 = 0x20;
+/// G.$1A bit 7: the SERVICE button.
+pub const SERVICE: u8 = 0x80;
 
 /// One frame of cooked input.
 #[derive(Clone, Copy, Debug, Default)]
@@ -65,6 +69,7 @@ impl Script {
                     'J' => f.players[p] |= JUMP,
                     'S' => f.system |= 1 << p,
                     'C' => f.coins |= 1 << p,
+                    'V' => f.system |= SERVICE,
                     _ => {}
                 }
             }
@@ -128,7 +133,7 @@ impl Inputs {
                 0,
                 0,
             ],
-            system: keys(&[(Key1, 1), (Enter, 1), (Key2, 2), (Key3, 4)]),
+            system: keys(&[(Key1, 1), (Enter, 1), (Key2, 2), (Key3, 4), (Key9, SERVICE)]),
             coins: keys(&[(Key5, 1), (Key6, 2), (Key7, 4)]),
         };
         if let Some(g) = &mut self.gilrs {
@@ -161,6 +166,9 @@ impl Inputs {
                 if pad.is_pressed(Button::Select) {
                     f.coins |= 1 << slot;
                 }
+                if pad.is_pressed(Button::Mode) {
+                    f.system |= SERVICE;
+                }
             }
         }
         // The cabinet cannot press left+right or up+down at once; the game never sees it.
@@ -182,11 +190,13 @@ mod tests {
 
     #[test]
     fn script_players_and_comments() {
-        let s = Script::parse("0-9:R2L3AS # comment\n10:C,\n 12-13:J");
+        let s = Script::parse("0-9:R2L3AS # comment\n10:C,\n 12-13:J,\n20-21:V");
         let f = s.at(5);
         assert_eq!(f.players, [RIGHT, LEFT, ATTACK]);
         assert_eq!(f.system, 4);
         assert_eq!(s.at(10).coins, 1);
+        assert_eq!(s.at(20).system, SERVICE);
+        assert_eq!(s.at(22).system, 0);
         assert_eq!(s.at(12).players[0], JUMP);
         assert_eq!(s.at(11).players, [0, 0, 0]);
     }

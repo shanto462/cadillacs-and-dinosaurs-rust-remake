@@ -31,8 +31,8 @@ pub struct Rank {
     pub freeze: u16,
     /// G.$4F6 frames waited at the title with credits (written by the system task 0x1827A).
     pub w4f6: u16,
-    /// G.$777B difficulty setting: bits 0-2 difficulty 0..7, bits 3-4 initial rank speed.
-    /// [U] the DIP/test-menu source; 3 = "normal" assumed (MAME default DSW-B, inverted).
+    /// G.$777B: bits 0-2 difficulty 0..7, bits 3-4 timer level (rank speed = level + 1). The settings file
+    /// `dino.cfg` (`flow/config.rs`, cooked by 0xAC794) is the source: the game start copies `Flow::dip.dip_b` here.
     pub dip: u8,
     /// G.$7B4 selects the second aggression table (0x18364).
     pub b7b4: u8,
@@ -164,7 +164,7 @@ impl Game {
         if !self.rank.started {
             // TEMP until the flow port calls these at game start / stage start (0x17F8A, 0x1800E).
             self.rank.started = true;
-            self.rank.dip = 3;
+            self.rank.dip = self.flow.dip.dip_b;
             self.rank_game_start();
             self.rank_stage_start();
             self.rank_time_area_start();

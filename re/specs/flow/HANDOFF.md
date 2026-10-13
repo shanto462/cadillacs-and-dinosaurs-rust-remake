@@ -11,8 +11,8 @@
 
 ## Stubbed (TODO(port) in code)
 - `flow/front.rs`: character select (mode 4 starts the stage at once with Jack, Mustapha, Hannah for the
-  players that pressed start; M2-03). The system task is ported without the credit text, SERVICE and the
-  outputs (M2-02); the attract loop, title and press start screen are done (`boot.rs`, `attract.rs`).
+  players that pressed start; M2-03). The system task is `flow/system.rs` (M2-02, complete); the attract loop,
+  title and press start screen are done (`boot.rs`, `attract.rs`).
 - `flow/join.rs`: join / continue task 0x6C4A, continue mode 0x10 (currently game over).
 - Clear task 0xB97E tally (waits 120 frames), intro states 0-2 (map, EPISODE title), mode 8
   cut-scenes, ending 0x1C, weapon display 0x2389C (needs player +$B4/+$B6).
@@ -45,7 +45,8 @@ sections 2 and 3). Everything below is in `dino-rs/crates/dino-game/src/game/flo
 | `scene.rs` | `Scene`: one task of the original as a state machine (state byte, sub state, free counter, kernel sleep counter) | task kernel 0x95A, 0xA76 .. 0xA8C, 0x9FA, 0x9E38C (skip-wait) |
 | `text.rs` | string printers and the typewriter | 0xBB6 / 0xBAE, 0xC4C / 0xC44, 0xC9A, 0xCD2 / 0xCE4 / 0xCDA, 0x84F72, 0xE12 / 0xE0A, 0xE68, 0x84736 (+ 0x84E0C), 0x7EC20 / 0x7EC48 (0xC0A is `hud_print`, already in `hud.rs`) |
 | `picture.rs` | page loaders, block printers, scene palette sets | 0x20454, 0x204CA, 0x20592, 0x98B86, 0x98BAE, 0x89E6 |
-| `config.rs` | the settings file (`Config` named options, `Settings` = the three cooked bytes G.$777A..C) | 0xAC794 / 0xAC7BC (cooking), factory image 0xACBF4 |
+| `config.rs` | the settings file `dino.cfg` (`Config` named options, `Settings` = the three cooked bytes G.$777A..C) | 0xAC794 / 0xAC7BC (cooking), factory image 0xACBF4 |
+| `system.rs` | the system task: coin interrupt code, coins and credits, all coin and chute modes, free play, SERVICE, lockout and counter outputs, credit text and prompts, the start of a game (M2-02) | 0x9D048 .. 0x9D8EE, 0x9D4BE, 0x9CFC6 |
 | `attract.rs` | the attract state byte, the routines of its states, the stub screens (M1-04) | 0x97C46, 0x97C94, 0x97D84, 0x97CC0, 0x97D02, 0x983D8 |
 | `boot.rs` | power on to the title: the boot task, the boot screens, the head of the attract task, the title, the INSERT COIN blink task, the press start screen (M1-03) | 0xA69A, 0x9DCF6, 0x9DD80, 0x97C20, 0x97D84 (head), 0x9A3CE, 0x98874, 0x983EE, 0x978EE, 0x980B0, 0x110C |
 | `mame_check.rs` | tests that compare the above with the MAME recordings (see "Checks") | |
@@ -123,7 +124,7 @@ row +4). Strings come from the ROM tables as byte slices:
 ## Settings and sound
 
 * `Config` (named options, defaults = factory) -> `Config::cook()` -> `Settings` (G.$777A / B / C).
-  `main.rs` reads the file (`--config`, `$DINO_CONFIG`, `dino-config.json`, `../dino-config.json`) and calls
+  `main.rs` reads the file (`--config`, `$DINO_CONFIG`, `dino.cfg` next to the ROM, `./dino.cfg`, `../dino.cfg`; plain `key = value` lines, see "M2-01 and M2-02" below) and calls
   `game.flow_apply_config(config)` before the start; `--print-config` prints the factory file. The rank code
   reads `flow.dip.dip_b` (set into `rank.dip` by `flow_mode_init`). Readers for T1.8 / T2.1: `flow.dip.free_play()`,
   `coin_mode()`, `chute_mode()`, `continue_allowed()`, `demo_sound()` ...
@@ -216,7 +217,7 @@ script), `boot_skip_a` / `boot_skip_b` (340 records, `98-101:A` and `228-231:2J`
   task is staged like the original's (sprites and scroll1, scroll2 a frame later, scroll3 one more):
   `flow_attract_clear`; the script waits 2 frames after it (`flow_attract_busy`). Waits longer than 255 frames are
   chained sleeps (`flow_attract_wait`: the kernel sleep byte holds 255).
-* `flow/front.rs`: the system task 0x9D048 and the coin interrupt code 0x9D4BE (`flow_coin_isr`, run by `flow_frame`
+* (moved to `flow/system.rs` by M2-02, see the last section) the system task 0x9D048 and the coin interrupt code 0x9D4BE (`flow_coin_isr`, run by `flow_frame`
   before the tasks; the port gets coins in `Game::w.coins` and start buttons in `w.system`, G.$1A bits 0 to 2): the
   debounce (two frames high and two low), the conversion with all coin modes (table 0x9D038, `flow_sys_init` = 0x9CFC6),
   the three chute modes, free play, the press start screen when a coin or credit is there, the start detection
@@ -364,3 +365,59 @@ scroll shadows, G.$14). `re/harness/allow/m1.txt` lists every remaining differen
 content until M10, single-frame picture latch differences in the first run, the movie shake until M3-10). The press
 start call now takes 3 staged frames like the original; `write_cell3` writes the hidden scroll3 cells too (the
 earlier "not done" note is obsolete). 369 of 416 compared video frames are pixel exact.
+
+## M2-01 and M2-02: the settings file and the complete system task (2026-10-13)
+
+**Settings file (M2-01).** `config.rs` reads `dino.cfg` (git-ignored; the JSON file `dino-config.json` of M1-01 is gone): one `key = value` per
+line, `#` starts a comment, flags are on / off (also true / false, yes / no, 1 / 0), keys in any case. Keys and factory values: `coin_mode = 0`
+(0 to 8), `chute_mode = 0` (0 to 2), `free_play = off`, `continue_allowed = on`, `demo_sound = off`, `stereo = on`, `difficulty = 3` (0 to 7),
+`timer_level = 1` (0 to 3), `bonus_life = 2` (0 to 3: none, 300000 / 700000, 500000 / 1000000, 1000000), `start_lives = 1` (0 to 3). A missing file
+or key is the factory value; an unknown or repeated key, a value out of range or a line without `=` is an error that names the line.
+`dino-game --print-config` prints the factory file with the meaning of each key. Lookup: `--config`, `$DINO_CONFIG`, then next to the ROM
+(`--rom`, `$DINO_ROM`), `./dino.cfg`, `../dino.cfg`. The cooked bytes (0x80, 0x4B, 0x41 for the factory file) feed `Flow::dip` (boot task, frame
+68), `rank.dip` (`flow_mode_init`, the start rank and the rank speed), the extra life table 0x6BFE (`Flow::extend_sel`), the lives
+(`flow_lives_init`), the sound filter (`snd_heard`) and the system task. Tests: `config.rs` (the default file gives dip_b 0x4B and the entry 2 of
+0x6BFE, 500000 then 1000000; `difficulty = 0 / 3 / 7` gives start ranks easy < normal < hard in `rank_game_start`).
+
+**System task (M2-02).** `flow/system.rs` is 0x9D048 to 0x9D8EE with the coin interrupt 0x9D4BE and the set-up 0x9CFC6; the minimal task of
+M1-04 is gone from `front.rs` (which keeps the state `Front` and the select stub). One pass per frame in the original's order: SERVICE with
+the conversion (0x9D326 / 0x9D386), the coin lockout bits of G.$21 (0x9D40E: 4, 8, 0x20 per player, 0x2C for the pool, off at the cap or in free
+play), the coin counter pulse (0x9D478: G.$46E / G.$46F, bit 0 of G.$21 for 0x20 frames), the attract part 0x9D074 (the press start screen when a
+coin or credit is there, the clear of the text rectangle, the credit text 0x9D66A, the prompts 0x9D752, the start detection 0x9D196, the game
+start), the wait counter 0x1827A. All eight coin presets come from the table 0x9D038 (`FRONT_TABLES`), coin mode 8 is the flag G.$46C; the chute
+modes are separate credits, the common pool (G.$472) and two players on one chute (G.$474 and the layout flag G.$4CF, set as 0x9CFF6 does; the
+2 player layouts of the HUD, select and demo teams were never measured and are not touched). Free play: no press start screen, no credit text, a
+start needs nothing. Credit cap 9. SERVICE (G.$1A bit 7, key 9 or `V` in an input script, a press only) adds a credit to every player (the pool
+with one chute) at any time and plays the coin sound (without the sound stop that a coin makes). Not ported: the TEST button (0x9D5A4) and the
+play time statistics 0xA6B8A (nothing visible; the test menu is out of scope).
+
+* **What the screen shows** (strings read from the ROM at run time, `FRONT_TABLES` 0x9D984 now runs to its last string, and 0x9D666 is the 4 byte
+  rectangle 0xF94 clears: columns 0 to 47, page rows 15 to 28). Separate chutes: a tall font prompt per player at 0x90A050 / 0x90A850 / 0x90B0D0
+  (PUSH START BUTTON with a credit, INSERT COIN without, INSERT ADDITIONAL COIN and the line `nCOIN 1CREDIT` at +0x14 while coins wait) and the
+  credit line at 0x90A0F0 / 0x90A8F0 / 0x90B0F0 (`CREDIT n`, `CREDIT n (c/2)` with 2 or more coins per credit, `COIN n` in coin mode 8; the
+  digits are raw tile codes 0 to 9, code 0 is blank, so 0 credits show no digit; at 9 credits the pending coins show as blank). One chute: the big
+  font lines in the middle (INSERT ADDITIONAL COIN and `nCOIN 1CREDIT`, PUSH START BUTTON with ONLY ONE PLAYER / UP TO TWO / UP TO THREE
+  PLAYERS and the player mark; in coin mode 8 players = credits / 2 and, while an odd credit is left and fewer than 3 players (2 on the two player
+  cabinet) are possible, "AND INSERT ADDITIONAL COIN(S) FOR ADDITIONAL PLAYER(S)") and one credit line in the middle column.
+* **Quirk kept:** the start edge is any change of the start button (G.$1A xor G.$1F), the release counts like the press.
+* **After the game task is created** (617 in `flow_c-three-start`) the first pass of the system task runs and the next two are lost (the first run
+  of the game task takes the CPU for about 3 frames): `sst::AFTER`. Seen in the coin counter timer G.$46F.
+* **Checks** (`mame_check.rs`, all equal to MAME in every record, the three layers, palettes, sprite list, layer control, sounds and 22 watched
+  variables of the system task including all credits, coins, G.$21, G.$46E / G.$46F): `coin_and_start_match_mame` (A10, now with the scroll1 credit
+  text), `credits_of_all_players_match_mame` (`flow_c-two`, `flow_c-three-start`, `flow_c-title-coinhold`), `coin_and_chute_modes_match_mame`
+  (12 new segments `flow_system_modes`, see below), `free_play_start_matches_mame` (A12), `start_without_credit_does_nothing` (A11),
+  `wait_counter_matches_mame`, `coin_during_the_demo_matches_mame`, `start_during_the_demo_goes_to_select`. The exclusions of scroll1 that M1 had for
+  the credit text are removed (`re/harness/allow/m1.txt` listed none: the M1 loop has no coin).
+* **New recordings** `re/harness/scripts/flow_system_modes.txt` + `re/harness/pokes/flow_system_modes.txt` (12 segments, one MAME process, 14 s):
+  `re/harness/record.sh --batch re/harness/scripts/flow_system_modes.txt flow_system_modes re/harness/pokes/flow_system_modes.txt`. MAME has no switch
+  for the coin and chute modes, so the segments poke the system task variables at power frame 100 (G.$46C, G.$470 / G.$471 as a word, G.$472,
+  G.$474, G.$4CF, G.$46B): m-common, m-two-player, m-2coins, m-1coin2credits, m-1coin6credits, m-3coins, m-common-2coins, m-mode8, m-mode8-common,
+  m-mode8-two-player, m-free-coin, m-cap. The port test takes both files and applies the same writes at tick 99.
+* **Known differences (CPU time, not rules):** with one chute a pass of the system task is shorter, so in `m-common`, `m-two-player`,
+  `m-common-2coins`, `m-mode8-common`, `m-mode8-two-player` the video frame boundary falls elsewhere in the code that follows: record 319 has 6
+  more scroll2 cells of the title's first frame in MAME, record 460 (the first frame of the press start call) cuts the brightness loop 38 or 44
+  palette words away from the measured factory cut, and record 462 shows the press start task's first sprite list a frame earlier (19 sprites).
+  Coin ratios other than 1 : 1 move the cut of record 460 by 4 words (`m-2coins`, `m-3coins`, `m-cap`). `flow_c-title-coinhold` has 3 palette words
+  different in record 483 for the same reason (a coin 25 frames later in the title than A10). Not tested against MAME: SERVICE (the probe has no
+  key for it; logic from the code, unit tests, and the end to end test that it brings the screen of three coins).
+* **Input:** `input.rs` maps key 9 (and the gamepad Mode button) to SERVICE, `V` in scripts; TEST (bit 6) stays unmapped.

@@ -8,8 +8,8 @@
 //!         [--poke FRAME:ADDR:SIZE:VALUE]... [--poke-file FILE]... [--poke-clock power|game]`
 //! Without `--stage` and `--chars` the game starts from power on (the boot screens and the attract
 //! mode); `--stage N` / `--chars` start directly in a stage (development).
-//! `--config FILE` reads the settings (difficulty, coin mode, free play ...; see `game/flow/config.rs`),
-//! `--print-config` prints the factory settings file.
+//! `--config FILE` reads the settings file (`key = value` lines: difficulty, coin mode, free play ...; without the
+//! option `dino.cfg` next to the ROM is read, see `game/flow/config.rs`), `--print-config` prints the factory settings file.
 //! `--poke` / `--poke-file` write RAM values into the running game at a frame (the lines of MAME's
 //! `DINO_POKES`: `frame hexaddr size value`, power frames unless `--poke-clock game`; see
 //! `harness.rs`, `PokeSet`). An address the port has no field for is an error.
@@ -132,7 +132,7 @@ fn load_assets(load_state: Option<&str>, step_from: Option<&str>) -> &'static di
     }
 }
 
-/// The settings file (`--config`, `$DINO_CONFIG`, `./dino-config.json`; none = factory values).
+/// The settings file (`--config`, `$DINO_CONFIG`, `dino.cfg` next to the ROM; none = factory values), see `game/flow/config.rs`.
 fn load_config(path: Option<&str>) -> game::flow::Config {
     game::flow::Config::locate(path).unwrap_or_else(|e| {
         eprintln!("error: {e}");
@@ -142,7 +142,7 @@ fn load_config(path: Option<&str>) -> game::flow::Config {
 
 fn main() {
     if std::env::args().any(|a| a == "--print-config") {
-        print!("{}", game::flow::Config::default().to_json());
+        print!("{}", game::flow::Config::default().to_text());
         return;
     }
     let args = args();

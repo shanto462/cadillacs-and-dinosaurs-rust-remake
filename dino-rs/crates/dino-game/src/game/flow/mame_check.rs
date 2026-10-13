@@ -159,7 +159,20 @@ fn system_fields(g: &Game, ram: &[u8]) -> Vec<(&'static str, u16, u16)> {
     [
         ("coins P1 (G.$47B)", b(0xFF847B), s.slots[0].coins as u16),
         ("credits P1 (G.$47D)", b(0xFF847D), s.slots[0].credits as u16),
+        ("coins P2 (G.$48B)", b(0xFF848B), s.slots[1].coins as u16),
+        ("credits P2 (G.$48D)", b(0xFF848D), s.slots[1].credits as u16),
+        ("coins P3 (G.$49B)", b(0xFF849B), s.slots[2].coins as u16),
+        ("credits P3 (G.$49D)", b(0xFF849D), s.slots[2].credits as u16),
+        ("coins before P1 (G.$47E)", b(0xFF847E), s.slots[0].prev as u16),
         ("credits pool (G.$46A)", b(0xFF846A), s.credits as u16),
+        ("coins pool (G.$475)", b(0xFF8475), s.common_coins as u16),
+        ("coins pool before (G.$476)", b(0xFF8476), s.common_prev as u16),
+        ("coin counter pulses (G.$46E)", b(0xFF846E), s.pulse as u16),
+        ("coin counter timer (G.$46F)", b(0xFF846F), s.pulse_timer as u16),
+        ("coin outputs (G.$21)", b(0xFF8021), s.outputs as u16),
+        ("redraw credit text (G.$473)", b(0xFF8473), s.redraw as u16),
+        // the join task of a game (0x6D4A, not ported before M2-04) counts it, so it is compared outside a game only
+        ("prompt hold (G.$477)", if b(0xFF84CC) == 0 { b(0xFF8477) } else { s.hold as u16 }, s.hold as u16),
         ("press start up (G.$46D)", b(0xFF846D), s.press_up as u16),
         ("in game (G.$4CC)", b(0xFF84CC), g.flow.in_game as u16),
         ("started (G.$4CD)", b(0xFF84CD), g.flow.started as u16),
@@ -1192,8 +1205,9 @@ fn flow_trace(name: &str) -> Option<String> {
 /// A10, a coin at video frame 450 to 457 and a start at 600 to 605 (`flow_c-title`, script lines
 /// `450-457:C` and `600-605:S`): the coin is accepted when the signal has been high for two frames and low
 /// for two (record 458), the credit, the sounds 0xFF00 and 0x30, the press start screen (G.$46D =
-/// 0xFF) and its picture (scroll2, scroll3, palettes, sprite list, layer control: scroll1 holds the
-/// prompts of the system task, M2-02) equal the recording from the frame its task first runs; the
+/// 0xFF) and its whole picture (scroll1 with the credit lines and the prompts of the system task from record 461, scroll2,
+/// scroll3, palettes, sprite list, layer control) equal the recording in every record from the call (458 to 460 are the three
+/// frames of the call 0x983EE) to the start; the
 /// start (record 599) takes the credit, sets G.$4CC and G.$4CD, queues 0x31, fades out for 16 frames
 /// (the fade mask clears at 614), the game task is created at 617 (G.$4D5 = 1, G.$46D = 0) and its mode
 /// becomes 4 (the select) at 621. Every watched variable of `system_fields` equals up to then.
@@ -1211,19 +1225,225 @@ fn coin_and_start_match_mame() {
             bad.push(format!("record {k}: {:?} sounds {:?} state {:?} counter {:?}", d.sys, d.sounds, d.state, d.counter));
         }
         // 458 to 460 are the three frames of the call 0x983EE (the clear, the palette load, the brightness loop cut by the frame
-        // boundary): equal in everything; from 461 scroll1 holds the credit text of the system task (M2-02)
-        let picture = if k < 461 {
-            d.s1 + d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some()
-        } else if k >= 461 && k < 599 {
-            d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some()
-        } else {
-            false
-        };
+        // boundary): equal in everything; from 461 scroll1 holds the credit text of the system task (M2-02): equal too
+        let picture = if k < 599 { d.s1 + d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some() } else { false };
         if picture {
             bad.push(format!("record {k}: picture {d:?}"));
         }
     }
     assert!(bad.is_empty(), "{} problems, first: {:?}", bad.len(), &bad[..bad.len().min(4)]);
+}
+
+/// The coin and start inputs of a flow recording: `ranges` are (player 1 to 3, first, last) in script lines, which reach the
+/// port one tick earlier (`flow_trace`); the bits of the players whose range holds the tick.
+fn script_bits(ranges: &[(u8, i32, i32)], tick: i32) -> u8 {
+    ranges.iter().filter(|(_, a, b)| (a - 1..=b - 1).contains(&tick)).fold(0, |m, (p, _, _)| m | 1 << (p - 1))
+}
+
+/// The records of a flow with coins and starts that differ from the recording: every variable of the system task, the sound codes,
+/// the state byte and the title counter in the records `25..=vars_to`, the whole picture (the three layers, the palettes, the
+/// sprite list, the layer control) in the records `25..picture_to` except `skip_palette` (record numbers).
+fn coin_flow_problems(
+    a: &'static AssetPack,
+    name: &str,
+    coins: &[(u8, i32, i32)],
+    starts: &[(u8, i32, i32)],
+    vars_to: i32,
+    picture_to: usize,
+    skip_palette: &[usize],
+) -> Option<Vec<String>> {
+    let trace = flow_trace(name)?;
+    let (_, rows) = compare_power_on(a, &trace, vars_to, |_| [0; 3], |k, g| {
+        g.w.coins = script_bits(coins, k);
+        g.w.system = 8 | script_bits(starts, k);
+    });
+    let mut bad = Vec::new();
+    for (k, d) in rows.iter().enumerate().skip(25) {
+        if !d.sys.is_empty() || d.sounds.is_some() || d.state.is_some() || d.counter.is_some() {
+            bad.push(format!("record {k}: {:?} sounds {:?} state {:?} counter {:?}", d.sys, d.sounds, d.state, d.counter));
+        }
+        let pal = if skip_palette.contains(&k) { 0 } else { d.pal };
+        if k < picture_to && (d.s1 + d.s2 + d.s3 + pal > 0 || d.sprites.is_some() || d.layer.is_some()) {
+            bad.push(format!("record {k}: picture {d:?}"));
+        }
+    }
+    Some(bad)
+}
+
+/// M2-02, the credit text and the prompts of the press start screen for several players (the factory settings: three chutes, one
+/// coin one credit): `flow_c-two` (a coin of player 1 at 450 to 457 and of player 2 at 500 to 507: each credit line and each prompt
+/// changes in the column of its player), `flow_c-three-start` (a third coin at 550 to 557, then a start of player 1 at 600:
+/// the credits of players 2 and 3 stay in their columns until the start) and `flow_c-title-coinhold` (the coin held for 31 frames:
+/// it counts when it is let go, record 483). Every record equals the recording in the three layers, the palettes, the sprite
+/// list and all the variables of the system task, up to the start (the select that follows is a stub until M2-03).
+/// Known difference: the first call frame of `c-title-coinhold` (record 483, a coin 25 frames later in the title than A10): the
+/// brightness loop of the call is cut by the video frame boundary three words earlier or later than in the measured cases
+/// (`PRESS_CALL_CUT`, 154 words, for a coin at 458), 3 palette words of one record.
+#[test]
+fn credits_of_all_players_match_mame() {
+    let Some(a) = assets() else { return };
+    let c = |p, a, b| (p, a, b);
+    if let Some(bad) = coin_flow_problems(a, "c-two", &[c(1, 450, 457), c(2, 500, 507)], &[], 900, 900, &[]) {
+        assert!(bad.is_empty(), "c-two: {} problems, first: {:?}", bad.len(), &bad[..bad.len().min(3)]);
+    }
+    if let Some(bad) = coin_flow_problems(a, "c-three-start", &[c(1, 450, 457), c(2, 500, 507), c(3, 550, 557)], &[c(1, 600, 605)], 621, 599, &[]) {
+        assert!(bad.is_empty(), "c-three-start: {} problems, first: {:?}", bad.len(), &bad[..bad.len().min(3)]);
+    }
+    if let Some(bad) = coin_flow_problems(a, "c-title-coinhold", &[c(1, 450, 480)], &[], 1400, 1400, &[483]) {
+        assert!(bad.is_empty(), "c-title-coinhold: {} problems, first: {:?}", bad.len(), &bad[..bad.len().min(3)]);
+    }
+}
+
+/// The segments of the scenario file `re/harness/scripts/flow_system_modes.txt` (M2-02) with their pokes
+/// (`re/harness/pokes/flow_system_modes.txt`): (name, frames, coin ranges, start ranges, pokes (address, size, value)). The ranges are
+/// (player 1 to 3, first, last) of the script lines.
+type ModeSegment = (String, i32, Vec<(u8, i32, i32)>, Vec<(u8, i32, i32)>, Vec<(u32, u8, u32)>);
+
+fn mode_segments() -> Option<Vec<ModeSegment>> {
+    let script = std::fs::read_to_string("../../../re/harness/scripts/flow_system_modes.txt").ok()?;
+    let pokes = std::fs::read_to_string("../../../re/harness/pokes/flow_system_modes.txt").ok()?;
+    let mut out: Vec<ModeSegment> = Vec::new();
+    for line in script.lines().map(|l| l.split('#').next().unwrap().trim()).filter(|l| !l.is_empty()) {
+        if let Some(name) = line.strip_prefix("segment ") {
+            out.push((name.trim().to_string(), 0, vec![], vec![], vec![]));
+        } else if let Some(n) = line.strip_prefix("frames ") {
+            out.last_mut()?.1 = n.trim().parse().ok()?;
+        } else {
+            let (range, keys) = line.split_once(':')?;
+            let (a, b) = range.split_once('-')?;
+            let (a, b): (i32, i32) = (a.parse().ok()?, b.parse().ok()?);
+            let (player, key) = match keys.len() {
+                1 => (1u8, keys),
+                2 => (keys[..1].parse().ok()?, &keys[1..]),
+                _ => return None,
+            };
+            let seg = out.last_mut()?;
+            if key == "C" { seg.2.push((player, a, b)) } else { seg.3.push((player, a, b)) }
+        }
+    }
+    let mut current = String::new();
+    for line in pokes.lines().map(|l| l.split('#').next().unwrap().trim()).filter(|l| !l.is_empty()) {
+        if let Some(name) = line.strip_prefix("segment ") {
+            current = name.trim().to_string();
+        } else {
+            let f: Vec<&str> = line.split_whitespace().collect();
+            let poke = (u32::from_str_radix(f[1], 16).ok()?, f[2].parse().ok()?, f[3].parse().ok()?);
+            out.iter_mut().find(|s| s.0 == current)?.4.push(poke);
+        }
+    }
+    Some(out)
+}
+
+/// The writes of a poke into the system task variables (G.$46B free play, G.$46C 2 coin start, G.$470 / G.$471 the ratio as a word,
+/// G.$472 one chute, G.$474 two players on one chute, G.$4CF the 2 player layout).
+fn apply_mode_poke(g: &mut Game, (addr, _size, value): (u32, u8, u32)) {
+    let s = &mut g.flow.front.sys;
+    match addr {
+        0xFF846B => s.free_play = value != 0,
+        0xFF846C => s.two_coin_start = value != 0,
+        0xFF8470 => (s.coins_per_credit, s.credits_per_coin) = ((value >> 8) as u8, value as u8),
+        0xFF8472 => s.common = value != 0,
+        0xFF8474 => s.two_player = value != 0,
+        0xFF84CF => g.flow.b4cf = value as u8,
+        _ => panic!("no field for the poke at {addr:X}"),
+    }
+}
+
+/// Runs a segment of `flow_system_modes` against its recording: the records `25..` equal in the whole picture and in all the variables of
+/// the system task up to the start (the picture) and the select that follows it (the variables), or to the end without a start.
+/// Returns the problems and the number of records compared.
+fn mode_problems(a: &'static AssetPack, seg: &ModeSegment, detail: bool) -> Option<(Vec<String>, usize)> {
+    let (name, frames, coins, starts, pokes) = seg;
+    let trace = flow_trace(name)?;
+    let first_start = starts.iter().map(|s| s.1).min();
+    // a start at script line f reaches the game at tick f - 1; the select (mode 4) comes 22 records later
+    let (vars_to, picture_to) = match first_start {
+        Some(f) => (f - 1 + 22, (f - 1) as usize),
+        None => (frames - 3, (frames - 3) as usize),
+    };
+    let (_, rows) = compare_power_on_with(
+        a,
+        &trace,
+        vars_to,
+        |_| [0; 3],
+        |k, g, _| {
+            if k == 99 {
+                pokes.iter().for_each(|&p| apply_mode_poke(g, p)); // the poke at power frame 100
+            }
+            g.w.coins = script_bits(coins, k);
+            g.w.system = 8 | script_bits(starts, k);
+        },
+        |k, g, _, gfx| {
+            if detail && ((k as usize) >= 440 || k == 319) && (k as usize) < picture_to {
+                for layer in 1..=3u8 {
+                    let full = diff(g, gfx, layer);
+                    let d: Vec<usize> = full.iter().map(|x| x.0).collect();
+                    if !d.is_empty() {
+                        println!("record {k}: scroll{layer} {} cells: {}", d.len(), index_ranges(&d));
+                        if k == 319 {
+                            println!("    (cell, port, MAME) {:04X?}", &full[..full.len().min(8)]);
+                        }
+                    }
+                }
+            }
+        },
+    );
+    let mut bad = Vec::new();
+    for (k, d) in rows.iter().enumerate().skip(25) {
+        // The three known differences (see `coin_and_chute_modes_match_mame`), each a few cells, words or sprites of one record
+        let mut d = d.clone();
+        match k {
+            319 if d.s2 <= 6 => d.s2 = 0,
+            460 if d.pal <= 44 => d.pal = 0,
+            462 if d.sprites == Some((19, 0)) => d.sprites = None,
+            _ => {}
+        }
+        if !d.sys.is_empty() || d.sounds.is_some() || d.state.is_some() || d.counter.is_some() {
+            bad.push(format!("record {k}: {:?} sounds {:?} state {:?} counter {:?}", d.sys, d.sounds, d.state, d.counter));
+        }
+        if k < picture_to && (d.s1 + d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some()) {
+            bad.push(format!("record {k}: picture {d:?}"));
+        }
+    }
+    Some((bad, rows.len()))
+}
+
+/// M2-02, the coin modes, the chute modes, the "2 coins start, 1 coin continue" mode and free play coins, from power on, against
+/// the recordings of `flow_system_modes` (the settings are written into the system task variables at power frame 100, the same
+/// writes in the port; MAME has no switch for them): 1 coin 2 credits, 1 coin 6 credits (the cap of 9), 2 and 3 coins per credit
+/// (the coin counts `CREDIT 0 (1/2)` and the "2 COIN 1 CREDIT" line), the common pool with its three prompts (one, two, three
+/// players), two players on one chute (the third credit still says two players, a start of player 2 takes 2 credits), the 2 coin
+/// start text of the pool up to 7 credits (PUSH START BUTTON, how many players, the lines about additional players), a coin in free
+/// play (the screen does not change), and 21 coins (the cap of 9 with a pending coin shown as 0). Every record equals the
+/// recording in the three layers, the palettes, the sprite list and every variable of the system task (all the credits, coins
+/// and the coin lockout and counter outputs G.$21 included) up to the start, except three differences of a few cells, words or
+/// sprites in one record each that come from the CPU time the settings change, not from the game rules: a pass of the system
+/// task is shorter with one chute (the pool conversion and the lockout of one chute instead of three) and a little different
+/// with other coin ratios, so the video frame boundary falls elsewhere in the code that runs after the system task or at its
+/// end: record 319 (the title's block drawing of its first frame has 6 more cells in MAME with one chute), record 460 (the cut of
+/// the brightness loop in the first frame of the press start call: `PRESS_CALL_CUT` is 154 words for the factory settings, MAME
+/// differs by 38 / 44 words with one chute and 4 with a coin ratio) and record 462 (one chute: the press start task's first object
+/// pass comes a frame earlier). The factory settings equal the recordings exactly (`coin_and_start_match_mame`).
+#[test]
+fn coin_and_chute_modes_match_mame() {
+    let Some(a) = assets() else { return };
+    let Some(segments) = mode_segments() else {
+        eprintln!("mame_check: the scenario files of flow_system_modes are missing, skipped");
+        return;
+    };
+    let detail = std::env::var("DINO_DETAIL").is_ok();
+    let only = std::env::var("DINO_SEGMENT").ok();
+    for seg in segments.iter().filter(|s| only.as_ref().is_none_or(|o| *o == s.0)) {
+        if let Some((bad, n)) = mode_problems(a, seg, detail) {
+            assert!(n > 600);
+            if detail {
+                println!("== {}: {} problems", seg.0, bad.len());
+                bad.iter().take(12).for_each(|b| println!("   {}", &b[..b.len().min(230)]));
+                continue;
+            }
+            assert!(bad.is_empty(), "{}: {} problems, first: {:?}", seg.0, bad.len(), &bad[..bad.len().min(3)]);
+        }
+    }
 }
 
 /// A11, a start without a credit does nothing: `flow_s-nocredit` (start at 450 to 455 and 1000 to 1005)
@@ -1306,7 +1526,7 @@ fn wait_counter_matches_mame() {
     assert_eq!(g.rank.w4f6, 0, "factory settings: the counter does not run with a credit of a player");
     assert_eq!(g.flow.front.sys.slots[0].credits, 1);
     let bad: Vec<(usize, &Differences)> =
-        rows.iter().enumerate().skip(25).filter(|(k, d)| !d.core_sys().is_empty() || (*k >= 461 && (d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some()))).collect();
+        rows.iter().enumerate().skip(25).filter(|(k, d)| !d.core_sys().is_empty() || (*k >= 461 && (d.s1 + d.s2 + d.s3 + d.pal > 0 || d.sprites.is_some() || d.layer.is_some()))).collect();
     assert!(bad.is_empty(), "{} records differ, first {:?}", bad.len(), &bad[..bad.len().min(3)]);
 }
 
@@ -1655,8 +1875,9 @@ fn demo_input_report() {
 /// task kills the attract tasks and calls the press start screen 0x983EE, which takes it 3 frames (records 4008 to 4010: sprites and
 /// scroll1, then scroll2 and the first part of scroll3, then the rest of scroll3, the palette load and the new task, M1-15); the demo
 /// does not finish. From the record 4008 the palettes, the sprite list, the layer control and the sound codes equal the recording
-/// and from 4010 the layers too (until then the level cells of the demo that are not cleared yet differ: the level is not complete);
-/// all the variables of the system task equal it; scroll1 holds the prompts of the system task (M2-02). G.$4CD, which the demo set, is cleared in the
+/// and from 4010 the layers too, scroll1 with the credit line and the prompts of the system task included (until then the level cells
+/// of the demo that are not cleared yet differ: the level is not complete); all the variables of the system task equal it.
+/// G.$4CD, which the demo set, is cleared in the
 /// tail of the pass of the system task, 3 frames after the call (record 4011).
 #[test]
 fn coin_during_the_demo_matches_mame() {
@@ -1674,7 +1895,7 @@ fn coin_during_the_demo_matches_mame() {
                 // 4008 to 4010 are the three frames of the call: the level cells of the demo that are not cleared yet differ (the
                 // level is not complete, M10), the palette load, the sprite list, the layer control and the sounds equal
                 || (*k >= 4008 && (d.pal > 0 || d.sprites.is_some() || d.layer.is_some() || d.sounds.is_some()))
-                || (*k >= 4010 && d.s2 + d.s3 > 0)
+                || (*k >= 4010 && d.s1 + d.s2 + d.s3 > 0)
         })
         .map(|(k, d)| format!("record {k}: {d:?}"))
         .collect();
@@ -1891,7 +2112,8 @@ fn index_ranges(v: &[usize]) -> String {
 }
 
 /// M1-15 diagnostic: the records `DINO_FROM ..= DINO_LAST` of a flow recording (`DINO_FLOW`, for example `c-title`) with the
-/// inputs `DINO_COIN` / `DINO_START` (ranges "a-b" of the port's tick) and `DINO_FREE=1` (free play poked at 99): for each
+/// inputs `DINO_COIN` / `DINO_START` (a list of ranges of the port's tick, "a-b" for player 1 or "2:a-b" for player 2, for
+/// example `449-456,2:499-506`) and `DINO_FREE=1` (free play poked at 99): for each
 /// record the cell ranges of each layer and the palette words that differ from the recording.
 #[test]
 #[ignore]
@@ -1900,13 +2122,18 @@ fn press_report() {
     let name = std::env::var("DINO_FLOW").unwrap_or_else(|_| "c-title".into());
     let Some(trace) = flow_trace(&name) else { return };
     let get = |k: &str| std::env::var(k).ok();
-    let range = |s: Option<String>| {
-        s.and_then(|s| {
-            let (x, y) = s.split_once('-')?;
-            Some((x.parse::<i32>().ok()?, y.parse::<i32>().ok()?))
-        })
+    let ranges = |s: Option<String>| -> Vec<(u8, i32, i32)> {
+        s.unwrap_or_default()
+            .split(',')
+            .filter_map(|r| {
+                let (p, r) = r.split_once(':').unwrap_or(("1", r));
+                let (x, y) = r.split_once('-')?;
+                Some((p.parse::<u8>().ok()? - 1, x.parse::<i32>().ok()?, y.parse::<i32>().ok()?))
+            })
+            .collect()
     };
-    let (coin, start) = (range(get("DINO_COIN")), range(get("DINO_START")));
+    let (coin, start) = (ranges(get("DINO_COIN")), ranges(get("DINO_START")));
+    let bits = |v: &[(u8, i32, i32)], k: i32| v.iter().filter(|(_, x, y)| (*x..=*y).contains(&k)).fold(0u8, |a, (p, _, _)| a | 1 << p);
     let free = get("DINO_FREE").is_some();
     // `DINO_POKE_COUNTER`: the demo counter G.$757A is set at record 1000 (the recordings `flow_m112-row5` and `-row0`)
     let poke: Option<u16> = get("DINO_POKE_COUNTER").and_then(|v| v.parse().ok());
@@ -1919,8 +2146,8 @@ fn press_report() {
         if let (1000, Some(c)) = (k, poke) {
             g.flow.front.demo_counter = c;
         }
-        g.w.coins = coin.is_some_and(|(x, y)| (x..=y).contains(&k)) as u8;
-        g.w.system = 8 | start.is_some_and(|(x, y)| (x..=y).contains(&k)) as u8;
+        g.w.coins = bits(&coin, k);
+        g.w.system = 8 | bits(&start, k);
     }, |k, g, _, gfx| {
         if (k as usize) < from {
             return;

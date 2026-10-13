@@ -8,11 +8,11 @@
 //! the stage intro 0xB9BE or stage clear 0xB97E task, slot 0x40 the fade task (`palette.rs`).
 //! `flow_frame` runs them in that order; each task keeps its own "sleep" counter.
 //!
-//! Sub-modules: `front` (system task, title, press start, character select), `join`
-//! (join / continue task and the all-players-out continue mode), and the services of the front
-//! end scenes: `scene` (the task runner with sleep counters), `text` (string printers and the
-//! typewriter), `picture` (page loaders, block printers, scene palettes) and `config` (the
-//! settings file). `HANDOFF.md` in `re/specs/flow/` shows how a scene script uses them.
+//! Sub-modules: `system` (the system task: coins, credits, SERVICE, the credit text, the start of a game), `front` (the
+//! state of the front end tasks, the character select), `join` (join / continue task and the all-players-out continue
+//! mode), and the services of the front end scenes: `scene` (the task runner with sleep counters), `text` (string printers
+//! and the typewriter), `picture` (page loaders, block printers, scene palettes) and `config` (the settings file
+//! `dino.cfg`). `HANDOFF.md` in `re/specs/flow/` shows how a scene script uses them.
 
 #[path = "flow/attract.rs"]
 pub mod attract;
@@ -41,6 +41,8 @@ pub mod ranking;
 pub mod scene;
 #[path = "flow/slides.rs"]
 pub mod slides;
+#[path = "flow/system.rs"]
+pub mod system;
 #[path = "flow/text.rs"]
 pub mod text;
 

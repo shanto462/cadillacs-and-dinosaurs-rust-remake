@@ -109,8 +109,6 @@ dependencies = [
  "dino-extract",
  "gilrs",
  "macroquad",
- "serde",
- "serde_json",
 ]
 
 [[package]]

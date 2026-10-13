@@ -1,0 +1,103 @@
+# M2-02: coin modes, chute modes, 2 coin start and free play coins, set by pokes of the system task variables at frame 100.
+# Recorded with: re/harness/record.sh --batch re/harness/scripts/flow_system_modes.txt flow_system_modes re/harness/pokes/flow_system_modes.txt
+# Script lines reach the game one record earlier than the frame in the line (as in flow_system.txt).
+
+segment m-common
+frames 720
+450-457:C
+500-507:2C
+550-557:3C
+650-655:S
+
+segment m-two-player
+frames 720
+450-457:C
+500-507:2C
+550-557:3C
+650-655:2S
+
+segment m-2coins
+frames 720
+450-457:C
+520-527:C
+570-577:2C
+650-655:S
+
+segment m-1coin2credits
+frames 720
+450-457:C
+520-527:2C
+
+segment m-1coin6credits
+frames 720
+450-457:C
+520-527:C
+590-597:C
+
+segment m-3coins
+frames 760
+450-457:C
+500-507:C
+550-557:C
+600-607:2C
+650-657:2C
+
+segment m-common-2coins
+frames 720
+450-457:C
+520-527:2C
+570-577:3C
+
+segment m-mode8
+frames 760
+450-457:C
+500-507:C
+550-557:2C
+650-655:S
+
+segment m-mode8-common
+frames 900
+450-457:C
+500-507:C
+550-557:C
+600-607:C
+650-657:C
+700-707:C
+750-757:C
+
+segment m-mode8-two-player
+frames 760
+450-457:C
+500-507:C
+550-557:C
+600-607:C
+650-657:C
+
+segment m-free-coin
+frames 700
+450-457:C
+520-527:2C
+
+segment m-cap
+frames 1150
+450-457:C
+480-487:C
+510-517:C
+540-547:C
+570-577:C
+600-607:C
+630-637:C
+660-667:C
+690-697:C
+720-727:C
+750-757:C
+780-787:C
+810-817:C
+840-847:C
+870-877:C
+900-907:C
+930-937:C
+960-967:C
+990-997:C
+1020-1027:C
+1050-1057:C
