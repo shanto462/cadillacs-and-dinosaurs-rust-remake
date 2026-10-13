@@ -31,3 +31,4 @@ cfg/
 nvram/
 # A player's settings file (plan D5, M2-01: key = value lines, dino-rs/crates/dino-game/src/game/flow/config.rs)
 dino.cfg
+.worktrees/
