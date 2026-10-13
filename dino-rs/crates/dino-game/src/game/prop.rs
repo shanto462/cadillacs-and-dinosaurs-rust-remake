@@ -124,7 +124,6 @@ impl Game {
             }
             self.props.slots[i] = p;
         }
-        self.prop_area_walk_fallback();
     }
 
     /// 0x4BFA: the prop can be hit by the players this frame (the list 0x6724 and its count 0x671C; the passes
@@ -388,14 +387,14 @@ impl Game {
         match end & 0xE {
             0 => self.prop_wave_end_go(p),
             2 => {
-                self.prop_set_leader();
-                self.prop_area_walk(2);
+                self.prop_set_leader(); // 0x7B4F2
+                self.script_area_end(); // 0x1D95E: the area end script, the heroes walk to the next area
                 p.b.mode = 6;
                 p.b.sub = 0;
             }
             _ => {
-                self.prop_set_leader();
-                self.prop_area_walk(4);
+                self.prop_set_leader(); // 0x7B506
+                self.script_boss_area(); // 0x1DAC4: the boss area script
                 p.b.mode = 6;
                 p.b.sub = 0;
             }
@@ -425,23 +424,6 @@ impl Game {
             }
         }
         self.players[best].bc0 = 1;
-    }
-
-    /// 0x1D95E (kind 2: walk to the next area) / 0x1DAC4 (kind 4: stage exit) belong to the
-    /// player / flow port (scripted walk). TEMP: remember it and give the camera go flag while
-    /// the camera waits (see `prop_area_walk_fallback`).
-    fn prop_area_walk(&mut self, kind: u8) {
-        if kind == 4 {
-            self.spawn.g.b4fc = 1;
-        }
-        self.spawn.g.area_walk = true;
-    }
-
-    /// TEMP until the scripted walk (0x1D95E) is ported: release wave / area-end locks.
-    fn prop_area_walk_fallback(&mut self) {
-        if self.spawn.g.area_walk && self.cam.s2.lock78 == 1 {
-            self.camera_go();
-        }
     }
 }
 

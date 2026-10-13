@@ -145,6 +145,8 @@ pub struct Flow {
     pub resume: bool,
     /// The phase of 0xAC4E that the character select is in after its fade out (`select.rs`, `flow_stage_start_staged`); 0 = not in it.
     pub select_exit: u8,
+    /// The globals of the scripted control (`script.rs`): G.$4D8, G.$4DF, G.$4EC.., G.$4FD, G.$503, G.$514, G.$516.
+    pub script: super::player::script::ScriptGlobals,
 }
 
 impl Flow {
@@ -430,7 +432,8 @@ impl Game {
         for i in 0..3 {
             self.flow_player_area_start(i); // 0x4E0A
         }
-        // 0x1DA10 (player scripts for the area), 0x49A8.. per-frame lists: player port / main.
+        self.script_area_start(); // 0x1DA10: the start script of the area, the chosen heroes under script
+        // 0x49A8.. per-frame lists: player port / main.
         self.terrain_obstacles_reset(); // 0x4A76
         self.effects = super::Pool::new(super::POOL_C); // 0x4CA4
         self.draw_special_init(); // 0x4CCC: the free stack only, the slots keep their bytes
@@ -638,9 +641,8 @@ impl Game {
                 // 0xCC58
                 self.cam.cam1_x = 0;
                 self.cam.cam1_y = 0;
-                // TEMP: G.$4E3 is set by the players' walk-in script (0x1DA10, player port).
-                // Until that is ported the HUD appears at once.
-                if self.flow.b4e3 != 0 || !self.flow_player_scripts_ported() {
+                // G.$4E3 is set by the start script of the heroes (0x1DA10, `script.rs`).
+                if self.flow.b4e3 != 0 {
                     self.flow.intro.sub = 4;
                     self.cam.cam1_x = it.w6;
                     self.cam.cam1_y = 0x100;
@@ -683,11 +685,6 @@ impl Game {
         }
     }
 
-    /// Whether the player scripts (0x1DA10, which set G.$4E3) exist yet. Remove with the TEMP.
-    fn flow_player_scripts_ported(&self) -> bool {
-        false
-    }
-
     fn flow_cell(a: u32) -> usize {
         ((a.wrapping_sub(0x908000) / 4) & 0xFFF) as usize
     }
@@ -708,6 +705,9 @@ impl Game {
         self.flow.clear.timer += 1;
         if self.flow.clear.timer >= 120 {
             self.flow.b4e2 = 0;
+            // 0xC4C8: the tally clears the pose lock G.$503 when its panels are gone (the heroes hold their pose in the scripted
+            // scene until then, `script.rs` actions 0x04 and 0x06). The real tally does it after the fade out of its panels (M2-28).
+            self.flow.script.b503 = 0;
             self.flow.clear.live = false;
         }
     }

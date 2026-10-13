@@ -42,12 +42,9 @@ pub struct Globals {
     /// [targeting me, of those attacking, enemies left of me, enemies right of me].
     pub census_prev: [[u8; 4]; 3],
     pub census: [[u8; 4]; 3],
-    /// TEMP: a wave ended with "walk to the next area" (0x1D95E, player/flow port). Until the
-    /// automatic walk is ported, the camera's go flag is given while the camera waits.
-    pub area_walk: bool,
     /// Player kill counts (player +$10B; not in the player port's struct yet).
     pub kills: [u8; 3],
-    /// G.$4DE area transition kind (set by 0x1D95E, player / flow port).
+    /// G.$4DE the script id of the scripted control (set by 0x1DA10, 0x1D95E and 0x1DAC4, `script.rs`).
     pub b4de: u8,
     /// G.$7B2 a burning enemy exists (2).
     pub b7b2: u8,
@@ -139,7 +136,6 @@ impl Game {
             self.rank_area_start();
             self.rank_time_area_start();
             self.spawn_reset();
-            self.spawn.g.area_walk = false;
         }
         if self.spawn.init == 0 {
             self.spawn.l1 = 0;

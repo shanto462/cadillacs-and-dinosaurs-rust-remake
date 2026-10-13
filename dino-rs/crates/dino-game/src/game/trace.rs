@@ -740,6 +740,7 @@ impl Player {
         f.u16(0x80, "w80", &mut self.w80);
         f.u8(0x83, "b83", &mut self.b83);
         f.u16(0x88, "w88", &mut self.w88);
+        f.u16(0x8A, "w8a", &mut self.w8a);
         f.u8(0x90, "b90", &mut self.b90);
         f.u8(0xA0, "held", &mut self.held);
         f.u8(0xA1, "prev", &mut self.prev);
@@ -777,6 +778,16 @@ impl Player {
         f.u8(0xCD, "slow", &mut self.slow);
         f.u16(0xCE, "dizzy_cd", &mut self.dizzy_cd);
         f.u8(0xD0, "bd0", &mut self.bd0);
+        // The scripted control (`script.rs`): the state, the action, the step, the pointer, the timer, the walk rank and counter, the target.
+        f.u8(0xD1, "sc_state", &mut self.sc.state);
+        f.u8(0xD2, "sc_act", &mut self.sc.act);
+        f.u8(0xD3, "sc_step", &mut self.sc.step);
+        f.u32(0xD4, "sc_ptr", &mut self.sc.ptr);
+        f.u16(0xD8, "sc_timer", &mut self.sc.timer);
+        f.u8(0xDA, "sc_rank", &mut self.sc.rank);
+        f.u8(0xDB, "sc_count", &mut self.sc.count);
+        f.u16(0xDC, "sc_tx", &mut self.sc.tx);
+        f.u16(0xDE, "sc_tz", &mut self.sc.tz);
         f.u8(0xE8, "lie_t", &mut self.lie_t);
         f.u8(0xE9, "hit_serial", &mut self.hit_serial);
         f.u16(0xEA, "aim", &mut self.aim);
@@ -1208,6 +1219,19 @@ impl Game {
         f.u8(0x04DA, "game_frame", &mut fl.frame);
         f.u8(0x04E2, "b4e2", &mut fl.b4e2);
         f.u8(0x04E3, "b4e3", &mut fl.b4e3);
+        // The globals of the scripted control (`script.rs`).
+        let sg = &mut fl.script;
+        f.u8(0x04D8, "script_b4d8", &mut sg.b4d8);
+        f.u8(0x04DF, "script_b4df", &mut sg.b4df);
+        for k in 0..3 {
+            f.u8(0x04EC + k as u32, ["script_taken0", "script_taken1", "script_taken2"][k], &mut sg.taken[k]);
+        }
+        f.u8(0x04FD, "script_b4fd", &mut sg.b4fd);
+        f.u8(0x0503, "script_b503", &mut sg.b503);
+        f.u8(0x0514, "script_b514", &mut sg.b514);
+        f.u8(0x0516, "script_b516", &mut sg.b516);
+        f.u8(n(0x70AA), "script_b70aa", &mut sg.b70aa);
+        f.u8(n(0x70A9), "script_b70a9", &mut sg.b70a9);
         f.u8(0x04E6, "b4e6", &mut fl.b4e6);
         f.u8(0x04E5, "b4e5", &mut fl.b4e5);
         f.u16(0x0508, "timer508", &mut fl.timer508);

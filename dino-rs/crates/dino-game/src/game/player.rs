@@ -18,6 +18,9 @@ use dino_assets::player::PlayerData;
 
 #[path = "player_weapon.rs"]
 mod weapon;
+// The scripted control of the heroes (M2-08, M2-09): a child module, it runs the scripted player states (0x2A, 0x2C, 0x18, 0x34 ...).
+#[path = "script.rs"]
+pub mod script;
 
 /// Input bits (G.$16..$18, active high).
 pub const RIGHT: u8 = 1;
@@ -49,8 +52,10 @@ pub struct Player {
     pub w80: u16,
     /// +$83 water splash done.
     pub b83: u8,
-    /// +$88 distance scratch (0x6606).
+    /// +$88 distance scratch (0x6606); the target X of the scripted jump (state 0x34, 0x1DD4C).
     pub w88: u16,
+    /// +$8A the target Z of the scripted jump.
+    pub w8a: u16,
     /// +$90 state-local step.
     pub b90: u8,
     /// +$A0 input held, +$A1 previous, +$A8 newly pressed.
@@ -114,6 +119,8 @@ pub struct Player {
     pub dizzy_cd: u16,
     /// +$D0 copy of G.$4DD when scripted control started.
     pub bd0: u8,
+    /// +$D1 .. +$DE the scripted control of this hero (`script.rs`).
+    pub sc: script::HeroScript,
     /// +$E8 lie-down timer, +$E9 serial of the last attack that hit me.
     pub lie_t: u8,
     pub hit_serial: u8,
@@ -517,26 +524,40 @@ impl Game {
             p.held = cur;
             p.pressed = cur & (cur ^ p.prev);
         }
-        if self.w.scripted != 0 {
-            // 0x1DB0C / 0x1DB5E scripted control. TODO(flow port): auto-walk input generator.
-            let p = &mut self.players[i];
-            if p.bd0 == 0 {
-                p.bd0 = self.w.scripted;
-            }
-        }
+        self.script_player_hook(i); // 0x189CE: scripted control (0x1DB0C once, 0x1DB5E every frame) while G.$4DD is set
         if self.players[i].input_lock != 0 {
             let p = &mut self.players[i];
             p.held = 0;
             p.prev = 0;
             p.pressed = 0;
         }
-        // G.$518 / G.$516 special modes (0x18A02): not ported (both 0 in normal play).
+        // 0x18A02: the special modes. In the car section (G.$518) the respawn timer `+$EC` runs here (the hero is in the car and invulnerable
+        // until it ends) and the hero is neither in the collision list nor drawn (below). While the Episode 8 clear sequence (G.$516, script action
+        // 0x42) shows the stand ins, the hero state machine is skipped: with the car off at once, in the car only a hero out of mode 0.
+        let car = self.spawn.g.car_mode != 0;
+        if car {
+            let p = &mut self.players[i];
+            if p.respawn_t != 0 {
+                p.respawn_t -= 1;
+                if p.respawn_t == 0 {
+                    p.b.live = 1; // 0x18A1A
+                }
+            }
+            if self.players[i].b.mode != 0 && self.flow.script.b516 != 0 {
+                return;
+            }
+        } else if self.flow.script.b516 != 0 {
+            return; // 0x18A28
+        }
         match self.players[i].b.mode {
             0 => self.player_spawn(i),
             2 => self.player_alive(i),
             4 => self.player_dead(i),
             6 => self.player_remove(i),
             _ => {}
+        }
+        if self.spawn.g.car_mode != 0 {
+            return; // 0x18A3E: the car hides the heroes
         }
         let h = Game::player_handle(i);
         // 0x4BC0: collision list of players (max 3).
@@ -948,8 +969,11 @@ impl Game {
     // ---------------------------------------------------------------------------------------
 
     fn player_normal(&mut self, i: usize) {
-        // Scripted scenes drop a carried heavy object (G.$4D1 / G.$514 not ported).
-        if self.w.scripted != 0 && self.players[i].item_type == 0x20A {
+        // 0x19090: a scripted scene (G.$4DD) drops a carried object: any object while a stage clear runs (G.$4D1), a heavy object
+        // (a barrel, 0x20A) unless the area end table says it may stay (G.$514 = 1).
+        if self.w.scripted != 0
+            && (self.flow.sub != 0 || (self.players[i].item_type == 0x20A && self.flow.script.b514 == 0))
+        {
             self.players[i].item_type = 0;
         }
         match self.players[i].b.act {
@@ -989,8 +1013,10 @@ impl Game {
             0x1E => self.player_gun_walk(i),
             0x20 => self.player_charge(i),
             0x22 => self.player_recoil(i),
-            // 0x18/0x1A timed status (extra life pose), 0x2A/0x2C scripted: only reachable from
-            // the score table 0x6B98 and stage scripts. TODO(flow port).
+            0x18 => self.player_pose(i), // 0x19A0A the pose (scripted scenes, extra life)
+            0x2A => self.player_hops(i), // 0x19EB2 two small hops (script action 0x3A)
+            0x2C => self.player_chest_pose(i), // 0x19F6A the pose with an effect (script action 0x3E)
+            // 0x1A (the second extra life state, 0x19A7C) is M2-17.
             _ => self.player_idle_entry(i),
         }
     }
@@ -1833,17 +1859,17 @@ impl Game {
             0x20 => self.player_heavy_land(i),
             0x2E => self.player_drop(i),
             0x30 => self.player_command_move(i),
-            0x32 => {
-                // 0x1BBA6: wait in the vehicle until G.$505, then jump out.
-                // TODO(flow port): G.$505 is set by the stage intro; not ported.
-            }
+            0x18 => self.player_pose_air_mustapha(i), // 0x1ADCC the pose in the air (Mustapha)
+            0x1A => self.player_pose_air_hannah(i), // 0x1AE88 the pose in the air (Hannah)
+            0x1C => self.player_scene_fall(i), // 0x1AFD0 the fall into Episode 1 area 2 (script action 0x1A)
+            0x32 => self.player_vehicle_wait(i), // 0x1BBA6 wait in the vehicle until G.$505, then jump out
+            0x34 => self.player_scripted_jump(i), // 0x1BC8A the scripted jump to a point (script action 0x32)
             0x36 => {
                 if self.player_pstep(i) {
                     self.player_idle_entry(i);
                 }
             }
-            // 0x18/0x1A timed status, 0x1C, 0x22..0x26 partner moves, 0x34 scripted jump to a
-            // point: TODO.
+            // 0x22..0x26 partner moves: TODO.
             _ => self.player_fall_entry(i),
         }
     }
