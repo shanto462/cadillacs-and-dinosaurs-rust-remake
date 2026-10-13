@@ -14,6 +14,7 @@ pub mod effect;
 pub mod enemy;
 pub mod frontend;
 pub mod player;
+pub mod script;
 pub mod sprites;
 pub mod stage;
 pub mod terrain;
@@ -62,6 +63,7 @@ pub struct AssetPack {
     pub terrain: terrain::TerrainData,
     /// Front end scenes: picture pages, scene palettes, ROM tables (`frontend.rs`).
     pub frontend: frontend::FrontendData,
+    pub script: script::ScriptData,
 }
 
 impl AssetPack {
