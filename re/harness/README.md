@@ -1341,3 +1341,31 @@ Batch logs are under `re/out/probe/m800_*-rec/`; states and traces are under
   Spawns after a snapshot are not replayable (marked as a comment).
 - The snapshot loader reads stage and area before the objects, so later episodes load correctly (frame -1
   differences of the m515 / m516 / m600 / m700 scenarios went from 123 to 0).
+
+## QSound register traces (M4-01)
+
+`re/harness/probe/sound.sh` records the Z80 writes to the QSound ports for a list of sound requests. One headless MAME process runs the whole list (`SDL_VIDEODRIVER=dummy`, `SDL_AUDIODRIVER=dummy`). The script is separate from `probe.lua` and `record.lua`.
+
+```
+re/harness/probe/sound.sh 0x00 0x30
+re/harness/probe/sound.sh 0x30:0:0
+SQ_INPUT=requests.txt re/harness/probe/sound.sh
+SQ_FRAMES=40 re/harness/probe/sound.sh 0x30
+```
+
+A file line is `sound CODE [d1] [d2]`. An argument is `CODE` or `CODE:d1:d2`. Numbers are decimal or `0x` hex. `d1` and `d2` default to 0.
+
+Each request is one ring entry, same layout as enqueue `0xA63C`: 16 bytes at `0xFF803A` plus the write index at `0xFF8034` (code word, d1 long, d2 long). The game flush `0x610` delivers it on a later vblank. While that code is recorded the script sets bit 5 of `G.$777C` (demo sound) so the attract filter keeps it. After the window it clears that bit and queues `0xFF00` (stop everything, helper `0xA5D2`), then waits until the QSound ports have been quiet for 8 video frames before the next request. A state load is not used: with `-sound none` it does not restore the Z80, so the previous sound would keep playing. After the entry is flushed, a write tap on `0xFF8034` forces later write-index stores back to the read index, so an attract enqueue during the window is not committed.
+
+`-sound none` still runs the Z80. The script checks that the register port was written during boot. If it was not, the same batch runs once more with `-sound auto`.
+
+Traces are git-ignored, under `re/out/sound/`:
+
+- `CODE.qs.trc`, or `CODE_D1_D2.qs.trc` when d1 or d2 is not 0. `CODE` is four hex digits.
+- Header: `# sound code=0030 d1=00000000 d2=00000000 frames=240`
+- Register commit (Z80 port `0xD002`): `f <frame> r <hh> v <hhhh>`
+- Bank write (Z80 port `0xD003`): `f <frame> b <hh>`
+
+Frame 0 is the first video frame after the ring write. The value is `(0xD000 << 8) | 0xD001`, which is what helper `0x0A13` commits. `SQ_FRAMES` is the window in video frames (default 240, about 4 seconds). `SQ_TIMEOUT` is the process limit in seconds (default 600). `SQ_SOUND` forces the MAME `-sound` value. A looping tune keeps writing after the default window. The same code recorded alone and recorded after another code can sit on a different sequencer step, so those two files need not match. Two runs of the same list do match.
+
+The shell prints one line per code, `sound 0030: N lines, flushed 1`. The status file is `re/out/sound/qs-status.txt`.
