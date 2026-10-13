@@ -1,0 +1,64 @@
+# M3-28. Runtime-assisted setup, then game-clock trace and replayable writes.
+
+segment m328_link-ep2
+jump 1 0
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+0 poke 0xFF84D9 1 1
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 8
+trace 1800
+
+segment m328_link-ep3
+jump 1 0
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+0 poke 0xFF84D9 1 2
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 8
+trace 1800
+
+segment m328_link-ep4
+jump 1 0
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+0 poke 0xFF84D9 1 3
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 8
+trace 1800
+
+segment m328_link-ep5
+jump 1 0
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+0 poke 0xFF84D9 1 4
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 8
+trace 1800
+
+segment m328_link-ep6
+jump 1 0
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+0 poke 0xFF84D9 1 5
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 8
+trace 1800
+
+segment m328_link-ep7
+jump 1 0
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+0 poke 0xFF84D9 1 6
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 8
+trace 1800
+
+segment m328_link-ep8
+jump 1 0
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+0 poke 0xFF84D9 1 7
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 8
+trace 1800

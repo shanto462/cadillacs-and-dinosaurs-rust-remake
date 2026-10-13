@@ -1,0 +1,145 @@
+# M3-28. Runtime-assisted setup, then game-clock trace and replayable writes.
+
+segment m328_f_ep1
+jump 1 2 0x1B0 char=jack,hannah,mess
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+hold 0xFF850E 1 2
+20 poke 0xFF84DE 1 12
+20 poke 0xFF8514 1 0
+20 poke 0xFFB344 1 0
+20 poke 0xFFB4C4 1 0
+20 poke 0xFFB644 1 0
+20 poke 0xFF84DD 1 7
+20 poke 0xFF84D4 1 1
+20 poke 0xFF84D5 1 1
+20 poke 0xFF84E0 2 0xB274
+20 poke 0xFF84D1 1 4
+20 poke 0xFF8508 2 0x708
+trace 6500
+
+segment m328_f_ep2
+jump 2 2 0x240 char=jack,hannah,mess
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+hold 0xFF850E 1 2
+20 poke 0xFF84DE 1 3
+20 poke 0xFF8514 1 0
+20 poke 0xFFB344 1 0
+20 poke 0xFFB4C4 1 0
+20 poke 0xFFB644 1 0
+20 poke 0xFF84DD 1 7
+20 poke 0xFF84D4 1 1
+20 poke 0xFF84D5 1 1
+20 poke 0xFF84E0 2 0xB274
+20 poke 0xFF84D1 1 4
+20 poke 0xFF8508 2 0x708
+trace 6500
+
+segment m328_f_ep3
+jump 3 0 0x300 char=jack,hannah,mess
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+hold 0xFF850E 1 2
+20 poke 0xFF84DE 1 3
+20 poke 0xFF8514 1 0
+20 poke 0xFFB344 1 0
+20 poke 0xFFB4C4 1 0
+20 poke 0xFFB644 1 0
+20 poke 0xFF84DD 1 7
+20 poke 0xFF84D4 1 1
+20 poke 0xFF84D5 1 1
+20 poke 0xFF84E0 2 0xB274
+20 poke 0xFF84D1 1 4
+20 poke 0xFF8508 2 0x708
+trace 6500
+
+segment m328_f_ep4
+jump 4 2 0x400 char=jack,hannah,mess
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+hold 0xFF850E 1 2
+20 poke 0xFF84DE 1 3
+20 poke 0xFF8514 1 0
+20 poke 0xFFB344 1 0
+20 poke 0xFFB4C4 1 0
+20 poke 0xFFB644 1 0
+20 poke 0xFF84DD 1 7
+20 poke 0xFF84D4 1 1
+20 poke 0xFF84D5 1 1
+20 poke 0xFF84E0 2 0xB274
+20 poke 0xFF84D1 1 4
+20 poke 0xFF8508 2 0x708
+trace 6500
+
+segment m328_f_ep5
+jump 5 1 0x1100 char=jack,hannah,mess
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+hold 0xFF850E 1 2
+20 poke 0xFF84DE 1 3
+20 poke 0xFF8514 1 0
+20 poke 0xFFB344 1 0
+20 poke 0xFFB4C4 1 0
+20 poke 0xFFB644 1 0
+20 poke 0xFF84DD 1 7
+20 poke 0xFF84D4 1 1
+20 poke 0xFF84D5 1 1
+20 poke 0xFF84E0 2 0xB274
+20 poke 0xFF84D1 1 4
+20 poke 0xFF8508 2 0x708
+trace 6500
+
+segment m328_f_ep6
+jump 6 2 0xF80 char=jack,hannah,mess
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+hold 0xFF850E 1 2
+20 poke 0xFF84DE 1 3
+20 poke 0xFF8514 1 0
+20 poke 0xFFB344 1 0
+20 poke 0xFFB4C4 1 0
+20 poke 0xFFB644 1 0
+20 poke 0xFF84DD 1 7
+20 poke 0xFF84D4 1 1
+20 poke 0xFF84D5 1 1
+20 poke 0xFF84E0 2 0xB274
+20 poke 0xFF84D1 1 4
+20 poke 0xFF8508 2 0x708
+trace 6500
+
+segment m328_f_ep7
+jump 7 3 0x400 char=jack,hannah,mess
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+hold 0xFF850E 1 2
+20 poke 0xFF84DE 1 20
+20 poke 0xFF8514 1 0
+20 poke 0xFFB344 1 0
+20 poke 0xFFB4C4 1 0
+20 poke 0xFFB644 1 0
+20 poke 0xFF84DD 1 7
+20 poke 0xFF84D4 1 1
+20 poke 0xFF84D5 1 1
+20 poke 0xFF84E0 2 0xB274
+20 poke 0xFF84D1 1 4
+20 poke 0xFF8508 2 0x708
+trace 6500
+
+segment m328_f_ep8
+jump 8 3 0x10A0 char=jack,hannah,mess
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w
+hold 0xFF850E 1 2
+20 poke 0xFF84DE 1 24
+20 poke 0xFF8514 1 0
+20 poke 0xFFB344 1 0
+20 poke 0xFFB4C4 1 0
+20 poke 0xFFB644 1 0
+20 poke 0xFF84DD 1 7
+20 poke 0xFF84D4 1 1
+20 poke 0xFF84D5 1 1
+20 poke 0xFF84E0 2 0xB274
+20 poke 0xFF84D1 1 4
+20 poke 0xFF8508 2 0x708
+trace 9000

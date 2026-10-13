@@ -1,0 +1,4 @@
+# M3-28 power-on ending entry. Coin, start and select use boot_jack timings.
+600-607:C
+700-705:S
+900-905:A

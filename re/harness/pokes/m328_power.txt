@@ -1,0 +1,7 @@
+# Power-on video clock. Ending entry after Episode 1 setup.
+1300 FF84D9 1 7
+1300 FF84D7 1 1
+1300 FF84DB 1 1
+1300 FF8507 1 1
+1300 FF84D1 1 0
+1300 FF84D0 1 0x1C

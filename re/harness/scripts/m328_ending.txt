@@ -1,0 +1,122 @@
+# M3-28. Runtime-assisted setup, then game-clock trace and replayable writes.
+
+segment m328_end-jack
+jump 1 0 char=jack
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w @0xFF8507.b @0xFFB277.b @0xFFB497.b @0xFFB617.b @0xFFF1A0.w
+0 poke 0xFF84D9 1 7
+0 poke 0xFF84D7 1 1
+0 poke 0xFF84DB 1 1
+0 poke 0xFF8507 1 1
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 0x1C
+watch 1 A cls var st x y z
+watch 1 B cls var st x y z
+watch 1 C cls var st
+trace 5700
+
+segment m328_end-hannah
+jump 1 0 char=hannah
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w @0xFF8507.b @0xFFB277.b @0xFFB497.b @0xFFB617.b @0xFFF1A0.w
+0 poke 0xFF84D9 1 7
+0 poke 0xFF84D7 1 1
+0 poke 0xFF84DB 1 1
+0 poke 0xFF8507 1 1
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 0x1C
+watch 1 A cls var st x y z
+watch 1 B cls var st x y z
+watch 1 C cls var st
+trace 5700
+
+segment m328_end-mess-jack
+jump 1 0 char=mess,jack
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w @0xFF8507.b @0xFFB277.b @0xFFB497.b @0xFFB617.b @0xFFF1A0.w
+0 poke 0xFF84D9 1 7
+0 poke 0xFF84D7 1 1
+0 poke 0xFF84DB 1 1
+0 poke 0xFF8507 1 1
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 0x1C
+watch 1 A cls var st x y z
+watch 1 B cls var st x y z
+watch 1 C cls var st
+trace 5700
+
+segment m328_end-3p
+jump 1 0 char=jack,hannah,mess
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w @0xFF8507.b @0xFFB277.b @0xFFB497.b @0xFFB617.b @0xFFF1A0.w
+0 poke 0xFF84D9 1 7
+0 poke 0xFF84D7 1 1
+0 poke 0xFF84DB 1 1
+0 poke 0xFF8507 1 1
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 0x1C
+watch 1 A cls var st x y z
+watch 1 B cls var st x y z
+watch 1 C cls var st
+trace 5700
+
+segment m328_end-mustapha
+jump 1 0 char=mustapha
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w @0xFF8507.b @0xFFB277.b @0xFFB497.b @0xFFB617.b @0xFFF1A0.w
+0 poke 0xFF84D9 1 7
+0 poke 0xFF84D7 1 1
+0 poke 0xFF84DB 1 1
+0 poke 0xFF8507 1 1
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 0x1C
+watch 1 A cls var st x y z
+watch 1 B cls var st x y z
+watch 1 C cls var st
+trace 5700
+
+segment m328_end-hiscore
+jump 1 0 char=jack
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w @0xFF8507.b @0xFFB277.b @0xFFB497.b @0xFFB617.b @0xFFF1A0.w
+0 score 450000
+30 poke 0xFF84D9 1 7
+30 poke 0xFF84D7 1 1
+30 poke 0xFF84DB 1 1
+30 poke 0xFF8507 1 1
+30 poke 0xFF84D1 1 0
+30 poke 0xFF84D0 1 0x1C
+watch 1 A cls var st x y z
+watch 1 B cls var st x y z
+watch 1 C cls var st
+trace 6900
+
+segment m328_end-objs
+jump 1 0 char=jack
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w @0xFF8507.b @0xFFB277.b @0xFFB497.b @0xFFB617.b @0xFFF1A0.w
+0 poke 0xFF84D9 1 7
+0 poke 0xFF84D7 1 1
+0 poke 0xFF84DB 1 1
+0 poke 0xFF8507 1 1
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 0x1C
+watch 1 A cls var st x y z
+watch 1 B cls var st x y z
+watch 1 C cls var st
+trace 5700
+
+segment m328_end-fine
+jump 1 0 char=jack
+0 snapshot keep
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84DE.b @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84F0.b @0xFF8514.b @0x914000.hw @0xFF84FE.w @0xFF8507.b @0xFFB277.b @0xFFB497.b @0xFFB617.b @0xFFF1A0.w
+0 poke 0xFF84D9 1 7
+0 poke 0xFF84D7 1 1
+0 poke 0xFF84DB 1 1
+0 poke 0xFF8507 1 1
+0 poke 0xFF84D1 1 0
+0 poke 0xFF84D0 1 0x1C
+watch 1 A cls var st x y z
+watch 1 B cls var st x y z
+watch 1 C cls var st
+trace 5700
