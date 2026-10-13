@@ -1458,6 +1458,34 @@ The scripts (`ep1_3p.txt` through `ep8_3p.txt`) use natural play only:
 Each recording has a complete MAME trace (`re/out/traces/epN_3p.mame.trc`) and snapshot (`re/out/traces/epN_3p.state`).
 All eight recordings reach the clear tally of their episode (`G.$4D1` steps 4 and 6), and Episode 8 transitions to the ending (Mode 0x1C at frame 49,267).
 
+### One-hero recordings for Mustapha, Hannah and Mess (M10-02)
+
+Episode 1 reuses the M5-17 traces. There are no new Episode 1 scripts. Each trace contains only that hero.
+
+| Hero | Trace | Tally start (`sub=4`) | Tally exit (`sub=6`) |
+| --- | --- | ---: | ---: |
+| Mustapha (1) | `m517_ep1_mustapha.mame.trc` | 30,305 | 30,500 |
+| Hannah (2) | `m517_ep1_hannah.mame.trc` | 15,104 | 15,390 |
+| Mess (3) | `m517_ep1_mess.mame.trc` | 15,767 | 16,080 |
+
+Episodes 3, 5 and 8 boot with `boot_mustapha.txt`, `boot_hannah.txt` or `boot_mess.txt`, the story-panel poke (`DINO_POKES=re/harness/pokes/epN_boot.txt`), and `DINO_SYNC=control`. Coin and start frames match the Jack scripts. Right is held on every frame so a continue stays on the same hero. Episodes 5 and 8 copy the Jack inputs. Episode 3 changes a short walk so each hero takes the radio (the pickup runs only on an attack press): Mustapha holds Right from frame 1,690 to 2,100 and attacks at 1,762-1,763; Hannah holds Down+Right from 1,690 to 1,800 and attacks at 1,770-1,771; Mess holds Right from 1,900 to 2,100 and attacks at 1,952-1,953.
+
+| Episode | Script | Frames | Hero | Deaths | Tally start (`sub=4`) | Tally exit (`sub=6`) | Then |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| 3 | `ep3_mustapha.txt` | 10,500 | 1 | 0 | 7,116 | 7,396 | Stage 3 story at 7,469 |
+| 3 | `ep3_hannah.txt` | 10,500 | 2 | 0 | 7,081 | 7,361 | Stage 3 story at 7,425 |
+| 3 | `ep3_mess.txt` | 10,500 | 3 | 0 | 9,419 | 9,699 | Stage 3 story at 9,736 |
+| 5 | `ep5_mustapha.txt` | 65,000 | 1 | 8 | 63,845 | 64,202 | Stage 5 story at 64,280 |
+| 5 | `ep5_hannah.txt` | 65,000 | 2 | 6 | 57,567 | 57,866 | Stage 5 at 57,901 (mode 0x0C, no mode 0x08 sample) |
+| 5 | `ep5_mess.txt` | 65,000 | 3 | 7 | 63,319 | 63,618 | Stage 5 story at 63,685 |
+| 8 | `ep8_mustapha.txt` | 70,000 | 1 | 10 | 61,188 | 61,365 | Ending (mode 0x1C) at 63,325 |
+| 8 | `ep8_hannah.txt` | 70,000 | 2 | 10 | 64,540 | 64,702 | Ending (mode 0x1C) at 66,837 |
+| 8 | `ep8_mess.txt` | 70,000 | 3 | 8 | 56,818 | 56,980 | Ending (mode 0x1C) at 59,084 |
+
+Traces and snapshots are `re/out/traces/ep{3,5,8}_{mustapha,hannah,mess}.mame.trc` and `.state`. During the stage, player 1 is only the named hero. After the Episode 8 ending the game returns to the title and the cursor is Jack. That later hero 0 is not a change during the episode.
+
+All twelve one-hero runs reach the clear tally (`G.$4D1` steps 4 and 6).
+
 
 ## Flow transitions, end chains, links and ending references (M3-28)
 
