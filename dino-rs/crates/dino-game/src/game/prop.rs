@@ -146,6 +146,7 @@ impl Game {
                 86 => self.prop_class86(&mut p, i),
                 89 => self.prop_class89(&mut p, i),
                 93 => self.prop_class93(&mut p, i),
+                33 | 79 => self.ph_starter(&mut p, h, i), // placeholders of the boss starters (placeholder.rs)
                 94 => self.prop_class94(&mut p, i),
                 _ => self.prop_unported(&mut p, h, i),
             }
