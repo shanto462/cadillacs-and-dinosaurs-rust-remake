@@ -687,16 +687,34 @@ impl Game {
     /// 0x18B9A
     fn player_respawn_reset(&mut self, i: usize) {
         self.player_physics_reset(i); // 0x18C82 (also 0x162AE, palette: not ported)
-        let p = &mut self.players[i];
-        p.respawn_t = 0x168;
-        p.b.act = 4;
-        p.b.facing = 1;
-        p.set_b80(0x3C);
+        {
+            let p = &mut self.players[i];
+            p.respawn_t = 0x168;
+            p.b.act = 4;
+            p.b.facing = 1;
+            p.set_b80(0); // 0x18BAE clr.b $80
+        }
+        if self.spawn.g.car_mode != 0 {
+            return; // 0x18BB2: Cadillac section, no wait, no bazooka, no strike
+        }
+        self.players[i].set_b80(0x3C);
         // 0x18BC0: a player that joins in the middle of a stage (+$07 == 0) gets a bazooka (0x65A4).
         if self.players[i].b.step == 0 {
             self.item_give_bazooka(i);
         }
-        // 0x18C5E: spawns the "1UP" marker (pool B class 0x48). TODO(effects port).
+        self.player_spawn_air_strike(i); // 0x18BCE bra 0x18C5E
+    }
+
+    /// 0x18C5E: pool B class 18, the respawn air strike. A full pool skips it (carry of 0x4860).
+    fn player_spawn_air_strike(&mut self, i: usize) {
+        let who = self.players[i].b.who;
+        let id = self.players[i].b.id;
+        let Some(h) = self.spawn_prop(18, 0, None) else {
+            return;
+        };
+        let b = self.body_mut(h);
+        b.who = who;
+        b.id = id;
     }
 
     /// 0x62D6: place a player that drops in near the camera. The X offset depends on the number

@@ -61,6 +61,9 @@ mod b74;
 // Pool B class 31 (M2-13): the stage clock (it keeps its sprite list in a pool D slot).
 #[path = "prop/b31.rs"]
 mod b31;
+// Pool B class 18 (M2-16): the respawn air strike (five bombs from the record list 0x7B7A6).
+#[path = "prop/b18.rs"]
+mod b18;
 // Pool B classes of the character select (M2-04): the frame (17), the pictures over the group picture (67) and the player tags (68).
 #[path = "prop/class17.rs"]
 mod class17;
@@ -111,6 +114,7 @@ impl Game {
             match p.b.k20 / 4 {
                 15 => self.prop_wave(&mut p, h, i),
                 17 => self.prop_class17(&mut p, i),
+                18 => self.prop_b18(&mut p, h, i),
                 19 => self.prop_class19(&mut p, i),
                 31 => self.prop_clock(&mut p, i),
                 32 => self.prop_class32(&mut p, i),

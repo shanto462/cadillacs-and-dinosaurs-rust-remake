@@ -167,6 +167,8 @@ const TABLES: &[(u32, u32, &str)] = &[
     // the stage clock (pool B class 31, 0x81046)
     (0x81194, 0x48, "clock: the slot template, 18 longs copied into the pool D slot (0x81088): the record, the sprite list of 5 digit and colon sprites"),
     (0x811CA, 0x14, "clock: tile code of the digits 0 to 9 (0x8114E)"),
+    // pool B class 18 (respawn air strike, 0x7B65E)
+    (0x7B7A6, 0x20, "air strike records: 5 x (X offset, depth offset, variant) then a negative end word"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {
