@@ -896,47 +896,6 @@ impl Game {
         }
     }
 
-    /// 0x19F40 state 0x2C entry (action 0x3E, leader only): the pose with an effect at the chest. The spark 0xD (0x92422) at the hero's X, height +
-    /// 0x58 and depth, then 41 frames of waiting in the handler. Returns (no fall into the handler).
-    pub(super) fn player_chest_pose_entry(&mut self, i: usize) {
-        let p = &mut self.players[i];
-        p.b.set_state(0x0200_002C);
-        p.b90 = 0;
-        p.set_b80(0x28);
-        let (x, y, z) = (p.b.xi(), p.b.yi(), p.b.zi());
-        self.fx_spawn_spark_at(Game::player_handle(i), x, y.wrapping_add(0x58), z, 0xD);
-    }
-
-    /// 0x19F6A state 0x2C: step 0 waits (`+$80` counts 0x28 to below 0), then makes a pool B class 35 object at the hero's place that holds his handle in `+$76`
-    /// (0x81FB0) and starts the animation 0x1F; step 2 plays it and goes idle (0x19122) when it is over.
-    pub(super) fn player_chest_pose(&mut self, i: usize) {
-        match self.players[i].b90 {
-            0 => {
-                let p = &mut self.players[i];
-                let old = p.b80();
-                p.set_b80(old.wrapping_sub(1));
-                if old != 0 {
-                    return; // bcs only on the borrow
-                }
-                p.b90 += 2;
-                let (x, y, z) = (p.b.xi(), p.b.yi(), p.b.zi());
-                if let Some(h) = self.spawn_prop(35, 0, Some((x, y, z))) {
-                    // 0x81FB0: the object remembers the hero (`+$76`)
-                    if let Some(crate::game::Slot::Prop(k)) = crate::game::slot_of(h) {
-                        self.props.slots[k].m.sw(0x76, Game::player_handle(i));
-                    }
-                }
-                self.player_panim(i, 0, 0x1F);
-            }
-            2 => {
-                if self.player_pstep(i) {
-                    self.player_idle_entry(i); // bra 0x19122
-                }
-            }
-            _ => {}
-        }
-    }
-
     /// 0x19996 state 0x18 entry: the pose (action 0x04, and the extra life pose). The animation 0xE for a hero with the flag `+$10E` (a life was won) or
     /// the leader, 0x11 for the others. Mustapha (id 1) and Hannah (id 2) in these two cases use the air states 0x418 (0x1ADA6) and 0x41A
     /// (0x1AE62) instead. the effect of the leader (0x6192, pool C class 5) is not ported yet; the anti
