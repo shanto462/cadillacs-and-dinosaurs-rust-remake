@@ -144,7 +144,7 @@ pub struct World {
     /// G.$4F0 players use the floor-only terrain test 0x12D4E (no walls), set by scripted scenes.
     pub floor_only: u8,
     /// G.$506 set by scripted scenes (0x1DBB2): the players' screen clamp 0x4FCE is skipped. Also
-    /// tested at 0x1AE8, 0x1C7A, 0x5AAC, 0x191C4, 0x19356 and 0x78FFC (not ported).
+    /// tested at 0x1AE8, 0x1C7A, 0x5AAC, 0x191C4, 0x19356 and 0x78FFC (class 12 var 4).
     pub no_clamp: u8,
     /// G.$4D4 stage clear flag, set by camera modes 6 / 0x10 / 0x13.
     pub stage_clear: u8,

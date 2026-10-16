@@ -184,6 +184,11 @@ const TABLES: &[(u32, u32, &str)] = &[
     // pool B class 1 (chain-link gate / fence, 0x75238)
     (0x75414, 0x18, "prop B1: body box table (0x7525E)"),
     (0x7535E, 0x9C, "prop B1: attribute rewrite table (0x7532E)"),
+    // Episode 1 hall door and window (M3-18, class 12, 0x78B52). Read at run time from dino.zip.
+    (0x78BDA, 984, "B12 hall door: 3 block pointers then 3 pictures of 9 x 9 pairs (0x78BAC)"),
+    (0x7906E, 42, "B12 window codes, 3 columns of 7 (0x7903A)"),
+    (0x79152, 160, "B12 glass shard records, 10 of 16 bytes (0x93362)"),
+    (0x79200, 24, "B12 window hit boxes, 2 records of 6 words (0x78FD2)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {

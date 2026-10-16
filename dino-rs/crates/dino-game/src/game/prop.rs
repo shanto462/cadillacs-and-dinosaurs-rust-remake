@@ -76,6 +76,9 @@ mod b11;
 mod b14;
 #[path = "prop/b21.rs"]
 mod b21;
+// Episode 1 hall door and window (M3-18, class 12, 0x78B52).
+#[path = "prop/b12.rs"]
+mod b12;
 // Pool B class 31 (M2-13): the stage clock (it keeps its sprite list in a pool D slot).
 #[path = "prop/b20.rs"]
 mod b20;
@@ -145,6 +148,7 @@ impl Game {
             let mut p = std::mem::take(&mut self.props.slots[i]);
             match p.b.k20 / 4 {
                 11 => self.prop_b11(&mut p, i),
+                12 => self.prop_b12(&mut p, i),
                 14 => self.prop_b14(&mut p, i),
                 1 => self.prop_b1(&mut p, h, i),
                 3 => self.prop_b3(&mut p, h, i),
