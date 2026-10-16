@@ -114,20 +114,77 @@ pub struct Camera {
     pub cam1_y: u16,
     /// G.$755C: shake strength requested this frame (consumed by 0x222D6, see `cam_shake`).
     pub shake_req: u8,
+    /// G.$755A, $755D..$7561: state, remaining strength, timer, sign and amplitude.
+    pub shake_state: u8,
+    pub shake_strength: u8,
+    pub shake_timer: u8,
+    pub shake_sign: i8,
+    pub shake_amp: i16,
+    /// Display-only offsets, included in the video latch, never in object coordinates.
+    pub shake_dy1: i16,
+    pub shake_dy2: i16,
+    /// G.$7B8: scroll1 Y shadow copied when 0x22388 stops the shake.
+    pub shake_scroll1_y: u16,
     /// The shadows of the last frames (see [`VIDEO_LATENCY`]).
     pub latch: ScrollLatch,
 }
 
 impl Default for Camera {
     fn default() -> Self {
-        Camera { s2: Scroll2::default(), s3: Scroll3::default(), cam1_x: 0, cam1_y: 0, shake_req: 0, latch: ScrollLatch::default() }
+        Camera { s2: Scroll2::default(), s3: Scroll3::default(), cam1_x: 0, cam1_y: 0, shake_req: 0, shake_state: 0, shake_strength: 0, shake_timer: 0, shake_sign: 0, shake_amp: 0,
+            shake_dy1: 0, shake_dy2: 0, shake_scroll1_y: 0, latch: ScrollLatch::default() }
     }
 }
 
 impl Camera {
+    /// 0x222D6 / 0x222EE / 0x22316: advance the shake and write this frame's Y offset.
+    fn step_shake(&mut self, scroll1: bool) {
+        self.shake_dy1 = 0;
+        self.shake_dy2 = 0;
+        if self.shake_state == 0 {
+            self.shake_strength = self.shake_req;
+            if self.shake_strength == 0 {
+                self.shake_scroll1_y = self.cam1_y;
+                return;
+            }
+            self.shake_state = 2;
+            self.shake_req = 0;
+            self.shake_timer = 0;
+            self.shake_amp = self.shake_strength as i16;
+            self.shake_sign = -1;
+        }
+        if self.shake_req != 0 && (self.shake_req as i8) > (self.shake_strength as i8) {
+            self.shake_strength = self.shake_req;
+            self.shake_amp = self.shake_req as i16;
+            self.shake_sign = -1;
+        }
+        self.shake_req = 0;
+        let off = if self.shake_sign < 0 { self.shake_amp.wrapping_neg() } else { self.shake_amp };
+        if scroll1 {
+            self.shake_dy1 = off;
+        } else {
+            self.shake_dy2 = off;
+        }
+        let (timer, borrow) = self.shake_timer.overflowing_sub(1);
+        self.shake_timer = timer;
+        if borrow {
+            self.shake_timer = 2;
+            self.shake_sign = self.shake_sign.wrapping_neg();
+            if self.shake_sign < 0 {
+                self.shake_amp = self.shake_amp.wrapping_sub(1);
+                self.shake_strength = self.shake_strength.wrapping_sub(1);
+                if self.shake_strength == 0 {
+                    // 0x22388 does not clear this frame's final positive offset.
+                    self.shake_scroll1_y = self.cam1_y.wrapping_add(self.shake_dy1 as u16);
+                    self.shake_state = 0;
+                }
+            }
+        }
+    }
+
     /// The shadows now.
     fn scroll_now(&self) -> ScrollShadows {
-        ScrollShadows { cam1: (self.cam1_x, self.cam1_y), s2: (self.s2.cam_x, self.s2.cam_y), s3: (self.s3.cam_x, self.s3.cam_y) }
+        ScrollShadows { cam1: (self.cam1_x, self.cam1_y.wrapping_add(self.shake_dy1 as u16)), s2: (self.s2.cam_x, self.s2.cam_y.wrapping_add(self.shake_dy2 as u16)), s3: (self.s3.cam_x, self.s3.cam_y) }
     }
 
     /// The end of a frame: remember the shadows. The first call fills the whole history, so a game that
@@ -1220,13 +1277,13 @@ impl Game {
     }
 
     /// 0x222D6 screen shake (struct G.$755A).
-    // TODO(port): 0x222D6. Exact logic is in re/specs/stage/HANDOFF.md ("Screen shake"); it offsets
-    // only the displayed scroll2 Y (scroll1 Y in stage 6 area 1), never the camera.
-    pub fn screen_shake(&mut self) {}
+    /// Only the vblank Y shadow moves. Sprites, collision and camera streaming keep their coordinates.
+    pub fn screen_shake(&mut self) {
+        self.cam.step_shake(self.w.stage == 6 && self.cam.s2.area == 1);
+    }
 
-    /// Request a screen shake (the original writes the strength byte to G.$755C). Other ports
-    /// call this where the original does `move.b #n,$755C(a5)`; a larger strength replaces a
-    /// running shake, a smaller one is ignored (0x22316).
+    /// G.$755C writes at the request sites (for example 0x21128). The last write wins before
+    /// 0x22316 compares it, signed, with the running strength. A restart keeps the timer phase.
     pub fn cam_shake(&mut self, strength: u8) {
         self.cam.shake_req = strength;
     }
@@ -1263,5 +1320,57 @@ mod latency_tests {
             shown.push((c.shown_scroll().s2.0, c.shown_scroll().s3.1));
         }
         assert_eq!(shown, [(1, 10), (1, 10), (1, 10), (2, 20), (3, 30), (4, 40)]);
+    }
+}
+
+#[cfg(test)]
+mod shake_tests {
+    use super::*;
+
+    #[test]
+    fn shake_duration_decay_and_layer_selection() {
+        for strength in 1..=4u8 {
+            for scroll1 in [false, true] {
+                let mut c = Camera::default();
+                c.cam1_y = 0xFFFF;
+                c.shake_req = strength;
+                let n = 6 * strength as usize - 2;
+                for frame in 0..n {
+                    c.step_shake(scroll1);
+                    let phase = (frame + 2) / 3;
+                    let amplitude = strength as i16 - (phase / 2) as i16;
+                    let expected = if phase % 2 == 0 { -amplitude } else { amplitude };
+                    assert_eq!((c.shake_dy1, c.shake_dy2), if scroll1 { (expected, 0) } else { (0, expected) });
+                    assert_eq!((c.cam1_y, c.s2.cam_y), (0xFFFF, 0));
+                    if frame + 1 < n { assert_eq!(c.shake_state, 2); }
+                }
+                assert_eq!((c.shake_state, c.shake_strength), (0, 0));
+                assert_eq!(c.shake_scroll1_y, if scroll1 { 0 } else { 0xFFFF });
+                c.step_shake(scroll1);
+                assert_eq!((c.shake_dy1, c.shake_dy2), (0, 0));
+            }
+        }
+    }
+
+    #[test]
+    fn stronger_requests_keep_timer_phase_and_use_signed_byte_compare() {
+        let mut c = Camera::default();
+        c.shake_req = 2;
+        c.step_shake(false);
+        assert_eq!(c.shake_timer, 2);
+        c.shake_req = 4;
+        c.step_shake(false);
+        assert_eq!((c.shake_dy2, c.shake_timer, c.shake_sign), (-4, 1, -1));
+        c.shake_req = 0xFF; // cmp.b / ble treats this as negative
+        c.step_shake(false);
+        assert_eq!((c.shake_dy2, c.shake_timer, c.shake_req), (-4, 0, 0));
+        c.shake_req = 1;
+        c.step_shake(false);
+        assert_eq!((c.shake_dy2, c.shake_timer, c.shake_sign), (-4, 2, 1));
+        c.latch_scroll();
+        c.step_shake(false);
+        c.latch_scroll();
+        assert_eq!(c.shown_scroll().s2.1, (-4i16) as u16);
+        assert_eq!(c.s2.cam_y, 0);
     }
 }
