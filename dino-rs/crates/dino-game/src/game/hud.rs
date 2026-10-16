@@ -67,6 +67,12 @@ pub struct HudSlot {
     /// +$E / +$F kind and name id saved for the hud_portrait blink.
     pub saved_kind: u8,
     pub saved_id: u8,
+    /// G.-$7096 / -$7094 / -$7092 weapon display active flag.
+    pub weapon_active: u16,
+    /// G.-$709E / -$709C / -$709A weapon ammo on display.
+    pub weapon_ammo: u16,
+    /// G.-$70A6 / -$70A4 / -$70A2 weapon gun index on display.
+    pub weapon_gun: u16,
 }
 
 /// Message being drawn (G.$6B98, `a3` in the HUD code).
@@ -1181,8 +1187,8 @@ impl Game {
         let idx = id.wrapping_sub(1);
         self.hud_item_clear(i);
         let lo = idx & 0xFF;
-        if lo > 0x23 || idx >= 16 {
-            return; // entries 16.. point into code (not reached [I])
+        if lo > 0x23 || idx >= 17 {
+            return; // 0x243AC limit; entry 16 keeps the treasure 17 quirk
         }
         let mut a = self.hud.slots[i].base;
         for k in 0..3 {
@@ -1201,8 +1207,75 @@ impl Game {
     // ---------------------------------------------------------------- weapon display
 
     /// 0x2389C: weapon icon, name and ammo of the held weapon (bottom rows of the message
-    /// area, +0x5C). Not ported yet: it needs the player's held item fields (+$B4 / +$B6).
-    fn hud_weapon(&mut self, _i: usize) {}
+    /// area, +0x5C).
+    fn hud_weapon(&mut self, i: usize) {
+        if self.w.vertical_scene != 0 || i >= 3 {
+            return;
+        }
+        if self.players[i].item != 0 {
+            // 0x238C4: the two helpers work on copies (G.-$70A0 ammo, G.-$70A8 gun index).
+            self.hud.slots[i].weapon_active = 1;
+            let mut ammo = self.hud.slots[i].weapon_ammo;
+            let mut gun = self.hud.slots[i].weapon_gun;
+            self.hud_weapon_check(i, &mut ammo, &mut gun);
+            self.hud_weapon_draw(i, ammo, gun);
+            self.hud.slots[i].weapon_ammo = ammo;
+            self.hud.slots[i].weapon_gun = gun;
+        } else if self.hud.slots[i].weapon_active != 0 {
+            self.hud.slots[i].weapon_active = 0;
+            self.hud.slots[i].weapon_ammo = 0;
+            self.hud_weapon_clear(i);
+        }
+    }
+
+    /// 0x239B0: a new gun index or a new ammo count sets the redraw flag G.-$7098.
+    fn hud_weapon_check(&mut self, i: usize, ammo: &mut u16, gun: &mut u16) {
+        let item_type = self.players[i].item_type;
+        if item_type >> 8 == 0 {
+            return self.hud_weapon_clear(i);
+        }
+        let g = (item_type & 0xFF).wrapping_sub(4);
+        if g != *gun {
+            *gun = g;
+            self.hud.weapon_dirty = 1;
+        } else {
+            let a = self.body(self.players[i].item).hp; // +$6C of the held item
+            if a == *ammo {
+                return; // 0x239EE: no change, no type test
+            }
+            *ammo = a;
+            if a == 0 {
+                return self.hud_weapon_clear(i); // 0x23A20
+            }
+            self.hud.weapon_dirty = 1;
+        }
+        // 0x23A04: types above 9 have no display
+        if item_type & 0xFF > 9 {
+            self.hud.weapon_dirty = 0;
+            self.hud_weapon_clear(i);
+        }
+    }
+
+    /// 0x23A24: the guns (types 4 to 9) redraw only with the flag set; the other weapons every frame.
+    fn hud_weapon_draw(&mut self, i: usize, ammo: u16, gun: u16) {
+        let item_type = self.players[i].item_type;
+        let t = item_type & 0xFF;
+        if item_type >> 8 == 0 || t > 9 {
+            return;
+        }
+        if t >= 4 {
+            if self.hud.weapon_dirty != 0 {
+                self.hud_draw_gun_icon(i, gun);
+                self.hud_draw_gun_name(i, gun);
+                self.hud_draw_cartridge_bar(i, gun, ammo);
+                self.hud_draw_gun_ammo(i, gun, ammo);
+            }
+        } else {
+            self.hud_draw_arm_icon(i);
+            self.hud_clear_cartridge_bar(i);
+            self.hud_draw_weapon_name(i, self.players[i].item);
+        }
+    }
 
     /// 0x2388E: clear the weapon redraw flag, then 0x2389C.
     fn hud_weapon_reset(&mut self, i: usize) {
@@ -1212,11 +1285,151 @@ impl Game {
         self.hud.weapon_dirty = 0;
         self.hud_weapon(i);
     }
+
+    /// 0x23EC0: erase the weapon display area (16 cols x 2 rows, or 24 cols with 2 players).
+    fn hud_weapon_clear(&mut self, i: usize) {
+        let p = &self.players[i];
+        if p.item != 0 && (p.item_type >> 8) != 0 && p.b.live == 1 && (p.item_type & 0xFF) < 4 {
+            return;
+        }
+        let base = self.hud.slots[i].base;
+        let mut a = base + 0x5C;
+        let cols = if self.hud_two_players() { 24 } else { 16 };
+        for _ in 0..cols {
+            self.hud_put(a, 0x20, 0);
+            self.hud_put(a + 4, 0x20, 0);
+            a += 0x80;
+        }
+    }
+
+    /// 0x23A90: draw the 2x3 gun icon at base + 0x5C.
+    fn hud_draw_gun_icon(&mut self, i: usize, gun_idx: u16) {
+        let base = self.hud.slots[i].base;
+        let mut a = base + 0x5C;
+        let t = &self.assets.text;
+        let off = (gun_idx as u32) * 16;
+        for col in 0..3 {
+            let c0 = t.u16(0x23AC6, off + col * 4);
+            let c1 = t.u16(0x23AC6, off + col * 4 + 2);
+            self.hud_put(a, c0, 0xC);
+            self.hud_put(a + 4, c1, 0xC);
+            a += 0x80;
+        }
+    }
+
+    /// 0x23B26: draw the ARM icon (3 cols x 2 rows) at base + 0x5C.
+    fn hud_draw_arm_icon(&mut self, i: usize) {
+        let base = self.hud.slots[i].base;
+        let mut a = base + 0x5C;
+        let t = &self.assets.text;
+        for col in 0..3 {
+            let c0 = t.u16(0x23B52, col * 4);
+            let c1 = t.u16(0x23B52, col * 4 + 2);
+            self.hud_put(a, c0, 0xC);
+            self.hud_put(a + 4, c1, 0xC);
+            a += 0x80;
+        }
+    }
+
+    /// 0x23C2C: print gun name at base + 0x35C.
+    fn hud_draw_gun_name(&mut self, i: usize, gun_idx: u16) {
+        let base = self.hud.slots[i].base;
+        let s = self.assets.text.table_string(0x23C58, gun_idx as u32);
+        self.hud_print(&s, base + 0x35C);
+    }
+
+    /// 0x23CAC: print other weapon name at base + 0x25C.
+    fn hud_draw_weapon_name(&mut self, i: usize, held_item: Handle) {
+        let base = self.hud.slots[i].base;
+        let var26 = (self.body(held_item).var26 & 0xFFFE) as u32;
+        let s = self.assets.text.table_string(0x23CDE, var26 / 2);
+        self.hud_print(&s, base + 0x25C);
+    }
+
+    /// 0x23DDC: draw 12-cell cartridge bar at base + 0x1E0 (0x184 + 0x5C).
+    fn hud_draw_cartridge_bar(&mut self, i: usize, gun_idx: u16, ammo: u16) {
+        if ammo == 0 {
+            self.hud_weapon_clear(i);
+            return;
+        }
+        // 0x23E6E: step * ammo; guns 2 and 3 start at 1 and halve the sum
+        let step = self.assets.text.u16(0x23EB4, gun_idx as u32 * 2);
+        let mut d0: u16 = if gun_idx == 2 || gun_idx == 3 {
+            1u16.wrapping_add(step.wrapping_mul(ammo)) >> 1
+        } else {
+            step.wrapping_mul(ammo)
+        };
+        let base = self.hud.slots[i].base;
+        let mut a = base + 0x1E0;
+        for _ in 0..12 {
+            let code = if d0 >= 2 {
+                d0 -= 2;
+                0xCF
+            } else if d0 == 1 {
+                d0 -= 1;
+                0xDF
+            } else {
+                0x20
+            };
+            self.hud_put(a, code, 0xB);
+            a += 0x80;
+        }
+    }
+
+    /// 0x23E42: clear the cartridge bar (12 cells with spaces at base + 0x1E0).
+    fn hud_clear_cartridge_bar(&mut self, i: usize) {
+        let base = self.hud.slots[i].base;
+        let mut a = base + 0x1E0;
+        for _ in 0..12 {
+            self.hud_put(a, 0x20, 0xB);
+            a += 0x80;
+        }
+    }
+
+    /// 0x23B62: draw the 2-digit ammo at base + 0x25C. Red when ammo <= threshold.
+    fn hud_draw_gun_ammo(&mut self, i: usize, gun_idx: u16, ammo: u16) {
+        let thresh = self.assets.text.u16(0x23BD0, gun_idx as u32 * 2);
+        let attr = if ammo > thresh { 0 } else { 2 };
+        let bcd = if (ammo as usize) < 80 {
+            self.assets.text.u8(0x23BDC, ammo as u32)
+        } else {
+            to_bcd(ammo) as u8
+        };
+        let tens = (bcd >> 4) & 0xF;
+        let ones = bcd & 0xF;
+        let base = self.hud.slots[i].base;
+        let a = base + 0x25C;
+        let c_tens = if tens == 0 { 0x20 } else { tens as u16 };
+        self.hud_put(a, c_tens, attr);
+        self.hud_put(a + 0x80, ones as u16, attr);
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dino_assets::AssetPack;
+    use std::path::Path;
+    use std::sync::OnceLock;
+
+    fn rom_assets() -> Option<&'static AssetPack> {
+        static A: OnceLock<Option<&'static AssetPack>> = OnceLock::new();
+        *A.get_or_init(|| {
+            for p in &["dino.zip", "../dino.zip", "../../../dino.zip"] {
+                if Path::new(p).exists() {
+                    if let Ok(pack) = dino_extract::extract(Path::new(p)) {
+                        return Some(Box::leak(Box::new(pack)));
+                    }
+                }
+            }
+            None
+        })
+    }
+
+    fn cell(g: &Game, a: u32) -> (u16, u16) {
+        let idx = (a.wrapping_sub(0x908000) / 4) as usize & 0xFFF;
+        (g.vram.scroll1[idx].code, g.vram.scroll1[idx].attr)
+    }
 
     #[test]
     fn bcd() {
@@ -1226,5 +1439,180 @@ mod tests {
         assert_eq!(bcd_add32(0x9999_9999, 1), (0, true));
         assert_eq!(bcd_sub32(0x0010_0000, 0x0001_0000, 0), (0x0009_0000, 0));
         assert_eq!(bcd_sub32(0, 0x0001_0000, 0).0, 0x9999_0000);
+    }
+
+    #[test]
+    fn gun_hud_display_and_ammo_colors() {
+        let Some(assets) = rom_assets() else { return };
+        let mut g = Game::new(assets);
+        g.hud_init();
+
+        let gun_configs: [(u16, u16, u16); 6] = [
+            (0, 6, 2),   // GUN: max 6, thresh 2
+            (1, 6, 2),   // RIFLE: max 6, thresh 2
+            (2, 48, 12), // UZI: max 48, thresh 12
+            (3, 48, 12), // M-16A1: max 48, thresh 12
+            (4, 6, 2),   // SHOT GUN: max 6, thresh 2
+            (5, 4, 1),   // BAZOOKA: max 4, thresh 1
+        ];
+
+        let item_h = g.items.handle(0);
+        g.players[0].item = item_h;
+        g.items.slots[0].b.live = 1;
+
+        let base = g.hud.slots[0].base; // 0x90A014
+
+        for (gun_idx, max_ammo, thresh) in gun_configs {
+            let item_type = (1 << 8) | (4 + gun_idx);
+            g.players[0].item_type = item_type;
+
+            // 1. Full ammo: white ammo number, full cartridge bar (12 segments)
+            g.items.slots[0].b.hp = max_ammo;
+            g.hud_weapon_reset(0);
+            g.hud_weapon(0);
+
+            assert_eq!(g.hud.slots[0].weapon_active, 1);
+            assert_eq!(g.hud.slots[0].weapon_gun, gun_idx);
+            assert_eq!(g.hud.slots[0].weapon_ammo, max_ammo);
+
+            // Icon tiles at base + 0x5C have attr 0xC
+            assert_eq!(cell(&g, base + 0x5C).1, 0xC);
+            assert_eq!(cell(&g, base + 0x5C + 4).1, 0xC);
+
+            // Ammo number at base + 0x25C: attr should be 0 (white) because max_ammo > thresh
+            assert_eq!(cell(&g, base + 0x25C).1, 0);
+
+            // Cartridge bar at base + 0x1E0: all 12 cells should be 0xCF with attr 0xB
+            for c in 0..12 {
+                assert_eq!(cell(&g, base + 0x1E0 + c * 0x80), (0xCF, 0xB));
+            }
+
+            // 2. Ammo at red threshold: attr should be 2 (red)
+            g.items.slots[0].b.hp = thresh;
+            g.hud_weapon(0);
+            assert_eq!(g.hud.slots[0].weapon_ammo, thresh);
+            assert_eq!(cell(&g, base + 0x25C).1, 2, "ammo at threshold should be red (attr 2)");
+
+            // 3. Ammo at 1: attr should be 2 (red)
+            g.items.slots[0].b.hp = 1;
+            g.hud_weapon(0);
+            assert_eq!(g.hud.slots[0].weapon_ammo, 1);
+            assert_eq!(cell(&g, base + 0x25C).1, 2, "ammo at 1 should be red (attr 2)");
+        }
+    }
+
+    #[test]
+    fn other_weapon_types_and_empty_guns() {
+        let Some(assets) = rom_assets() else { return };
+        let mut g = Game::new(assets);
+        g.hud_init();
+
+        let item_h = g.items.handle(0);
+        g.players[0].item = item_h;
+        g.items.slots[0].b.live = 1;
+        let base = g.hud.slots[0].base;
+
+        // Other weapon types (item_type_lo = 1, 2, 3):
+        // Var26: 4 = KNIFE, 8 = STICK, 14 = CLUB, 16 = TORCH, etc.
+        g.players[0].item_type = (1 << 8) | 2; // melee swing type
+        g.items.slots[0].b.var26 = 4; // KNIFE
+        g.hud_weapon_reset(0);
+
+        assert_eq!(g.hud.slots[0].weapon_active, 1);
+        // ARM icon at base + 0x5C with attr 0xC
+        assert_eq!(cell(&g, base + 0x5C).1, 0xC);
+        // Cartridge bar at base + 0x1E0 is cleared to spaces (0x20)
+        assert_eq!(cell(&g, base + 0x1E0).0, 0x20);
+
+        // Empty gun held as throwable (e.g. item_type_lo = 1, var26 = 2 -> "GUN")
+        g.players[0].item_type = (1 << 8) | 1;
+        g.items.slots[0].b.var26 = 2; // GUN
+        g.hud_weapon_reset(0);
+
+        assert_eq!(g.hud.slots[0].weapon_active, 1);
+        assert_eq!(cell(&g, base + 0x5C).1, 0xC);
+        assert_eq!(cell(&g, base + 0x1E0).0, 0x20);
+    }
+
+    #[test]
+    fn three_player_hud_blocks() {
+        let Some(assets) = rom_assets() else { return };
+        let mut g = Game::new(assets);
+        g.hud_init();
+
+        // 3 player mode: bases 0x90A014, 0x90A814, 0x90B014
+        assert_eq!(g.hud.slots[0].base, 0x90A014);
+        assert_eq!(g.hud.slots[1].base, 0x90A814);
+        assert_eq!(g.hud.slots[2].base, 0x90B014);
+
+        // Give weapon to player 0, 1 (middle), and 2 (right)
+        for i in 0..3 {
+            let item_h = g.items.handle(i);
+            g.players[i].item = item_h;
+            g.players[i].item_type = (1 << 8) | 4; // GUN
+            g.items.slots[i].b.live = 1;
+            g.items.slots[i].b.hp = 6;
+            g.hud_weapon_reset(i);
+
+            let base = g.hud.slots[i].base;
+            assert_eq!(cell(&g, base + 0x5C).1, 0xC);
+            assert_eq!(cell(&g, base + 0x25C).1, 0); // white ammo
+            assert_eq!(cell(&g, base + 0x1E0), (0xCF, 0xB)); // full bar
+        }
+    }
+
+    #[test]
+    fn weapon_clear_on_drop() {
+        let Some(assets) = rom_assets() else { return };
+        let mut g = Game::new(assets);
+        g.hud_init();
+
+        let item_h = g.items.handle(0);
+        g.players[0].item = item_h;
+        g.players[0].item_type = (1 << 8) | 4;
+        g.items.slots[0].b.live = 1;
+        g.items.slots[0].b.hp = 6;
+        g.hud_weapon_reset(0);
+        assert_eq!(g.hud.slots[0].weapon_active, 1);
+
+        // Drop weapon
+        g.players[0].item = 0;
+        g.hud_weapon(0);
+
+        assert_eq!(g.hud.slots[0].weapon_active, 0);
+        assert_eq!(g.hud.slots[0].weapon_ammo, 0);
+
+        let base = g.hud.slots[0].base;
+        // Icon area cleared
+        assert_eq!(cell(&g, base + 0x5C).0, 0x20);
+        assert_eq!(cell(&g, base + 0x5C + 4).0, 0x20);
+    }
+
+    #[test]
+    fn item_messages_food_and_treasure_including_quirk() {
+        let Some(assets) = rom_assets() else { return };
+        let mut g = Game::new(assets);
+        g.hud_init();
+
+        let base = g.hud.slots[0].base;
+
+        // Food message
+        g.hud_food_msg(0, 1, 100); // BARBECUE, heal 100
+        assert_eq!(g.hud.slots[0].timer, 0x3C);
+        // FooD icon at base
+        assert_eq!(cell(&g, base).1, 0xC);
+        assert_eq!(cell(&g, base + 4).1, 0xC);
+
+        // Treasure message
+        g.hud_treasure_msg(0, 1); // GOLD
+        assert_eq!(g.hud.slots[0].timer, 0x3C);
+        // Pts icon at base
+        assert_eq!(cell(&g, base).1, 0xC);
+        assert_eq!(cell(&g, base + 4).1, 0xC);
+
+        // Treasure 17 quirk: id 17 (idx 16) must not be dropped
+        g.hud_treasure_msg(0, 17);
+        assert_eq!(g.hud.slots[0].timer, 0x3C);
+        assert_eq!(cell(&g, base).1, 0xC);
     }
 }
