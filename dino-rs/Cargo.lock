@@ -113,6 +113,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "dino-sound"
+version = "0.1.0"
+dependencies = [
+ "dino-assets",
+ "dino-extract",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
