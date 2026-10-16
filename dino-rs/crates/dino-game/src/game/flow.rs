@@ -222,6 +222,7 @@ impl Game {
     /// (0 = the area's start). The players move with the camera, and the spawn records the camera has passed are skipped
     /// (like the probe jump, see `re/harness/probe/probe.lua`). Not exact: no camera events ran to reach X.
     pub fn start_stage_at(&mut self, stage: u8, area: u8, camx: u16, chars: &[u8]) {
+        self.flow_sys_init(); // Direct starts bypass boot's 0x9CFC6 credit/task setup.
         self.hud_hiscore_init();
         let mut bits = 0u8;
         for i in 0..chars.len().min(3) {
@@ -238,6 +239,10 @@ impl Game {
         self.w.stage = stage;
         self.cam.s2.area = area;
         self.flow_stage_start();
+        // Direct starts bypass the select task's 0x71DA transition to playing.
+        for j in self.flow.join.iter_mut().take(chars.len().min(3)) {
+            j.state = 6;
+        }
         if camx != 0 {
             self.flow_jump_camera(camx);
         }

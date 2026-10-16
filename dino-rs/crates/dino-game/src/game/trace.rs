@@ -1243,6 +1243,30 @@ impl Game {
 
     fn trace_flow(&mut self, f: &mut F) {
         let fl = &mut self.flow;
+        // 0x6C4A reads the system task's credit/debounce state between snapshots.
+        let s = &mut fl.front.sys;
+        f.u8(0x046A, "credits", &mut s.credits);
+        f.flag(0x046B, "free_play", &mut s.free_play);
+        f.flag(0x046C, "two_coin_start", &mut s.two_coin_start);
+        f.u8(0x046D, "press_up", &mut s.press_up);
+        f.u8(0x046E, "coin_pulse", &mut s.pulse);
+        f.u8(0x046F, "coin_pulse_timer", &mut s.pulse_timer);
+        f.u8(0x0470, "coins_per_credit", &mut s.coins_per_credit);
+        f.u8(0x0471, "credits_per_coin", &mut s.credits_per_coin);
+        f.flag(0x0472, "common_chute", &mut s.common);
+        f.flag(0x0473, "credit_redraw", &mut s.redraw);
+        f.flag(0x0474, "two_player_chute", &mut s.two_player);
+        f.u8(0x0475, "common_coins", &mut s.common_coins);
+        f.u8(0x0476, "common_prev", &mut s.common_prev);
+        f.u8(0x0477, "prompt_hold", &mut s.hold);
+        for (i, slot) in s.slots.iter_mut().enumerate() {
+            let at = 0x047A + 16 * i as u32;
+            f.u8(at, "coin_timer", &mut slot.timer);
+            f.u8(at + 1, "slot_coins", &mut slot.coins);
+            f.u8(at + 2, "coin_shift", &mut slot.shift);
+            f.u8(at + 3, "slot_credits", &mut slot.credits);
+            f.u8(at + 4, "slot_prev", &mut slot.prev);
+        }
         f.u8(0x04CC, "in_game", &mut fl.in_game);
         f.u8(0x04CD, "started", &mut fl.started);
         f.u8(0x04E4, "chosen", &mut fl.chosen);
@@ -1503,9 +1527,20 @@ impl Game {
             }
         }
         self.flow.front.prev_system = ram[0x801F];
-        for i in 0..3 {
-            // Join / continue task 0x6C4A is a stub: nothing to load beyond +$A2.
-            let _ = i;
+        self.flow.front.prev_input.copy_from_slice(&ram[0x801B..0x801E]);
+        self.flow.region.0 = u16::from_be_bytes([ram[0x8032], ram[0x8033]]);
+        // Slot 0 runs the system task, slot 1 the in-game join task (0x6C4A).
+        for (slot, scene) in [(0, &mut self.flow.front.sys_task), (1, &mut self.flow.join_task)] {
+            let (st, cnt) = task(slot);
+            *scene = super::flow::scene::Scene::default();
+            if self.flow.in_game != 0 && st != 0 {
+                *scene = super::flow::scene::Scene::start(0);
+                if st == 1 && cnt != 0 {
+                    scene.sleep(cnt as u16);
+                } else if st == 2 {
+                    scene.sleep(0);
+                }
+            }
         }
     }
 

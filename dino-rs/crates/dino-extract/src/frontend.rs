@@ -70,8 +70,15 @@ fn scene_palettes(rom: &Rom, set: u32) -> ScenePalettes {
 }
 
 pub fn extract(rom: &Rom) -> FrontendData {
+    // Layout pointer tables used by join prompts (0x8050..0x83D4).
+    const TABLES: &[(u32, u32, &str)] = &[
+        (0x80F4, 8, "two-player big prompt origins"),
+        (0x8242, 12, "three-player HUD prompt origins"),
+        (0x8292, 8, "two-player HUD prompt origins"),
+        (0x83D6, 0x24, "HUD credit line origins and first byte string (attribute at 0x83EA)"),
+    ];
     FrontendData {
-        text: TextData { blobs: FRONT_TABLES.iter().map(|&(a, n, _)| (a, (a..a + n).map(|x| rom.u8(x)).collect())).collect() },
+        text: TextData { blobs: FRONT_TABLES.iter().chain(TABLES).map(|&(a, n, _)| (a, (a..a + n).map(|x| rom.u8(x)).collect())).collect() },
         scroll1_pages: (0..SCROLL1_PAGE_COUNT).map(|n| page(rom, SCROLL1_PAGES, n)).collect(),
         scroll1_blocks: (0..SCROLL1_BLOCK_COUNT)
             .map(|id| {
