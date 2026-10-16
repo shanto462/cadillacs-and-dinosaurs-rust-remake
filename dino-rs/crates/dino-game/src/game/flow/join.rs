@@ -1,5 +1,5 @@
 //! Join task 0x6C4A: absent-player prompts, quick hero strip and pick.
-//! Continue and game over are M2-20/21.
+//! Continue is in `cont.rs`; game over and name entry are M2-21/22.
 
 use crate::game::Game;
 
@@ -39,11 +39,14 @@ impl Game {
                         self.flow.started &= !(1 << i);
                         if self.flow.b4d7 == 0 {
                             self.flow.join[i] = Join { state: 8, seconds: 0x14, frames: 0x64 };
+                            self.flow_join_clear(i, 0x7FB6, 0x7FC2);
+                            self.flow_continue_draw_hud(i); // 0x7328
                         }
-                        // TODO(M2-20/21): no-continue qualification and countdown drawing.
+                        // TODO(M2-21/22): no-continue qualification.
                     }
                 }
-                _ => {} // M2-20/21: continue, name entry and GAME OVER.
+                8 => self.flow_continue_player(i),
+                _ => {} // M2-21/22: name entry and GAME OVER.
             }
         }
         // 0x6C8A..0x6D46: nobody playing, or only continue countdowns left.
@@ -55,6 +58,10 @@ impl Game {
             self.flow.mode = 0x10;
             self.flow.sub = 0;
             self.flow.sub2 = 0;
+            // 0x6D46: the game task is still completing its old mode in this
+            // video frame. The continue setup first completes next frame.
+            self.flow.wait = 2;
+            self.flow_continue_begin();
             // The second path (0x6D40) also holds the HUD and clears G.$5E4 (name entry, M2-22: not modeled yet).
             if self.flow.started != 0 {
                 self.spawn.g.b4d5 = 1;
@@ -229,7 +236,7 @@ impl Game {
     }
 
     /// 0x723E: move in select order, skipping only heroes held by strip or play states.
-    fn flow_join_cursor(&mut self, i: usize, direction: i8) {
+    pub(super) fn flow_join_cursor(&mut self, i: usize, direction: i8) {
         let t = &self.assets.frontend.text;
         loop {
             let pos = t.u8(0x7232, self.players[i].b.id as u32).wrapping_add(direction as u8) & 3;
@@ -244,7 +251,7 @@ impl Game {
     }
 
     /// 0x7476 / 0x748A: increment only the last BCD score byte, saturating it at 99.
-    fn flow_join_scores(&mut self) {
+    pub(super) fn flow_join_scores(&mut self) {
         for p in &mut self.players {
             let lo = p.score as u8;
             let next = if lo >= 0x99 { 0x99 } else if lo & 15 == 9 { lo.wrapping_add(7) } else { lo.wrapping_add(1) };
@@ -281,7 +288,7 @@ impl Game {
     }
 
     /// 0x7F86 / 0x800E -> 0xF94: blank the ROM rectangle in the HUD block.
-    fn flow_join_clear(&mut self, i: usize, three: u32, two: u32) {
+    pub(super) fn flow_join_clear(&mut self, i: usize, three: u32, two: u32) {
         if self.spawn.g.b4d5 != 0 { return; }
         let t = &self.assets.frontend.text;
         let a = if self.flow.b4cf == 0 { three } else { two } + 4 * i as u32;
@@ -346,7 +353,7 @@ impl Game {
     }
 
     /// 0x8242 / 0x8292: prompt origin, read from the ROM layout table.
-    fn flow_join_prompt_at(&self, i: usize) -> u32 {
+    pub(super) fn flow_join_prompt_at(&self, i: usize) -> u32 {
         self.assets.frontend.text.u32(if self.flow.b4cf == 0 { 0x8242 } else { 0x8292 }, 4 * i as u32)
     }
 
@@ -408,12 +415,11 @@ impl Game {
                 self.flow_join_draw_strip(i); // 0x7592..0x759E
             }
         }
-        // State 8 redraw (0x75AC) belongs to M2-20.
-    }
-
-    /// Game mode 0x10 (0xE9E6). TODO(M2-20): continue screen.
-    pub fn flow_continue_mode(&mut self) {
-        self.flow.mode = 0x14;
+        for i in 0..3 {
+            if self.flow.join[i].state == 8 {
+                self.flow_continue_draw_hud(i); // 0x75AC
+            }
+        }
     }
 }
 

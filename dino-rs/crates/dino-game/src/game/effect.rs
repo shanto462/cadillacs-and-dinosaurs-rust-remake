@@ -360,6 +360,7 @@ impl Game {
             }
             match self.effects.slots[i].b.k20 {
                 FX_SPARK => self.fx_spark(i),
+                0x18 if self.effects.slots[i].b.var26 == 0 => self.flow_continue_flash(i),
                 0x38 => self.fx_player_marker(i),
                 0x5C => self.fx_respawn_sparkle(i),
                 FX_WATER_SPLASH => self.fx_water_splash(i),

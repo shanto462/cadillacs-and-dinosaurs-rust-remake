@@ -28,6 +28,7 @@ pub mod demo;
 pub mod front;
 #[path = "flow/join.rs"]
 pub mod join;
+pub mod cont;
 #[cfg(test)]
 #[path = "flow/mame_check.rs"]
 mod mame_check;
@@ -161,6 +162,8 @@ pub struct Flow {
     /// The opening movie's own state (`movie.rs`).
     pub movie: movie::Movie,
     pub join: [join::Join; 3],
+    /// G.$5CC: continue screen state and the separate scene tilemap banks.
+    pub cont: cont::Continue,
     /// The join task 0x6C4A (slot 0x10, `select.rs`): created by mode 0.
     pub join_task: scene::Scene,
     /// The mode routine of the game task sleeps inside itself (`jsr 0xA76` and the other sleeps): its next run goes on in the routine
