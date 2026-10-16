@@ -79,6 +79,8 @@ pub struct Effect {
     pub off_y: i16,
     /// +$60 (long) speed of a cloud of the ranking screen, added to X every frame.
     pub speed60: i32,
+    /// +$64 ROM pointer to the blood particle scatter offsets (0x94150).
+    pub scatter64: u32,
 }
 
 /// A pool D slot (allocator 0x48A8, free 0x4994, 0x80 bytes, `Game::draw_special_alloc`): a passive record that the
@@ -221,6 +223,128 @@ impl Game {
         &self.assets.effects
     }
 
+    /// 0x92C9A: return flash (variant 0), muzzle flash (4) and blood splash (8).
+    fn fx_continue_flash(&mut self, i: usize) {
+        if self.effects.slots[i].b.var26 == 0 {
+            self.flow_continue_flash(i);
+            return;
+        }
+        let e = &mut self.effects.slots[i];
+        if e.b.mode == 0 {
+            e.b.visible = 1;
+            let fx = &self.assets.effects;
+            let addr = if e.b.var26 == 4 { 0x92E1E } else { 0x92E34 };
+            fx_load(&mut e.b, fx, fx.frame_at(addr));
+            e.b.facing = 0;
+            e.b.draw_flags = 0x10;
+            e.b.z = (if e.b.var26 == 4 { 16 } else { 8 }) << 16;
+            if e.b.var26 == 4 {
+                e.b.x = 0xA6 << 16;
+                e.b.y = 0x5A << 16;
+            }
+            e.b.mode = 2;
+        }
+        let finished = if self.flow.sub2 as u8 == 6 {
+            true
+        } else {
+            let last = fx_tick(&mut e.b, &self.assets.effects);
+            e.b.var26 == 4 && last
+        };
+        if finished {
+            self.fx_free(i);
+        } else {
+            self.draw_list_add_if_visible(self.effects.handle(i));
+        }
+    }
+
+    /// 0x93FFC..0x9409E: the GAME and OVER raw sprite lists slide toward each other.
+    fn fx_game_over_word(&mut self, i: usize) {
+        let e = &mut self.effects.slots[i];
+        if e.b.mode == 0 {
+            e.b.mode = 2;
+            e.b.visible = 1;
+            e.b.draw_flags = 0x50;
+            let right = e.b.var26 != 0;
+            let fx = &self.assets.effects;
+            raw_load(&mut e.b, fx, fx.raw_at(if right { 0x940AE } else { 0x940A4 }));
+            e.b.x = (if right { -8 } else { 0x188 }) << 16;
+            e.b.y = 0x80 << 16;
+            e.b.z = 0;
+            e.b.vx = if right { 0x2000 } else { -0x2000 };
+            return;
+        }
+        if e.b.mode >= 6 {
+            self.fx_free(i);
+            return;
+        }
+        if e.b.mode == 4 {
+            self.draw_list_add_if_visible(self.effects.handle(i));
+            return;
+        }
+        if (e.b.var26 == 0 && e.b.xi() <= 0x78)
+            || (e.b.var26 != 0 && e.b.xi() >= 0x108) {
+            e.b.mode = e.b.mode.wrapping_add(2);
+        } else {
+            e.b.motion();
+        }
+        self.draw_list_add_if_visible(self.effects.handle(i));
+    }
+
+    /// 0x94100..0x94218: blood particle chain. RNG is called only above seven free slots.
+    fn fx_continue_blood(&mut self, i: usize) {
+        let e = &mut self.effects.slots[i];
+        if e.b.mode >= 4 {
+            self.fx_free(i);
+            return;
+        }
+        if e.b.mode == 0 {
+            e.b.visible = 1;
+            let t = &self.assets.frontend.text;
+            let addr = t.u32(0x9421A, 2 * e.b.var26 as u32);
+            let fx = &self.assets.effects;
+            fx_load(&mut e.b, fx, fx.frame_at(addr));
+            e.b.z = 8 << 16;
+            e.b.draw_flags = 0x10;
+            e.b.mode = 2;
+            if e.b.var26 < 6 {
+                e.scatter64 = self.assets.frontend.text.u32(0x9425A, 2 * e.b.var26 as u32);
+                self.fx_continue_blood_children(i);
+            }
+        }
+        fx_tick(&mut self.effects.slots[i].b, &self.assets.effects);
+        self.draw_list_add_if_visible(self.effects.handle(i));
+    }
+
+    /// 0x9416C / 0x941E0: one or two children, allocation before each position RNG call.
+    fn fx_continue_blood_children(&mut self, i: usize) {
+        if self.effects.free_count() <= 7 {
+            return;
+        }
+        let n = if self.rand() & 0x1F >= 0x1C { 2 } else { 1 };
+        self.effects.slots[i].owner58 = (self.effects.slots[i].owner58 & 0xFF) | (n << 8);
+        for _ in 0..n {
+            if let Some(child) = self.effects.alloc() {
+                let random = self.rand() & 7;
+                self.effects.slots[i].b.dir = random as u8;
+                let e = &self.effects.slots[i];
+                let (x, y, z, var, scatter) = (e.b.xi(), e.b.yi(), e.b.z, e.b.var26, e.scatter64);
+                let t = &self.assets.frontend.text;
+                let dx = (t.u16(scatter, 4 * random as u32) as i16) >> 8;
+                let dy = (t.u16(scatter, 4 * random as u32 + 2) as i16) >> 8;
+                let b = &mut self.effects.slots[child].b;
+                b.live = 1;
+                b.k20 = 0x44;
+                b.var26 = var.wrapping_add(2);
+                b.x = (x.wrapping_add(dx) as i32) << 16;
+                b.y = (y.wrapping_add(dy) as i32) << 16;
+                b.z = z;
+            }
+            let e = &mut self.effects.slots[i];
+            let n = ((e.owner58 >> 8) as u8).wrapping_sub(1);
+            e.owner58 = (e.owner58 & 0xFF) | ((n as u16) << 8);
+        }
+    }
+
     /// 0x18C18 / 0x18C1E / 0x18C20: attach the respawn bubble or 1UP marker.
     pub(super) fn fx_spawn_player_marker(&mut self, player: usize, variant: u16) {
         let Some(i) = self.fx_alloc() else { return };
@@ -360,7 +484,9 @@ impl Game {
             }
             match self.effects.slots[i].b.k20 {
                 FX_SPARK => self.fx_spark(i),
-                0x18 if self.effects.slots[i].b.var26 == 0 => self.flow_continue_flash(i),
+                0x18 => self.fx_continue_flash(i),
+                0x40 => self.fx_game_over_word(i),
+                0x44 => self.fx_continue_blood(i),
                 0x38 => self.fx_player_marker(i),
                 0x5C => self.fx_respawn_sparkle(i),
                 FX_WATER_SPLASH => self.fx_water_splash(i),

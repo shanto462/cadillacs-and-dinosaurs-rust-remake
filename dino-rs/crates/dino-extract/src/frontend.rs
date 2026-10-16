@@ -73,6 +73,10 @@ pub fn extract(rom: &Rom) -> FrontendData {
     // Layout pointer tables used by join prompts (0x8050..0x83D4).
     const TABLES: &[(u32, u32, &str)] = &[
         (0x7F48, 0x3E, "continue HUD origins and digit tiles"),
+        (0xED40, 24, "blood particle origins (0xED2E)"),
+        (0xFAF8, 0xF0, "game-over palette pointers and targets (0xED86)"),
+        (0x9421A, 16, "blood particle frame pointers (0x94120)"),
+        (0x9425A, 0x6C, "blood scatter pointers and offsets (0x94150)"),
         (0xF026, 0x22, "continue mouth timing"),
         (0xF072, 12, "continue mouth tile pointers"),
         (0xF0A0, 8, "continue eye tile pointers"),

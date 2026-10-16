@@ -711,18 +711,39 @@ impl Game {
 
     /// Modes 0x14 / 0x18 (0xAC06 / 0xAC26): game over, back to the attract mode.
     fn flow_game_over(&mut self) {
-        self.flow.intro.live = false;
-        self.flow.tally.live = false;
-        self.flow.front.game_over_flag = 1; // G.-$702E
-        self.flow_clear_screen();
-        self.sound(0xFF00);
+        if self.flow.cont.exit_wait > 1 {
+            self.flow.cont.exit_wait -= 1;
+            if self.flow.mode == 0x18 && self.flow.cont.exit_wait == 2 {
+                if self.flow.mode != 0x18 {
+            self.sound(0xFF00);
+        }, before creating the attract task.
+            }
+            return;
+        }
+        if self.flow.mode == 0x14 {
+            self.flow.intro.live = false;
+            self.flow.tally.live = false;
+            self.flow.join_task.kill(); // 0xAC06: slot 0x10.
+            self.flow.mode = 0x18;
+            self.flow.front.game_over_flag = 1;
+            self.flow_clear_screen();
+            self.flow.cont.exit_wait = 4; // clear 0xAE0 crosses two vblanks.
+            return;
+        }
+        self.flow.cont.exit_wait = 0;
+        self.flow.front.game_over_flag = 1;
+        if self.flow.mode != 0x18 {
+            self.sound(0xFF00);
+        }
         self.flow.in_game = 0;
         self.flow.game_pending = false;
-        self.flow.front.sys.press_up = 0; // G.$46D
-        for p in self.players.iter_mut() {
-            p.b.live = 0;
-        }
+        self.flow.front.sys.press_up = 0;
         self.flow_attract_start();
+        if self.flow.mode == 0x18 {
+            // The new task slept two frames while the game task was clearing.
+            self.flow.front.task.sleep(1);
+            self.flow_attract_task(); // 0x97C26, the first awake pass.
+        }
     }
 
     // ---------------------------------------------------------------- stage intro 0xB9BE
