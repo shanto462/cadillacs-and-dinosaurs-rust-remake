@@ -193,6 +193,13 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x7906E, 42, "B12 window codes, 3 columns of 7 (0x7903A)"),
     (0x79152, 160, "B12 glass shard records, 10 of 16 bytes (0x93362)"),
     (0x79200, 24, "B12 window hit boxes, 2 records of 6 words (0x78FD2)"),
+    // pool B class 40 (steam pipes, 0x836A4, M5-14)
+    (0x83786, 6, "prop B40: kind bytes by variant / 4 (0x83786)"),
+    (0x8378C, 20, "prop B40: scroll2 base tile addresses (0x8378C)"),
+    (0x837A0, 10, "prop B40: scroll2 column step offsets (0x837A0)"),
+    (0x837E8, 22, "prop B40: tile codes (0x837E8)"),
+    (0x8380A, 24, "prop B40: kind 0 body box table (0x8380A)"),
+    (0x83822, 24, "prop B40: kind 1 body box table (0x83822)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {
