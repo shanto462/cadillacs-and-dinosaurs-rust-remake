@@ -79,7 +79,7 @@ pub struct Effect {
     pub off_y: i16,
     /// +$60 (long) speed of a cloud of the ranking screen, added to X every frame.
     pub speed60: i32,
-    /// +$64 ROM pointer to the blood particle scatter offsets (0x94150).
+    /// +$64 ROM pointer to the digit scatter offsets (0x94150, class 17 only).
     pub scatter64: u32,
 }
 
@@ -223,7 +223,8 @@ impl Game {
         &self.assets.effects
     }
 
-    /// 0x92C9A: return flash (variant 0), muzzle flash (4) and blood splash (8).
+    /// 0x92C9A: class 6 variants 4 (0x92CF6, the game-over red flash spawned by 0xEC5E) and 8 (0x92D2A).
+    /// Variant 0 is the return flash (`flow_continue_flash`).
     fn fx_continue_flash(&mut self, i: usize) {
         if self.effects.slots[i].b.var26 == 0 {
             self.flow_continue_flash(i);
@@ -290,8 +291,9 @@ impl Game {
         self.draw_list_add_if_visible(self.effects.handle(i));
     }
 
-    /// 0x94100..0x94218: blood particle chain. RNG is called only above seven free slots.
-    fn fx_continue_blood(&mut self, i: usize) {
+    /// 0x94100..0x94218: the countdown digit (class 17). Its frame comes from 0x9421A by variant, and below
+    /// seven free slots it makes one or two children (the RNG is called only then).
+    fn fx_continue_digit(&mut self, i: usize) {
         let e = &mut self.effects.slots[i];
         if e.b.mode >= 4 {
             self.fx_free(i);
@@ -308,7 +310,7 @@ impl Game {
             e.b.mode = 2;
             if e.b.var26 < 6 {
                 e.scatter64 = self.assets.frontend.text.u32(0x9425A, 2 * e.b.var26 as u32);
-                self.fx_continue_blood_children(i);
+                self.fx_continue_digit_children(i);
             }
         }
         fx_tick(&mut self.effects.slots[i].b, &self.assets.effects);
@@ -316,7 +318,7 @@ impl Game {
     }
 
     /// 0x9416C / 0x941E0: one or two children, allocation before each position RNG call.
-    fn fx_continue_blood_children(&mut self, i: usize) {
+    fn fx_continue_digit_children(&mut self, i: usize) {
         if self.effects.free_count() <= 7 {
             return;
         }
@@ -486,7 +488,7 @@ impl Game {
                 FX_SPARK => self.fx_spark(i),
                 0x18 => self.fx_continue_flash(i),
                 0x40 => self.fx_game_over_word(i),
-                0x44 => self.fx_continue_blood(i),
+                0x44 => self.fx_continue_digit(i),
                 0x38 => self.fx_player_marker(i),
                 0x5C => self.fx_respawn_sparkle(i),
                 FX_WATER_SPLASH => self.fx_water_splash(i),

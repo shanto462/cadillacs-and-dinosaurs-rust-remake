@@ -169,3 +169,6 @@ MAME wins over the design text; the design documents themselves are not edited.
 - Layer control 0x1396 (the panel of Episode 3): scroll3 is above scroll2 (the presenter had only 0x12D6 and 0x06D6).
 - The stage start 0xAC4E clears +$10B (kills) of the three heroes (0xAC7E, 0xAC8C, 0xAC9A) before 0x4DC2; the tally's kills of the stage before are not counted in the next one.
 
+- D3f classes 16 and 17 (M2-21): class 16 (handler 0x93FFC, +$20 = 0x40) is the GAME and OVER raw sprite words that slide in (lists 0x940A4 and 0x940AE, MAME equal), not a spark burst; class 17 (0x94100, +$20 = 0x44) is the countdown digit (frames 0x9421A), with spark children only while more than seven pool C slots are free, not a blood effect. The red flash of 0xEC5E is class 6 variant 4 (0x92CF6). M2-21.
+- D5 decision 8 (ranking car): the continue code 0xE9E6..0xEE6C does not make the car. It has no call to 0x8B428 or to a pool B spawn; 0x92308 only restores a palette. Pool B 86 stays with the ranking screen (M1-07). M2-21.
+- D4d A15 and A16 frame numbers: the k-1p recording (`flow_k-1p.mame.trc`) has the design time base 1812 frames before its record numbers (mode 0x10 at record 2015 is design 203; mode 0x14 at 3797 is design 1985). M2-21.

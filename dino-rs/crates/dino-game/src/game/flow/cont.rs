@@ -23,7 +23,7 @@ impl Game {
     pub(super) fn flow_continue_player(&mut self, i: usize) {
         if self.flow.mode == 0x10 {
             if self.flow.sub == 4 {
-                // TODO(M2-21/22): 0x7396 ranking qualification and GAME OVER.
+                // TODO(M2-22): 0x7396 ranking qualification (the GAME OVER scene itself is `flow_continue_game_over`).
                 return;
             }
         } else {
@@ -145,7 +145,7 @@ impl Game {
         }
     }
 
-    /// 0xE9E6: mode 0x10 dispatch. Sub 4 belongs to M2-21's game-over scene.
+    /// 0xE9E6: mode 0x10 dispatch. Sub 4 is the game-over scene (0xEBA6..0xEE6C).
     pub fn flow_continue_mode(&mut self) {
         match self.flow.sub {
             0 => self.flow_continue_setup(),
@@ -300,7 +300,7 @@ impl Game {
         }
     }
 
-    /// 0xEBA6..0xEE6C: red flash, seven blood splashes, palette drain and GAME OVER.
+    /// 0xEBA6..0xEE6C: red flash, countdown digit spawns, palette drain and GAME OVER.
     fn flow_continue_game_over(&mut self) {
         match self.flow.sub2 >> 8 {
             0 => {
@@ -330,7 +330,7 @@ impl Game {
                     } else {
                         let n = self.flow.cont.raw.b(9);
                         if n == 0 {
-                            self.flow_continue_blood();
+                            self.flow_continue_red_flash();
                         } else if n == 2 {
                             self.cam.s3.cam_y = 0;
                         } else if n == 5 && self.effects.free_count() > 2 {
@@ -356,7 +356,7 @@ impl Game {
                                 self.flow.sub2 += 2;
                                 self.flow.cont.raw.sb(0x19, 16);
                                 self.flow.cont.raw.sb(0x1A, 0);
-                                self.flow_continue_blood();
+                                self.flow_continue_red_flash();
                             }
                         }
                     }
@@ -436,8 +436,8 @@ impl Game {
         self.build_sprite_list();
     }
 
-    /// 0xEC5E: the blood flash, including the last splash after the loop.
-    fn flow_continue_blood(&mut self) {
+    /// 0xEC5E: the red flash (sound 0xE6, class 6 variant 4), also used after the last digit loop.
+    fn flow_continue_red_flash(&mut self) {
         self.snd_request(0xE6, 0x72020, 0x10000000);
         if let Some(i) = self.effects.alloc() {
             let b = &mut self.effects.slots[i].b;
@@ -629,7 +629,7 @@ impl Game {
         self.flow_continue_reset_effects();
     }
     /// 0x92C9A / 0x92CC4 / 0x92D5E: class 6 variant 0, the return flash.
-    /// Variants 1 and 2 are the game-over effects of M2-21.
+    /// Variant 4 is the game-over red flash (`effect.rs`, 0x92CF6).
     pub(crate) fn flow_continue_flash(&mut self, i: usize) {
         let e = &mut self.effects.slots[i];
         if e.b.mode == 0 {

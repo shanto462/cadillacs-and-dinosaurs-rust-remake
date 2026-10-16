@@ -19,8 +19,8 @@ const EFFECT_TABLES: &[u32] = &[
 /// Frame lists loaded directly with 0x160A (10-byte records, no table).
 const EFFECT_LISTS: &[u32] = &[
     0x92E1E, // game-over flash (0x92CF6)
-    0x92E34, // blood splash (0x92D2A)
-    0x9422A, // blood particle variants (0x94120)
+    0x92E34, // class 6 variant 8 frame (0x92D2A)
+    0x9422A, // countdown digit frames (0x94120)
     0x94236,
     0x94242,
     0x9424E,

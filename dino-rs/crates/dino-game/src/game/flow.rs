@@ -714,9 +714,7 @@ impl Game {
         if self.flow.cont.exit_wait > 1 {
             self.flow.cont.exit_wait -= 1;
             if self.flow.mode == 0x18 && self.flow.cont.exit_wait == 2 {
-                if self.flow.mode != 0x18 {
-            self.sound(0xFF00);
-        }, before creating the attract task.
+                self.sound(0xFF00); // 0xAC2C (a5d2), after the clear
             }
             return;
         }
