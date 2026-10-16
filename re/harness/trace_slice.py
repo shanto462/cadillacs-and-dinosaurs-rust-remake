@@ -3,7 +3,8 @@
 
 Usage: re/.venv/bin/python -I re/harness/trace_slice.py SOURCE.mame.trc NAME RECORD [--frames N]
        RECORD is a record number, or ADDR=VALUE (hex RAM address, byte value): the first record where the byte has that value
-       (for example FF84D1=6, the first record of the clear tally).
+       (for example FF84D1=6, the first record of the clear tally), or ADDR=VALUE:-N: N records before that one (FF84D0=8:-1 is the last record
+       before a poke of the mode 8, the story panel: the poke file of the port then writes it at frame 0).
 
 Writes re/out/traces/NAME.state (one record, frame -1: the whole state after RECORD of the source) and
 re/out/traces/NAME.mame.trc (that state as frame -1, then the records RECORD + 1 .. as frames 0 ..), so that
@@ -61,11 +62,15 @@ def main():
     t = T.Trace(args.source)
     if "=" in args.record:
         addr, val = args.record.split("=")
+        before = 0
+        if ":" in val:
+            val, before = val.split(":")
+            before = -int(before)
         addr, val = int(addr, 16) - 0xFF0000, int(val, 0)
         found = None
         for rec in t.records():
             if rec.frame >= 0 and rec.images["ram"][addr] == val:
-                found = rec.frame
+                found = rec.frame - before
                 break
         if found is None:
             sys.exit(f"no record with {args.record}")

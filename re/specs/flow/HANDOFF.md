@@ -525,8 +525,58 @@ mask, scores, G.$4E2 and the whole 0x80 byte struct G.$735E in `clear_tally_matc
   when the live objects of pool D plus twice those of pool A are 17 or more (the cycles are not counted; the rule classifies all 31 recordings right).
 
 **Not done here**
-* The story panel (mode 8, M2-28): the port's stub starts the next stage, so every run differs from MAME from the hand over record on. The links `flow_link-ep2` .. `ep8`
-  start in that panel; they have no tally.
+* The story panel (mode 8) was M2-28 and is done (next section): the tally runs now go on through the panel and the start of the next episode.
 * The tally's only sound is 0x49 (d1 = 0x10): at each of the four panel steps and every 11 frames of the count down; the map panel makes none. They equal MAME in every record.
   Episode 8's tally and the ending are not recorded (`flow_tally` is Episode 1 only): the Episode 8 path is from the listing and a unit test.
+
+## M2-26, M2-27, M2-28: the story panels, the map card and the walk in (done 2026-10-17)
+
+The chain between two episodes now runs as in the original: boss, clear tally, map panel, story panel (mode 8), stage start, map card with the typed title, slide
+out, walk in of the heroes, HUD slide in. `cargo test` green (294 in dino-game), `regress.sh`: 49 of 52 at 0, `mp_join` 38, `armed` 4, `c14c_mustapha` 8 (the new baseline).
+Checked against the MAME recordings of `flow_links` (1100 frames from the poke of the mode 8), `flow_panels` (32 recordings: the party, the skip) and `flow_tally`
+(the tally then the panel of Episode 2): `re/harness/link_check.sh` and `tally_check.sh`. Files: `flow/cards.rs` (panels and card), `flow.rs` (the intro task, the stage
+start phases), `prop/class26.rs` (the typewriter in pool B), `prop.rs` (classes 69 and 80), `flow/select.rs` (`pub(super) select_exit`, the lag of Episodes 3 and 5).
+
+* **Result per recording.** Episodes 6 and 8 run equal to MAME in all 1100 records (panel, card, title, marker, slide out, walk in, HUD slide in, G.$4E2 / G.$4E3 / G.$4D5,
+  sounds, the three layers, palettes). Episode 3 equal to record 915, Episode 7 to 991 (then the score digits of the HUD: a kill that unported classes make in MAME), Episode 2 to 560 and
+  Episode 4 to 311 (the scripted actors of the car and the garage scenes, class 97 stand ins, M3), Episode 5 to 442 (enemies and items of the start, unported classes). The
+  panels alone (up to the first level frames) are equal for every party of Episodes 4 to 8 (`flow_panels`, 330 frames), the skip by attack (`pan-skip-ep2`: mode 4 at 64) and the
+  non-skip by jump (`pan-skip-ep2-jump`). The tally recordings (31) run equal to their end, through the hand over and the first frames of Episode 2's panel (up to 150 frames).
+  Pictures: `re/harness/shot_check.sh` (headless, one run per segment) is pixel equal at t = 100, 250, 440 for Episodes 3, 6, 8 and 100 to 440 for 2 and 7 (later pictures differ in the join prompts).
+* **The panel** (0xD898, `flow_story_mode`): frame 0 the palettes of the stage (0x8A44, 0x8932) and the clear 0xAE0 start (it keeps the CPU through the next frame); frame 2
+  0xD8B4 (scene palette set 2, 0x892C) and the entry of the stage up to its first sleep; then the wait loop 0xDFCC every frame: the attack check of the present heroes
+  (live byte exactly 1, the input exactly 0x10 and changed since the frame before; jump does nothing), the counter G.-$719A. Entries (stage 1 to 7): Ep2 300 frames; Ep3 241 frames of
+  scroll2 X + 0x10 (no skip; the picture is scroll3 over scroll2 with the layer control 0x1396: `Layer::BackdropFront`); Ep4 300; Ep5 300 then scroll1 cleared, the second text and 64
+  rounds of two pictures (skip works there too); Ep6 360; Ep7 360; Ep8 61 steps of 5 frames of palette play (0xE0E4, no skip). The panel texts are printed at once by the tall printer
+  0x84F72 (not typed: the typed text is the card's title); the portraits by 0x84736 with the caller (0xE034: lowest hero id nobody plays, 1 and 2 swapped) or the playing hero (0xE0AA).
+  Ep6 draws no portrait when Hannah plays alone (the original's bug, kept). 0x84736 leaves its palette word at G.$6A32 - 4 * (heroes - 1) (the stray `+$A2(a6)` of the game task, shown in
+  the traces as `obst_slot`). The anti tamper rolls of Ep2 (1 in 16) and Ep4 (1 in 8) draw one `rand()` after the wait and do nothing (the ROM sum is right).
+* **The exit** is 0xAC4E with its phases (`flow_stage_start_staged`, the same as after the select): the clear 0xAE0 at the end of the entry keeps the CPU 2 frames (Ep3, 4, 5, 6, 7, 8
+  end with their own 0xAE0, Ep2 without), then phase 0 (the clear again), 1, 2 (camera Y 0x100, the intro task made, 0x8A44 and the scroll controllers reset: the video frame
+  boundary comes between the camera and these after Episode 5), 3 (mode 4: the first part of the area start up to the pool A init) and 4 (mode 0xC, the rest of the area start, the first
+  level frame). The area start is split in two (`flow_area_reset_a` / `_b`): until phase 4 the pools B, C, D, the stage time and the floor of the story panel's level are still there. After
+  Episode 5 the phases 3 and 4 are one frame (`story_exit_ep5`). The first level frame takes 2 video frames after the panels, 3 for Episodes 3 and 5 (`Flow::lag`, `select_exit`), and the
+  kills of the heroes (+$10B) are cleared in the tail (0xAC7E). The panel's lengths (record of the mode 4 or 0xC after the poke): 305, 249, 307, 438, 367, 367, 312 (D4d's table + 1).
+* **The map card** (intro task 0xB9BE, states 0 to 6, `flow.rs` and `cards.rs`): the task is made in phase 2 and first runs with the first level frame (the first long of the struct G.$735E
+  is cleared, the rest keeps the bytes of the tally). State 0 (0xC526: a sleep, then the card is drawn at 0x90A030 with the palettes of the stage and the name plate, state 2); state 2 sub 0
+  (0xC642: the columns move to the page at the right, 23 cells each, the source is blanked, X + 12 a frame to 0x130, a sleep, then the typewriter 0x7EC20 with the title of the
+  episode, a pool B object of class 26); sub 2 (0xCA20: the marker blinks, the same code as the tally's, 140 frames; then state 4, a sleep of 60, X + 12, G.$4D5 = 1); state 4 sub 0 (0xCBBE: the
+  card slides out, the columns behind are blanked; at X 0x260 the scroll1 palettes come back, scroll1 is cleared, G.$4E2 = 0), sub 2 (the walk in: waits for G.$4E3 of the heroes' script,
+  then camera Y 0x100 and the HUD redraw), sub 4 (the HUD slides in to X 0x3F0 for the stages 1 to 7, 0x180 for the stage 0, G.$4D5 = 0), state 6 (G.$4E2 = 0, the end). The handshake is
+  the script's (`script.rs`: action 0x48 sets G.$4E2 when the card runs, 0x2E waits for it, the walk in sets G.$4E3): G.$4E2 = 1 3 records after the mode 0xC, G.$4D5 = 1 231 records and
+  G.$4E2 = 0 255 records after the mode 4 (Episodes 3, 6, 7, 8). The title is a pool B object: slot, `+$20 = 0x68`, live byte 1 then 2, modes 0, 2, 4 as in the recordings (`prop/class26.rs`).
+* **Two more pool B classes** the stage start makes: class 69 (0x88A84, the debug mode object: it frees itself in its first update when G.$4AA is off) and class 80 (0x8A582, the ambience
+  of Episode 2: every 120 frames a number, below 4 of 16 a second one decides the sound 0x78).
+* **Allowed differences** (`re/harness/allow/m228.txt`, `story_allow.py` writes the ranges): the join prompts of the absent heroes (scroll1 rows 4 and 5 of the columns 81 to 111, and
+  their blank cells 0x20 / 0x018B: M2-18), the first level frame (2.5 video frames: the camera and scroll controller fields, the objects of the spawn tick), the cut of the pool A init and
+  of the palette and layer loads at the video frame boundaries, the display shadows G.$860 / G.$868 (the main loop copies the cameras at the start of a pass; the port derives them), the
+  derived pointers of the stage that is poked in, scroll2 of Episode 3's level (its camera map is not ported). `diff.py` got the allow rules `cell LAYER MAME PORT` and `rect scroll1 C0 C1 R0 R1`.
+
+**Not done here**
+* Episodes 2 and 4: the scripted scenes with the car and the garage need the class 97 stand ins (M3). Episode 5's first enemies and items are unported classes.
+* The join prompts (M2-18) and the debug mode object (class 69 frees itself; the debug mode is not ported).
+* A busy start of the story panel in the middle of a level snapshot is not taken over by `trace_load_tasks` (the recordings start before the poke, `link_prep.py`).
+
+Tools: `re/harness/link_check.sh [NAME ...]` (`STORY_ONLY=1` stops at the first level frames; `FRAMES=`), `link_prep.py` (cuts the record before the poke and writes the pokes file),
+`story_allow.py`, `shot_check.sh KIND NAME T1,T2,...` (pictures against the MAME snapshots), `trace_slice.py ... ADDR=VALUE:-N`.
 

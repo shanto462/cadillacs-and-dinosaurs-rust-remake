@@ -1,0 +1,2 @@
+# a jump press on a story panel does nothing (pan-skip-ep2-jump)
+60-63:J

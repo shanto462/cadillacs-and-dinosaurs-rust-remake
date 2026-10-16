@@ -19,14 +19,14 @@ pub fn draw(g: &mut Game, gpu: &mut impl DrawTarget) {
     // two frames ago (`SpriteList::submit`, so the sprites stay in step with the tiles) and the colours
     // are the ones of the frame before (`PaletteRam::latch`). The tile maps themselves are shown at once.
     let scroll = g.cam.shown_scroll();
-    draw_scroll3(g, gpu, scroll.s3);
+    draw_scroll3(g, gpu, scroll.s3, if g.w.layer_ctrl == 0x1396 { Layer::BackdropFront } else { Layer::Backdrop });
     draw_scroll2(g, gpu, scroll.s2);
     draw_scroll1(g, gpu, scroll.cam1, if scroll1_behind { Layer::TextBehind } else { Layer::Hud });
     g.sprites.submit(gpu);
 }
 
 /// Scroll3: 32x32 tiles, codes 0x1C00..0x1FFF (others are hidden by the bank mapper).
-fn draw_scroll3(g: &Game, gpu: &mut impl DrawTarget, cam: (u16, u16)) {
+fn draw_scroll3(g: &Game, gpu: &mut impl DrawTarget, cam: (u16, u16), layer: Layer) {
     let (ox, oy) = layer_origin(cam.0, cam.1, 0x700);
     let (c0, r0) = ((ox & 0x7FF) as i32 >> 5, (oy & 0x7FF) as i32 >> 5);
     let (fx, fy) = ((ox & 31) as i32, (oy & 31) as i32);
@@ -38,7 +38,7 @@ fn draw_scroll3(g: &Game, gpu: &mut impl DrawTarget, cam: (u16, u16)) {
                 continue;
             }
             gpu.tile(TileDraw {
-                layer: Layer::Backdrop,
+                layer,
                 atlas: Atlas::T32,
                 x: c * 32 - fx,
                 y: r * 32 - fy,

@@ -146,3 +146,26 @@ MAME wins over the design text; the design documents themselves are not edited.
 - D5 M2-25 (check "b9 link-ep2"): the link recordings `flow_link-ep2` to `ep8` start in the story panel (mode 8), not in the tally; the panel and map frames of Episode 1 to 2 are in the
   `flow_tally` recordings (the `tv-` and `td-` scenarios, stage 0), up to the story panel.
 
+## From M2-26 to M2-28 (story panels, map card, 2026-10-17)
+
+- D4d s9.3 (the panels "typed with 0x84736"): the texts of the panels are printed at once with the tall printer 0x84F72; 0x84736 only draws the portrait and one of the 0x84800 lines (the
+  hero's name lines 0x2A to 0x2D for Episode 4's "<hero>, look..."). Nothing but the title of the map card is typed (0x7EC20).
+- D4d s9.3 and D5 M2-28 (lengths 306, 250, 308, 439, 368, 368, 313): these are the poke to the mode 4 (the mode 0xC for Episode 5) and are right to a frame; in the recordings the mode 4 is the record 305,
+  249, 307, 367, 367, 312 after the poke and the mode 0xC of Episode 5 the record 438 (the first record of the poke is 0). The waits are 300 (Ep2, Ep4, the first half of Ep5), 241 passes of the scroll
+  (Ep3, no skip), 360 (Ep6, Ep7) and 61 x 5 frames of palette play (Ep8, no skip); the skip works in Episodes 2, 4, 5 (both halves), 6 and 7.
+- D4d s9.3 (the hero names by party): Episode 6 draws no portrait when Hannah plays alone (the playing hero id 2 is skipped, `cmpi.w #2,d1`); with Mustapha the portrait index is 2 (the table is swapped).
+  The panel of Episode 5 says "HELLO THIS IS <hero>" with the text 0x2F + the playing hero and no portrait (0x63).
+- D5 M2-28 ("story tunes 0x13 to 0x16"): the codes are 0x13, 0x14, 0x15, 0x16, 0x13, 0x14, 0x15 for Episodes 2 to 8, requested at the first frame of the entry (frame 2 of the panel).
+- D4d s9.2 (card): state 2 sub 0 moves the cells (the source columns get blank cells 0x00200000, 23 cells each), it does not copy; sub 2 ends with the 60 frame sleep 0xA82 before X + 12 and G.$4D5 = 1;
+  state 4 sub 0 clears G.$4E2 (the handshake flag G.$4E2 drops 255 records after the mode 4 and G.$4E3 comes 64 records after that). The stage 0 entry skips the card (state 4 sub 2 at once).
+- D5 M2-26 (title, "141 frames"): the typewriter lives from its creation (the record after the slide in ends) 20 records in Episode 3 (modes 0, 2, 4 and the free): the title is shown while the marker
+  blinks, the typed text stays on screen (the typewriter does not erase it); the card lasts 140 + 60 records.
+- D4d s9.2 (the G.$4E2 / G.$4E3 handshake) and D4c A2: G.$4E2 = 1 comes from the script action 0x48 (`script.rs`), 3 records after the mode 0xC; the clears are the card's (state 4 sub 0 at X 0x260, state 6).
+- D4c s6 ("the intro task starts at the first level frame"): the first run of the intro task is the first level frame, its first long (state, sub, +2, +3) is cleared and the other bytes of the struct G.$735E are the
+  tally's (or the old intro's): the card writes them in its state 0 (a sleep first). The first level frame takes 2 video frames (G.$0000 counts in the record of the mode 0xC and 2 records later), 3 for Episodes
+  3 and 5; with three heroes the spawn tick at its end is cut one record later.
+- Pool B classes of the stage start that the plan does not list: 26 (0x68, the typewriter of the title, handler 0x7EC48), 69 (0x114, 0x88A84: the debug mode object, frees itself when G.$4AA is 0) and 80
+  (0x140, 0x8A582: the ambience of Episode 2, sound 0x78).
+- Layer control 0x1396 (the panel of Episode 3): scroll3 is above scroll2 (the presenter had only 0x12D6 and 0x06D6).
+- The stage start 0xAC4E clears +$10B (kills) of the three heroes (0xAC7E, 0xAC8C, 0xAC9A) before 0x4DC2; the tally's kills of the stage before are not counted in the next one.
+

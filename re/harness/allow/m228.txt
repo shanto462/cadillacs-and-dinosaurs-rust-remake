@@ -1,0 +1,38 @@
+# Approved known differences of the story panels (mode 8) and the level start after them, M2-26 to M2-28 (re/harness/link_check.sh, tally_check.sh). The rules that
+# depend on the recording (frame ranges: the pointers of the stage that is poked in until the level starts, the first level frame, the cuts at the video frame
+# boundaries, the display shadows) are added by re/harness/story_allow.py, which prints this file first.
+#
+# The runs start from a level of Episode 1 (the recorder's jump helper) into which the recording pokes G.$4D9, G.$4D1 and G.$4D0 = 8 at t = 0.
+#
+# The jump helper leaves the live byte of the hero 2 (in play), the game itself has 1 (the tally recordings: 1 all the time). The byte is 1 in MAME from the
+# frame of the poke on (what writes it is not known: a hold of the recorder's jump); the story panel code tests it for 1, so link_prep.py gives the port
+# the same write at frame 0 (the pokes file).
+# (0xAE0 clears both sprite buffers while the sprite list builder is not running (mode 8): MAME's list has its 256 entries, all zero, and no end marker; the port
+# exports the same, `SpriteList::blank`.)
+# G.$860 / G.$868 (the scroll shadows of the display) are copied from the cameras by the game loop after a pass of the game task; the first pass of the mode 8
+# routine (0xAE0 keeps the CPU through 2 frames) does not reach it, so they keep the level's values for 2 frames. The port derives them from the cameras.
+global.display_y2 0-1
+global.display_y1 0-1
+# The same shadows lag the cameras by a frame at the stage start after the panel: G.$860 in the frame of the phase 2 of 0xAC4E (cam1_y = 0x100), G.$868 in the
+# frame of the first level frame (link_check.sh adds those two frames).
+
+# Fresh objects (as in m2.txt): until its first update an object has the frame pointer 0 in the original; the port shows the default frame, and the pool tag
+# +$82 that the original's pool init writes into every slot is not modeled.
+enemy.frame
+prop.frame
+effect.frame
+enemy.r82
+item.r82
+prop.r82
+effect.r82
+
+# The pool A init (0x4C48) of the area start is cut by the video frame boundary in the record of the mode 4 (the phase 3 of 0xAC4E): the live bytes of the slots
+# it has not reached are still set. How far it has gone depends on the CPU time since the vertical blank (link_check.sh adds that record).
+
+# The cells of the join prompts of the absent heroes that the HUD update blanks with the attribute 0x018B (M2-18: the port does not draw the prompts yet). The
+# slide of the card copies them. Only these cells are ignored: the code 0x20 blank cell with the attribute 0x018B in MAME against the blank cell of the port.
+cell scroll1 0020018B 00200006
+
+# The join prompts of the heroes 2 and 3 (INSERT COIN, drawn by 0x7562 from the intro task and blinked by the HUD, M2-18) are in the rows 4 and 5 of the scroll1
+# columns 81 to 111 (the HUD slots in the lower page). The port draws none yet.
+rect scroll1 81 111 4 5

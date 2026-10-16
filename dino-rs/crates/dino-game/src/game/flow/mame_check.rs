@@ -2614,6 +2614,94 @@ fn clear_tally_matches_mame() {
     println!("clear tally records equal to MAME before the story panel: {checked:?}");
 }
 
+/// M2-26 to M2-28, the story panel (mode 8), the map card and the walk in of the next episode against the recordings of `flow_links` (re/harness/scripts/flow_links.txt):
+/// the port is loaded with the record before the poke of the mode 8 (the level of Episode 1), gets the poke (the stage, mode 8) and runs without input through the
+/// panel (300 to 440 frames), the stage start (0xAC4E), the card (the typed title, the blinking marker, the slide out), the walk in and the HUD slide in. In every
+/// record the mode, the intro task, the handshake G.$4E2 / G.$4E3 / G.$4D5, the camera X, the three layers, the palettes and the sound codes equal MAME. Not
+/// compared (the allowed differences of re/harness/allow/m228.txt): the two records of the first level frame (the original takes 2.5 video frames for it), the
+/// join prompts of the absent heroes (scroll1 rows 4 and 5 of the columns 81 to 111, M2-18) and, in the long run, the rest (the whole episode 6 and 8 openings
+/// are 64 frames of HUD slide: no actors). Episodes 6 and 8 run equal to the end of the recording (`re/harness/link_check.sh` lists all of them).
+#[test]
+fn story_panel_and_card_match_mame() {
+    let Some(a) = assets() else { return };
+    let mut checked = Vec::new();
+    for name in ["link-ep6", "link-ep8"] {
+        let Some(trace) = flow_trace_named(name) else { continue };
+        let mut rd = TraceReader::open(&trace).expect("the recording opens");
+        let (mut prev, mut start): (Option<(Vec<u8>, Vec<u8>)>, Option<(i32, Vec<u8>, Vec<u8>)>) = (None, None);
+        let mut records: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
+        while let Some(f) = rd.next() {
+            if f < 0 {
+                continue;
+            }
+            let (ram, gfx) = (rd.region("ram").unwrap().data.clone(), rd.region("gfx").unwrap().data.clone());
+            if start.is_none() && ram[0x84D0] == 8 {
+                let (pr, pg) = prev.clone().expect("a record before the poke");
+                start = Some((f, pr, pg));
+            }
+            if start.is_some() {
+                records.push((ram.clone(), gfx.clone()));
+            }
+            prev = Some((ram, gfx));
+        }
+        let (_, pram, pgfx) = start.expect("the recording has a story panel");
+        let level = records.iter().position(|(r, _)| r[0x84D0] != 8).expect("the level starts");
+        let (fl, fe) = (level + 1, level + 2);
+        let mut g = Game::new(a);
+        g.hold_unported = true;
+        let warn = g.trace_load(&pram, &pgfx);
+        assert!(warn.iter().all(|w| w.contains("fade") || w.contains("intro")), "{name}: {warn:?}");
+        // the pokes of the recording: G.$4D9, G.$4D1 = 0, G.$4D0 = 8 and the live bytes of the heroes (the recorder's jump leaves 2, the record has 1)
+        g.w.stage = records[0].0[0x84D9];
+        g.flow.mode = 8;
+        g.flow.sub = 0;
+        for (p, o) in [0xB274usize, 0xB3F4, 0xB574].into_iter().enumerate() {
+            if records[0].0[o] != pram[o] {
+                g.players[p].b.live = records[0].0[o];
+            }
+        }
+        let mut bad: Vec<String> = Vec::new();
+        let mut prev_ram = pram.clone();
+        for (k, (ram, gfx)) in records.iter().enumerate() {
+            g.w.input = [0; 3];
+            g.w.system = 8;
+            g.w.coins = 0;
+            g.tick();
+            let partial = k >= fl && k <= fe;
+            let mut check = |what: &str, ok: bool| {
+                if !ok {
+                    bad.push(format!("{name} +{k}: {what}"));
+                }
+            };
+            check("mode", g.flow.mode == ram[0x84D0]);
+            check("sub", g.flow.sub == ram[0x84D1]);
+            check("G.$4E2", g.flow.b4e2 == ram[0x84E2]);
+            check("G.$4E3", g.flow.b4e3 == ram[0x84E3]);
+            check("G.$4D5", g.spawn.g.b4d5 == ram[0x84D5]);
+            check("camera X", g.cam.cam1_x == ram16(ram, 0xFF86C4));
+            if !partial {
+                check("intro state, sub", (g.flow.intro.state, g.flow.intro.sub) == (ram[0xF35E], ram[0xF35F]));
+                check("layer control", g.w.layer_ctrl == ram16(ram, 0xFF8028));
+                let skip = |i: usize| (81..=111).contains(&(i / 32)) && matches!(i % 32, 4 | 5);
+                let d1: Vec<_> = diff(&g, gfx, 1).into_iter().filter(|(i, ..)| !skip(*i)).collect();
+                check(&format!("scroll1: {} cells, first {:?}", d1.len(), d1.first()), d1.is_empty());
+                check("scroll2", diff(&g, gfx, 2).is_empty());
+                check("scroll3", diff(&g, gfx, 3).is_empty());
+                check("palettes", palette_diff(&g, gfx, 0xFFFF).is_empty());
+            }
+            let (ms, ps) = (mame_sounds(&prev_ram, ram), g.w.sounds.clone());
+            check(&format!("sounds MAME {ms:?} port {ps:?}"), ms == ps);
+            prev_ram = ram.clone();
+            if bad.len() > 5 {
+                break;
+            }
+        }
+        assert!(bad.is_empty(), "{} problems, first: {:#?}", bad.len(), &bad[..bad.len().min(6)]);
+        checked.push((name, records.len()));
+    }
+    println!("story panel and card records equal to MAME: {checked:?}");
+}
+
 /// The recording `flow_NAME.mame.trc` of a batch segment (`re/out/traces`), or None (the test skips).
 fn flow_trace_named(name: &str) -> Option<String> {
     flow_trace(name)

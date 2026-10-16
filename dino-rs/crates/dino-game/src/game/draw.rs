@@ -87,6 +87,8 @@ pub struct SpriteList {
     slot_sprites: Vec<RawSprite>,
     /// What the screen shows of the lists: see `latch`. `None` until the first frame ends.
     shown: Option<Shown>,
+    /// 0xAE0 zeroed the buffers and no list has been built since (the story panels of mode 8 build none): the trace shows 256 zero entries and no end marker.
+    pub blank: bool,
 }
 
 /// The lists built in the last frames, newest last, and what the screen shows now.
@@ -114,6 +116,7 @@ impl Default for SpriteList {
             cur_src: 0,
             slot_sprites: Vec::new(),
             shown: None,
+            blank: false,
         }
     }
 }
@@ -140,6 +143,7 @@ impl SpriteList {
     /// Start of a frame's list. Also does the splash phase step of 0x13FE6, which the original
     /// runs at the start of every build_sprite_list.
     pub fn clear(&mut self) {
+        self.blank = false;
         self.entries.clear();
         self.debug_rects.clear();
         if let Some(s) = &mut self.shown {
@@ -292,6 +296,7 @@ impl SpriteList {
 
     /// 0xAE0 (0xB10): both sprite buffers are zeroed at once. The screen goes blank in the next frame.
     pub fn wipe(&mut self) {
+        self.blank = true;
         self.entries.clear();
         self.debug_rects.clear();
         if let Some(s) = &mut self.shown {

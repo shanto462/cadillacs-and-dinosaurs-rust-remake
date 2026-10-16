@@ -1,0 +1,1 @@
+# no input: the story panel (mode 8) and the level start of an episode, cut from the flow_links / flow_panels recordings (re/harness/link_check.sh)

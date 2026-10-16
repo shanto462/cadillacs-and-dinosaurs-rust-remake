@@ -1302,6 +1302,9 @@ impl Game {
             let it = &mut fl.intro;
             f.u8(0x735E, "intro_state", &mut it.state);
             f.u8(0x735F, "intro_sub", &mut it.sub);
+            f.u8(0x7360, "intro_b2", &mut it.b2);
+            f.u8(0x7361, "intro_b3", &mut it.b3);
+            f.u16(0x7362, "intro_w4", &mut it.w4);
             f.u16(0x7364, "intro_w6", &mut it.w6);
             f.u16(0x7366, "intro_w8", &mut it.w8);
             f.u32(0x7368, "intro_src", &mut it.src);
@@ -1473,10 +1476,15 @@ impl Game {
                 // The task sleeps once inside 0xCC58 (`jsr 0xA76`, then the HUD redraw 0x162AE): in the first frame after it saw G.$4E3 the
                 // sleep counter of the snapshot is the same as in the next one. The redraw is still to come while the rank of the hero
                 // (+$10A, 0x33 at the start, set by the redraw) is untouched.
-                it.redraw = it.state == 4
+                it.after = if it.state == 4
                     && it.sub == 4
                     && it.w6 == 0
-                    && self.players.iter().any(|p| p.b.live != 0 && p.b10a == 0x33);
+                    && self.players.iter().any(|p| p.b.live != 0 && p.b10a == 0x33)
+                {
+                    super::flow::IntroAfter::Redraw
+                } else {
+                    super::flow::IntroAfter::Loop
+                };
             } else {
                 warn.push(format!("task slot 0x30 (intro / clear) is active (state {st}, sleep {cnt}): not taken over"));
             }
@@ -1573,6 +1581,9 @@ impl Game {
     /// the end marker the original writes (0x13FA6: X 0, Y 0x100, code 0, attr 0xFF00).
     pub fn trace_obj(&self) -> Vec<u8> {
         let mut v = vec![0u8; 0x800];
+        if self.sprites.blank && self.sprites.entries.is_empty() {
+            return v;
+        }
         let n = self.sprites.entries.len().min(255);
         for (k, e) in self.sprites.entries.iter().take(n).enumerate() {
             let o = 8 * k;

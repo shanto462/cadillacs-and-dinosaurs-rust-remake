@@ -29,6 +29,8 @@ pub enum Bank {
 pub enum Layer {
     Backdrop,
     Playfield,
+    /// Scroll3 when the layer control puts it above scroll2 (the story panel of Episode 3, G.$28 = 0x1396).
+    BackdropFront,
     /// Scroll1 when the layer control puts it behind the sprites (stage 6 elevator).
     TextBehind,
     Sprites,

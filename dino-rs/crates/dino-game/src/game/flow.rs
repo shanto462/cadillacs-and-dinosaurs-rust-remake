@@ -68,13 +68,32 @@ impl Default for Region {
     }
 }
 
+/// Where the stage intro task goes on after a sleep inside one of its routines (`jsr 0xA76` in the middle of a state).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum IntroAfter {
+    /// The loop: the state routine of the next pass.
+    #[default]
+    Loop,
+    /// 0xC526: the code after its first sleep (the card is set up).
+    State0,
+    /// 0xC6AC: the code after the sleep that ends the slide in (the title of the episode is typed).
+    Title,
+    /// 0xCA94: the code after the 60 frame sleep (0xA82) that ends the marker blink.
+    Wait60,
+    /// 0xCC7C: the HUD redraw 0x162AE after the sleep inside 0xCC58.
+    Redraw,
+}
+
 /// Stage intro task 0xB9BE (struct G.$735E).
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Intro {
     pub live: bool,
-    /// +0 state, +1 sub-state.
+    /// +0 state, +1 sub-state, +2 and +3 the marker period counter and its light flag, +4 the marker time (the map card of the stages 1 to 7).
     pub state: u8,
     pub sub: u8,
+    pub b2: u8,
+    pub b3: u8,
+    pub w4: u16,
     /// +6 columns copied (x8), +8 copy limit, +$A source and +$E target scroll1 address.
     pub w6: u16,
     pub w8: u16,
@@ -85,8 +104,8 @@ pub struct Intro {
     /// The task has been created but has not run yet: its first run is 0xB9BE with the init 0xB9F6 (the struct above is still 0 until
     /// then) and a sleep of one frame.
     pub init: bool,
-    /// The HUD redraw 0x162AE that follows the `jsr 0xA76` inside 0xCC58: it runs in the frame after the one that saw G.$4E3.
-    pub redraw: bool,
+    /// Where the next run goes on (a sleep inside a state routine).
+    pub after: IntroAfter,
 }
 
 #[derive(Default)]
@@ -136,6 +155,8 @@ pub struct Flow {
     pub intro: Intro,
     /// The stage clear task 0xB97E (`flow/tally.rs`).
     pub tally: tally::Tally,
+    /// The story panel of mode 8 (0xD898, `flow/cards.rs`).
+    pub story: cards::Story,
     pub front: front::Front,
     /// The opening movie's own state (`movie.rs`).
     pub movie: movie::Movie,
@@ -343,7 +364,7 @@ impl Game {
         match self.flow.mode {
             0x00 => self.flow_mode_start(),
             0x04 => self.flow_select_mode(),
-            0x08 => self.flow_stage_start(), // 0xD898: intermission cut-scenes not ported
+            0x08 => self.flow_story_mode(), // 0xD898
             0x0C => {
                 self.game_frame();
                 self.flow_ingame_switch();
@@ -410,6 +431,13 @@ impl Game {
     /// The rest of 0xA9BE: the scroll controllers, the select struct, the rank, the layer control, the HUD, the area start and the mode
     /// byte (4, sub 0).
     fn flow_stage_setup_rest(&mut self) {
+        self.flow_stage_setup_rest_a();
+        self.flow_area_reset_b();
+    }
+
+    /// The part of 0xA9BE up to the pool A init of the area start (0x4C48): the part of a stage start that comes in the frame before the last one
+    /// (`flow_stage_start_staged`, phase 3).
+    fn flow_stage_setup_rest_a(&mut self) {
         self.flow_scroll_reset(); // 0x20402
         self.flow.front.select.clear(); // 0xAD36
         self.rank_stage_start(); // 0x1800E
@@ -422,11 +450,18 @@ impl Game {
         self.flow.sub2 = 0;
         // 0x4A00 list, 0x4C1A pool E init
         self.items = super::Pool::new(super::POOL_E);
-        self.flow_area_reset(); // 0xAA0E
+        self.flow_area_reset_a(); // 0xAA0E
     }
 
     /// 0x20402: reset the scroll2 / scroll3 controllers and clear both layers.
     fn flow_scroll_reset(&mut self) {
+        self.flow_scroll_state_reset();
+        self.vram.clear2();
+        self.vram.clear3();
+    }
+
+    /// The first half of 0x20402: the controller fields (the frame of the recordings that start it shows them zero before the rest of 0xA9BE).
+    fn flow_scroll_state_reset(&mut self) {
         let s = &mut self.cam.s2;
         s.state = 0;
         s.mode = 0;
@@ -444,8 +479,6 @@ impl Game {
         t.cam_y = 0;
         t.x5a = 0;
         t.y5c = 0;
-        self.vram.clear2();
-        self.vram.clear3();
     }
 
     /// 0xAE0: all cameras to 0, clear the sprite list and the three layers.
@@ -474,6 +507,12 @@ impl Game {
 
     /// 0xAA0E..0xAAF4: area start (also the camera hook 0xACD0).
     fn flow_area_reset(&mut self) {
+        self.flow_area_reset_a();
+        self.flow_area_reset_b();
+    }
+
+    /// 0xAA0E up to the pool A init (0x4C48): the heroes' start, the start script, the lists.
+    fn flow_area_reset_a(&mut self) {
         for i in 0..3 {
             self.flow_player_area_start(i); // 0x4E0A
         }
@@ -481,6 +520,11 @@ impl Game {
         // 0x49A8.. per-frame lists: player port / main.
         self.sprites.splash_timer = 1; // 0x49B4: the water splash timer (the phase -$7124 is not reset)
         self.terrain_obstacles_reset(); // 0x4A76
+        self.enemies = super::Pool::new(super::POOL_A); // 0x4C48
+    }
+
+    /// 0xAA0E from the pool B init (0x4C76) on. In a stage start the 68000 is busy with it in the next video frame (`flow_stage_start_staged`).
+    fn flow_area_reset_b(&mut self) {
         self.effects = super::Pool::new(super::POOL_C); // 0x4CA4
         self.draw_special_init(); // 0x4CCC: the free stack only, the slots keep their bytes
         self.spawn_area_reset_objects(); // pools A, B; pool E loop; G.$4F1.. cleared
@@ -529,20 +573,28 @@ impl Game {
         match phase {
             0 => self.flow_attract_clear(),
             2 => {
+                self.flow_stage_start_staged(20);
+                self.flow_stage_start_staged(21);
+            }
+            20 => {
                 self.cam.cam1_y = 0x100;
                 self.flow_intro_start();
                 self.flow.intro.sleep = 3; // the task first runs in the frame that finishes the stage start (phase 4), after the game task
+            }
+            // the palettes (0x8A44, 0x892C) and 0x20402 starts (the controllers are zero in the record of this frame; after the story panel they held the
+            // level's; after the panel of Episode 5 the video frame boundary comes before them, `story_exit_ep5`)
+            21 => {
                 self.flow_stage_setup_palettes();
+                self.flow_scroll_state_reset();
             }
             3 => {
                 // The video frame boundary falls inside 0xAA0E, between the pool A init (0x4C48) and the pool B init (0x4C76, 0xAA80): in
-                // this frame the props of the select screen are still in pool B (the recording: they are gone one frame later).
-                let props = std::mem::replace(&mut self.props, super::Pool::new(super::POOL_B));
-                self.flow_stage_setup_rest();
-                self.props = props;
+                // this frame the objects of the screen before (the props of the select screen, the pools C and D, the stage time, the floor)
+                // are still there (the recordings: they are gone one frame later).
+                self.flow_stage_setup_rest_a();
             }
             4 => {
-                self.props = super::Pool::new(super::POOL_B); // 0x4C76
+                self.flow_area_reset_b(); // 0x4C76 on
                 self.flow_stage_start_tail();
             }
             _ => {}
@@ -553,9 +605,9 @@ impl Game {
     fn flow_stage_start_tail(&mut self) {
         self.flow.mode = 0xC;
         self.flow_count_players();
-        for p in self.players.iter_mut() {
-            // 0x4DC2; +$10B (kills) = 0 is a player field
-            p.b.hp = 100;
+        for (i, p) in self.players.iter_mut().enumerate() {
+            self.spawn.g.kills[i] = 0; // clr.b $10B(a6)
+            p.b.hp = 100; // 0x4DC2
             p.b.hp_prev = 100;
             p.b.hp_bar = 100;
         }
@@ -670,29 +722,41 @@ impl Game {
     /// is still 0 until it) comes in the frame that finishes the stage start and runs the first level frame, after the game task.
     /// After the character select the first run is 2 frames after the creation (`flow_stage_start_staged`: the recording of the Episode 1 start).
     fn flow_intro_start(&mut self) {
-        self.flow.intro = Intro { live: true, sleep: 1, init: true, ..Default::default() };
+        // the struct G.$735E is not cleared by the creation: it keeps the bytes of the last task (the clear tally's, or the intro task's of the level before)
+        self.flow.intro = Intro { live: true, sleep: 1, init: true, after: IntroAfter::Loop, ..self.flow.intro };
     }
 
-    /// 0xB9F6 (the stage 0 entry; the other stages first show the map panel and the episode title, states 0 to 2, not ported: they use
-    /// the same HUD slide-in below): the struct, then `jsr 0xA76` (sleep 1).
+    /// 0xB9BE, the first run: `clr.l 0(a6)` (state, sub, +2, +3), then for the stage 0 the entry 0xB9F6 (state 4 sub 2: no map card, the walk in
+    /// of the heroes comes first; `jsr 0xA76`), for the other stages the state 0 (0xC526: the map card, `jsr 0xA76` first).
     fn flow_intro_init(&mut self) {
-        self.flow.tally.owner = false; // the struct G.$735E is the intro task's again (the tally image is not shown any more)
-        self.flow.intro = Intro {
-            live: true,
-            state: 4,
-            sub: 2,
-            w6: 0,
-            w8: 0xC,
-            src: 0x90A000,
-            dst: 0x909800,
-            sleep: 1,
-            init: false,
-            redraw: false,
-        };
+        // the struct G.$735E is the intro task's again (the tally image is not shown any more), with the bytes the tally left in it
+        if self.flow.tally.owner {
+            let r = &self.flow.tally.raw;
+            self.flow.intro =
+                Intro { state: r.b(0), sub: r.b(1), b2: r.b(2), b3: r.b(3), w4: r.w(4), w6: r.w(6), w8: r.w(8), src: r.l(0xA), dst: r.l(0xE), ..self.flow.intro };
+        }
+        self.flow.tally.owner = false;
+        let it = &mut self.flow.intro;
+        it.state = 0;
+        it.sub = 0;
+        it.b2 = 0;
+        it.b3 = 0;
+        it.init = false;
+        if self.w.stage == 0 {
+            it.state = 4;
+            it.sub = 2;
+            it.w6 = 0;
+            it.w8 = 0xC;
+            it.src = 0x90A000;
+            it.dst = 0x909800;
+        } else {
+            it.after = IntroAfter::State0;
+        }
     }
 
-    /// 0xB9BE task body: state 4 sub 2 waits for the players' walk-in, then the HUD slides in
-    /// from the right (sub 4), state 6 ends.
+    /// 0xB9BE task body (one pass a frame: the state routine, then `jsr 0xA76`): the map card slides in (state 2 sub 0), the title is typed and the
+    /// marker blinks (sub 2), the card slides out (state 4 sub 0), the walk in of the heroes (sub 2) and the HUD slides in from the right
+    /// (sub 4); state 6 ends. The stage 0 starts at state 4 sub 2.
     fn flow_intro_task(&mut self) {
         if !self.flow.intro.live {
             return;
@@ -706,14 +770,22 @@ impl Game {
             self.flow_intro_init();
             return;
         }
-        if self.flow.intro.redraw {
-            // 0xCC7C: the code after the sleep inside 0xCC58, then the loop's sleep
-            self.flow.intro.redraw = false;
-            self.hud_redraw(); // 0x162AE
-            return;
+        match std::mem::take(&mut self.flow.intro.after) {
+            IntroAfter::Loop => {}
+            IntroAfter::State0 => return self.intro_state0(),
+            IntroAfter::Title => return self.intro_title(),
+            IntroAfter::Wait60 => return self.intro_after_wait(),
+            IntroAfter::Redraw => {
+                // 0xCC7C: the code after the sleep inside 0xCC58, then the loop's sleep
+                self.hud_redraw(); // 0x162AE
+                return;
+            }
         }
         let it = self.flow.intro;
         match (it.state, it.sub) {
+            (2, 0) => self.intro_slide_in(),
+            (2, 2) => self.intro_blink(),
+            (4, 0) => self.intro_slide_out(),
             (4, 2) => {
                 // 0xCC58
                 self.cam.cam1_x = 0;
@@ -723,7 +795,7 @@ impl Game {
                     self.flow.intro.sub = 4;
                     self.cam.cam1_x = it.w6;
                     self.cam.cam1_y = 0x100;
-                    self.flow.intro.redraw = true; // jsr 0xA76 (sleep 1) inside the step; the HUD is drawn after it
+                    self.flow.intro.after = IntroAfter::Redraw; // jsr 0xA76 (sleep 1) inside the step; the HUD is drawn after it
                 }
             }
             (4, 4) => {

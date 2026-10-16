@@ -96,6 +96,11 @@ def fmt(v, size):
 class Allow:
     def __init__(self, path):
         self.rules = []
+        # `cell LAYER MAME PORT`: a tilemap cell that is MAME (8 hex digits: code, attribute) in MAME and PORT in the port is no difference
+        # (the join prompt cells that the port does not draw yet, allow/m228.txt)
+        self.cells = []
+        # `rect scroll1 COL0 COL1 ROW0 ROW1`: the cells of scroll1 in these columns and rows (cell index = column * 32 + row) are not compared
+        self.rects = []
         if not path:
             return
         with open(path) as f:
@@ -104,6 +109,12 @@ class Allow:
                 if not line:
                     continue
                 parts = line.split()
+                if parts[0] == "rect" and len(parts) == 6:
+                    self.rects.append((parts[1], *[int(x, 0) for x in parts[2:]]))
+                    continue
+                if parts[0] == "cell" and len(parts) == 4:
+                    self.cells.append((parts[1], int(parts[2], 16), int(parts[3], 16)))
+                    continue
                 lo, hi = -1, 1 << 30
                 if len(parts) > 1:
                     a, _, b = parts[1].partition("-")
@@ -271,6 +282,24 @@ def main():
         for name, base in LAYERS:
             m = gmask[base : base + 0x4000]
             d = np.nonzero(m & (pgfx[base : base + 0x4000] != mgfx[base : base + 0x4000]))[0]
+            if len(d) and allow.rects:
+                cells_d = np.unique(d // 4)
+                keep = [4 * int(c) + k for c in cells_d
+                        if not any(n == name and c0 <= c // 32 <= c1 and r0 <= c % 32 <= r1 for n, c0, c1, r0, r1 in allow.rects)
+                        for k in range(4)]
+                d = np.array(keep, dtype=d.dtype)
+            if len(d) and allow.cells:
+                # the cells that an allowed pair explains are not differences
+                cells_d = np.unique(d // 4)
+                keep = []
+                mw = mgfx[base : base + 0x4000].astype(np.uint32)
+                pw = pgfx[base : base + 0x4000].astype(np.uint32)
+                for c in cells_d:
+                    mv = (int(mw[4 * c]) << 24) | (int(mw[4 * c + 1]) << 16) | (int(mw[4 * c + 2]) << 8) | int(mw[4 * c + 3])
+                    pv = (int(pw[4 * c]) << 24) | (int(pw[4 * c + 1]) << 16) | (int(pw[4 * c + 2]) << 8) | int(pw[4 * c + 3])
+                    if not any(n == name and a == mv and b == pv for n, a, b in allow.cells):
+                        keep.extend(range(4 * int(c), 4 * int(c) + 4))
+                d = np.array(keep, dtype=d.dtype)
             if len(d):
                 cells = sorted(set(int(x) // 4 for x in d))
                 if allow.ok(name, f):

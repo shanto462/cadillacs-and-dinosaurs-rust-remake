@@ -1,0 +1,2 @@
+# an attack press on a story panel: G.$16 = 0x10 in the record 1785 = t 60 of the segment pan-skip-ep2 (the cut run starts at the record before the poke, tick n = t n)
+60-63:A

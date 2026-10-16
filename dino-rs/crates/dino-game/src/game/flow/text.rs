@@ -327,6 +327,20 @@ impl Game {
         self.flow.typers.push(Typer::new(text, period));
     }
 
+    /// 0x7EC20 in a level: the typewriter object takes a pool B slot (`jsr 0x4860`), live byte 1, class +$20 = 0x68, +$26 = 0, period +$86, the text +$80; it is
+    /// stepped by the pool B update (`prop_class26`). A full pool makes none.
+    pub fn flow_typer_spawn_pool_b(&mut self, text: &[u8], period: u16) {
+        let Some(i) = self.props.alloc() else { return };
+        let p = &mut self.props.slots[i];
+        *p = Default::default();
+        p.b.live = 1;
+        p.b.k20 = 0x68;
+        p.b.var26 = 0;
+        let mut t = Typer::new(text, period);
+        t.slot = Some(i);
+        self.flow.typers.push(t);
+    }
+
     /// True while a typewriter object exists (the scenes poll the pool B slot).
     pub fn flow_typer_busy(&self) -> bool {
         self.flow.typers.iter().any(|t| t.live)
@@ -474,6 +488,8 @@ pub struct Typer {
     delay: u16,
     period: u16,
     fast: bool,
+    /// The pool B slot that the object takes in the original (the object in the level: `prop/class26.rs`); `None` for the scenes that step it themselves.
+    pub slot: Option<usize>,
 }
 
 impl Typer {
@@ -489,6 +505,11 @@ impl Typer {
     /// The write address (+$80), for tests and for scenes that react to the cursor.
     pub fn cursor(&self) -> u32 {
         self.cursor
+    }
+
+    /// The state (+4) and sub state (+5) bytes of the object.
+    pub fn state_sub(&self) -> (u8, u8) {
+        (self.state, self.sub)
     }
 }
 

@@ -51,6 +51,9 @@ mod class89;
 // Pool B classes of the opening movie (M1-10, M1-11): the black bars (32).
 #[path = "prop/class32.rs"]
 mod class32;
+// Pool B class 26 (M2-26): the typewriter of the episode title (0x7EC48), its text in `flow/text.rs`.
+#[path = "prop/class26.rs"]
+mod class26;
 #[path = "prop/class66.rs"]
 mod class66;
 #[path = "prop/class72.rs"]
@@ -123,14 +126,17 @@ impl Game {
                 19 => self.prop_class19(&mut p, i),
                 20 => self.prop_go_hint(&mut p, i),
                 25 => self.prop_class25(&mut p, i),
+                26 => self.prop_class26(&mut p, i),
                 31 => self.prop_clock(&mut p, i),
                 32 => self.prop_class32(&mut p, i),
                 66 => self.prop_class66(&mut p, i),
                 67 => self.prop_class67(&mut p, i),
                 68 => self.prop_class68(&mut p, i),
+                69 => self.prop_debug_object(&mut p, i),
                 72 => self.prop_class72(&mut p, i),
                 73 => self.prop_bird_spawner(&mut p, i),
                 74 => self.prop_class74(&mut p, i),
+                80 => self.prop_ambience(&mut p, i),
                 86 => self.prop_class86(&mut p, i),
                 89 => self.prop_class89(&mut p, i),
                 93 => self.prop_class93(&mut p, i),
@@ -237,6 +243,35 @@ impl Game {
         if self.trace_hold(h, &p.b) {
             return; // harness: kept as the snapshot had it
         }
+        self.prop_free(p, i);
+    }
+
+    /// 0x8A582 pool B class 80 (`+$20 = 0x140`): the ambience of the stage 1 (Episode 2), made by its start script. Mode 0 (0x8A596) goes to mode 2 and sets the
+    /// counter `+$A0` to 0x78; mode 2 counts it down and every 0x78 frames draws a number: below 4 of 16 a second one decides between the sound 0x78 and nothing
+    /// (the other branch, 0x8A5D0, loads the sound 0x61 into d0 and returns without the request). Mode 4 frees it.
+    fn prop_ambience(&mut self, p: &mut Prop, i: usize) {
+        match p.b.mode {
+            0 => {
+                p.b.mode = 2;
+                p.m.sw(0xA0, 0x78);
+            }
+            2 => {}
+            _ => return self.prop_free(p, i), // 0x8A5F4
+        }
+        let left = p.m.w(0xA0).wrapping_sub(1);
+        p.m.sw(0xA0, left);
+        if left != 0 {
+            return;
+        }
+        p.m.sw(0xA0, 0x78);
+        if self.rand() & 0xF < 4 && self.rand() & 1 != 0 {
+            self.snd_request(0x78, 0, 0);
+        }
+    }
+
+    /// 0x88A84 pool B class 69: the object of the debug mode (the button code 0x88BBE, the ENEMY spawner 0x88DDA). The stage start makes it; its first update
+    /// (0x88A98) frees it at once when the debug switch G.$4AA is off (0x88DC6). The debug mode itself is not ported (G.$4AA is not tracked: off).
+    fn prop_debug_object(&mut self, p: &mut Prop, i: usize) {
         self.prop_free(p, i);
     }
 

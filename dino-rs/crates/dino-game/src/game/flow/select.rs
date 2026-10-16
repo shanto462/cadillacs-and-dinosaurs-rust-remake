@@ -596,7 +596,7 @@ impl Game {
     }
 
     /// The phases 1 to 4 of 0xAC4E after the select (one frame each), then the game task runs the level.
-    fn select_exit(&mut self) {
+    pub(super) fn select_exit(&mut self) {
         let phase = self.flow.select_exit;
         self.flow.select_exit += 1;
         self.flow_stage_start_staged(phase);
@@ -611,7 +611,8 @@ impl Game {
             self.flow.wait = self.flow.speed & 0xF;
             self.game_frame();
             self.flow_ingame_switch();
-            self.flow.lag = 1;
+            // Episodes 3 and 5 (the stages 2 and 4) take 3 video frames: the area start reads more map for them (after their story panels, the records)
+            self.flow.lag = if matches!(self.w.stage, 2 | 4) { 2 } else { 1 };
             return;
         }
         self.flow.wait = 1;

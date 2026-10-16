@@ -1693,3 +1693,17 @@ the words (y 100 to 150) for all ten frames; the rest of the picture differs by 
 - Pictures: `dino-game --rom dino.zip --headless --load-state re/out/traces/m224_tv-hp100.state --screenshots 59,99,119,159 --shot-dir DIR` equal the MAME snapshots
   `re/out/flow/flow_tally/tv-hp100/snap/0000..0003.png` (t = 60, 100, 120, 160: the snapshot of time t is the picture of the tick t - 1).
 
+## Story panels, map cards and the level start after them (M2-26 to M2-28)
+
+- `link_check.sh [NAME ...]`: the recordings of `flow_links` (`link-ep2` .. `link-ep8`: the panel of an episode, the card, the walk in, 1100 frames from the poke of the mode 8) and
+  `flow_panels` (`pan-ep4-jack` ..: the panel by party, 330 frames; `pan-skip-ep2`: the attack skip, `pan-skip-ep2-jump`: jump does nothing). Each is cut at the record before its poke
+  (`link_prep.py`, which also writes the poke file of the port: the stage, G.$4D1 = 0, G.$4D0 = 8 and the live bytes of the heroes), the port runs it without input (`check.sh run`) with the allow
+  rules of `story_allow.py` (the file `allow/m228.txt` and the frame ranges that depend on the recording) and the first difference is printed. `STORY_ONLY=1` stops at the first level frames.
+  Episodes 6 and 8 are equal in all records; the others are equal to the first scripted actor or enemy that the port does not have (the list is in `specs/flow/HANDOFF.md`).
+- `story_allow.py MAME.trc`: writes the allow rules for a (cut) recording that has a mode 8: the derived pointers of the stage that is poked in, the first level frame, the partial draws at the video
+  frame boundaries and the frames where the display shadows G.$860 / G.$868 lag the cameras. `tally_check.sh` uses it for the panel after the tally.
+- `shot_check.sh KIND NAME T1,T2,...`: the pictures of a cut run (headless, one `dino-game` run) against the MAME snapshots of the segment (`KIND` is `flow_links` or `flow_panels`).
+- `diff.py --allow` knows two more rules: `cell LAYER MAME PORT` (a tilemap cell that is MAME in MAME and PORT in the port is no difference) and `rect scroll1 COL0 COL1 ROW0 ROW1` (cells of scroll1
+  in these columns and rows, index = column * 32 + row, are not compared).
+- `trace_slice.py SOURCE NAME ADDR=VALUE:-N` cuts N records before the first record where the byte has the value (the record before a poke).
+

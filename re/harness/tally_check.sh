@@ -10,7 +10,10 @@ for n in $LIST; do
   src=$ROOT/re/out/traces/flow_$n.mame.trc
   [ -f "$src" ] || { echo "$n: no recording"; continue; }
   "$ROOT/re/.venv/bin/python" -I "$ROOT/re/harness/trace_slice.py" "$src" "m224_$n" FF84D1=6 --frames "$FRAMES" > /dev/null || { echo "$n: slice failed"; continue; }
-  out=$(SCRIPT=m224_tally FRAMES=$FRAMES "$ROOT/re/harness/check.sh" run "m224_$n" 2>&1)
+  # the story panel after the tally (mode 8, M2-28) is in the recordings too: its allowed differences are those of the link scenes
+  if "$ROOT/re/.venv/bin/python" -I "$ROOT/re/harness/story_allow.py" "$ROOT/re/out/traces/m224_$n.mame.trc" > "$ROOT/re/out/traces/m224_$n.allow" 2>/dev/null; then :; else : > "$ROOT/re/out/traces/m224_$n.allow"; fi
+  out=$(SCRIPT=m224_tally FRAMES=$FRAMES "$ROOT/re/harness/check.sh" run "m224_$n" --allow "$ROOT/re/out/traces/m224_$n.allow" 2>&1)
+  if echo "$out" | grep -q panicked; then echo "$n: PANIC $(echo "$out" | grep -A1 panicked | tr '\n' ' ' | cut -c1-200)"; continue; fi
   first=$(echo "$out" | awk '/^FIRST DIFFERENCE/{print $4; exit}')
   items=$(echo "$out" | awk '/^FIRST DIFFERENCE/{p=1;next} p&&/^$/{exit} p{print}' | head -3 | tr '\n' '|' | cut -c1-230)
   echo "$n: first difference at frame ${first:-none}: $items"
@@ -18,7 +21,7 @@ for n in $LIST; do
   # so that record shows the last cells undrawn (scroll1 only). The port draws them at once and models the lost frame (`tally_state4`).
   # That one scroll1 difference is allowed and the run is checked on.
   if [ -n "$first" ] && echo "$items" | grep -q '^ *scroll1:'; then
-    echo "scroll1 $first-$first" > "$ROOT/re/out/traces/m224_$n.allow"
+    echo "scroll1 $first-$first" >> "$ROOT/re/out/traces/m224_$n.allow"
     out=$(SCRIPT=m224_tally FRAMES=$FRAMES "$ROOT/re/harness/check.sh" run "m224_$n" --allow "$ROOT/re/out/traces/m224_$n.allow" 2>&1)
     first=$(echo "$out" | awk '/^FIRST DIFFERENCE/{print $4; exit}')
     items=$(echo "$out" | awk '/^FIRST DIFFERENCE/{p=1;next} p&&/^$/{exit} p{print}' | head -3 | tr '\n' '|' | cut -c1-230)
