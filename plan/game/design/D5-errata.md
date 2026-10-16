@@ -181,3 +181,4 @@ MAME wins over the design text; the design documents themselves are not edited.
 ## From M3-17 (Episode 1 transition props, 2026-10-17)
 
 - D3e inventory row 21 (class 21, 0x7BDC4): the one-shot change is `and.w #$FE7F` (bits 7 and 8, the priority group) on 48 attribute words at 0x90F002 stepping by 4, then 16 marks, not a clear of bit 8 alone and not 12 tiles. Fifteen marks are `(attr & #$3FF) | #$2000` and the last (0x7BECE, cell 0x90F170) is `| #$2400`. A MAME peek after the Episode 1 area 1 change shows those masks.
+- D3e inventory row 12 and section 3.3 var 4 (class 12, 0x78B52): the hit does not set attribute 0x10 on 12 tiles. 0x79098, called from the break 0x7900E, writes six attribute words (`and #$FFE0 ; or #$10`) at 0x90FE16, 0x90FE1A, 0x90FE52, 0x90FE56, 0x90FE5A and 0x90FE5E. 0x790CE and 0x790F2 sit after that `rts` and are not called. M3-18.

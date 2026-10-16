@@ -174,6 +174,11 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x78A8E, 42, "B11 metal door codes, 3 columns of 7 (0x78A5A)"),
     (0x7B14A, 56, "B14 hole codes, 4 columns of 7 (0x7B108)"),
     (0x7B2E6, 72, "B14 wooden door codes, 4 columns of 9 (0x7B2A4)"),
+    // Episode 1 hall door and window (M3-18, class 12, 0x78B52). Read at run time from dino.zip.
+    (0x78BDA, 984, "B12 hall door: 3 block pointers then 3 pictures of 9 x 9 pairs (0x78BAC)"),
+    (0x7906E, 42, "B12 window codes, 3 columns of 7 (0x7903A)"),
+    (0x79152, 160, "B12 glass shard records, 10 of 16 bytes (0x93362)"),
+    (0x79200, 24, "B12 window hit boxes, 2 records of 6 words (0x78FD2)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {

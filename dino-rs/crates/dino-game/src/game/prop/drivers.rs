@@ -15,8 +15,10 @@
 //!    windows measured. The phase 0, 4, 8, 12 is a byte index into the picture table (0x78646).
 //! 3. **Burst.** B4 (0x767D8), B42 (0x83A0A), B52 (0x85178), B11 (0x789EE) and B14 (0x7B0BE): wait, write a tile
 //!    block, spawn pool C class 21 (0x94640), play a sound, free on the next mode (0x4938). B12 var 0 is a block
-//!    table (0x78B86, `tile_block.rs`), not a burst. B12 var 4 shatters on a hit and calls [`Game::prop_burst_fire`]
-//!    itself, then waits 20 frames before it frees.
+//!    table (0x78B86, `tile_block.rs`), not a burst. B12 var 4 (0x7900E) writes its own tiles and six attribute
+//!    cells, then pool C class 0x28 shards (0x93362) and sound 0x37. It does not call this driver. B11's 0x78A38
+//!    plays the break sound before the tiles; `prop_burst_fire` plays it after. Neither call uses `rand`, so the
+//!    queued request is the same.
 //! 4. **Hero reach.** Already the box test of `pass_10cd0` (0x128F8). D3e part 3 section 2.6's `Z + 8` is the jab
 //!    summary, checked by the tests in `prop.rs`. No second rule.
 //!
