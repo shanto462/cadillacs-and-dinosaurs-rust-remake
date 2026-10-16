@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/dino-assets", "crates/dino-extract", "crates/dino-game"]
+members = ["crates/dino-assets", "crates/dino-extract", "crates/dino-game", "crates/dino-sound"]
 
 [workspace.package]
 version = "0.1.0"

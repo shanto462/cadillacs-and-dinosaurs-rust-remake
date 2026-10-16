@@ -1,0 +1,12 @@
+[package]
+name = "dino-sound"
+description = "Port of the QSound Z80 driver: 68000 mailbox, command dispatch, priorities and track setup."
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+
+[dependencies]
+dino-assets.workspace = true
+
+[dev-dependencies]
+dino-extract.workspace = true
