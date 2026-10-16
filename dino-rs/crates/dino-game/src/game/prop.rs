@@ -69,6 +69,13 @@ mod b25;
 // Pool B class 74 (M2-11): the master of the Episode 1 opening scene (it makes the pool A cast 54, 55, 56).
 #[path = "prop/b74.rs"]
 mod b74;
+// Episode 1 transition props (M3-17): the metal door (11), the hole and wooden door (14), the tile change (21).
+#[path = "prop/b11.rs"]
+mod b11;
+#[path = "prop/b14.rs"]
+mod b14;
+#[path = "prop/b21.rs"]
+mod b21;
 // Pool B class 31 (M2-13): the stage clock (it keeps its sprite list in a pool D slot).
 #[path = "prop/b20.rs"]
 mod b20;
@@ -128,6 +135,8 @@ impl Game {
             let h = self.props.handle(i);
             let mut p = std::mem::take(&mut self.props.slots[i]);
             match p.b.k20 / 4 {
+                11 => self.prop_b11(&mut p, i),
+                14 => self.prop_b14(&mut p, i),
                 15 => self.prop_wave(&mut p, h, i),
                 22 => self.boss_controller(&mut p, i),
                 17 => self.prop_class17(&mut p, i),
@@ -136,6 +145,7 @@ impl Game {
                 20 => self.prop_go_hint(&mut p, i),
                 25 => self.prop_class25(&mut p, i),
                 26 => self.prop_class26(&mut p, i),
+                21 => self.prop_b21(&mut p, i),
                 31 => self.prop_clock(&mut p, i),
                 32 => self.prop_class32(&mut p, i),
                 66 => self.prop_class66(&mut p, i),

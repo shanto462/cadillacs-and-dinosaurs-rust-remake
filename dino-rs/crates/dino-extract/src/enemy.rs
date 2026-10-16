@@ -170,6 +170,10 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x811CA, 0x14, "clock: tile code of the digits 0 to 9 (0x8114E)"),
     // pool B class 18 (respawn air strike, 0x7B65E)
     (0x7B7A6, 0x20, "air strike records: 5 x (X offset, depth offset, variant) then a negative end word"),
+    // Episode 1 transition props (M3-17). Code words only; the classes read them in column order.
+    (0x78A8E, 42, "B11 metal door codes, 3 columns of 7 (0x78A5A)"),
+    (0x7B14A, 56, "B14 hole codes, 4 columns of 7 (0x7B108)"),
+    (0x7B2E6, 72, "B14 wooden door codes, 4 columns of 9 (0x7B2A4)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {
