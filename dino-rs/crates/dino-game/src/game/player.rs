@@ -775,7 +775,7 @@ impl Game {
         self.players[i].b.set_state(0x0200_0000);
         self.player_drop_entry(i); // 0x1B67C (G.$518 == 0): fall in, state 0x42E
         self.player_count_players(); // 0x655E
-        // 0x18C18: spawn pool C class 0x38 (respawn flash). TODO(effects port).
+        self.fx_spawn_player_marker(i, 0); // 0x18C18
     }
 
     // ---------------------------------------------------------------------------------------
@@ -783,12 +783,12 @@ impl Game {
     // ---------------------------------------------------------------------------------------
 
     fn player_alive(&mut self, i: usize) {
+        if self.players[i].respawn_t != 0 && self.players[i].respawn_t & 3 == 0 {
+            self.fx_spawn_respawn_sparkle(i); // 0x18CD4 -> 0x958E4
+        }
         {
             let p = &mut self.players[i];
             if p.respawn_t != 0 {
-                if p.respawn_t & 3 == 0 {
-                    // 0x958E4: sparkle effect (pool C class 0x5C). TODO(effects port).
-                }
                 p.respawn_t -= 1;
                 if p.respawn_t == 0 && p.invuln == 0 {
                     p.b.live = 1;
@@ -1062,10 +1062,37 @@ impl Game {
         self.player_idle(i);
     }
 
+    /// 0x19186 -> 0x2A4FC: the life pose's one-frame attack box (variant 1).
+    fn player_oneup_attack_box(&mut self, i: usize) {
+        let Some(j) = self.items.alloc() else { return };
+        let p = &self.players[i].b;
+        let b = &mut self.items.slots[j].b;
+        b.live = 1;
+        b.k20 = 11 * 4;
+        b.who = p.who;
+        b.id = p.id;
+        b.x = (b.x & 0xFFFF) | ((p.xi() as i32) << 16);
+        b.y = (b.y & 0xFFFF) | ((p.yi() as i32) << 16);
+        b.z = (b.z & 0xFFFF) | ((p.zi() as i32) << 16);
+        b.var26 = 1;
+        b.partner = Game::player_handle(i);
+    }
+
+    /// 0x9814: pose voice, indexed by character and the current voice bank.
+    pub(super) fn player_oneup_voice(&mut self, i: usize) {
+        let p = &self.players[i];
+        let code = self.assets.text.u8(0x985C, p.b.k20 as u32 + p.voice as u32);
+        let pan = self.snd_pan_x(p.b.xi());
+        self.snd_request(code as u16, 0x0007_0000 | pan as u32, 0x0040_0000);
+    }
+
     /// 0x1916E idle.
     fn player_idle(&mut self, i: usize) {
         if self.w.scripted == 0 && self.players[i].b10e != 0 {
-            // TODO: timed status pose (state 0x18, 0x19996); never set without item code.
+            // 0x1916E -> 0x19996: life pose takes priority over idle input.
+            self.players[i].b.live = 2;
+            self.player_oneup_attack_box(i); // 0x19186 -> 0x2A4FC
+            return self.player_pose_entry(i); // bra 0x19996
         }
         if self.players[i].special_buf != 0 {
             return self.player_special_entry(i);

@@ -857,7 +857,7 @@ pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
             class::ATTACK_BOX,
         ],
     ),
-    ("effect", &[0x04 / 4, 0x10 / 4, 0x20 / 4, 0x68 / 4, 0x70 / 4]),
+    ("effect", &[0x04 / 4, 0x10 / 4, 0x20 / 4, 0x38 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4]),
     // a pool D slot has no class word: the diff tool reads +$20 of the slot, which is 0 for the clock's slot (a sprite word)
     ("special", &[0]),
 ];

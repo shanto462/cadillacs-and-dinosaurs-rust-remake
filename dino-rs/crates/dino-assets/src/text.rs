@@ -75,6 +75,7 @@ impl TextData {
 /// Table regions read by the HUD and flow code: (ROM address, length in bytes, what it is).
 /// The extractor copies exactly these; the game panics if it reads outside them.
 pub const TABLES: &[(u32, u32, &str)] = &[
+    (0x985C, 0x10, "pose voice codes by character and voice bank (0x9814)"),
     (0x4E56, 0x178, "player start positions by stage, area and player (0x4E0A)"),
     (0x6BFE, 0x2C, "extra life score thresholds by DIP (0x6B98)"),
     (0x10292, 0x90, "BCD score values (0x10036), indexed by byte offset"),

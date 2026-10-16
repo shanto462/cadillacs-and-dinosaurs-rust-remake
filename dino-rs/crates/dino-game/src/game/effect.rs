@@ -8,6 +8,8 @@
 //! * `0x04` hit spark / impact picture, 0x924AA: plays animation +$26 of table 0x924F6 once.
 //! * `0x10` water splash when landing in water, 0x92A48 (spawned by the player code 0x606E).
 //! * `0x20` burning flames attached to a body, 0x92FB4 (player 0x1C86E, enemy 0x2AD98).
+//! * `0x38` respawn speech bubble / player marker and 1UP text, 0x93B28 / 0x93BF8.
+//! * `0x5C` respawn invulnerability glitter, 0x9590E.
 //! * `0x68` water ripple around a wading body, 0x9631C (player code 0x60E2), raw-list frames.
 //! * `0x70` the words TIME and OVER of the stage time out, 0x96488 (`effect/fx_time_over.rs`, made by `rank_time_over`).
 //! * `0x80` cloud of the ranking screen, 0x96A7E (`effect/fx_cloud.rs`, made by the pool B class 89).
@@ -61,7 +63,7 @@ pub struct Effect {
     pub b: Body,
     /// +$58 owner (water splash: the body whose splash drawing is suppressed).
     pub owner58: Handle,
-    /// +$5A the owner's class word +$20 at spawn time (water splash).
+    /// +$5A the owner's class word +$20 (water splash); marker timer word or bubble timer high byte.
     pub owner_class: u16,
     /// +$5C index of the effect in its spawn loop (flames: start frame = index & 3).
     pub w5c: u16,
@@ -214,6 +216,122 @@ impl Game {
         &self.assets.effects
     }
 
+    /// 0x18C18 / 0x18C1E / 0x18C20: attach the respawn bubble or 1UP marker.
+    pub(super) fn fx_spawn_player_marker(&mut self, player: usize, variant: u16) {
+        let Some(i) = self.fx_alloc() else { return };
+        let p = &self.players[player].b;
+        let e = &mut self.effects.slots[i];
+        e.b.live = 1;
+        e.b.k20 = 0x38;
+        e.b.who = p.who;
+        e.b.id = p.id;
+        set_word(&mut e.b.x, p.xi());
+        set_word(&mut e.b.y, p.yi());
+        set_word(&mut e.b.z, p.zi());
+        e.owner58 = Game::player_handle(player);
+        e.b.var26 = variant;
+    }
+
+    /// 0x93B28 / 0x93BF8: speech bubble, player number and the flashing 1UP raw list.
+    fn fx_player_marker(&mut self, i: usize) {
+        let fx = self.fx_data();
+        let e = &mut self.effects.slots[i];
+        let oneup = e.b.var26 != 0;
+        match e.b.mode {
+            0 => {
+                e.b.visible = 1;
+                if oneup {
+                    raw_load(&mut e.b, fx, fx.raw_at(0x93D1A));
+                    e.b.draw_flags = 0x70;
+                    e.owner_class = 180; // +$5A, move.w #$B4 at 0x93C0E
+                } else {
+                    e.b.anim_table = 0x93C82;
+                    fx_start(&mut e.b, fx, u16::from(self.w.players_minus_one != 0));
+                    e.b.draw_flags = 0x30;
+                }
+                e.b.mode = 2;
+            }
+            2 => {}
+            _ => return self.fx_free(i),
+        }
+        if self.spawn.g.car_mode != 0 { return self.fx_free(i); }
+        if oneup {
+            let old = e.owner_class;
+            e.owner_class = old.wrapping_sub(1);
+            if old == 0 { return self.fx_free(i); }
+        }
+        let owner = e.owner58;
+        let p = self.body(owner);
+        if (oneup && (p.live == 0 || p.mode != 2 || p.sub != 0)) || (!oneup && p.live != 2) {
+            return self.fx_free(i);
+        }
+        let (x, y, z) = (p.xi(), p.yi().wrapping_add(0x58), p.zi().wrapping_sub(8));
+        let e = &mut self.effects.slots[i];
+        set_word(&mut e.b.x, x);
+        set_word(&mut e.b.y, y);
+        set_word(&mut e.b.z, z);
+        if oneup {
+            e.b.palette_override = if self.w.frame & 1 != 0 { 0x84 } else { 0x86 };
+            raw_tick(&mut e.b, fx);
+        } else if e.b.sub == 0 {
+            if fx_tick(&mut e.b, fx) {
+                let anim = e.b.who as u16 + 2;
+                fx_start(&mut e.b, fx, anim);
+                e.owner_class = (120 << 8) | (e.owner_class & 0xFF); // move.b #$78,$5A
+                e.b.sub = 2;
+            }
+        } else {
+            let old = (e.owner_class >> 8) as u8;
+            e.owner_class = ((old.wrapping_sub(1) as u16) << 8) | (e.owner_class & 0xFF);
+            if old == 0 { return self.fx_free(i); }
+            fx_tick(&mut e.b, fx);
+        }
+        self.draw_list_add_if_visible(self.effects.handle(i));
+    }
+
+    /// 0x958E4: allocate glitter at the player's integer position. RNG belongs to its init.
+    pub(super) fn fx_spawn_respawn_sparkle(&mut self, player: usize) {
+        let Some(i) = self.fx_alloc() else { return };
+        let p = &self.players[player].b;
+        let e = &mut self.effects.slots[i].b;
+        e.live = 1;
+        e.k20 = 0x5C;
+        set_word(&mut e.x, p.xi());
+        set_word(&mut e.y, p.yi());
+        set_word(&mut e.z, p.zi());
+    }
+
+    /// 0x9590E: two RNG calls at init, integer offsets, then move down one pixel and tick.
+    fn fx_respawn_sparkle(&mut self, i: usize) {
+        let fx = self.fx_data();
+        match self.effects.slots[i].b.mode {
+            0 => {
+                let b = &mut self.effects.slots[i].b;
+                b.visible = 1;
+                b.draw_flags = 0x30;
+                fx_load(b, fx, fx.frame_at(0x95980));
+                let dx = (self.rand() & 0x1F) as i16 - 0x10;
+                let b = &mut self.effects.slots[i].b;
+                let x = b.xi().wrapping_add(dx);
+                set_word(&mut b.x, x);
+                let dy = (self.rand() & 0x3F) as i16 + 0x18;
+                let b = &mut self.effects.slots[i].b;
+                let y = b.yi().wrapping_add(dy);
+                let z = b.zi().wrapping_sub(8);
+                set_word(&mut b.y, y);
+                set_word(&mut b.z, z);
+                b.mode = 2;
+            }
+            2 => {}
+            _ => return self.fx_free(i),
+        }
+        let b = &mut self.effects.slots[i].b;
+        let y = b.yi().wrapping_sub(1);
+        set_word(&mut b.y, y);
+        if fx_tick(b, fx) { self.fx_free(i); }
+        else { self.draw_list_add_if_visible(self.effects.handle(i)); }
+    }
+
     /// 0x4884: take a pool C slot. `None` = pool empty (carry set).
     fn fx_alloc(&mut self) -> Option<usize> {
         self.effects.alloc()
@@ -237,6 +355,8 @@ impl Game {
             }
             match self.effects.slots[i].b.k20 {
                 FX_SPARK => self.fx_spark(i),
+                0x38 => self.fx_player_marker(i),
+                0x5C => self.fx_respawn_sparkle(i),
                 FX_WATER_SPLASH => self.fx_water_splash(i),
                 FX_FLAMES => self.fx_flames(i),
                 FX_RIPPLE => self.fx_ripple(i),
@@ -245,9 +365,9 @@ impl Game {
                 // TODO(port): remaining classes (handler addresses from the table at 0x237E6):
                 // 0x00 0x923E0, 0x08 0x92808, 0x0C 0x929B8, 0x14 0x92B7A, 0x18 0x92C9A,
                 // 0x1C 0x92ECC, 0x24 0x93184, 0x28 0x932D2, 0x2C 0x934F6 (debris, needs 0x12DAC),
-                // 0x30 0x939D6, 0x34 0x93A7A, 0x38 0x93B28, 0x3C 0x93E54, 0x40 0x93FFC,
+                // 0x30 0x939D6, 0x34 0x93A7A, 0x3C 0x93E54, 0x40 0x93FFC,
                 // 0x44 0x94100, 0x48 0x942C6, 0x4C 0x94462, 0x50 0x9454E, 0x54 0x94672,
-                // 0x58 0x95840, 0x5C 0x9590E, 0x60 0x959E6, 0x64 0x96296, 0x6C 0x963D6,
+                // 0x58 0x95840, 0x60 0x959E6, 0x64 0x96296, 0x6C 0x963D6,
                 // 0x70 0x96488, 0x74 0x965CE, 0x78 0x966B4, 0x7C 0x96800, 0x80 0x96A7E,
                 // 0x84 0x96B78, 0x88 0x96DC4, 0x8C 0x96E56, 0x90 0x96FF4, 0x94 0x9720A,
                 // 0x98 (null entry), 0x9C 0x97530, 0xA0 0x97674, 0xA4 0x97800.
@@ -579,6 +699,64 @@ fn hit_y(a: &Body, ha: &HitBox, d: &Body, hb: &HitBox) -> i16 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn rom() -> Option<&'static dino_assets::AssetPack> {
+        static A: std::sync::OnceLock<Option<&'static dino_assets::AssetPack>> = std::sync::OnceLock::new();
+        *A.get_or_init(|| {
+            let path = std::path::Path::new("../../../dino.zip");
+            path.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(path).expect("ROM loads"))))
+        })
+    }
+
+    #[test]
+    fn respawn_glitter_rolls_twice_at_init_and_wraps_integer_offsets() {
+        let Some(a) = rom() else { return };
+        let mut g = Game::new(a);
+        let mut expected = Game::new(a);
+        let dx = (expected.rand() & 0x1F) as i16 - 0x10;
+        let dy = (expected.rand() & 0x3F) as i16 + 0x18;
+        g.players[0].b.set_xi(i16::MAX);
+        g.players[0].b.set_yi(i16::MAX);
+        let seed = g.w.rng;
+        g.fx_spawn_respawn_sparkle(0);
+        assert_eq!(g.w.rng, seed);
+        let i = g.effects.slots.iter().position(|e| e.b.live != 0).unwrap();
+        g.effects.slots[i].b.x |= 0x1234;
+        g.effects.slots[i].b.y |= 0x5678;
+        g.pool_c_update();
+        let b = &g.effects.slots[i].b;
+        assert_eq!(g.w.rng, expected.w.rng);
+        assert_eq!(b.xi(), i16::MAX.wrapping_add(dx));
+        assert_eq!(b.yi(), i16::MAX.wrapping_add(dy).wrapping_sub(1));
+        assert_eq!((b.x & 0xFFFF, b.y & 0xFFFF), (0x1234, 0x5678));
+        g.pool_c_update();
+        assert_eq!(g.w.rng, expected.w.rng);
+        while g.effects.alloc().is_some() {}
+        g.fx_spawn_respawn_sparkle(0);
+        assert_eq!(g.w.rng, expected.w.rng);
+    }
+
+    #[test]
+    fn oneup_marker_draws_for_180_updates_and_dies_when_owner_leaves_ground() {
+        let Some(a) = rom() else { return };
+        let mut g = Game::new(a);
+        g.players[0].b.live = 2;
+        g.players[0].b.set_state(0x0200_0018);
+        g.fx_spawn_player_marker(0, 2);
+        let i = g.effects.slots.iter().position(|e| e.b.live != 0).unwrap();
+        for n in 0..180 {
+            g.w.frame = n;
+            g.pool_c_update();
+            assert_eq!(g.effects.slots[i].b.live, 1);
+            assert_eq!(g.effects.slots[i].b.palette_override, if n & 1 != 0 { 0x84 } else { 0x86 });
+        }
+        g.pool_c_update();
+        assert_eq!(g.effects.slots[i].b.live, 0);
+        g.fx_spawn_player_marker(0, 2);
+        g.players[0].b.sub = 4;
+        g.pool_c_update();
+        assert_eq!(g.effects.slots[i].b.live, 0);
+    }
 
     fn body(x: i16, y: i16, z: i16, facing: u8) -> Body {
         let mut b = Body::default();

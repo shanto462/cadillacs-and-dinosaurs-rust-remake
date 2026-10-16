@@ -10,6 +10,7 @@ use std::collections::VecDeque;
 
 /// Effect animation tables (10-byte records), the constant each effect stores in obj+$40.
 const EFFECT_TABLES: &[u32] = &[
+    0x93C82, // respawn bubble and player markers (0x93B44)
     0x924F6, // hit spark, effect $20 = 4 (0x924BE)
     0x92AC0, // water splash, effect $20 = 0x10 (0x92A72)
     0x937AA, // debris, effect $20 = 0x2C (0x93590)
@@ -17,6 +18,7 @@ const EFFECT_TABLES: &[u32] = &[
 
 /// Frame lists loaded directly with 0x160A (10-byte records, no table).
 const EFFECT_LISTS: &[u32] = &[
+    0x95980, // invulnerability glitter (0x9592E)
     0x93096, // burning flames, effect $20 = 0x20, airborne loop, var 0 (0x92FD4)
     0x930F4, // same, var != 0 (0x92FE0)
     0x930D4, // flames dying out after landing, var 0 (0x93054)
@@ -30,6 +32,7 @@ const EFFECT_LISTS: &[u32] = &[
 
 /// Raw-list animations (8-byte records), loaded with 0x16C6.
 const RAW_LISTS: &[u32] = &[
+    0x93D1A, // 1UP marker (0x93BF8)
     0x96360, // water ripple, effect $20 = 0x68 (0x96330)
     0x7B5C8, // the frame of the select screen, pool B class 17 (0x7B554)
     0x96546, // the word TIME, effect $20 = 0x70 variant 0 (0x964B8)
