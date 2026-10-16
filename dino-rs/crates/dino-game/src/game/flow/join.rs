@@ -43,16 +43,16 @@ impl Game {
                             self.flow_continue_draw_hud(i); // 0x7328
                         }
                         if self.flow.b4d7 != 0 {
-                            // 0x7392: no continue (the last stage was cleared, the ending): the HUD block is blanked and the score is
-                            // checked against the table (0x7396)
-                            self.flow_join_clear(i, 0x7FB6, 0x7FC2); // bsr 0x7F86
-                            self.flow_join_qualify(i);
+                            // 0x7392: no continue. The HUD prompt is cleared, then the qualification.
+                            self.flow_join_clear(i, 0x7FB6, 0x7FC2);
+                            self.name_qualify(i);
                         }
                     }
                 }
                 8 => self.flow_continue_player(i),
+                10 => self.name_state(i), // 0x74A4: name entry
                 0xC => self.flow_join_game_over(i),
-                _ => {} // M2-21/22: name entry and GAME OVER.
+                _ => {}
             }
         }
         // 0x6C8A..0x6D46: nobody playing, or only continue countdowns left.
@@ -321,31 +321,6 @@ impl Game {
         if self.flow.mode != 0x10 {
             self.flow_join_clear(i, 0x7FB6, 0x7FC2); // bra 0x7F86 (0x7FCA in the mode 0x10: not ported)
         }
-    }
-
-    /// 0x7396: the player has no continue left. A score that makes the table (`flow_hiscore_qualifies`, 0x154EE) goes to the name entry
-    /// (state 0xA, G.$5E4 = 1, the setup 0x15AE2); the others to state 0xC (G.$5E4 = 0).
-    fn flow_join_qualify(&mut self, i: usize) {
-        if self.flow_hiscore_qualifies(i) && self.flow_name_entry_available() {
-            self.flow.join[i].state = 0xA;
-            self.flow.b5e4 = 1;
-            self.flow_name_entry_setup(i); // jmp 0x15AE2
-        } else {
-            self.flow.join[i].state = 0xC;
-            self.flow.b5e4 = 0;
-        }
-    }
-
-    /// 0x154EE: carry set when the rank of the player (+$10A) is 10 or better and his score (+$100, BCD, unsigned compare) is greater than the
-    /// score of the 10th entry of the table (a tie does not qualify).
-    pub fn flow_hiscore_qualifies(&self, i: usize) -> bool {
-        self.players[i].b10a <= 10 && self.hud.hiscores[9].score < self.players[i].score
-    }
-
-    /// The name entry (state 0xA, 0x15BE4 each frame) is M2-22; until it is ported a qualifying player goes to state 0xC like the others (the ending and the
-    /// game over would wait for ever in state 0xA otherwise). M2-22 turns this into `true`.
-    pub fn flow_name_entry_available(&self) -> bool {
-        false
     }
 
     /// 0x7F86 / 0x800E -> 0xF94: blank the ROM rectangle in the HUD block.

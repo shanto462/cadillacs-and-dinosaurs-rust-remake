@@ -23,7 +23,7 @@ impl Game {
     pub(super) fn flow_continue_player(&mut self, i: usize) {
         if self.flow.mode == 0x10 {
             if self.flow.sub == 4 {
-                // TODO(M2-22): 0x7396 ranking qualification (the GAME OVER scene itself is `flow_continue_game_over`).
+                self.name_qualify(i); // 0x7396: the ranking qualification after the countdown
                 return;
             }
         } else {
@@ -41,7 +41,7 @@ impl Game {
             }
             if (self.flow.join[i].seconds as i8) < 0 {
                 self.flow_join_clear(i, 0x7FB6, 0x7FC2);
-                self.flow.join[i].state = 0xC; // 0x73B2; qualification is M2-22.
+                self.name_qualify(i); // 0x7392 and 0x7396: qualification (name entry or 0xC)
                 return;
             }
         }
@@ -375,6 +375,10 @@ impl Game {
                             self.flow.cont.raw.sb(0x19, n);
                             if (n as i8) < 0 {
                                 self.flow.sub2 += 2;
+                                // The wait step with a name entry plays music 0x1F, one frame later (arm 6).
+                                if self.flow.join.iter().any(|j| j.state == 0xA) {
+                                    self.flow.cont.raw.sb(0x18, 1);
+                                }
                             } else {
                                 self.flow_continue_palette();
                             }
@@ -387,6 +391,7 @@ impl Game {
                         self.flow.sub2 += 2;
                         self.flow.cont.raw.sw(0x14, 200);
                         self.sound(0x1D);
+
                         for var in [0, 4] {
                             if let Some(i) = self.effects.alloc() {
                                 let b = &mut self.effects.slots[i].b;
@@ -398,10 +403,17 @@ impl Game {
                     }
                     if self.flow.cont.raw.b(0x18) == 1 {
                         self.flow.cont.raw.sb(0x18, 2);
+                        self.flow.b5e4 = 2; // G.$5E4 = 2 with the name entry music (D4d A17: 1694)
                         self.sound(0x1F);
                     }
                 }
                 8 => {
+                    // Sub 8: the 0xC labels of the finished entries go to 0 (M2-22, D4d A17: 2146 and 2147).
+                    for j in self.flow.join.iter_mut() {
+                        if j.state == 0xC {
+                            j.state = 0;
+                        }
+                    }
                     if self.flow.join.iter().any(|j| j.state == 4) {
                         self.flow.sub = 6;
                         self.flow.sub2 = 0x400;
