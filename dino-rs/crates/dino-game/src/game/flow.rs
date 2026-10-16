@@ -769,7 +769,7 @@ impl Game {
 
     /// 0xA5EA, when an area-end lock is released: sound command 0xFF07 (music fade out).
     pub fn hook_a5ea(&mut self) {
-        self.sound(0xFF07);
+        self.snd_request(0xFF07, 0x0444_0000, 0); // d1 = 0x4440000, d2 = 0, bra 0xA63C
     }
 
     /// 0xACD0, after the fade out, before the next area is loaded: area start 0xAA0E (players
@@ -821,5 +821,73 @@ impl Game {
             b.live = 1;
             b.k20 = 0x180;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dino_assets::AssetPack;
+    use std::path::Path;
+    use std::sync::OnceLock;
+
+    fn rom() -> Option<&'static AssetPack> {
+        static A: OnceLock<Option<&'static AssetPack>> = OnceLock::new();
+        *A.get_or_init(|| {
+            let path = Path::new("../../../dino.zip");
+            path.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(path).expect("the ROM set loads"))))
+        })
+    }
+
+    /// D4c s5.7 / s10 A4: The 13 area transitions have exact new area times:
+    /// (2:20, 1:20, 3:20, 1:20, 4:00, 2:50, 4:00, 4:00, 1:20, 2:50, 4:00, 4:00, 4:00).
+    #[test]
+    fn the_13_area_changes_time_and_rank() {
+        let Some(assets) = rom() else { return };
+        let transitions: [(u8, u8, u8, u8, &'static str); 13] = [
+            (0, 1, 2, 0x20, "Ep 1 a0 to a1"),
+            (0, 2, 1, 0x20, "Ep 1 a1 to a2"),
+            (1, 1, 3, 0x20, "Ep 2 a0 to a1"),
+            (1, 2, 1, 0x20, "Ep 2 a1 to a2"),
+            (3, 1, 4, 0x00, "Ep 4 a0 to a1"),
+            (3, 2, 2, 0x50, "Ep 4 a1 to a2"),
+            (4, 1, 4, 0x00, "Ep 5 a0 to a1"),
+            (5, 1, 4, 0x00, "Ep 6 a0 to a1"),
+            (5, 2, 1, 0x20, "Ep 6 a1 to a2"),
+            (6, 1, 2, 0x50, "Ep 7 a0 to a1"),
+            (7, 1, 4, 0x00, "Ep 8 a0 to a1"),
+            (7, 2, 4, 0x00, "Ep 8 a1 to a2"),
+            (7, 3, 4, 0x00, "Ep 8 a2 to a3"),
+        ];
+
+        let mut g = Game::new(assets);
+        for (stage, new_area, expected_min, expected_sec, name) in transitions {
+            g.w.stage = stage;
+            g.cam.s2.area = new_area;
+            g.hook_1031a(); // 0x1031A: rank_time_area_start
+            assert_eq!(
+                (g.rank.time_min, g.rank.time_sec),
+                (expected_min, expected_sec),
+                "time mismatch on {name}"
+            );
+        }
+    }
+
+    #[test]
+    fn hook_acd0_and_ace0_effects() {
+        let mut g = Game::new(Box::leak(Box::new(AssetPack::default())));
+        g.players[0].b.live = 1;
+        g.players[0].b.mode = 2; // in game
+        g.players[1].b.live = 1;
+        g.players[1].b.mode = 2; // in game
+        g.rank.speed = 10;
+
+        g.hook_ace0(); // 0xACE0: player count and rank speed +2
+        assert_eq!(g.w.players_minus_one, 1);
+        assert_eq!(g.rank.speed, 12);
+
+        g.hook_9236c(); // 0x9236C: allocate class 96 in pool B
+        let p96 = g.props.slots.iter().find(|p| p.b.live != 0 && p.b.k20 == 0x180);
+        assert!(p96.is_some(), "class 96 object spawned");
     }
 }

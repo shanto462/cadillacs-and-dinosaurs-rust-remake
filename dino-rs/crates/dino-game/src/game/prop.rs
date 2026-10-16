@@ -78,6 +78,9 @@ mod class19;
 mod class67;
 #[path = "prop/class68.rs"]
 mod class68;
+// Pool B class 96 (M3-15): area music object after sub-area camera mode 8.
+#[path = "prop/class96.rs"]
+mod class96;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -135,6 +138,7 @@ impl Game {
                 89 => self.prop_class89(&mut p, i),
                 93 => self.prop_class93(&mut p, i),
                 94 => self.prop_class94(&mut p, i),
+                96 => self.prop_class96(&mut p, i),
                 _ => self.prop_unported(&mut p, h, i),
             }
             self.props.slots[i] = p;

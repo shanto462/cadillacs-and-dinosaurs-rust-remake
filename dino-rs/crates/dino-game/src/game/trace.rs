@@ -604,8 +604,8 @@ impl Prop {
     pub fn trace_visit(&mut self, f: &mut F, stage: u8) {
         self.b.trace_header(f, false);
         self.m.trace_load_all(f, 0xC0);
-        if f.all() || self.b.k20 == 73 * 4 {
-            // The bird spawner's delay (class 73, 0x89AE0) sits in the same word.
+        if f.all() || self.b.k20 == 73 * 4 || self.b.k20 == 96 * 4 {
+            // The bird spawner's delay (class 73, 0x89AE0) and class 96 music timer sit in the same word.
             let mut t = self.m.w(0x80);
             f.u16(0x80, "wave_timer", &mut t);
             self.m.sw(0x80, t);
@@ -860,7 +860,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 20, 34, 41, 49, 50, 54, 55, 56, 57, 60]),
-    ("prop", &[15, 18, 20, 25, 31, 66, 73, 74]),
+    ("prop", &[15, 18, 20, 25, 31, 66, 73, 74, 96]),
     (
         "item",
         &[
