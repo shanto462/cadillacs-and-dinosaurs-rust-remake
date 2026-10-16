@@ -16,6 +16,7 @@ pub mod enemy;
 pub mod frontend;
 pub mod player;
 pub mod script;
+pub mod sound;
 pub mod sprites;
 pub mod stage;
 pub mod terrain;
@@ -67,6 +68,8 @@ pub struct AssetPack {
     /// Front end scenes: picture pages, scene palettes, ROM tables (`frontend.rs`).
     pub frontend: frontend::FrontendData,
     pub script: script::ScriptData,
+    /// QSound tables, sequences and samples (`sound.rs`).
+    pub sound: sound::SoundData,
 }
 
 impl AssetPack {
