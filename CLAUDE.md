@@ -12,6 +12,8 @@
   changing it. Build and run from `dino-rs/`: `cargo run -p dino-game -- --rom ../dino.zip`.
 - Character ids: 0 Jack, 1 Mustapha, 2 Hannah, 3 Mess (verified by art; the name table order differs).
 - REA cannot open 68000 code; use Ghidra headless (`re/README.md`) and `re/tools/d`.
-- Sub-agents (user rule, 2026-10-12): **at most 2 sub-agents run at the same time**, of which at most
-  1 writes game code (`dino-rs/`). Agents never start their own agents. Start a new one only when fewer than 2
-  are running; never stop a running agent to get under the limit, let it finish.
+- Sub-agents (user rule, 2026-10-17): **at most 2 Claude sub-agents at the same time: one Sonnet (heavy work)
+  and one Haiku (small, easy tasks), never two Sonnets.** Mid-sized tasks go to the external CLIs (codex, grok,
+  agy), each in its own git worktree under `.worktrees/`, merged one at a time after review. Only one worker
+  writes game code in the main tree. Agents never start their own agents; never stop a running agent to get
+  under the limit, let it finish.
