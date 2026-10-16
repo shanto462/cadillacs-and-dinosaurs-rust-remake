@@ -79,16 +79,23 @@ const CUTS: [usize; 9] = [3958, 3054, 3786, 3958, 3786, 3051, 3786, 3957, 3786];
 const CUT_AFTER_PROFILES: usize = 3786;
 const CUT_AFTER_SLIDES: usize = 3051;
 const CUT_AFTER_DEMO: usize = 3957;
+/// The ranking of the game over that follows the ending (measured in the recording `flow_end-jack`; the first frame writes this many words).
+const CUT_AFTER_ENDING: usize = 2664;
 
 impl Game {
     /// The ranking runs for the first time since power on.
     fn ranking_first_run(&self) -> bool {
-        self.flow.front.rank_runs <= 1
+        // (the ranking of a game over, 0x97C94, is a later run whatever the count: the ending of a game started since power on shows it first, the
+        // recording of `flow_ending` has its second pass one frame after the first)
+        self.flow.front.rank_runs <= 1 && !self.flow.front.after_ranking_pass
     }
 
     /// The number of words (2 a cell) the frame after the call writes (see the module comment). The state byte of
     /// the attract task says which screen came before: 0 and 4 the profile cards, 2 the story slides, 6 the demo.
     fn ranking_cut(&self) -> usize {
+        if self.flow.ending.ranking_follows {
+            return CUT_AFTER_ENDING;
+        }
         let run = self.flow.front.rank_runs as usize; // 1 for the first run
         match CUTS.get(run.wrapping_sub(1)) {
             Some(&k) => k,

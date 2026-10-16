@@ -229,7 +229,7 @@ pub(crate) fn bcd_sub32(a: u32, b: u32, mut x: u8) -> (u32, u8) {
 impl Game {
     // ---------------------------------------------------------------- scroll1 writes
 
-    fn hud_cell(a: u32) -> usize {
+    pub(crate) fn hud_cell(a: u32) -> usize {
         ((a.wrapping_sub(S1) / 4) & 0xFFF) as usize
     }
 

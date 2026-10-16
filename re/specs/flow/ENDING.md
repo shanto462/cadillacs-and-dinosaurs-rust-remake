@@ -50,3 +50,38 @@ control 0x12D6 and pool B 81 (the desert master), the master ends. Layer control
 
 The cast does not matter (D4d): the heroes are removed at sub 0. The cut of the screen clear at the end of the first frame depends on the work of the
 frame before the pass (cells 1367 to 1384 of scroll2 in the six recordings, `CLEAR2_FIRST`).
+
+## The still picture, the desert and the end (M3-24 to M3-27)
+
+* **State 0x16 of the master and the still picture.** The picture is the scroll2 pages 0xB, 0xC and the scroll3 pages 0x68, 0x69 with the camera at 0 and the palettes of
+  scroll2 (20 to 25) cycling; the caption 0x6B (JACK! HANNAH!) is pool B 66, the debris showers go on (pool B 84 variant 0x10). At `+$A0` = 0xC0 the master makes pool B 87, the
+  staff roll. The end of the state is a pass that overruns the video frame: the two layer clears (0xB6C, 0xB88) keep the 68000 past the frame end, so scroll2 and the first 3584 cells of
+  scroll3 are cleared when it ends and the rest of scroll3, the cameras and the sub state come at the start of the next frame (`Cont::StillEnd`).
+* **Pool B 87 (0x8B60E), the staff roll.** Prints the first line (STAFF, attribute 1) at the scroll1 cell of column 0x24, row 0x1E (0x90B278), waits 120 frames, then moves G.$6C8
+  (the long Y.fraction: `Camera::cam1_y_frac`) up by 0x6C00 a frame and every 32 frames (`+$A0` & 0x1F = 0) prints the next line two rows lower (rows from 0x20 on are the first half of
+  the column); 0xC00 frames in all, then G.$6C8 = 0 and the object ends. A line is 12 bytes of the ROM at 0x8B7EC (letters A to Z are the tiles of the table 0x8B786, other bytes tile
+  codes, '%' an A with the attribute bit 0x40, '@' ends it), the attribute of a line is the word of the table 0x8BC84 (1, red header 2). The 96 lines run past the 66 of the text into
+  blank ones.
+* **Pool B 81 (0x8A5FA), the desert.** Made by the master at the end of the still picture (record 969). Mode 0: the sound stop and music 0x19, scroll3 X + 0x180, the pages (scroll2 0x16
+  four times, scroll3 0x6C six times), the walkers (pool A 81 variants 1 and 2), the camera speed `+$AC` = 1, the timer `+$A0` = 0xBA4. The camera X goes back by `+$AC` pixels a frame
+  and scroll3 X by 1/16 pixel (G.$7E4 as a long: `Scroll3::cam_x_frac`) while `+$AE` (0x1036 frames) lasts and the sub state is below 0x32. Sub states: waits (13 of them) and 0x02 music
+  0x1A (d1 = 0x48, d2 = 0x1388, the leftovers the recording shows) with the car (pool A 81 variant 0, 2980 frames after the start); 0x06, 0x0E, 0x16, 0x1E, 0x26 the portraits and
+  texts of the heroes with 0x84736 (Mustapha 0x35, Jack 0x36, 0x39, 0x3A, Hannah 0x38; the call leaves the portrait palette word in `+$A2` of the caller); 0x0A, 0x12, 0x1A, 0x22, 0x2A blank the
+  text block (45 x 13 cells at 0x90A29C); 0x2C camera speed 2; 0x30 THANK YOU FOR PLAYING and PRODUCED BY (the big font 0xCE4, printed at once, not typed) and the CAPCOM sign (0x110C at 0x11, 0x1A);
+  0x34 G.$507 = 0 (a name entry that waited may start) and the end. The whole run is about 4000 frames.
+* **Pool A 81 (0x60158), the walkers and the Cadillac.** Variants 1 (Mustapha) and 2 (Mess) walk in the desert for 0xF6E frames with speed tables 3, 0, 1 / 2 at the timer values 0x37A,
+  0x8C, 0x78 / 0x6E (they stop and turn); the car (variant 0, 0x3CA frames) makes its two heroes (pool A 17, variants 0 and 1, owner `+$AC`), drives in, stops and drives off. X follows the
+  camera (`+$A8` keeps the camera X of the frame before as a long).
+* **The end.** The sequencer's sub 6 waits for a name entry (a qualifying hero is in the join state 0xA, parked while G.$507 is set; B81 clears it), sub 8 sleeps 180 frames and the pass
+  after it does mode 0x14, sub 0 and the clear 0xAE0, which keeps the 68000 through three video frames (sprites and scroll1, scroll2, scroll3). Two video frames later the mode 0x14 routine
+  runs (mode 0x18) and the game over of the attract loop (the ranking, `flow_game_over`) goes on. The first frame of the ranking after the ending writes 2664 words (2662 to 2666 in the six
+  recordings, `CUT_AFTER_ENDING`) and the ranking of a game over is never the "first run" of the attract (its second pass is not in the frame of the first).
+
+## Pool A 97 (0x69EA2), the stand ins of the clear scene of Episode 8
+
+The script action 0x42 (`script.rs`) makes one for every character (`enemy_stand_in_present` 0x69E32 at each playing hero, `enemy_stand_in_absent` 0x69E66 at X 0x10E0 for the others, depth
+from 0x69E9A). They stand until all four are in place (the absent ones walk to X 0x1180), the boss (G.$4E0) has `+$A6` set, then: one pool A 93 piece, 120 frames, the dialogue of the
+boss (pool B 50 variant 7, not ported), 180 frames, G.$7A9 = 1 (the camera moves on), they walk right 3 pixels a frame to X 0x1200 (the three heroes' X words follow) and on; the stand in
+of Mustapha makes the aura (pool C 39, `+$20` = 0x9C, not ported). They live until the ending resets the pools. Checked in step mode against `m328_f_ep8` (records 1134 to 3874: no
+difference in any class 97 field).
+

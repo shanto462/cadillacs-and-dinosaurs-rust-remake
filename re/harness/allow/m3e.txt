@@ -7,3 +7,7 @@ global.next_event
 # 2. An object that never drew has +$28 = 0 in MAME (the pool init clears it); the port holds the first frame id, which the trace prints as the first frame record.
 prop.frame
 enemy.frame
+# 3. The display shadows of the scroll registers (G.$860 / G.$868 / G.$7B8) are copied from the cameras by the main loop at the start of a pass; the port derives them. The ending
+#    does not run the main loop's copy while the staff roll moves scroll1 Y, so MAME keeps 0 there and the port shows the camera Y.
+global.display_y1
+global.shake_scroll1_y

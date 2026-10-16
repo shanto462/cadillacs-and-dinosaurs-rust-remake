@@ -23,6 +23,7 @@
 //! `+$A0` the timer, `+$A4` the camera speed, `+$A8` the count of the palette cycle and `+$AA` its pointer into the table 0x8B112.
 
 use super::Prop;
+use crate::game::flow::ending::Cont;
 use crate::game::vram::PaletteRam;
 use crate::game::Game;
 
@@ -118,7 +119,7 @@ impl Game {
             0x0C => self.b82_wall(p),
             0x10 => self.b82_smoke(p),
             0x14 => self.b82_end_of_fire(p),
-            0x16 => self.b82_still(p),
+            0x16 => self.b82_still(p, i),
             0x1A => self.b82_desert(p, i),
             0x06 | 0x0A | 0x0E | 0x12 | 0x18 => {
                 // 0x8AA62: wait `+$A0` frames
@@ -139,7 +140,7 @@ impl Game {
         self.flow_scene_palettes(3); // moveq #3,d0; jsr 0x89E6
         self.brightness_full(); // 0x892C
         self.flow_clear_screen(); // 0xAE0
-        self.flow.ending.pages_for = Some(self.props.handle(i));
+        self.flow.ending.cont = Some(Cont::Pages(self.props.handle(i)));
         let _ = p;
         self.flow_lag(1);
     }
@@ -269,24 +270,34 @@ impl Game {
     }
 
     /// 0x8B000: the still picture. The palettes of the sky cycle until the timer ends.
-    fn b82_still(&mut self, p: &mut Prop) {
+    fn b82_still(&mut self, p: &mut Prop, i: usize) {
         let t = p.m.w(f::TIMER).wrapping_sub(1);
         p.m.sw(f::TIMER, t);
         if t == 0 {
-            // 0x8B032
-            self.vram.clear2(); // 0xB6C
-            self.vram.clear3(); // 0xB88
-            self.cam.s2.cam_x = 0;
-            self.cam.s3.cam_x = 0;
-            p.b.sub += 2;
-            p.m.sw(f::TIMER, 6);
-            self.flow_lag(1); // the two clears keep the CPU through the next video frame (MAME: lag record 963)
+            // 0x8B032: the two clears (0xB6C, 0xB88) keep the 68000 past the end of the video frame: scroll2 and the first 3584 cells of scroll3
+            // are cleared when it ends, the rest of scroll3 and the end of the state come at the start of the next one (the recording)
+            self.vram.clear2();
+            for c in self.vram.scroll3.iter_mut().take(3584) {
+                (c.code, c.attr) = (0x1C00, 0);
+            }
+            self.flow.ending.cont = Some(Cont::StillEnd(self.props.handle(i)));
             return;
         }
         if t == 0xC0 {
             let _ = self.prop_spawn(B87, 0);
         }
         self.b82_cycle_palettes(p);
+    }
+
+    /// 0x8B038 on: the rest of the clear, the cameras, the sub state and the timer (see `b82_still`).
+    pub fn b82_still_end_b(&mut self, h: crate::game::Handle) {
+        self.vram.clear3();
+        self.cam.s2.cam_x = 0;
+        self.cam.s3.cam_x = 0;
+        if let Some(crate::game::Slot::Prop(i)) = crate::game::slot_of(h) {
+            self.props.slots[i].b.sub += 2;
+            self.props.slots[i].m.sw(f::TIMER, 6);
+        }
     }
 
     /// 0x8B058: six palettes of the scroll2 bank (20 to 25) take the colours of the table row of the step, keeping the brightness nibble.

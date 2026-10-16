@@ -106,6 +106,10 @@ mod class96;
 // The ending (M3-23): the master of the scenes (82) and the showers and quakes (83, 84, 85).
 #[path = "prop/b82_85.rs"]
 mod b82_85;
+#[path = "prop/b87.rs"]
+mod b87;
+#[path = "prop/b81.rs"]
+mod b81;
 // Pool B class 1 (M3-19): chain-link fence / gate (0x75238).
 #[path = "prop/b1.rs"]
 mod b1;
@@ -177,11 +181,13 @@ impl Game {
                 73 => self.prop_bird_spawner(&mut p, i),
                 74 => self.prop_class74(&mut p, i),
                 80 => self.prop_ambience(&mut p, i),
+                81 => self.prop_b81(&mut p, i),
                 82 => self.prop_b82(&mut p, i),
                 83 => self.prop_b83(&mut p, i),
                 84 => self.prop_b84(&mut p, i),
                 85 => self.prop_b85(&mut p, i),
                 86 => self.prop_class86(&mut p, i),
+                87 => self.prop_b87(&mut p, i),
                 89 => self.prop_class89(&mut p, i),
                 93 => self.prop_class93(&mut p, i),
                 33 | 79 => self.ph_starter(&mut p, h, i), // placeholders of the boss starters (placeholder.rs)

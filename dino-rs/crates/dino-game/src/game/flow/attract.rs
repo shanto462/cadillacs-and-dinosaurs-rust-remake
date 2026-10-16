@@ -246,6 +246,7 @@ impl Game {
         if self.flow.front.after_ranking_pass {
             // the game over ranking of 0x97C94: the flag is cleared, the pass goes on with its routine
             self.flow.front.after_ranking_pass = false;
+            self.flow.ending.ranking_follows = false;
             self.flow.front.game_over_flag = 0; // clr.b -$702E(a5)
             self.flow_attract_state_routine();
             return;

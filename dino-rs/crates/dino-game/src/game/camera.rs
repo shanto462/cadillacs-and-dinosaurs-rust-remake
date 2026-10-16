@@ -105,8 +105,11 @@ pub struct Scroll3 {
     pub state: u8,
     pub b5: u8,
     pub cam_x: u16,
+    /// G.$7E6: the fraction of the scroll3 X (the long G.$7E4 is moved by the desert of the ending, `subi.l #$1000`).
+    pub cam_x_frac: u16,
     pub cam_y: u16,
     pub map_area: u8,
+
     pub sx46: u16,
     pub sy48: u16,
     pub x5a: u16,
@@ -150,6 +153,8 @@ pub struct Camera {
     /// the HUD lives at scroll1 rows 34+ (0x90A014). 0xAC4E sets Y = 0x100 for a non-game screen.
     pub cam1_x: u16,
     pub cam1_y: u16,
+    /// G.$6CA: the fraction of the scroll1 Y (G.$6C8 is the long Y.fraction when the staff roll of the ending moves it, 0xAE0 clears only the word).
+    pub cam1_y_frac: u16,
     /// G.$755C: shake strength requested this frame (consumed by 0x222D6, see `cam_shake`).
     pub shake_req: u8,
     /// G.$755A, $755D..$7561: state, remaining strength, timer, sign and amplitude.
@@ -169,8 +174,16 @@ pub struct Camera {
 
 impl Default for Camera {
     fn default() -> Self {
-        Camera { s2: Scroll2::default(), s3: Scroll3::default(), row: RowScroll::default(), car: 0, cam1_x: 0, cam1_y: 0, shake_req: 0, shake_state: 0, shake_strength: 0, shake_timer: 0, shake_sign: 0, shake_amp: 0,
+        Camera { s2: Scroll2::default(), s3: Scroll3::default(), row: RowScroll::default(), car: 0, cam1_x: 0, cam1_y: 0, cam1_y_frac: 0, shake_req: 0, shake_state: 0, shake_strength: 0, shake_timer: 0, shake_sign: 0, shake_amp: 0,
             shake_dy1: 0, shake_dy2: 0, shake_scroll1_y: 0, latch: ScrollLatch::default() }
+    }
+}
+
+impl Scroll3 {
+    /// `subi.l #v,$7E4(a5)`: the long X (integer and fraction) minus `v`.
+    pub fn cam_x_long_sub(&mut self, v: u32) {
+        let x = (((self.cam_x as u32) << 16) | self.cam_x_frac as u32).wrapping_sub(v);
+        (self.cam_x, self.cam_x_frac) = ((x >> 16) as u16, x as u16);
     }
 }
 

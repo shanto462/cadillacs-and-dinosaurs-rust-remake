@@ -949,8 +949,8 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 /// `pool_c_update`, `pool_e_update`.
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
-    ("enemy", &[2, 10, 14, 15, 16, 17, 20, 27, 34, 41, 43, 49, 50, 54, 55, 56, 57, 60, 90, 92, 93, 96]),
-    ("prop", &[1, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 31, 35, 47, 66, 73, 74, 82, 83, 84, 85, 96]),
+    ("enemy", &[2, 10, 14, 15, 16, 17, 20, 27, 34, 41, 43, 49, 50, 54, 55, 56, 57, 60, 81, 90, 92, 93, 96, 97]),
+    ("prop", &[1, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 31, 35, 47, 66, 73, 74, 81, 82, 83, 84, 85, 87, 96]),
     (
         "item",
         &[
@@ -1318,6 +1318,7 @@ impl Game {
         f.u8(b + 0x04, "cam3_state", &mut t.state);
         f.u8(b + 0x05, "cam3_b5", &mut t.b5);
         f.u16(b + 0x08, "cam3_x", &mut t.cam_x);
+        f.u16(b + 0x0A, "cam3_x_frac", &mut t.cam_x_frac);
         f.u16(b + 0x0C, "cam3_y", &mut t.cam_y);
         f.u16(b + 0x46, "cam3_sx46", &mut t.sx46);
         f.u16(b + 0x48, "cam3_sy48", &mut t.sy48);
@@ -1329,6 +1330,7 @@ impl Game {
         }
         f.u16(0x06C4, "cam1_x", &mut self.cam.cam1_x);
         f.u16(0x06C8, "cam1_y", &mut self.cam.cam1_y);
+        f.u16(0x06CA, "cam1_y_frac", &mut self.cam.cam1_y_frac);
         f.u8(0x755A, "shake_state", &mut self.cam.shake_state);
         f.u8(0x755C, "shake_req", &mut self.cam.shake_req);
         f.u8(0x755D, "shake_strength", &mut self.cam.shake_strength);
@@ -1410,6 +1412,9 @@ impl Game {
             f.u8(0x0510 + k as u32, ["saved_mode0", "saved_mode1", "saved_mode2", "saved_mode3"][k], &mut fl.saved_mode[k]);
         }
         for k in 0..0x1E {
+            if k == 0x18 {
+                continue; // G.$5E4 is `Flow::b5e4` (the name entry and the ending own it, traced above), not a byte of the continue struct
+            }
             f.u8(0x05CC + k as u32, "continue", &mut fl.cont.raw.0[k]);
         }
         f.u8(0x777A, "dip_a", &mut fl.dip.dip_a);

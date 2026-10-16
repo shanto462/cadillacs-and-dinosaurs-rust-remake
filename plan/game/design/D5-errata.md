@@ -206,3 +206,20 @@ MAME wins over the design text; the design documents themselves are not edited.
 - D5 decision 8 (ranking car): the continue code 0xE9E6..0xEE6C does not make the car. It has no call to 0x8B428 or to a pool B spawn; 0x92308 only restores a palette. Pool B 86 stays with the ranking screen (M1-07). M2-21.
 - D4d A15 and A16 frame numbers: the k-1p recording (`flow_k-1p.mame.trc`) has the design time base 1812 frames before its record numbers (mode 0x10 at record 2015 is design 203; mode 0x14 at 3797 is design 1985). M2-21.
 - D3e inventory row 12 and section 3.3 var 4 (class 12, 0x78B52): the hit does not set attribute 0x10 on 12 tiles. 0x79098, called from the break 0x7900E, writes six attribute words (`and #$FFE0 ; or #$10`) at 0x90FE16, 0x90FE1A, 0x90FE52, 0x90FE56, 0x90FE5A and 0x90FE5E. 0x790CE and 0x790F2 sit after that `rts` and are not called. M3-18.
+
+## From M3-24 to M3-27 (the ending, 2026-10-17)
+
+- D4d s8 / D5 M3-24 ("class 87 at 776 ... the still picture"): pool B 87 is the staff roll text, not a picture object: the still picture is scroll2 pages 0xB, 0xC and scroll3 pages 0x68, 0x69 made by the master 82 (state 0x14, 0x13C
+  frames, the palettes of scroll2 cycle by 0x8B058); the caption JACK! HANNAH! is the pool B 66 variant 0x6B; the master makes the staff roll (B87) at `+$A0` = 0xC0 of its state 0x16 (record 771 of `m328_end-jack`). M3-24.
+- D4d s8 / D5 M3-25 ("pool B 81 starts at 975 ... pool A 81 from 976", "53 string lines from 0x8B7EA"): B81 starts at 969 (record, 975 in the video clock of D4d) with the music 0x19; the staff roll is B87 (one line every 32 frames for 3072 frames after
+  a delay of 120, 66 lines of text and blank lines after them, not a block of 53); B87 moves scroll1 Y by 0x6C00 / 0x10000 pixels a frame (G.$6C8 as a long). The names of the staff are read from the ROM at run time (`FRONT_TABLES` 0x8B786). M3-25.
+- D4d s8 / D5 M3-26 ("pool A 17 twice from 3956", "typed captions", "THANK YOU FOR PLAYING typed"): pool A 17 are the two heroes of the Cadillac, made by pool A 81 variant 0 (the car) when B81 makes it (record 3950, music 0x1A with d1 0x48 and d2
+  0x1388); the dialogue texts are printed at once by 0x84736 (the tall font, the portrait of the caller), not typed; THANK YOU FOR PLAYING and PRODUCED BY are printed at once by the big font 0xCE4 at state 0x30; the timer of the ending, not B81,
+  ends the show (B81 ends at 4982 and clears G.$507). M3-26.
+- D4d s8 and D5 M3-27 (the end): sub 8 sleeps 180 frames and the pass after it sets mode 0x14 and clears all (0xAE0, three video frames); the mode 0x14 routine of the game over runs two video frames later (mode 0x18), the game over exit
+  (G.$4CC = 0) four frames after it, the ranking four after that (D4d's "mode 0x14 at 5546, 0x18 at 5548" are game clock records). The name entry of a qualifying hero (join state 0xA from record 2, 0x15AE2 at sub 0) is parked while G.$507 is set and
+  starts when B81 clears it (the end of the show, record 4988); the ending waits in sub 6 until the hero is out of the entry. M3-27.
+- D4c s5.4 (0x42, "one pool A class 97 stand in per hero"): the stand ins also wait for the boss' `+$A6`, make a pool A 93 piece, the dialogue of the boss (pool B 50 variant 7, 0x84490) and the aura (pool C 39 variant 0, by the stand in of Mustapha),
+  set the camera go flag G.$7A9 and walk off to the right dragging the heroes' X (`m328_f_ep8`, records 1134 to 3874). M3-27.
+- Registers: the staff roll moves G.$6C8 as a long (G.$6CA is the fraction, 0xAE0 clears only the word) and the desert moves G.$7E4 with `subi.l #$1000` (G.$7E6 the fraction); the port had no fraction word for either. M3-25.
+

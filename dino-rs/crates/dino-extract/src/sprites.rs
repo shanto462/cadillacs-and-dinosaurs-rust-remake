@@ -62,6 +62,8 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x42386, // pool A class 16, the blue Cadillac (0x420EA)
     // The ending (M3-23): the explosion clouds (class 90), the pieces (92, 93) and the flying pieces of the sunset (96).
     0x6531C, 0x678A0, 0x67C3A, 0x69E00,
+    0x6A020, 0x6A08E, 0x6A0FC, 0x6A16A, // pool A class 97, the stand ins of the heroes (0x69EA2)
+    0x604EA, // pool A class 81, the walkers and the Cadillac of the desert (0x60158)
     0x4DA2A, 0x4DA44, 0x4DA9A, // pool A class 27, the crouching men, variants 0, 2, 4 (0x4D900)
     0x56106, // pool A class 43, the orange leader of the Episode 4 opening (0x55F2A)
     // Pool E (items, phase 1 task 2). Containers 0x28C8A..0x28D1C, one table per variant.

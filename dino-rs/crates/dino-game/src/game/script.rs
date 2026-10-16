@@ -483,11 +483,15 @@ impl Game {
 
     /// 0x69E32 (called by 0x1E650 for a present hero, d0 = his character): a pool A class 97 object (`+$20` = 0x184, variant `2 * id`) at the
     /// hero's position and facing. Not ported (M3-27, the staff roll and the clear scene): the hook is here so the action is complete.
-    fn script_stand_in_present(&mut self, _hero: usize, _id: u8) {}
+    fn script_stand_in_present(&mut self, hero: usize, id: u8) {
+        self.enemy_stand_in_present(hero, id);
+    }
 
     /// 0x69E66 (called by 0x1E650 for a character nobody plays, d0 = its id): a pool A class 97 object (variant `2 * id`) at X 0x10E0, height 0,
     /// facing 1, the depth from the table 0x69E9A. Not ported (M3-27).
-    fn script_stand_in_absent(&mut self, _id: u8) {}
+    fn script_stand_in_absent(&mut self, id: u8) {
+        self.enemy_stand_in_absent(id);
+    }
 
     /// 0x1DC60 action 0x4A: the barrier. Waits until every scripted hero has reached this action, has HP and is not in the invulnerable
     /// state (`+$00` = 2, after a hit or a respawn). A scripted hero whose object is free (`+$00` = 0) is taken out of G.$4DD, but the frame still

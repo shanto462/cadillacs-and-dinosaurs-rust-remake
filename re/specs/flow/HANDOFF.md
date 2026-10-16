@@ -628,3 +628,24 @@ Tools: `re/harness/link_check.sh [NAME ...]` (`STORY_ONLY=1` stops at the first 
 * **Waiting for other tasks.** Pool B 3 variant 4 (the wall that breaks at record 525 and its pool C 21 variant 0x14) is class 3 of M3-19 (the same code path as variant 8, 0x7667E):
   check records 525 to 560 of `m328_end-jack` after it is merged. The staff roll (B87, 0x8B60E, from record 771) and the desert (B81 / pool A 81, from 969) are M3-25 and M3-26.
 
+### M3-24 to M3-27: the rest of the ending (green; the whole ending equals MAME)
+
+* **Result.** `the_ending_matches_mame` (`flow/mame_check.rs`) runs `flow_end-jack`, `end-hannah`, `end-3p`, `end-mess-jack`, `end-mustapha` and `end-hiscore` (video clock, from the record before the probe's poke
+  of the ending) for 5700 records each: the three layers, the palettes, the sprite list, the sound codes, G.$14, mode and sub and all scroll registers (scroll1 X, Y and Y fraction, scroll2 and scroll3 X and Y) equal MAME in
+  every record, from the poke through all five scenes, the staff roll, the car, the dialogue, THANK YOU FOR PLAYING, the sub 6 wait (the high score recording waits in the name entry), the sleep, the game over and the
+  first frames of the ranking (the exceptions: scroll2 of record +0, whose clear cut depends on the work before it, and up to 4 cells of scroll3 in the first frame of the ranking, the same kind of cut). Game clock (`re/out/ending/run.sh
+  NAME run 5538 --from 1 --allow re/harness/allow/m3e.txt`): `m328_end-jack`, `hannah`, `mess-jack`, `mustapha`, `fine`, `objs`, `3p` and `hiscore` (5700) free runs have no difference in any object field, global, tilemap,
+  palette, sprite or sound for 5538 records (the allow file lists the harness artifacts). Records from 5540 on (the game over) are compared in the video clock only. `ending_report` (ignored; `DINO_ENDING`, `DINO_LAST`,
+  `DINO_ALL`, `DINO_AT`, `DINO_JOIN`) lists differences for any recording and length.
+* **New in this part.** `prop/b87.rs` (the staff roll), `prop/b81.rs` (the desert master, the talk, the end texts), `enemy/class81.rs` (walkers and Cadillac), `enemy/class97.rs` (the Episode 8 stand ins, `script.rs` calls them),
+  the continuation `Ending::cont` (a state of the master whose pass overran the video frame: `Cont::Pages`, `Cont::StillEnd`), the staged clear after the sleep (`flow_attract_clear` + lag), `Camera::cam1_y_frac` (G.$6CA), `Scroll3::cam_x_frac`
+  (G.$7E6, trace fields `cam1_y_frac`, `cam3_x_frac`), the tables 0x8B786.. (letters, lines, attributes), 0x8A956, 0x69E9A, 0x6A010 in `FRONT_TABLES`, the animation tables 0x604EA and 0x6A020, 0x6A08E, 0x6A0FC, 0x6A16A.
+  The harness joins a continuation into one game clock record (`harness::run`: `lag`, `lag_tick`, `Ending::cont`).
+* **Fixes on the way.** Class 17's init clears `+$A0` (0x423CC); the name entry's end (0x74C2: state 0xC, `started` bit cleared, the HUD rectangle blank 0x7F86) was missing in `name_state`; G.$5E4 was traced twice (`b5e4` and the continue
+  struct): one owner now (`Flow::b5e4`); `ranking_first_run` is false for the ranking of a game over; the trace pointer sums wrap.
+* **Episode 8 to the ending.** `m328_f_ep8` (the clear sequence poked in at record 20): the port reaches the mode 0x1C at record 3874 and the sub 4 at 3875, like MAME; the stand ins of class 97 equal MAME in every field from 1134 to 3874 (step
+  mode). `cargo test episode_eight_reaches_the_ending -- --ignored --nocapture` runs the placeholder Episode 8 with the debug area jump, kill all and a hero who cannot die: mode 0x1C at tick 42370, sub 4 at 42373, sub 6 at 47734 (+5364),
+  sub 8 at 47735, mode 0x14 at 47916 (+5546), 0x18 at 47918 and the attract loop at 47922, no panic.
+* **Not done.** The pool B 50 dialogue of the boss (variant 7) and the pool C 39 aura are made by the stand ins but not ported (unported classes: freed or held); the join state 0xC is the minimal stand in of `flow_join_game_over`
+  (the GAME OVER HUD text of the continue path is M2-21's `cont.rs`); the 2 player layout of the ending was not recorded.
+

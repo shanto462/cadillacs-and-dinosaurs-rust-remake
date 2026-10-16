@@ -588,7 +588,7 @@ pub fn run(
         game.tick();
         // a game clock recording leaves out the video frames a game frame overran: one record spans the pass that overran, the frames of
         // the lag and the pass after them
-        while game.flow.game_clock && (game.flow.lag > 0 || game.flow.lag_tick) {
+        while game.flow.game_clock && (game.flow.lag > 0 || game.flow.lag_tick || game.flow.ending.cont.is_some()) {
             game.tick();
         }
         pokes.apply(&mut game, k as i32, true)?; // power clock: after the tick, before the record

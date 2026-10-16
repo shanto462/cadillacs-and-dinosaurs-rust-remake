@@ -33,6 +33,7 @@ impl Game {
                 e.b.live = 2; // move.b #2,$0(a6)
                 e.m.sb(crate::game::enemy::off::ATTACKING, 0xFF);
                 e.b.anim_table = 0x42516;
+                e.m.sw(0xA0, 0); // clr.w $A0(a6)
                 e.m.sl(f::SPEED_Y, 0x8000);
                 self.enemy_anim(&mut e.b, 0);
                 let car = e.m.l(f::OWNER) as Handle;

@@ -111,8 +111,12 @@ impl Game {
             return;
         }
         if self.name_frame(i) {
-            self.flow.join[i].state = 0xC;
+            self.flow.join[i].state = 0xC; // 0x74C2
             self.flow.b5e4 = 0;
+            self.flow.started &= !(1 << i); // bclr.b d0,$4CD(a5)
+            if self.flow.mode != 0x10 {
+                self.flow_join_clear(i, 0x7FB6, 0x7FC2); // bra 0x7F86 (0x7FCA in the mode 0x10: not ported)
+            }
         }
     }
 

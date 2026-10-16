@@ -2712,7 +2712,7 @@ fn flow_trace_named(name: &str) -> Option<String> {
 /// level) and runs without input. In every record the three layers, the palettes, the sprite list, the sound codes and the random number equal MAME, for
 /// `ENDING_RECORDS` records after it (the lab corridor, the sunset and the still picture are the first 975). `ending_report` (ignored) prints the first
 /// difference of each kind for any length (`DINO_ENDING` names the recording, `DINO_LAST` the last record after the start).
-const ENDING_RECORDS: i32 = 520; // to the wall of the sunset scene (pool B 3, M3-19: 29 cells of scroll2 from record 530; M3-24 raises it)
+const ENDING_RECORDS: i32 = 5700; // the whole ending and the first records of the ranking after it
 
 fn ending_run(a: &'static AssetPack, name: &str, last: i32, report: bool) -> Vec<String> {
     let Some(trace) = flow_trace_named(name) else { return vec![] };
@@ -2741,6 +2741,7 @@ fn ending_run(a: &'static AssetPack, name: &str, last: i32, report: bool) -> Vec
     (g.flow.b4d7, g.flow.b4db, g.flow.b507, g.flow.sub, g.flow.mode) = (1, 1, 1, 0, 0x1C);
     let mut bad: Vec<String> = Vec::new();
     let mut prev_ram = ram0;
+    let mut last_join = (0xFFu8, 0u16, 0u8, 0u8);
     for n in 0..=last {
         g.w.input = [0; 3];
         g.w.system = 8;
@@ -2753,19 +2754,32 @@ fn ending_run(a: &'static AssetPack, name: &str, last: i32, report: bool) -> Vec
         if n == 0 {
             d.1 = 0; // how far the clear of scroll2 has got when the first frame ends depends on the work before it (`CLEAR2_FIRST`)
         }
+        if g.flow.ending.ranking_follows && d.2 <= 4 {
+            d.2 = 0; // the cut of the first frame of the ranking after the ending is 2662 to 2666 words in the six recordings (`CUT_AFTER_ENDING`)
+        }
         if d != (0, 0, 0, 0) {
             bad.push(format!("{name} +{n}: cells {d:?}"));
-            if report && n < 8 {
+            if report && (n < 8 || std::env::var("DINO_AT").ok().and_then(|v| v.parse::<i32>().ok()) == Some(n)) {
                 for l in 1..=3u8 {
                     let v = diff(&g, &gfx, l);
                     if let (Some(first), Some(last)) = (v.first(), v.last()) {
                         println!("  layer {l}: first {first:?} last {last:?}");
+                        if std::env::var_os("DINO_AT").is_some() {
+                            println!("    cells {:?}", v.iter().take(12).collect::<Vec<_>>());
+                        }
                     }
                 }
             }
         }
         if report && n < 9 {
             println!("  +{n}: G.$0 MAME {:#x} port {:#x}, B82 MAME {:#x} port {:?}", ram16(&ram, 0xFF8000), g.w.frame, ram16(&ram, 0xFFC834 + 4), g.props.slots.iter().find(|p| p.b.k20 == 0x148).map(|p| (p.b.mode, p.b.sub)));
+        }
+        if report && std::env::var_os("DINO_JOIN").is_some() {
+            let cur = (g.flow.join[0].state, g.players[0].w80, g.flow.b5e4, g.flow.b507);
+            if cur != last_join {
+                println!("  +{n}: port join state {:02X} w80 {:04X} 5E4={} 507={}", cur.0, cur.1, cur.2, cur.3);
+                last_join = cur;
+            }
         }
         let ms: Vec<_> = mame_sprites(&ram, &gfx);
         let ps: Vec<_> = g.sprites.entries.iter().map(|e| (e.x as u16, e.y as u16, e.code, e.attr)).collect();
@@ -2782,8 +2796,13 @@ fn ending_run(a: &'static AssetPack, name: &str, last: i32, report: bool) -> Vec
         if (ram[0x84D0], ram[0x84D1]) != (g.flow.mode, g.flow.sub) {
             bad.push(format!("{name} +{n}: mode {:#x}/{:#x} port {:#x}/{:#x}", ram[0x84D0], ram[0x84D1], g.flow.mode, g.flow.sub));
         }
-        if ram16(&ram, 0xFF8744) != g.cam.s2.cam_x || ram16(&ram, 0xFF87E4) != g.cam.s3.cam_x {
-            bad.push(format!("{name} +{n}: camera X MAME {:#x} / {:#x} port {:#x} / {:#x}", ram16(&ram, 0xFF8744), ram16(&ram, 0xFF87E4), g.cam.s2.cam_x, g.cam.s3.cam_x));
+        let (m, c) = (|a: u32| ram16(&ram, a), &g.cam);
+        let (mc, pc) = (
+            [m(0xFF86C4), m(0xFF86C8), m(0xFF86CA), m(0xFF8744), m(0xFF8748), m(0xFF87E4), m(0xFF87E8)],
+            [c.cam1_x, c.cam1_y, c.cam1_y_frac, c.s2.cam_x, c.s2.cam_y, c.s3.cam_x, c.s3.cam_y],
+        );
+        if mc != pc {
+            bad.push(format!("{name} +{n}: cameras (scroll1 X, Y, Y fraction, scroll2 X, Y, scroll3 X, Y) MAME {mc:x?} port {pc:x?}"));
         }
         prev_ram = ram;
         if !report && bad.len() > 5 {
@@ -2796,7 +2815,7 @@ fn ending_run(a: &'static AssetPack, name: &str, last: i32, report: bool) -> Vec
 #[test]
 fn the_ending_matches_mame() {
     let Some(a) = assets() else { return };
-    for name in ["end-jack", "end-hannah", "end-3p"] {
+    for name in ["end-jack", "end-hannah", "end-3p", "end-mess-jack", "end-mustapha", "end-hiscore"] {
         let bad = ending_run(a, name, ENDING_RECORDS, false);
         assert!(bad.is_empty(), "{} problems, first: {:#?}", bad.len(), &bad[..bad.len().min(5)]);
     }
@@ -2821,4 +2840,54 @@ fn ending_report() {
         }
     }
     println!("{} differences: {kinds:?}", bad.len());
+}
+
+/// Review run (not a MAME check): Episode 8 from a direct start with the placeholder bosses, one hero who cannot die, the right key and kill all every 400
+/// frames, to the ending and back to the attract loop (`cargo test -p dino-game episode_eight_reaches_the_ending -- --ignored --nocapture`).
+#[test]
+#[ignore]
+fn episode_eight_reaches_the_ending() {
+    let Some(a) = assets() else { return };
+    let mut g = Game::new(a);
+    g.start_stage(7, &[0]);
+    let mut last = (0u8, 0u8, 0u8);
+    let mut ending_at = None;
+    for t in 0..200_000u32 {
+        g.w.input = [crate::input::RIGHT | if t % 12 < 4 { crate::input::ATTACK } else { 0 } | if t % 180 < 8 { crate::input::JUMP } else { 0 }, 0, 0];
+        g.w.system = 8;
+        g.w.coins = 0;
+        if t % 600 == 0 {
+            g.spawn.g.kill_all = 2;
+        }
+        // the debug key F6 (`debug::next_area`) takes the hero to the last area, where the placeholder Fessenden is
+        if g.cam.s2.area < 3 && g.flow.mode == 0xC && g.w.scripted == 0 && g.cam.s2.mode == 0 && t > 300 {
+            crate::debug::next_area(&mut g);
+        }
+        if g.flow.mode == 0xC {
+            g.players[0].b.hp = 100;
+            g.players[0].b.hp_bar = 100;
+        }
+        g.tick();
+        if g.spawn.g.kill_all == 2 {
+            g.spawn.g.kill_all = 0;
+        }
+        if t % 3000 == 0 {
+            println!("  t {t}: cam {:#x} x {:#x} mode {:#x} lock {} hp {} scripted {:#x}", g.cam.s2.cam_x, g.players[0].b.xi(), g.cam.s2.mode, g.cam.s2.lock78, g.players[0].b.hp, g.w.scripted);
+        }
+        let now = (g.flow.mode, g.flow.sub, g.cam.s2.area);
+        if now != last && (now.0 != last.0 || t % 1000 == 0 || now.1 != last.1 && now.0 == 0x1C) {
+            println!("tick {t}: mode {:#04x} sub {:#x} area {}", now.0, now.1, now.2);
+        }
+        last = now;
+        if g.flow.mode == 0x1C && ending_at.is_none() {
+            ending_at = Some(t);
+        }
+        if let Some(e) = ending_at {
+            if g.flow.in_game == 0 {
+                println!("the attract loop is back at tick {t} ({} ticks after the ending started)", t - e);
+                return;
+            }
+        }
+    }
+    panic!("the ending was not reached or did not end: mode {:#x} sub {:#x}", g.flow.mode, g.flow.sub);
 }

@@ -24,6 +24,15 @@ use crate::game::Game;
 const CLEAR2_FIRST: usize = 1376;
 const CLEAR3_FIRST: usize = 3500;
 
+/// What the master 82 still has to do at the start of the next frame (the 68000 was in the middle of it when the video frame ended).
+#[derive(Clone, Copy, Debug)]
+pub enum Cont {
+    /// State 0 (0x8AB8E): the four pages, the sub state and the timer after the clear and the palettes (`b82_pages`).
+    Pages(crate::game::Handle),
+    /// State 0x16 at its end (0x8B032): the rest of the clear of scroll3, the cameras, the sub state and the timer (`b82_still_end_b`).
+    StillEnd(crate::game::Handle),
+}
+
 /// The state of the ending that the original keeps in RAM outside the object pools.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Ending {
@@ -33,9 +42,11 @@ pub struct Ending {
     pub sleeping: bool,
     /// 1 while the second part of sub 0 is still to run (the frame after the lag of the first).
     pub phase: u8,
-    /// The master 82 has made its pictures (state 0: palettes and clear in the frame it ran in) and its four pages are still to be
-    /// written: they come in the next video frame that runs a task (`b82_pages`).
-    pub pages_for: Option<crate::game::Handle>,
+    /// The master 82 has not finished a state that overran the video frame: its rest comes at the start of the next video frame that runs
+    /// a task, before the pass of that frame (`Cont`).
+    pub cont: Option<Cont>,
+    /// The game over that follows the ending has not shown its ranking yet (the first frame of the ranking writes `CUT_AFTER_ENDING` words).
+    pub ranking_follows: bool,
 }
 
 impl Game {
@@ -47,11 +58,15 @@ impl Game {
             self.flow.mode = 0x14;
             self.flow.sub = 0;
             self.flow.sub2 = 0;
-            self.flow_clear_screen(); // jmp 0xAE0
+            self.flow.ending.ranking_follows = true;
+            self.flow_attract_clear(); // jmp 0xAE0: the sprites and scroll1 now, scroll2 and scroll3 in the next two frames (the recording)
+            self.flow_lag(1);
             return;
         }
-        if let Some(h) = self.flow.ending.pages_for.take() {
-            self.b82_pages(h); // the rest of the state 0 of the master 82 (the frame after its lag)
+        match self.flow.ending.cont.take() {
+            Some(Cont::Pages(h)) => self.b82_pages(h), // the rest of the state 0 of the master 82
+            Some(Cont::StillEnd(h)) => self.b82_still_end_b(h),
+            None => {}
         }
         if self.flow.ending.phase == 1 {
             // the second part of sub 0 runs in the video frame after the lag, and the pass of sub 2 follows it in the same frame
@@ -95,7 +110,7 @@ impl Game {
         self.flow.b5e4 = 1;
         for i in 0..3 {
             if self.flow.started & (1 << i) != 0 {
-                self.flow_name_entry_setup(i); // jsr 0x15AE2 with a6 = the player
+                self.name_setup(i); // jsr 0x15AE2 with a6 = the player (`name_entry.rs`)
             }
         }
         self.flow.ending.phase = 1;
@@ -158,9 +173,52 @@ impl Game {
     pub fn flow_name_entry_busy(&self) -> bool {
         self.flow.join.iter().any(|j| j.state == 0xA)
     }
+}
 
-    /// 0x15AE2: the setup of the name entry block of player `i` (the table of the players 0x15AF2: the 32 byte blocks at 0xFF0EE4,
-    /// 0xFF0F04 and 0xFF0F24). TODO(M2-22): the name entry itself (the join state 0xA, 0x15BE4 each frame) is not ported yet; the
-    /// blocks are not kept, so a player never enters his name and the ending goes on at once.
-    pub(super) fn flow_name_entry_setup(&mut self, _i: usize) {}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dino_assets::AssetPack;
+    use std::path::Path;
+    use std::sync::OnceLock;
+
+    fn assets() -> Option<&'static AssetPack> {
+        static A: OnceLock<Option<&'static AssetPack>> = OnceLock::new();
+        *A.get_or_init(|| {
+            let path = Path::new("../../../dino.zip");
+            path.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(path).expect("the ROM set loads"))))
+        })
+    }
+
+    /// The jump table 0xA69E6: sub 0 clears and sets up in two parts (the clear keeps the CPU through a lag frame), sub 2 makes the master, sub 4 counts
+    /// G.-$6FFA down from 0x14F0 (5360 frames), sub 6 waits for the name entry, sub 8 sleeps 180 frames and goes to the mode 0x14 with the clear 0xAE0.
+    #[test]
+    fn the_sub_states_of_the_ending_follow_each_other() {
+        let Some(a) = assets() else { return };
+        let mut g = Game::new(a);
+        g.flow.mode = 0x1C;
+        g.flow.started = 1;
+        g.players[0].b.live = 1;
+        g.flow_ending_mode(); // sub 0, part one
+        assert_eq!((g.flow.sub, g.flow.ending.phase, g.flow.lag, g.players[0].b.live), (0, 1, 1, 0));
+        assert!(g.flow.b4d7 == 1 && g.flow.b4db == 1 && g.flow.b507 == 1 && g.flow.b5e4 == 1);
+        g.flow_ending_mode(); // part two (the video frame after the lag) and the pass of sub 2 in the same frame: the master
+        assert_eq!((g.flow.sub, g.flow.ending.timer), (4, 0x14F0));
+        assert!(g.props.slots.iter().any(|p| p.b.live != 0 && p.b.k20 == 82 * 4), "the master 82");
+        for _ in 0..0x14F0 {
+            g.flow_ending_mode();
+        }
+        assert_eq!((g.flow.sub, g.flow.ending.timer), (6, 0));
+        g.flow.join[0].state = 0xA; // a hero in the name entry: sub 6 waits
+        g.flow_ending_mode();
+        assert_eq!(g.flow.sub, 6);
+        g.flow.join[0].state = 0xC;
+        g.flow_ending_mode();
+        assert_eq!(g.flow.sub, 8);
+        g.flow_ending_mode(); // the sleep
+        assert!(g.flow.ending.sleeping && g.flow.wait == 180 && g.flow.resume);
+        g.flow_ending_mode(); // after it: the game over
+        assert_eq!((g.flow.mode, g.flow.sub, g.flow.lag), (0x14, 0, 1));
+        assert!(g.flow.ending.ranking_follows);
+    }
 }
