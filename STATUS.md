@@ -23,9 +23,9 @@ merged. Review aids: `--episode N --area A --camx X`, `--autoplay`, `--debug-key
 | --- | --- | --- | --- |
 | M0 | Every episode starts | 1.5 | Done (`f8e3c93`) |
 | M1 | Attract loop, exact from power on (boot, title, profiles, ranking, story slides, opening movie, demos) | 24 | Done (2026-10-13): two full loops from power on equal MAME outside the demos; the demos match as far as their levels exist |
-| M2 | Coin, select, Episode 1 opening, clock and TIME OVER, join, continue, game over, name entry, tally, link scenes | 52 | In progress (2026-10-17: 25 of 33; done: coin to Episode 1 opening, clock, TIME OVER, GO arrow, respawn effects, join prompts, HUD weapons, tally, map, story panels, cards; left: join part 2, continue, game over, name entry, rank wiring, acceptance) |
-| M3 | The whole game from power on to the ending, every transition and story scene, placeholder fights | 51 | In progress (2026-10-17: 8 of 30; done: review aids, snapshot loads, screen shake, placeholder enemies, boss controller, prop drivers) |
-| M4 | Sound: Z80 driver port, QSound mixer, cue wiring | 35 | Pending |
+| M2 | Coin, select, Episode 1 opening, clock and TIME OVER, join, continue, game over, name entry, tally, link scenes | 52 | In progress (2026-10-17: 29 of 33; left: rank event wiring M2-23 (running), acceptance M2-32) |
+| M3 | The whole game from power on to the ending, every transition and story scene, placeholder fights | 51 | In progress (2026-10-17: 26 of 30; the ending is done and equals MAME in six recordings; every episode start and end exists with placeholder bosses; left: the Episode 7 lift (running), acceptance M3-29 / M3-30) |
+| M4 | Sound: Z80 driver port, QSound mixer, cue wiring | 35 | In progress (2026-10-17: 5 of 20; sound data and the driver mailbox in `dino-sound`; the sequencer is running) |
 | M5 | Episode 1 for real | 37 | Pending (part done in the old phase 1: terrain, items, weapons, grabs, classes 2, 10, 14, 20) |
 | M6 | Episodes 2 and 3 (poachers, dinosaurs, Butcher, the Cadillac drive, Hogg) | 59 | Pending |
 | M7 | Episodes 4 and 5 (Slice, Bludge, Zeke, Morgan / Morgue, the burning village) | 50 | Pending |
