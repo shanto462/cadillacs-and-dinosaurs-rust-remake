@@ -2,6 +2,8 @@
 //! GO arrow, clock and drop flow alive until the real class is ported. They are not exact:
 //! a walker walks to the nearest hero and swings at him, a hazard crosses the screen, and every
 //! placeholder is drawn as a labelled box (`draw_boxes`, called by `present.rs`).
+//! The stage bosses (`Spec::boss`) are the same objects with the boss inits (HP row, controller, the death chain 0xACEE,
+//! Morgan's rebirth as Morgue). The boss starters (pool B 33 and 79) are placeholders too (`ph_starter`).
 //!
 //! The registry `SPECS` lists the classes served by placeholders. A real port deletes its entry
 //! (`--list-placeholders` prints the list). The census flag, the name ids and the kinds come from
@@ -10,8 +12,10 @@
 
 use super::body::Body;
 use super::enemy::{Enemy, off::*};
+use super::prop::Prop;
 use super::{Game, Handle};
 use crate::render::DrawTarget;
+use dino_assets::enemy::SpawnRec;
 use macroquad::prelude::{Color, BLACK};
 
 /// What the placeholder knows of one class.
@@ -31,44 +35,66 @@ pub struct Spec {
     pub hazard: bool,
     /// Scene actor (openings, the Cadillac): stands where it was made and never attacks.
     pub still: bool,
-    /// Boss variant (variant 0 only, `boss_of`): a stage boss, not counted, with the boss controller and the death chain.
-    pub boss: bool,
+    /// Boss part (variant 0 only, `boss_of`): a stage boss, not counted, with the death chain (0xACEE).
+    pub boss: Option<Boss>,
+}
+
+/// The boss part of a placeholder: what the boss inits of the original set (HP row, controller, score, the rebirth).
+#[derive(Clone, Copy)]
+pub struct Boss {
+    /// HP row of the table at 0x31E14 (`enemy_set_boss_hp`): Vice and Slice 0, Butcher 1, Hogg 2, Morgan 4, Morgue 5,
+    /// Tyrog 6, Fessenden (class 94) 8, the Slisaurs 0.
+    pub hp_row: usize,
+    /// Its init makes the boss controller (the reinforcements, `boss.rs`).
+    pub controller: bool,
+    /// The death gives the kill score of the name (0x325E6). Morgan gives none.
+    pub score: bool,
+    /// At the death the same object becomes this class and the fight goes on (Morgan becomes Morgue, 0x52EBE).
+    pub rebirth: Option<u16>,
+    /// One of a group (the three Slisaurs): its death ends the fight only when no other of its class is alive.
+    pub group: bool,
+}
+
+const fn boss(hp_row: usize, controller: bool) -> Option<Boss> {
+    Some(Boss { hp_row, controller, score: true, rebirth: None, group: false })
 }
 
 const fn walker(class: u16, what: &'static str, name: Option<u8>, counted: bool) -> Spec {
-    Spec { class, what, name, name_v2: None, counted, dino: false, hazard: false, still: false, boss: false }
+    Spec { class, what, name, name_v2: None, counted, dino: false, hazard: false, still: false, boss: None }
 }
 
 const fn actor(class: u16, what: &'static str, counted: bool) -> Spec {
-    Spec { class, what, name: None, name_v2: None, counted, dino: false, hazard: false, still: true, boss: false }
+    Spec { class, what, name: None, name_v2: None, counted, dino: false, hazard: false, still: true, boss: None }
 }
 
 const fn dino(class: u16, what: &'static str, name: Option<u8>) -> Spec {
-    Spec { class, what, name, name_v2: None, counted: false, dino: true, hazard: false, still: false, boss: false }
+    Spec { class, what, name, name_v2: None, counted: false, dino: true, hazard: false, still: false, boss: None }
 }
 
 const fn cross(class: u16, what: &'static str, counted: bool) -> Spec {
-    Spec { class, what, name: None, name_v2: None, counted, dino: false, hazard: true, still: false, boss: false }
+    Spec { class, what, name: None, name_v2: None, counted, dino: false, hazard: true, still: false, boss: None }
 }
 
 /// Every pool A class of `stage_scripts.txt` that the port does not run yet.
 pub const SPECS: &[Spec] = &[
     walker(3, "LASH T. (mace)", Some(0x0E), true),
-    walker(5, "BUTCHER trigger", None, true),
+    Spec { boss: boss(1, true), ..walker(5, "BUTCHER", Some(0x0F), true) },
     walker(6, "BLUDGE", Some(0x10), true),
     walker(13, "POACHER", Some(0x02), true),
     actor(16, "CADILLAC (blue)", true),
-    Spec { class: 18, what: "VICE T. / WALTHER", name: Some(0x0C), name_v2: Some(0x0D), counted: true, dino: false, hazard: false, still: false, boss: true },
+    Spec { class: 18, what: "VICE T. / WALTHER", name: Some(0x0C), name_v2: Some(0x0D), counted: true, dino: false, hazard: false, still: false, boss: boss(0, true) },
     dino(22, "BRONTOSAURUS foot", None),
     dino(24, "SHIVAT", Some(0x07)),
-    walker(25, "SLICE", Some(0x05), true),
+    Spec { boss: boss(0, true), ..walker(25, "SLICE", Some(0x05), true) },
     actor(27, "OPENING man", false),
     dino(29, "R HOPPER", Some(0x04)),
-    walker(31, "HOGG", Some(0x26), true),
-    walker(35, "MORGAN intro", None, true),
+    Spec { boss: boss(2, true), ..walker(31, "HOGG", Some(0x26), true) },
+    Spec { boss: Some(Boss { hp_row: 4, controller: true, score: false, rebirth: Some(40), group: false }), ..walker(35, "MORGAN", Some(0x15), true) },
     dino(38, "MACK", Some(0x11)),
     actor(43, "OPENING leader", false),
     walker(45, "MORGAN villager", None, true),
+    Spec { boss: boss(5, true), ..walker(40, "MORGUE", Some(0x16), false) },
+    Spec { boss: boss(6, false), ..walker(4, "TYROG", Some(0x19), false) },
     walker(63, "BLADE alt", Some(0x1C), true),
     walker(64, "PUNK alt (bomb)", Some(0x1D), true),
     cross(65, "BARREL", false),
@@ -78,7 +104,8 @@ pub const SPECS: &[Spec] = &[
     walker(79, "HUNTER", Some(0x1E), true),
     cross(80, "CRITTER", false),
     dino(82, "ZEKE", Some(0x21)),
-    walker(94, "FESSENDEN form 2", Some(0x25), true),
+    Spec { boss: Some(Boss { hp_row: 0, controller: false, score: true, rebirth: None, group: true }), ..walker(71, "SLISAUR", Some(0x18), false) },
+    Spec { boss: boss(8, false), ..walker(94, "FESSENDEN form 2", Some(0x25), true) },
 ];
 
 /// The spec of a placeholder class, None when the port runs the class (or it has no placeholder).
@@ -100,7 +127,12 @@ pub fn list_text() -> String {
 
 /// Variant 0 of a boss class is the boss (Vice T.): not counted by the census (`+$7D` = 0xFF), see `boss.rs`.
 pub fn boss_of(spec: &Spec, var26: u16) -> bool {
-    spec.boss && (var26 >> 8) == 0
+    boss_part(spec, var26).is_some()
+}
+
+/// The boss part of a placeholder object, None when it is not a boss.
+pub fn boss_part(spec: &Spec, var26: u16) -> Option<Boss> {
+    if (var26 >> 8) == 0 { spec.boss } else { None }
 }
 
 /// Animation table of class 2 (variant 0): the placeholder takes its body and attack boxes from it.
@@ -139,6 +171,13 @@ impl Game {
     }
 
     fn enemy_ph_init(&mut self, e: &mut Enemy, h: Handle, spec: &Spec) {
+        self.enemy_ph_setup(e, h, spec, true);
+        e.b.mode += 2;
+    }
+
+    /// The init of a placeholder. `first` is false for a rebirth (Morgue in Morgan's object): the controller and the
+    /// HUD bar stay those of the first form.
+    fn enemy_ph_setup(&mut self, e: &mut Enemy, h: Handle, spec: &Spec, first: bool) {
         let name = if (e.b.var26 >> 8) == 2 { spec.name_v2.or(spec.name) } else { spec.name };
         e.b.id = name.unwrap_or(0);
         // +$84 (per-type rows of the hit, grab and damage tables) stays at FERRIS's row 0: the grab
@@ -148,21 +187,31 @@ impl Game {
         e.b.box_table = BOX_TABLE;
         e.b.multi_box = false;
         self.enemy_anim(&mut e.b, 0);
-        let boss = boss_of(spec, e.b.var26);
-        if boss {
-            self.enemy_set_boss_hp(&mut e.b, 0); // the Vice row of 0x31E14
-        } else {
-            e.b.hp = HP;
-            e.b.hp_bar = HP;
-            e.b.hp_prev = HP;
+        let boss = boss_part(spec, e.b.var26);
+        match boss {
+            Some(b) => self.enemy_set_boss_hp(&mut e.b, b.hp_row),
+            None => {
+                e.b.hp = HP;
+                e.b.hp_bar = HP;
+                e.b.hp_prev = HP;
+            }
         }
         e.b.stun = 10;
         e.b.reaction = 0;
-        e.m.sb(ATTACKING, if spec.counted && !boss { 0 } else { 0xFF });
-        if boss {
+        // Morgan's 0xFE keeps the controller from ending at his death (`boss_is_defeated` reads 0xFF).
+        let att = match boss {
+            Some(b) if b.rebirth.is_some() => 0xFE,
+            Some(_) => 0xFF,
+            None if spec.counted => 0,
+            None => 0xFF,
+        };
+        e.m.sb(ATTACKING, att);
+        if let Some(b) = boss.filter(|_| first) {
             // The boss init (0x4286A): its controller (`+$AA` = the boss) and the HUD bar (`G.-$70BC`).
             self.hud.boss = h;
-            self.boss_spawn_controller(h);
+            if b.controller {
+                self.boss_spawn_controller(h);
+            }
         }
         e.m.sb(WAIT, 0);
         e.m.sw(T80, 0);
@@ -175,7 +224,16 @@ impl Game {
         self.enemy_snap_to_floor(e);
         let t = self.enemy_pick_target(&e.b);
         e.m.sw(TARGET, t);
-        e.b.mode += 2;
+    }
+
+    /// Morgan's death (0x52EBE): the same object becomes class `to` (Morgue, class 40) and its init runs. The fight goes on.
+    fn enemy_ph_rebirth(&mut self, e: &mut Enemy, h: Handle, to: u16) {
+        e.b.k20 = to * 4;
+        e.b.sub = 0;
+        e.b.hitstop = 0;
+        let Some(spec) = spec_of(to) else { return };
+        self.enemy_ph_setup(e, h, spec, false);
+        e.b.mode = 2;
     }
 
     /// Mode 2. Returns true when the object was freed.
@@ -204,7 +262,11 @@ impl Game {
             }
         } else {
             match e.b.sub {
-                0 if !spec.still => self.enemy_ph_walk(e),
+                0 if !spec.still => {
+                    // A boss swings with attack 4 of the player table (12 damage), a walker with attack 0 (8).
+                    let atk = if boss_of(spec, e.b.var26) { 4 } else { 0 };
+                    self.enemy_ph_walk(e, atk);
+                }
                 2 => {
                     e.m.sb(SWING, 0);
                     self.enemy_hit_reaction(e, h);
@@ -220,7 +282,7 @@ impl Game {
     }
 
     /// Walker AI: walk to the nearest hero, swing when in reach (cooldown `COOLDOWN`).
-    fn enemy_ph_walk(&mut self, e: &mut Enemy) {
+    fn enemy_ph_walk(&mut self, e: &mut Enemy, atk: u8) {
         let cool = e.m.b(WAIT);
         if cool != 0 {
             e.m.sb(WAIT, cool - 1);
@@ -238,10 +300,10 @@ impl Game {
         let dx = tb.x.wrapping_sub(e.b.x);
         let dz = tb.z.wrapping_sub(e.b.z);
         if dx.unsigned_abs() < REACH_X && dz.unsigned_abs() < REACH_Z && e.m.b(WAIT) == 0 {
-            // Attack 0 of class 2 (its punch record and boxes): the swing is the thug's punch.
+            // The boxes and the punch of class 2 (anim 3); the damage record is `atk`.
             e.m.sb(WAIT, COOLDOWN);
             e.m.sb(SWING, 1);
-            self.enemy_begin_attack(&mut e.b, 0);
+            self.enemy_begin_attack(&mut e.b, atk);
             self.enemy_anim(&mut e.b, 3);
             return;
         }
@@ -273,21 +335,75 @@ impl Game {
 
     /// Mode 4: kill score (when the class has a name), then the blink, then free (mode 6).
     fn enemy_ph_dying(&mut self, e: &mut Enemy, h: Handle, spec: &Spec) {
+        let boss = boss_part(spec, e.b.var26);
         if e.b.sub == 0 {
-            if spec.name.is_some() || spec.name_v2.is_some() {
+            if (spec.name.is_some() || spec.name_v2.is_some()) && boss.is_none_or(|b| b.score) {
                 let b = e.b.clone();
                 self.enemy_award_kill_score(&b);
             }
             e.m.sw(T80, BLINK);
             e.b.sub += 2;
-            if boss_of(spec, e.b.var26) {
+            if boss.is_some_and(|b| b.rebirth.is_none()) {
                 self.hook_a5ea(); // the first step of a boss death state fades the music (Butcher 0x38D44)
             }
         }
-        if boss_of(spec, e.b.var26) {
-            return; // a boss stays in its death state (the body stays, the controller and G.$4E0 read it)
+        match boss {
+            // Morgan: after the blink he is Morgue, the same object (0x52EBE, the fight goes on).
+            Some(Boss { rebirth: Some(to), .. }) => {
+                let t = e.m.w(T80);
+                if t == 0 {
+                    self.enemy_ph_rebirth(e, h, to);
+                } else {
+                    e.m.sw(T80, t - 1);
+                }
+            }
+            // a boss stays in its death state (the body stays, the controller and G.$4E0 read it)
+            Some(_) => {}
+            None => self.enemy_dying_blink(e, h),
         }
-        self.enemy_dying_blink(e, h);
+    }
+
+    /// Whether the death of the boss `e` ends the fight (0xACEE): not Morgan (he becomes Morgue), and a Slisaur only
+    /// when no other one of its class is alive. Any other object counts as a boss that ends it.
+    pub fn boss_ends_fight(&self, e: &Enemy, h: Handle) -> bool {
+        let Some(b) = spec_of(e.b.k20 / 4).and_then(|s| boss_part(s, e.b.var26)) else { return true };
+        if b.rebirth.is_some() {
+            return false;
+        }
+        !b.group
+            || !self.enemies.slots.iter().enumerate().any(|(i, o)| {
+                o.b.live != 0 && o.b.k20 == e.b.k20 && o.b.hp != 0 && self.enemies.handle(i) != h
+            })
+    }
+
+    /// The starters of the boss classes 4 and 71 (pool B 79 and 33), placeholders too: they make their bosses at once and
+    /// are done (the original waits for the scene first, not ported). Slisaur starter (0x818E4): two Slisaurs at X 0x580,
+    /// Z 0x30 and 0x40, a third at Z 0x20 with two or three players, and the boss controller (0x7BEDC, `+$AA` = the starter).
+    /// Tyrog starter (B79): Tyrog (class 4, form 0) where the starter stands.
+    pub fn ph_starter(&mut self, p: &mut Prop, h: Handle, i: usize) {
+        if self.trace_hold(h, &p.b) {
+            return; // harness: kept as the snapshot had it
+        }
+        match p.b.k20 / 4 {
+            33 => {
+                let zs: &[u16] = if self.w.players_minus_one == 0 { &[0x30, 0x40] } else { &[0x30, 0x40, 0x20] };
+                for &z in zs {
+                    self.ph_spawn_boss(71, 0x580, z);
+                }
+                self.boss_spawn_controller(h);
+            }
+            _ => {
+                let (x, z) = (p.b.xi() as u16, p.b.zi() as u16);
+                self.ph_spawn_boss(4, x, z);
+            }
+        }
+        self.prop_free(p, i);
+    }
+
+    /// Makes a pool A object of `class` (a boss record, variant 0) at X, Z: the next enemy update runs its init.
+    fn ph_spawn_boss(&mut self, class: u16, x: u16, z: u16) {
+        let r = SpawnRec { trig: 0, flags: 0, class: class * 4, x, z, var: 0, wc: 0, b5b: 0, b96: 0 };
+        self.spawn_record(&r, false);
     }
 
     /// Placeholders are drawn as boxes (`draw_boxes`), not with their sprites: drop them from the

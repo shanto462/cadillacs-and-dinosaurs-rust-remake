@@ -80,7 +80,9 @@ impl Game {
         }
         self.boss_clamp_camera(&mut e.b); // 0x32740
         if e.b.hp_prev != 0 {
-            self.flow_boss_defeated(h); // 0xACEE
+            if self.boss_ends_fight(e, h) {
+                self.flow_boss_defeated(h); // 0xACEE
+            }
             e.b.hp_prev = 0; // clr.w $6E
         }
     }
@@ -441,5 +443,62 @@ mod tests {
         g.enemies.slots[i].b.set_xi(20);
         g.boss_hit_entry(i);
         assert_eq!(g.enemies.slots[i].b.xi(), 300);
+    }
+
+    /// Makes one pool A object of `class` at X 0x580, Z `z`, one update (its init runs).
+    fn spawn_pool_a(g: &mut Game, class: u16, z: u16) {
+        let r = SpawnRec { trig: 0, flags: 0, class: class * 4, x: 0x580, z, var: 0, wc: 0, b5b: 0, b96: 0 };
+        assert!(g.spawn_record(&r, false));
+    }
+    /// The pool A slots of `class`.
+    fn slots_of(g: &Game, class: u16) -> Vec<usize> {
+        (0..g.enemies.slots.len()).filter(|&i| g.enemies.slots[i].b.live != 0 && g.enemies.slots[i].b.k20 == class * 4).collect()
+    }
+    /// The last hit of player 1 on the boss in slot `i` (HP 0, as the hit pass leaves it).
+    fn kill_boss(g: &mut Game, i: usize) {
+        let e = &mut g.enemies.slots[i];
+        e.b.hp_prev = 10;
+        e.b.hp = 0;
+        e.b.who = 1;
+        e.m.sb(enemy_off::ATTACKING, 0xFF);
+        g.boss_hit_entry(i);
+    }
+
+    /// Morgan (class 35) dies, is Morgue (class 40) in the same object after the blink, with the Morgue HP row, and the
+    /// first death does not end the fight (0xACEE comes at Morgue's death).
+    #[test]
+    fn morgan_becomes_morgue_and_the_fight_goes_on() {
+        let Some(mut g) = rom_game() else { return eprintln!("morgan test skipped: dino.zip is absent") };
+        spawn_pool_a(&mut g, 35, 0x80);
+        g.enemies_update(); // the init
+        let i = slots_of(&g, 35)[0];
+        let morgue_hp = g.assets.enemy.boss_hp[5][0][0];
+        kill_boss(&mut g, i);
+        assert_eq!(g.flow.sub, 0, "Morgan's death does not end the fight");
+        g.enemies.slots[i].b.mode = 4; // the hit reaction starts the death state
+        g.enemies.slots[i].b.sub = 0;
+        for _ in 0..40 {
+            g.enemies_update();
+        }
+        assert_eq!(g.enemies.slots[i].b.k20 / 4, 40, "the same object is Morgue now");
+        assert_eq!((g.enemies.slots[i].b.mode, g.enemies.slots[i].b.hp), (2, morgue_hp));
+        assert_eq!(g.flow.sub, 0);
+    }
+
+    /// The Slisaur starter (pool B 33) makes two Slisaurs (one player) with the boss controller; the fight ends when the
+    /// last one dies.
+    #[test]
+    fn the_slisaur_starter_makes_the_group_and_the_last_death_ends_the_fight() {
+        let Some(mut g) = rom_game() else { return eprintln!("slisaur test skipped: dino.zip is absent") };
+        g.spawn_prop(33, 0, Some((0x580, 0, 0x30))).unwrap();
+        g.pool_b_update(); // the starter makes its bosses and frees itself
+        g.enemies_update();
+        let ids = slots_of(&g, 71);
+        assert_eq!(ids.len(), 2, "two Slisaurs for one player");
+        assert!(g.props.slots.iter().any(|p| p.b.live != 0 && p.b.k20 == 22 * 4), "the boss controller");
+        kill_boss(&mut g, ids[0]);
+        assert_eq!(g.flow.sub, 0, "one Slisaur left: no defeat");
+        kill_boss(&mut g, ids[1]);
+        assert_eq!(g.flow.sub, 2, "the last one ends the fight");
     }
 }
