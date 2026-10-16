@@ -31,22 +31,24 @@ pub struct Spec {
     pub hazard: bool,
     /// Scene actor (openings, the Cadillac): stands where it was made and never attacks.
     pub still: bool,
+    /// Boss variant (variant 0 only, `boss_of`): a stage boss, not counted, with the boss controller and the death chain.
+    pub boss: bool,
 }
 
 const fn walker(class: u16, what: &'static str, name: Option<u8>, counted: bool) -> Spec {
-    Spec { class, what, name, name_v2: None, counted, dino: false, hazard: false, still: false }
+    Spec { class, what, name, name_v2: None, counted, dino: false, hazard: false, still: false, boss: false }
 }
 
 const fn actor(class: u16, what: &'static str, counted: bool) -> Spec {
-    Spec { class, what, name: None, name_v2: None, counted, dino: false, hazard: false, still: true }
+    Spec { class, what, name: None, name_v2: None, counted, dino: false, hazard: false, still: true, boss: false }
 }
 
 const fn dino(class: u16, what: &'static str, name: Option<u8>) -> Spec {
-    Spec { class, what, name, name_v2: None, counted: false, dino: true, hazard: false, still: false }
+    Spec { class, what, name, name_v2: None, counted: false, dino: true, hazard: false, still: false, boss: false }
 }
 
 const fn cross(class: u16, what: &'static str, counted: bool) -> Spec {
-    Spec { class, what, name: None, name_v2: None, counted, dino: false, hazard: true, still: false }
+    Spec { class, what, name: None, name_v2: None, counted, dino: false, hazard: true, still: false, boss: false }
 }
 
 /// Every pool A class of `stage_scripts.txt` that the port does not run yet.
@@ -56,7 +58,7 @@ pub const SPECS: &[Spec] = &[
     walker(6, "BLUDGE", Some(0x10), true),
     walker(13, "POACHER", Some(0x02), true),
     actor(16, "CADILLAC (blue)", true),
-    Spec { class: 18, what: "VICE T. / WALTHER", name: Some(0x0C), name_v2: Some(0x0D), counted: true, dino: false, hazard: false, still: false },
+    Spec { class: 18, what: "VICE T. / WALTHER", name: Some(0x0C), name_v2: Some(0x0D), counted: true, dino: false, hazard: false, still: false, boss: true },
     dino(22, "BRONTOSAURUS foot", None),
     dino(24, "SHIVAT", Some(0x07)),
     walker(25, "SLICE", Some(0x05), true),
@@ -96,6 +98,11 @@ pub fn list_text() -> String {
     s
 }
 
+/// Variant 0 of a boss class is the boss (Vice T.): not counted by the census (`+$7D` = 0xFF), see `boss.rs`.
+pub fn boss_of(spec: &Spec, var26: u16) -> bool {
+    spec.boss && (var26 >> 8) == 0
+}
+
 /// Animation table of class 2 (variant 0): the placeholder takes its body and attack boxes from it.
 const ANIM_TABLE: u32 = 0x34892;
 /// Box table of class 2 (the body box table of the common enemy code).
@@ -122,7 +129,7 @@ impl Game {
             return self.enemy_free_pool_a(e, i);
         };
         match e.b.mode {
-            0 => self.enemy_ph_init(e, spec),
+            0 => self.enemy_ph_init(e, h, spec),
             2 => {
                 self.enemy_ph_alive(e, h, i, spec);
             }
@@ -131,7 +138,7 @@ impl Game {
         }
     }
 
-    fn enemy_ph_init(&mut self, e: &mut Enemy, spec: &Spec) {
+    fn enemy_ph_init(&mut self, e: &mut Enemy, h: Handle, spec: &Spec) {
         let name = if (e.b.var26 >> 8) == 2 { spec.name_v2.or(spec.name) } else { spec.name };
         e.b.id = name.unwrap_or(0);
         // +$84 (per-type rows of the hit, grab and damage tables) stays at FERRIS's row 0: the grab
@@ -141,12 +148,22 @@ impl Game {
         e.b.box_table = BOX_TABLE;
         e.b.multi_box = false;
         self.enemy_anim(&mut e.b, 0);
-        e.b.hp = HP;
-        e.b.hp_bar = HP;
-        e.b.hp_prev = HP;
+        let boss = boss_of(spec, e.b.var26);
+        if boss {
+            self.enemy_set_boss_hp(&mut e.b, 0); // the Vice row of 0x31E14
+        } else {
+            e.b.hp = HP;
+            e.b.hp_bar = HP;
+            e.b.hp_prev = HP;
+        }
         e.b.stun = 10;
         e.b.reaction = 0;
-        e.m.sb(ATTACKING, if spec.counted { 0 } else { 0xFF });
+        e.m.sb(ATTACKING, if spec.counted && !boss { 0 } else { 0xFF });
+        if boss {
+            // The boss init (0x4286A): its controller (`+$AA` = the boss) and the HUD bar (`G.-$70BC`).
+            self.hud.boss = h;
+            self.boss_spawn_controller(h);
+        }
         e.m.sb(WAIT, 0);
         e.m.sw(T80, 0);
         e.m.sb(SWING, 0);
@@ -163,13 +180,24 @@ impl Game {
 
     /// Mode 2. Returns true when the object was freed.
     fn enemy_ph_alive(&mut self, e: &mut Enemy, h: Handle, i: usize, spec: &Spec) -> bool {
+        if boss_of(spec, e.b.var26) {
+            // A placeholder boss has no intro: the boss area script waits for `G.$4FC` only while the intro runs.
+            self.spawn.g.b4fc = 0;
+        }
         // Dinosaurs leave when the camera reaches their leave X (+$5C) (D3b s1.3).
         let leave = e.m.w(W5C);
         if spec.dino && leave != 0 && self.cam.s2.cam_x >= leave {
             self.enemy_free_pool_a(e, i);
             return true;
         }
-        self.enemy_kill_all_check(e);
+        if !boss_of(spec, e.b.var26) {
+            self.enemy_kill_all_check(e);
+        } else if self.spawn.g.kill_all == 2 && e.b.hp != 0 {
+            // A boss ignores the kill-all of its own defeat (G.$50E = 1, 0xACEE). The review kill-all (2: `debug.rs`,
+            // `--autoplay`) kills it through the boss hit path, so the defeat chain runs as after a real last hit.
+            self.enemy_kill_all_check(e);
+            self.boss_hit(e, h);
+        }
         if spec.hazard {
             if self.enemy_ph_cross(e, i) {
                 return true;
@@ -252,6 +280,12 @@ impl Game {
             }
             e.m.sw(T80, BLINK);
             e.b.sub += 2;
+            if boss_of(spec, e.b.var26) {
+                self.hook_a5ea(); // the first step of a boss death state fades the music (Butcher 0x38D44)
+            }
+        }
+        if boss_of(spec, e.b.var26) {
+            return; // a boss stays in its death state (the body stays, the controller and G.$4E0 read it)
         }
         self.enemy_dying_blink(e, h);
     }

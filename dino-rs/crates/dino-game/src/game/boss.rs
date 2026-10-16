@@ -6,7 +6,7 @@
 //! (taken in order while `G.$502 > 0`: a group waits until the alive count is at or below its thresholds). The
 //! spawns use the stage spawner: 0xFDAE (absolute X) and 0xFE6A for Hogg's stage 2 (X relative to the camera).
 
-use super::enemy::off as enemy_off;
+use super::enemy::{off as enemy_off, Enemy};
 use super::prop::Prop;
 use super::{slot_of, Game, Handle, Slot};
 use dino_assets::boss::BossLists;
@@ -26,14 +26,78 @@ mod off {
 
 impl Game {
     /// 0x7BEDC: a boss makes its reinforcement controller (class 22, `+$AA` = the boss). `None` when pool B is full
-    /// (carry set, nothing made). The boss inits (M3-04 and M5) call it.
-    #[allow(dead_code)] // used by the boss inits of M3-04 and M5
+    /// (carry set, nothing made). The boss inits call it (`placeholder.rs` for Vice).
     pub fn boss_spawn_controller(&mut self, boss: Handle) -> Option<Handle> {
         let h = self.spawn_prop(22, 0, None)?;
         if let Some(Slot::Prop(i)) = slot_of(h) {
             self.props.slots[i].m.sl(off::BOSS, 0x00FF_0000 | boss as u32); // move.l a6,$AA(a0)
         }
         Some(h)
+    }
+
+    /// A stage boss takes the boss hit path. Until the real boss classes are ported only the placeholder bosses do
+    /// (`placeholder.rs`, class 18 variant 0, Vice); each ported boss calls `boss_hit_entry` from its own hit code.
+    fn boss_is_stage_boss(b: &super::body::Body) -> bool {
+        super::placeholder::spec_of(b.k20 / 4).is_some_and(|s| super::placeholder::boss_of(s, b.var26))
+    }
+
+    /// The hit code of a boss variant 0 (Butcher's 0x38CC6 is the model: 0x3262A, then 0x32740 and 0xACEE). The hit pass
+    /// (`enemy_hit_by_player`) calls it after the damage is taken. 0x3262A: the damage (HP before the hit minus HP now,
+    /// `+$6E` - `+$6C`) goes to the attacker `+$02` (`+$10C`, "best player"), to all three heroes in car mode, and HP
+    /// left sets `+$6E` = HP; a negative `+$02` skips all of it. Then at HP 0 or below: the boss is put back inside the
+    /// camera (0x32740), and while `+$6E` is set the defeat runs once (0xACEE, then `+$6E` = 0). The music fade 0xA5EA
+    /// comes from the first step of the boss's death state (0x38D44), not from here.
+    pub(super) fn boss_hit_entry(&mut self, ei: usize) {
+        if !Game::boss_is_stage_boss(&self.enemies.slots[ei].b) {
+            return;
+        }
+        let h = self.enemies.handle(ei);
+        let mut e = std::mem::take(&mut self.enemies.slots[ei]);
+        self.boss_hit(&mut e, h);
+        self.enemies.slots[ei] = e;
+    }
+
+    /// `boss_hit_entry` on an object the caller holds (an update in progress, see `placeholder.rs`).
+    pub(super) fn boss_hit(&mut self, e: &mut Enemy, h: Handle) {
+        let (hp, before, who) = (e.b.hp, e.b.hp_prev, e.b.who);
+        if (who as i8) >= 0 {
+            let dmg = before.wrapping_sub(hp);
+            if self.spawn.g.car_mode != 0 {
+                for p in self.players.iter_mut() {
+                    p.w10c = p.w10c.wrapping_add(dmg);
+                }
+            } else {
+                let p = &mut self.players[who as usize % 3];
+                p.w10c = p.w10c.wrapping_add(dmg);
+            }
+            if hp != 0 {
+                e.b.hp_prev = hp;
+            }
+        }
+        // 0x38CCC: cmpi.w #0,$6C ; ble (signed)
+        if (hp as i16) > 0 {
+            return;
+        }
+        self.boss_clamp_camera(&mut e.b); // 0x32740
+        if e.b.hp_prev != 0 {
+            self.flow_boss_defeated(h); // 0xACEE
+            e.b.hp_prev = 0; // clr.w $6E
+        }
+    }
+
+    /// 0x32740: the boss is put back inside the camera, X at least the camera X and at most the camera X + 0x180
+    /// (signed word compares, the low bound first).
+    fn boss_clamp_camera(&self, b: &mut super::body::Body) {
+        let cam = self.cam.s2.cam_x as i16;
+        let mut x = b.xi();
+        if cam > x {
+            x = cam;
+        }
+        let hi = cam.wrapping_add(0x180);
+        if hi < x {
+            x = hi;
+        }
+        b.x = (b.x & 0xFFFF) | ((x as i32) << 16); // the fraction stays
     }
 
     /// 0x7BF76 .. 0x7C0E2: the controller's mode dispatch. Mode 0 is the init (0x7BF0A), mode 2 the run, mode 4 the
@@ -294,5 +358,88 @@ mod tests {
         assert_eq!(alive_enemies(&g), 1, "the second record spawns below the limit");
         assert_eq!(prop(&g, h).m.w(off::TIMED), 2);
         assert!((prop(&g, h).m.w(off::TIMED_T) as i16) < 0, "the end record stops the list");
+    }
+
+    /// A boss object in pool A slot 0 (no init, the hit pass only reads the fields) at `hp`, hit from 44 by player 1.
+    fn hit_boss(g: &mut Game, hp: u16) -> usize {
+        let i = g.enemies.alloc().unwrap();
+        let e = &mut g.enemies.slots[i];
+        e.b.hp = hp;
+        e.b.hp_prev = 44;
+        e.b.who = 1;
+        e.b.k20 = 18 * 4; // a placeholder boss: class 18 variant 0 (Vice)
+        i
+    }
+    /// A game with the user's ROM (`../../../dino.zip`, the defeat reads the text table of the music fade). None when the
+    /// ROM is not there: the tests that need it skip.
+    fn rom_game() -> Option<Game> {
+        static A: std::sync::OnceLock<Option<&'static AssetPack>> = std::sync::OnceLock::new();
+        let a = *A.get_or_init(|| {
+            let path = std::path::Path::new("../../../dino.zip");
+            path.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(path).expect("the ROM set loads"))))
+        });
+        Some(Game::new(a?))
+    }
+
+    /// 0x3262A: the damage goes to the attacker's `+$10C`, or to all three heroes in car mode. A living boss keeps
+    /// `+$6E` = HP. A hit on an object that is not a boss does nothing.
+    #[test]
+    fn a_boss_hit_credits_the_damage_to_the_attacker() {
+        let mut g = Game::new(Box::leak(Box::new(AssetPack::default())));
+        let i = hit_boss(&mut g, 30);
+        g.boss_hit_entry(i);
+        assert_eq!(g.players[1].w10c, 14);
+        assert_eq!((g.players[0].w10c, g.players[2].w10c), (0, 0));
+        assert_eq!(g.enemies.slots[i].b.hp_prev, 30);
+        assert_eq!(g.flow.sub, 0, "no defeat while HP is left");
+
+        g.spawn.g.car_mode = 1;
+        g.enemies.slots[i].b.hp = 20;
+        g.enemies.slots[i].b.hp_prev = 30;
+        g.boss_hit_entry(i);
+        assert_eq!(g.players.iter().map(|p| p.w10c).collect::<Vec<_>>(), vec![10, 24, 10], "car mode: all three");
+
+        let j = g.enemies.alloc().unwrap();
+        g.enemies.slots[j].b.hp = 5;
+        g.enemies.slots[j].b.hp_prev = 9;
+        g.boss_hit_entry(j);
+        assert_eq!(g.players[0].w10c, 10 + 0, "not a boss: no credit");
+    }
+
+    /// The defeat (0x3262A, 0x32740, 0xACEE, 0xA5EA): HP 0 with `+$6E` set puts the boss inside the camera, starts the
+    /// stage clear (G.$4D1 = 2, slow motion, kill-all, the killer) and clears `+$6E`. A second hit at HP 0 does nothing.
+    #[test]
+    fn the_defeat_clamps_the_boss_into_the_camera_and_starts_the_stage_clear() {
+        let Some(mut g) = rom_game() else { return eprintln!("defeat test skipped: dino.zip is absent") };
+        let i = hit_boss(&mut g, 30);
+        let h = g.enemies.handle(i);
+        g.cam.s2.cam_x = 100;
+        g.enemies.slots[i].b.set_xi(600);
+        g.enemies.slots[i].b.x |= 0x8000; // a fraction, kept by the clamp
+        g.enemies.slots[i].b.hp = 0;
+        g.boss_hit_entry(i);
+        let b = &g.enemies.slots[i].b;
+        assert_eq!(b.xi(), 100 + 0x180, "X above the camera X + 0x180 is put back at the limit");
+        assert_eq!(b.x & 0xFFFF, 0x8000, "the fraction stays");
+        assert_eq!(b.hp_prev, 0, "+$6E cleared");
+        assert_eq!((g.flow.sub, g.flow.speed, g.spawn.g.killer, g.spawn.g.kill_all), (2, 4, h, 1));
+        assert_eq!(g.spawn.g.b4d5, 1);
+        assert_eq!(g.players[1].w10c, 44, "the last hit (44 to 0) is credited too");
+
+        g.flow.sub = 0;
+        g.boss_hit_entry(i);
+        assert_eq!(g.flow.sub, 0, "dead already: no second defeat");
+    }
+
+    /// 0x32740 low bound: a boss left of the camera is put at the camera X.
+    #[test]
+    fn the_defeat_puts_a_boss_left_of_the_camera_at_the_camera_x() {
+        let Some(mut g) = rom_game() else { return eprintln!("defeat test skipped: dino.zip is absent") };
+        let i = hit_boss(&mut g, 0);
+        g.enemies.slots[i].b.hp_prev = 3;
+        g.cam.s2.cam_x = 300;
+        g.enemies.slots[i].b.set_xi(20);
+        g.boss_hit_entry(i);
+        assert_eq!(g.enemies.slots[i].b.xi(), 300);
     }
 }

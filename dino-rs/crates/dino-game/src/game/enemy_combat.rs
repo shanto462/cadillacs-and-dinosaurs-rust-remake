@@ -239,6 +239,7 @@ impl Game {
         let sx = self.body(src).xi();
         let e = &mut self.enemies.slots[ei];
         e.b.facing = (sx > e.b.xi()) as u8;
+        self.boss_hit_entry(ei); // 0x3262A and the defeat (stage bosses only)
         // 0x1128E: Fessenden parts only (+$63 == 4).
     }
 
