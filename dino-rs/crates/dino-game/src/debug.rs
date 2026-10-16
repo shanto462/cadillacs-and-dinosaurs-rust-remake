@@ -90,7 +90,20 @@ impl Debug {
 /// area of the camera events. Mode 1 sub 4 would wait for the end of a fade that was never started. The standard controller
 /// (0x206D4) calls that code mode 0x12; the controller of Episode 3 (0x22398, stage 2) has no mode 0x12, its mode 6 (0x22864)
 /// is the same routine.
+///
+/// The mode 0x12 search (`area_end_next_area`) takes the first record with X 0 after the next event. An area with no such record
+/// ahead (Episode 8 area 2: its change is the mode 8 sub-area record, and the list ends with the X 0xFFFF terminator) would run
+/// past the list and set area 0. There this does nothing: the camera follows the hero, and the stage's own records make the
+/// change. (A camera jump there would skip the wave records of the area, so the lock never ends.) Episode 3 has one area, so
+/// it is left as it was.
 pub fn next_area(g: &mut Game) {
+    let events = g.assets.stages.stages.get(g.w.stage as usize).map(|s| &s.camera_events[..]).unwrap_or(&[]);
+    let from = g.cam.s2.next_event;
+    let has_start = events.iter().skip(from).any(|e| e.x == 0);
+    // Episode 3 (stage 2) has one area and keeps its mode 6 path (the test `the_area_change_key_ends_in_episode_3`).
+    if g.w.stage != 2 && !events.is_empty() && !has_start {
+        return;
+    }
     g.cam.s2.mode = if g.w.stage == 2 { 6 } else { 0x12 };
     g.cam.s2.sub = 4;
 }
@@ -119,6 +132,19 @@ mod tests {
             next_area(&mut g);
             assert_eq!((g.cam.s2.mode, g.cam.s2.sub), (mode, 4), "stage {stage}");
         }
+    }
+
+    /// Episode 8 area 2 has no area-start record (X 0) after its lock: the change is the mode 8 sub-area record, and the list ends
+    /// with the X 0xFFFF terminator. The key must not start the mode 0x12 search there (it ran past the list and set area 0).
+    #[test]
+    fn the_area_change_key_does_not_run_past_the_event_list() {
+        let Some(assets) = rom() else { return eprintln!("test skipped: dino.zip is absent") };
+        let mut g = Game::new(assets);
+        g.start_stage_at(7, 2, 0, &[0]);
+        g.cam.s2.next_event = 13;
+        let before = (g.cam.s2.mode, g.cam.s2.sub);
+        next_area(&mut g);
+        assert_eq!((g.cam.s2.mode, g.cam.s2.sub), before);
     }
 
     /// In Episode 3 the key leads through the area change (modes 6, sub 4 then 6) back to the free camera (mode 0), as in the
