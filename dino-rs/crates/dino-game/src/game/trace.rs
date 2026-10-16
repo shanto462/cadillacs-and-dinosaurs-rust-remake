@@ -930,7 +930,7 @@ pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
             class::ATTACK_BOX,
         ],
     ),
-    ("effect", &[0x04 / 4, 0x10 / 4, 0x20 / 4, 0x38 / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x88 / 4]),
+    ("effect", &[0x04 / 4, 0x10 / 4, 0x18 / 4, 0x20 / 4, 0x38 / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x88 / 4]),
     // a pool D slot has no class word: the diff tool reads +$20 of the slot, which is 0 for the clock's slot (a sprite word)
     ("special", &[0]),
 ];
@@ -1353,6 +1353,9 @@ impl Game {
         for k in 0..4 {
             f.u8(0x0510 + k as u32, ["saved_mode0", "saved_mode1", "saved_mode2", "saved_mode3"][k], &mut fl.saved_mode[k]);
         }
+        for k in 0..0x1E {
+            f.u8(0x05CC + k as u32, "continue", &mut fl.cont.raw.0[k]);
+        }
         f.u8(0x777A, "dip_a", &mut fl.dip.dip_a);
         f.u8(0x777B, "dip_b", &mut fl.dip.dip_b);
         f.u8(0x777C, "dip_c", &mut fl.dip.dip_c);
@@ -1519,6 +1522,7 @@ impl Game {
         let task = |slot: usize| (ram[0x52 + 16 * slot], ram[0x53 + 16 * slot]);
         // Slot 2 (0x20): the game task sleeps G.$4D6 & 15 frames between runs.
         let (st, cnt) = task(2);
+        self.flow.cont.return_pending = self.flow.mode == 0x10 && self.flow.sub == 6 && self.flow.sub2 == 0 && st == 8;
         self.flow.wait = if st == 1 { cnt } else { 0 };
         // Slot 3 (0x30): stage intro or stage clear task. Both keep their state in the struct G.$735E (loaded with the globals). The
         // intro task (0xB9BE) is the one while the level runs and the stage is not cleared (game mode 0xC, G.$4D1 = 0); it is taken
@@ -1579,8 +1583,10 @@ impl Game {
                 warn.push(format!("task slot 0x40 (fade) is active (state {st}): not taken over"));
             }
         }
-        self.flow.front.prev_system = ram[0x801F];
-        self.flow.front.prev_input.copy_from_slice(&ram[0x801B..0x801E]);
+        // The next vblank copies the snapshot's current inputs to the previous
+        // bytes before sampling the new frame (0x738).
+        self.flow.front.prev_system = ram[0x801A];
+        self.flow.front.prev_input.copy_from_slice(&ram[0x8016..0x8019]);
         self.flow.region.0 = u16::from_be_bytes([ram[0x8032], ram[0x8033]]);
         // Slot 0 runs the system task, slot 1 the in-game join task (0x6C4A).
         for (slot, scene) in [(0, &mut self.flow.front.sys_task), (1, &mut self.flow.join_task)] {
@@ -1601,7 +1607,16 @@ impl Game {
     /// scroll3 0x910000, palettes 0x914000 (the in-game CPS-A settings).
     fn trace_load_gfx(&mut self, gfx: &[u8]) {
         let w = |o: usize| u16::from_be_bytes([gfx[o], gfx[o + 1]]);
-        for (layer, base) in [(0, 0x8000usize), (1, 0xC000), (2, 0x10000)] {
+        let scene = self.flow.mode == 0x10 && self.flow.sub != 0;
+        if scene {
+            for (cells, base) in [(&mut self.flow.cont.level2, 0xC000usize), (&mut self.flow.cont.level3, 0x10000)] {
+                *cells = (0..0x1000).map(|i| dino_assets::stage::Cell { code: w(base + 4*i), attr: w(base + 4*i + 2) }).collect();
+            }
+        } else {
+            self.flow.cont.level2.clear();
+            self.flow.cont.level3.clear();
+        }
+        for (layer, base) in [(0, 0x8000usize), (1, if scene {0x1C000} else {0xC000}), (2, if scene {0x20000} else {0x10000})] {
             let cells = match layer {
                 0 => &mut self.vram.scroll1,
                 1 => &mut self.vram.scroll2,
@@ -1650,13 +1665,15 @@ impl Game {
     pub fn trace_gfx(&self) -> (Vec<u8>, Vec<u8>) {
         let mut img = vec![0u8; 0x30000];
         let mut mask = vec![0u8; 0x30000];
-        for (cells, base) in [(&self.vram.scroll1, 0x8000usize), (&self.vram.scroll2, 0xC000), (&self.vram.scroll3, 0x10000)] {
+        let scene = self.flow.mode == 0x10 && self.flow.sub != 0;
+        for (cells, base) in [(&self.vram.scroll1, 0x8000usize), (&self.vram.scroll2, if scene {0x1C000} else {0xC000}), (&self.vram.scroll3, if scene {0x20000} else {0x10000}),
+            (&self.flow.cont.level2, 0xC000), (&self.flow.cont.level3, 0x10000)] {
             for (i, c) in cells.iter().enumerate() {
                 let o = base + 4 * i;
                 img[o..o + 2].copy_from_slice(&c.code.to_be_bytes());
                 img[o + 2..o + 4].copy_from_slice(&c.attr.to_be_bytes());
             }
-            mask[base..base + 0x4000].fill(1);
+            if !cells.is_empty() { mask[base..base + 0x4000].fill(1); }
         }
         for (i, p) in self.pal.words.iter().enumerate() {
             img[0x14000 + 2 * i..0x14000 + 2 * i + 2].copy_from_slice(&p.to_be_bytes());

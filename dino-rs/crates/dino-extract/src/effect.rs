@@ -18,6 +18,7 @@ const EFFECT_TABLES: &[u32] = &[
 
 /// Frame lists loaded directly with 0x160A (10-byte records, no table).
 const EFFECT_LISTS: &[u32] = &[
+    0x92E12, // continue return flash, class 6 variant 0 (0x92CD6)
     0x95980, // invulnerability glitter (0x9592E)
     0x93096, // burning flames, effect $20 = 0x20, airborne loop, var 0 (0x92FD4)
     0x930F4, // same, var != 0 (0x92FE0)

@@ -72,6 +72,13 @@ fn scene_palettes(rom: &Rom, set: u32) -> ScenePalettes {
 pub fn extract(rom: &Rom) -> FrontendData {
     // Layout pointer tables used by join prompts (0x8050..0x83D4).
     const TABLES: &[(u32, u32, &str)] = &[
+        (0x7F48, 0x3E, "continue HUD origins and digit tiles"),
+        (0xF026, 0x22, "continue mouth timing"),
+        (0xF072, 12, "continue mouth tile pointers"),
+        (0xF0A0, 8, "continue eye tile pointers"),
+        (0xF194, 0x28A, "continue taunt strings and offsets"),
+        (0xF544, 22, "continue background flash periods"),
+        (0xF57C, 0x57C, "continue digit tiles, speech frame and face tiles"),
         (0x7232, 12, "join cursor inverse and hero/class pairs"),
         (0x7640, 0x1CC, "join three-player rating strings and origins"),
         (0x785C, 0x288, "join two-player rating strings and origins"),
