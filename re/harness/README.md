@@ -430,6 +430,22 @@ dino-game --rom dino.zip --step-from  NAME.mame.trc --input-file SCRIPT ...     
 - Objects of unported classes are loaded and kept frozen (`Game::trace_hold`) so their position and
   draw state are in the trace; when you port a class, add it to `PORTED_CLASSES` in `trace.rs`.
 
+## Recorder options: write watch and ROM directory (flow fixes, 2026-10-17)
+
+- `DINO_WATCH_WRITE=ADDR` (hex RAM address, for example `FF84FC`): `record.lua` and `probe.lua` log every CPU write to the
+  even word that holds `ADDR`, as `WATCH frame N addr A data D mask M pc P a6 A` in the MAME log (`record.log`, or
+  `re/out/flow/NAME/mame/record.log` for a batch). `pc` is the instruction after the write (about one instruction late),
+  `a6` the object or routine base. Use it to find which routine writes a variable. Frame numbers are MAME screen frames:
+  they are one or two records off the trace records, so match the write by value and order, not by the record number.
+  Each hit costs one line; for a busy byte (the frame flag at 0xFF0152) the log grows past 100k lines, so watch
+  only quiet variables. One batch run per address.
+- `DINO_ROMS=DIR` (absolute path): an extra ROM directory for `record.sh`. A git worktree has no `re/mame/roms`, so use
+  `DINO_ROMS=/path/to/main/re/mame/roms`.
+
+Example (Episode 4 link, one segment, from the flow_links script cut to one segment):
+`DINO_ROMS=... DINO_WATCH_WRITE=FF84FC sh re/harness/record.sh --batch SCRIPT.txt NAME POKES.txt`. A batch overwrites the
+segment traces of `re/out/traces` (`flow_<segment>.mame.trc`); copy them first if the run must not change them.
+
 ## Known limits
 
 - Only what is in `trace.rs` is compared (see NOT MODELED). Pan / volume of sound requests, scroll

@@ -7,6 +7,7 @@
 # (power, control, control+N or vblank:N), DINO_SNAP_EVERY (PNG every N frames into re/out/mame/snap/dino/).
 # DINO_CLOCK=video records every video frame from boot (default game skips slowdown).
 # DINO_POKES=file applies timed writes from power on (frame hexaddr size value).
+# DINO_ROMS=DIR adds a ROM directory (absolute path; needed in a git worktree, which has no re/mame/roms).
 # MAME's own files (cfg, nvram, screenshots, record.log) go to re/out/mame/. See README.md.
 set -e
 # --batch PROBE_SCRIPT NAME [POKES] runs all segments in one process and
@@ -80,7 +81,7 @@ if [ "$BATCH" = 0 ]; then rm -f "$DINO_TRACE" "$DINO_STATE"; fi
 # No Dock icon or focus change on macOS: SDL with dummy drivers never registers MAME as a GUI app.
 export SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy
 perl -e 'alarm shift; exec @ARGV' "${DINO_TIMEOUT:-900}" \
-  mame dino -rompath ".;re/mame/roms" -video none -sound none -nothrottle \
+  mame dino -rompath ".;${DINO_ROMS:-re/mame/roms}" -video none -sound none -nothrottle \
   -cfg_directory "$MAMEDIR/cfg" -nvram_directory "$MAMEDIR/nvram" \
   -state_directory "$MAMEDIR/sta" -snapshot_directory "${PR_OUTDIR:-$MAMEDIR/snap}" -diff_directory "$MAMEDIR/diff" \
   -autoboot_script "$ROOT/re/harness/record.lua" >"$MAMEDIR/record.log" 2>&1 || true

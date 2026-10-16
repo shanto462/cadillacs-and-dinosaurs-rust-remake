@@ -370,7 +370,24 @@ local on_irq = function() end   -- scenario recorder (snapshot and trace), set b
 local irq_n = 0                  -- vblank IRQ ticks since power on (record.lua's `vblank`; fewer than video frames)
 local irq_time = 0
 local want_irq_tap = false      -- only a batch with a `snapshot` line installs the IRQ tap (other runs stay as they were)
+
+-- DINO_WATCH_WRITE=ADDR (hex, RAM address, e.g. FF84FC): log every CPU write to that byte or word (frame, PC, A6, value).
+-- The tap covers the even word of ADDR; each line still shows the real write address.
+-- The lines go to the MAME log (record.log / mame.log) as "WATCH ...". Used to find the routine that writes a variable.
+local function install_watch(space, cpu)
+  local w = os.getenv("DINO_WATCH_WRITE")
+  if w == nil or w == "" then return nil end
+  local a = tonumber(w, 16) & ~1   -- taps need an even start (the word); the log shows the write's address
+  return space:install_write_tap(a, a + 1, "dino_watch", function(offset, data, mask)
+    local scr = manager.machine.screens[":screen"]
+    print(string.format("WATCH frame %d addr %06X data %04X mask %04X pc %06X a6 %08X",
+      scr and scr:frame_number() or -1, offset, data, mask, cpu.state["PC"].value, cpu.state["A6"].value))
+    return data
+  end)
+end
+
 local function install()
+  PR_WATCH_TAP = install_watch(space, cpu)
   PR_TAPS = {
     space:install_read_tap(0x800000, 0x800001, "pr_in1", function(o, d, m) return (d & ~m) | (raw_in1() & m) end),
     space:install_read_tap(0x800018, 0x800019, "pr_in0", function(o, d, m) return (d & ~m) | ((raw_in0() | 0xFF) & m) end),

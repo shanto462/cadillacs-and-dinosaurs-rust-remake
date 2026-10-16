@@ -449,6 +449,7 @@ impl Game {
                 p.b.mode = 6;
                 p.b.sub = 0;
             }
+            // end type 6 points into data at 0x7D054 (the table 0x7B4D8 entry); no working stage uses it
             _ => {
                 self.prop_set_leader(); // 0x7B506
                 self.script_boss_area(); // 0x1DAC4: the boss area script
