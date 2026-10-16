@@ -68,6 +68,16 @@ pub trait Visit {
 /// (frame id the port kept, original pointer).
 pub type Unmapped = std::collections::HashMap<u32, (FrameId, u32)>;
 
+/// A pre-initialization snapshot can have null pointers although the native port keeps
+/// only indexes/counts. Retain those nulls while their native state and initialization
+/// phase stay unchanged. Discard each entry as soon as either changes, so subsequent
+/// trace records expose the newly computed pointer normally.
+#[derive(Default)]
+pub struct DormantPointers {
+    phase: [u8; 6],
+    fields: Vec<(usize, usize, Vec<u8>)>,
+}
+
 /// Typed access for one object or struct at `base`.
 pub struct F<'a> {
     pub v: &'a mut dyn Visit,
@@ -600,6 +610,16 @@ impl Prop {
             f.u16(0x80, "wave_timer", &mut t);
             self.m.sw(0x80, t);
         }
+        if f.all() || self.b.k20 == 20 * 4 {
+            for (off, name) in [(0x80, "go_ticks"), (0x81, "go_blinks")] {
+                let mut v = self.m.b(off);
+                f.u8(off as u32, name, &mut v);
+                self.m.sb(off, v);
+            }
+            let mut x = self.m.w(0xA0);
+            f.u16(0xA0, "go_reference_x", &mut x);
+            self.m.sw(0xA0, x);
+        }
         if f.all() || self.b.k20 == 31 * 4 {
             // The stage clock (0x81046): its pool D slot, the clock word shown last and the display window.
             for (off, name) in [(0x98, "clock_slot"), (0xA0, "clock_time"), (0xA2, "clock_window")] {
@@ -840,7 +860,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 20, 34, 41, 49, 50, 54, 55, 56, 57, 60]),
-    ("prop", &[15, 31, 66, 73, 74]),
+    ("prop", &[15, 20, 31, 66, 73, 74]),
     (
         "item",
         &[
@@ -950,7 +970,7 @@ impl Game {
                                 None => f.v.error(format!("free list G.${:X}: {h:#06x} is not a slot of this pool", q)),
                             }
                         }
-                    } else {
+                    } else if p != 0 || count != 0 {
                         f.v.error(format!("free list pointer G.${ptr:X} = {p:#06x} out of range"));
                     }
                     if free.len() != count as usize {
@@ -1040,6 +1060,8 @@ impl Game {
         f.u8(0x050E, "kill_all", &mut s.kill_all);
         f.u16(0x04E0, "killer", &mut s.killer);
         f.u16(0x050C, "wave_timer", &mut s.wave_timer);
+        f.u16(0x04FE, "go_timer", &mut s.go_timer);
+        f.u16(0x0500, "go_camera_x", &mut s.go_camera_x);
         f.u8(0x0518, "car_mode", &mut s.car_mode);
         f.u8(0x0502, "b502", &mut s.b502);
         f.u8(0x04D5, "b4d5", &mut s.b4d5);
@@ -1348,6 +1370,23 @@ impl Game {
         let mut warn = l.errors;
         self.trace_load_tasks(ram, &mut warn);
         self.trace_load_gfx(gfx);
+        // Index/count conversions cannot encode null pointers before the corresponding
+        // subsystem has initialized. Remember only these nulls, never live ROM pointers.
+        let mut canonical = Collect::default();
+        self.trace_visit(&mut canonical);
+        let mut dormant = DormantPointers { phase: self.trace_pointer_phase(), fields: Vec::new() };
+        for (off, size) in [
+            (0x8674, 4), (0x8678, 4), (0x86AC, 4), (0x8792, 4),
+            (0xE5FE, 2), (0xE600, 2), (0xE602, 2), (0xE604, 2), (0xE606, 2),
+            (0xE9F0, 2), (0xEA24, 2), (0xEA28, 2),
+        ] {
+            if ram.get(off..off + size).is_some_and(|v| v.iter().all(|b| *b == 0))
+                && canonical.ram[off..off + size].iter().any(|b| *b != 0)
+            {
+                dormant.fields.push((off, size, canonical.ram[off..off + size].to_vec()));
+            }
+        }
+        self.spawn.g.trace_dormant = dormant;
         warn
     }
 
@@ -1434,11 +1473,27 @@ impl Game {
     // Trace images
     // --------------------------------------------------------------------------------------
 
+    fn trace_pointer_phase(&self) -> [u8; 6] {
+        [self.flow.mode, self.flow.sub, self.flow.in_game, self.spawn.init, self.w.stage, self.cam.s2.area]
+    }
+
     /// RAM image and mask of every modeled field.
     pub fn trace_ram(&mut self) -> Collect {
         let mut c = Collect { unmapped: std::mem::take(&mut self.trace_unmapped), ..Default::default() };
         self.trace_visit(&mut c);
         self.trace_unmapped = std::mem::take(&mut c.unmapped);
+        let phase = self.trace_pointer_phase();
+        let d = &mut self.spawn.g.trace_dormant;
+        if phase != d.phase {
+            d.fields.clear();
+        }
+        d.fields.retain(|(off, size, native)| {
+            if c.ram[*off..*off + *size] != **native {
+                return false;
+            }
+            c.ram[*off..*off + *size].fill(0);
+            true
+        });
         c
     }
 
@@ -1743,6 +1798,23 @@ mod tests {
         assert_eq!(b.enemies.slots[e].m.w(0x76), 0xB274);
         // The next allocation is the same slot on both sides.
         assert_eq!(b.enemies.alloc(), a.enemies.alloc());
+    }
+
+    #[test]
+    fn null_preinitialization_pointers_round_trip_then_expire() {
+        let mut game = Game::new(assets());
+        let ram = vec![0; 0x10000];
+        let warnings = game.trace_load(&ram, &vec![0; 0x30000]);
+        assert!(warnings.iter().all(|w| !w.contains("free list pointer")), "{warnings:?}");
+        let c = game.trace_ram();
+        for off in [0xE5FE, 0xE600, 0xE602, 0xE604, 0xE606, 0xE9F0, 0xEA24, 0xEA28] {
+            assert_eq!(&c.ram[off..off + 2], &[0, 0]);
+        }
+        // A new phase initializes lists even when an empty list still has count zero.
+        game.flow.mode = 0xC;
+        let c = game.trace_ram();
+        assert_eq!(&c.ram[0xE9F0..0xE9F2], &0xEA22u16.to_be_bytes());
+        assert_eq!(&c.ram[0xEA24..0xEA26], &0xEA5Au16.to_be_bytes());
     }
 
     /// A snapshot of a later episode and area: the spawn list pointers and the wave controller's
