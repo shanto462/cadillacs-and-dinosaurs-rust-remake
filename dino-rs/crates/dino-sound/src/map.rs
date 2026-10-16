@@ -128,3 +128,70 @@ pub const T_PAN_SPEED: u16 = 0x3B;
 pub const T_PAN_SPEED2: u16 = 0x3D;
 /// +3F: start delay of the pan motion (steps).
 pub const T_DELAY: u16 = 0x3F;
+
+// Sequencer (M4-04). Work RAM.
+/// F010: tempo of the track being stepped (word, LE). Set before each track step.
+pub const TEMPO_WORD: u16 = 0xF010;
+/// F012: music tempo (word, LE, command 05 of a music track).
+pub const MUSIC_TEMPO: u16 = 0xF012;
+/// F01A: music transpose (command 0A of a music track).
+pub const MUSIC_TRANSPOSE: u16 = 0xF01A;
+
+// Track fields used by the sequencer (`ix+N` in the listing is decimal, the SPEC is hex).
+/// +04 .. +05: duration counter (8.8, LE).
+pub const T_DUR: u16 = 0x04;
+/// +06: gate ratio (command 06).
+pub const T_GATE_RATIO: u16 = 0x06;
+/// +07 .. +08: gate counter (LE).
+pub const T_GATE: u16 = 0x07;
+/// +09: transpose (command 0B).
+pub const T_TRANSPOSE: u16 = 0x09;
+/// +0A: detune (command 0C).
+pub const T_DETUNE: u16 = 0x0A;
+/// +0B: sample root key.
+pub const T_ROOT: u16 = 0x0B;
+/// +0C: instrument fine tune.
+pub const T_FINE: u16 = 0x0C;
+/// +0D .. +0E: channel volume word (command 07).
+pub const T_VOLUME: u16 = 0x0D;
+/// +10: portamento speed (bit 7 = sliding).
+pub const T_PORTA: u16 = 0x10;
+/// +11 .. +12: slide step (BE in this port, as the Z80 stores d then e).
+pub const T_SLIDE: u16 = 0x11;
+/// +13 .. +14: current pitch (hi, lo).
+pub const T_PITCH: u16 = 0x13;
+/// +15 .. +16: target pitch (hi, lo).
+pub const T_TARGET: u16 = 0x15;
+/// +18 .. +19: LFO speed word.
+pub const T_LFO_SPEED: u16 = 0x18;
+/// +1A .. +1B: LFO phase word.
+pub const T_LFO_PHASE: u16 = 0x1A;
+/// +1C .. +1D: vibrato depth word.
+pub const T_VIB: u16 = 0x1C;
+/// +1E .. +1F: tremolo depth word.
+pub const T_TREM: u16 = 0x1E;
+/// +23 .. +24: envelope pointer (instrument byte 2).
+pub const T_ENV_PTR: u16 = 0x23;
+/// +26 .. +27: sustain level word.
+pub const T_SUSTAIN: u16 = 0x26;
+/// +28 .. +29: envelope rate word.
+pub const T_ENV_RATE: u16 = 0x28;
+/// +2A .. +2B: envelope level word.
+pub const T_ENV_LEVEL: u16 = 0x2A;
+/// +2C .. +2F: loop counters of commands 0E..15.
+pub const T_LOOP: u16 = 0x2C;
+
+// Constant tables of the Z80 program (linear addresses, read through the data image).
+pub const TAB_LEN_TRIPLET: u32 = 0x0C50;
+pub const TAB_LEN_NORMAL: u32 = 0x0C57;
+pub const TAB_LEN_DOTTED: u32 = 0x0C5E;
+pub const TAB_NOTE_BASE: u32 = 0x0C65;
+pub const TAB_VOLUME: u32 = 0x23A9;
+pub const TAB_ENV_ATTACK: u32 = 0x25A9;
+pub const TAB_ENV_DECAY: u32 = 0x2629;
+pub const TAB_GAIN: u32 = 0x24A9;
+pub const TAB_LFO_SPEED: u32 = 0x26A9;
+pub const TAB_VIBRATO: u32 = 0x27A9;
+pub const TAB_TREMOLO: u32 = 0x28A9;
+pub const TAB_SAMPLE: u32 = 0x6A82;
+pub const TAB_INSTRUMENT: u32 = 0x6E62;

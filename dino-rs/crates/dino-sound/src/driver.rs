@@ -355,8 +355,6 @@ impl<'a> Driver<'a> {
         }
     }
 
-    /// The sequencer of SPEC section 4 (0x00DA .. 0x0140). Not ported yet: M4-04 and M4-05.
-    fn sequencer_step(&mut self) {}
 
     /// 0x017D: take one request from the Z80 ring and start it.
     fn dispatch(&mut self) {
@@ -472,7 +470,7 @@ impl<'a> Driver<'a> {
     }
 
     /// Sets F00D and F00E for voice `v` (the handler reads them).
-    fn set_voice(&mut self, v: u8) {
+    pub(crate) fn set_voice(&mut self, v: u8) {
         self.w8(VOICE, v);
         self.w8(VOICE8, v.rotate_left(3));
     }
@@ -507,19 +505,23 @@ impl<'a> Driver<'a> {
         }
     }
 
-    /// 0x0EBB: stop the SFX track `t` on voice `v`. If music runs on the voice it is unmuted
-    /// by a key-on later. A tied note resumes at once (0x0EF0, not ported yet, M4-06).
-    fn stop_sfx(&mut self, t: u16, v: u8) {
+    /// 0x0EBB: stop the SFX track `t` on voice `v`. A music track on the voice gets its sample
+    /// back (0x0D5E), its pan, and then either the tied-note resume (0x0EF0, bit 7 of its flags)
+    /// or the unmute at the next key-on.
+    pub(crate) fn stop_sfx(&mut self, t: u16, v: u8) {
         self.w8(t.wrapping_add(T_ACTIVE), 0);
         self.w8(t.wrapping_add(T_PRIO), 0);
         self.set_voice(v);
         self.voice_reset(v);
         let m = t.wrapping_add(0x400);
         if self.r8(m.wrapping_add(T_ACTIVE)) != 0 {
-            // 0x0D5E (sample load of the music note) is part of the sequencer, M4-04.
+            let idx = self.r8(m.wrapping_add(T_ACTIVE)).wrapping_sub(1);
+            self.sample_load(m, idx);
             let pan = self.r8(m.wrapping_add(T_PAN));
             self.pan_write(v, pan);
-            if self.r8(m.wrapping_add(T_FLAGS)) & 0x80 == 0 {
+            if self.r8(m.wrapping_add(T_FLAGS)) & 0x80 != 0 {
+                self.tie_resume(m, v);
+            } else {
                 self.w8(m.wrapping_add(T_MUTE), 0xFF);
             }
         }
