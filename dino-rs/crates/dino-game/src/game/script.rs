@@ -939,7 +939,7 @@ impl Game {
 
     /// 0x19996 state 0x18 entry: the pose (action 0x04, and the extra life pose). The animation 0xE for a hero with the flag `+$10E` (a life was won) or
     /// the leader, 0x11 for the others. Mustapha (id 1) and Hannah (id 2) in these two cases use the air states 0x418 (0x1ADA6) and 0x41A
-    /// (0x1AE62) instead. TODO(M2-17): the effect of the leader (0x6192, pool C class 5) and the voice 0x9814 (leader or life); the anti
+    /// (0x1AE62) instead. the effect of the leader (0x6192, pool C class 5) is not ported yet; the anti
     /// tamper test 0x5124E (it never fails with the real ROM) is not ported. Falls into the handler.
     pub(super) fn player_pose_entry(&mut self, i: usize) {
         let p = &mut self.players[i];
@@ -947,6 +947,10 @@ impl Game {
         p.b.draw_flags = 0;
         let leader = p.bc0 != 0;
         let special = p.b10e != 0 || leader;
+        if special {
+            // 0x199B4: the leader's effect 0x6192 (pool C class 5): TODO(port); then the voice 0x9814
+            self.player_oneup_voice(i);
+        }
         let anim = if special { 0xE } else { 0x11 };
         self.player_panim(i, 0, anim);
         let p = &mut self.players[i];
@@ -962,7 +966,7 @@ impl Game {
     }
 
     /// 0x19A0A state 0x18: step 0 plays the animation until it ends or the frame flag `+$2C` is set (then `+$90` = 2, and with a won life the timer
-    /// `+$11D` = 0x14 and the "1UP!" effect 0x18C1E: TODO(M2-17)); step 2 holds the pose while the pose lock G.$503 is set (the clear task clears it) or,
+    /// `+$11D` = 0x14 and the "1UP!" effect 0x18C1E); step 2 holds the pose while the pose lock G.$503 is set (the clear task clears it) or,
     /// with a won life, for `+$11D` frames with the palette flash 0x1BD78, then goes idle (0x19122).
     pub(super) fn player_pose(&mut self, i: usize) {
         if self.players[i].b90 == 0 {
@@ -974,7 +978,7 @@ impl Game {
             p.b90 += 2;
             if p.b10e != 0 {
                 p.b11d = 0x14;
-                // TODO(M2-17): jsr 0x18C1E, the "1UP!" effect (pool C class 14 variant 2)
+                self.fx_spawn_player_marker(i, 2); // 0x19A38 jsr 0x18C1E, the "1UP!" effect
             }
             return;
         }
@@ -1046,11 +1050,11 @@ impl Game {
         p.b90 += 2;
         if p.b10e != 0 {
             p.b11d = 0x14;
-            // TODO(M2-17): jsr 0x18C1E (the "1UP!" effect)
+            self.fx_spawn_player_marker(i, 2); // 0x1AE1E jsr 0x18C1E (the "1UP!" effect)
         }
     }
 
-    /// 0x1AE88 state 0x41A (Hannah's pose): step 0 plays the animation until the flag `+$2C` (then the effect 0x965A2 variant 0: TODO(M2-17), pool C
+    /// 0x1AE88 state 0x41A (Hannah's pose): step 0 plays the animation until the flag `+$2C` (then the effect 0x965A2 variant 0: TODO(port, pool C class 29), pool C
     /// class 29); step 2 falls and bounces (`vy` = -`vy` when it lands), step 4 plays to the flag (effect variant 2), step 6 falls again and ends
     /// with the won life effect, step 8 plays and holds like 0x18.
     pub(super) fn player_pose_air_hannah(&mut self, i: usize) {
@@ -1058,7 +1062,7 @@ impl Game {
             0 => {
                 self.player_pstep(i);
                 if self.players[i].b.param_a != 0 {
-                    self.players[i].b90 += 2; // TODO(M2-17): jmp 0x965A2 with d0 = 0
+                    self.players[i].b90 += 2; // TODO(port, pool C class 29): jmp 0x965A2 with d0 = 0
                 }
             }
             2 => {
@@ -1076,7 +1080,7 @@ impl Game {
             4 => {
                 self.player_pstep(i);
                 if self.players[i].b.param_a != 0 {
-                    self.players[i].b90 += 2; // TODO(M2-17): jmp 0x965A2 with d0 = 2
+                    self.players[i].b90 += 2; // TODO(port, pool C class 29): jmp 0x965A2 with d0 = 2
                 }
             }
             6 => {
@@ -1086,8 +1090,8 @@ impl Game {
                         self.players[i].b90 += 2;
                         self.player_pstep(i);
                         if self.players[i].b10e != 0 {
-                            self.players[i].b11d = 0x14; // TODO(M2-17): jmp 0x18C1E
-                            return;
+                            self.players[i].b11d = 0x14;
+                            return self.fx_spawn_player_marker(i, 2); // 0x1AF2C jmp 0x18C1E
                         }
                     }
                 }
