@@ -1,5 +1,5 @@
-//! Join task 0x6C4A. M2-18 ports the absent-player states and in-level prompts.
-//! The hero strip, pick and drop-in are M2-19; continue and game over are M2-20/21.
+//! Join task 0x6C4A: absent-player prompts, quick hero strip and pick.
+//! Continue and game over are M2-20/21.
 
 use crate::game::Game;
 
@@ -31,15 +31,7 @@ impl Game {
             match self.flow.join[i].state {
                 0 => self.flow_join_absent(i),
                 2 => self.flow_join_credit(i),
-                4 => {
-                    // 0x70F0 / 0x71DA: an already active object finishes choosing.
-                    // TODO(M2-19): 0x70F8..0x71D8, strip timer, cursor and pick.
-                    if self.players[i].b.live != 0 {
-                        self.players[i].b.live = 1;
-                        self.flow.chosen |= 1 << i;
-                        self.flow.join[i].state = 6;
-                    }
-                }
+                4 => self.flow_join_strip(i),
                 6 => {
                     // 0x72EE: remove the dead player's participation before continuing.
                     if self.players[i].b.live == 0 {
@@ -143,9 +135,10 @@ impl Game {
             _ => {}
         }
         if self.flow_join_start_check(i) {
-            // TODO(M2-19): 0x1049E clock and wave budget; 0x7476 score; strip drawing. TODO(port): 0xA6B74, the join
+            // TODO(port): 0xA6B74, the join
             // counters G.$75BA and G.$75BC + 2 * who (statistics, not read by the game loop).
             self.rank_event_18410(self.flow.mode); // 0x6E98, before the player init's RNG call.
+            self.rank_join_time(); // 0x6E9E
             self.flow.front.sys.hold = 3;
             self.flow_join_init(i);
         }
@@ -181,6 +174,9 @@ impl Game {
     fn flow_join_init(&mut self, i: usize) {
         self.flow_boot_player(i); // 0x4D46 / 0x4D5E / 0x4D76, one power-factor RNG call.
         self.flow_join_prompt(i, 0x843A); // 0x80A2
+        if self.flow.mode != 4 {
+            self.flow_join_scores(); // 0x70A8
+        }
         let b = &mut self.players[i].b;
         b.set_state(0x0002_0000); // 0x4DE8
         b.hp = 100;
@@ -188,8 +184,160 @@ impl Game {
         b.hp_bar = 100;
         b.facing = 1;
         self.flow.join[i] = Join { state: 4, seconds: if self.flow.b4cf != 0 { 6 } else { 0x11 }, frames: 1 };
+        self.players[i].w80 = 0;
+        self.flow_join_cursor(i, -1); // 0x70D4
+        self.flow_join_cursor(i, 1); // 0x70DA
         self.flow.started |= 1 << i;
-        // TODO(M2-19): 0x723E cursor reservation and 0x7F86 strip redraw.
+        self.flow_join_clear(i, 0x7FB6, 0x7FC2); // 0x7F86
+    }
+
+    /// 0x70F0..0x71FC: quick select, then let 0x18B38 run the ordinary drop-in.
+    fn flow_join_strip(&mut self, i: usize) {
+        if self.players[i].b.live == 0 {
+            if self.flow.mode != 0xC || (self.players.iter().any(|p| p.b.live != 0) && !self.flow_join_prompt_visible()) {
+                return;
+            }
+            self.flow_join_timer(i); // 0x7138
+            self.flow_join_flash(i); // 0x713C
+            // 0x71FE reads the object's own input history, not the system task's.
+            let p = &mut self.players[i];
+            p.prev = p.held;
+            p.held = self.w.input[i];
+            p.pressed = p.held & (p.held ^ p.prev);
+            let edge = p.pressed;
+            if edge != 0 {
+                p.w80 = 0;
+                let direction = if edge & 2 != 0 { -1 } else if edge & 1 != 0 { 1 } else { 0 };
+                if direction != 0 {
+                    self.flow_join_cursor(i, direction);
+                    self.flow_join_flash(i);
+                }
+            }
+            let j = self.flow.join[i];
+            let locked = j.seconds == if self.flow.b4cf == 0 { 0x10 } else { 5 } && j.frames >= 0x14;
+            let start = self.w.system & (self.w.system ^ self.flow.front.prev_system) & (1 << i) != 0;
+            if (locked || (edge & 0x10 == 0 && !start)) && (j.seconds as i8) >= 0 {
+                return;
+            }
+        }
+        self.players[i].b.live = 1; // 0x71DA
+        self.flow.chosen |= 1 << i;
+        self.flow.join[i].state = 6;
+        if self.flow.mode != 4 {
+            self.flow_join_clear(i, 0x7FB6, 0x7FC2);
+        }
+    }
+
+    /// 0x723E: move in select order, skipping only heroes held by strip or play states.
+    fn flow_join_cursor(&mut self, i: usize, direction: i8) {
+        let t = &self.assets.frontend.text;
+        loop {
+            let pos = t.u8(0x7232, self.players[i].b.id as u32).wrapping_add(direction as u8) & 3;
+            let hero = t.u8(0x7236, 2 * pos as u32);
+            self.players[i].b.id = hero;
+            self.players[i].b.k20 = t.u8(0x7236, 2 * pos as u32 + 1) as u16;
+            if !(0..3).any(|k| k != i && self.flow.started & (1 << k) != 0
+                && matches!(self.flow.join[k].state, 4 | 6) && self.players[k].b.id == hero) {
+                break;
+            }
+        }
+    }
+
+    /// 0x7476 / 0x748A: increment only the last BCD score byte, saturating it at 99.
+    fn flow_join_scores(&mut self) {
+        for p in &mut self.players {
+            let lo = p.score as u8;
+            let next = if lo >= 0x99 { 0x99 } else if lo & 15 == 9 { lo.wrapping_add(7) } else { lo.wrapping_add(1) };
+            p.score = (p.score & !0xFF) | next as u32;
+        }
+    }
+
+    /// 0x7D5C: BCD countdown, 40 frames per step (70 in the two-player layout).
+    fn flow_join_timer(&mut self, i: usize) {
+        let j = &mut self.flow.join[i];
+        j.frames = j.frames.wrapping_sub(1);
+        if j.frames != 0 { return; }
+        j.frames = if self.flow.b4cf == 0 { 40 } else { 70 };
+        if (j.seconds as i8) < 0 { return; }
+        j.seconds = if j.seconds == 0 { 0x99 } else if j.seconds & 15 == 0 { j.seconds.wrapping_sub(7) } else { j.seconds.wrapping_sub(1) };
+        if (j.seconds as i8) >= 0 { self.flow_join_draw_timer(i); }
+    }
+
+    /// 0x7D8E: the red countdown, small digits in 3P and big digits in 2P.
+    fn flow_join_draw_timer(&mut self, i: usize) {
+        if self.spawn.g.b4d5 != 0 { return; }
+        let t = &self.assets.frontend.text;
+        let n = self.flow.join[i].seconds;
+        if self.flow.b4cf == 0 {
+            let at = t.u32(0x7E20, 4 * i as u32);
+            self.hud_put(at, if n >> 4 == 0 { 0x20 } else { (n >> 4) as u16 }, 0x182);
+            self.hud_put(at + 0x80, (n & 15) as u16, 0x182);
+        } else {
+            let at = t.u32(0x7E2C, 4 * i as u32);
+            // 0x7DF0 uses LSL, so the first big digit is always zero.
+            self.text_big(t.slice_from(0x7E34), Some(at), true);
+            self.text_big(t.slice_from(0x7E34 + 6 * (n & 15) as u32), Some(at + 0x100), true);
+        }
+    }
+
+    /// 0x7F86 / 0x800E -> 0xF94: blank the ROM rectangle in the HUD block.
+    fn flow_join_clear(&mut self, i: usize, three: u32, two: u32) {
+        if self.spawn.g.b4d5 != 0 { return; }
+        let t = &self.assets.frontend.text;
+        let a = if self.flow.b4cf == 0 { three } else { two } + 4 * i as u32;
+        let col = t.u8(a, 0) as u32;
+        let row = t.u8(a, 1) as u32;
+        for x in 0..t.u8(a, 2) as u32 {
+            for y in 0..t.u8(a, 3) as u32 {
+                self.hud_put(0x90A000 + (col + x) * 0x80 + (row % 32 + y) * 4, 0x20, 0x180);
+            }
+        }
+    }
+
+    /// 0x75B2: HUD strip redraw and arrow/countdown flashing on a 256-frame cycle.
+    fn flow_join_flash(&mut self, i: usize) {
+        let old = self.players[i].w80;
+        self.players[i].w80 = old.wrapping_add(1);
+        match old & 0xFF {
+            0 => self.flow_join_draw_strip(i),
+            0x70 | 0xF0 => {
+                self.flow_join_clear(i, 0x803C, 0x8048);
+                self.flow_join_draw_timer(i);
+            }
+            0x80 => {
+                let t = &self.assets.frontend.text;
+                let at = t.u32(if self.flow.b4cf == 0 { 0x82D4 } else { 0x82E0 }, 4 * i as u32);
+                self.text_words(t.slice_from(0x86F2), at);
+                self.flow_join_draw_timer(i);
+            }
+            _ => {}
+        }
+    }
+
+    /// 0x7AE4 / 0x7BC8 / 0x75F0 / 0x780C: face, name, countdown and rating.
+    fn flow_join_draw_strip(&mut self, i: usize) {
+        let t = &self.assets.frontend.text;
+        let hero = self.players[i].b.id as u32;
+        let at = t.u32(if self.flow.b4cf == 0 { 0x7B34 } else { 0x7B40 }, 4 * i as u32);
+        let attr = t.u16(0x7B2C, 2 * hero);
+        for x in 0..4u32 {
+            for y in 0..4u32 {
+                self.hud_put(at + x * 0x80 + y * 4, t.u16(0x7B48, hero * 32 + x * 8 + y * 2), attr);
+            }
+        }
+        let base = if self.flow.b4cf == 0 { 0x7C00 } else { 0x7CFC };
+        let at = t.u32(if self.flow.b4cf == 0 { 0x7BF4 } else { 0x7CF4 }, 4 * i as u32);
+        let s = t.slice_from(base + t.u16(base, 2 * hero) as u32);
+        if self.flow.b4cf == 0 { self.text_words(s, at); } else { self.text_big(s, Some(at), true); }
+        self.flow_join_draw_timer(i);
+        let (origins, base) = if self.flow.b4cf == 0 {
+            (0x7640, if self.flow.region.0 == 0 { 0x764C } else { 0x7654 })
+        } else {
+            (0x785C, if self.flow.region.0 == 0 { 0x7864 } else { 0x786C })
+        };
+        // 0x7608 clears d0 after computing the Japanese offset. Keep that quirk.
+        let offset = if self.flow.b4cf == 0 && self.flow.region.0 == 0 { 0 } else { t.u16(base, 2 * hero) as u32 };
+        self.text_words(t.slice_from(base + offset), t.u32(origins, 4 * i as u32));
     }
 
     /// 0x81FE / 0x825A: HUD hold suppresses prompts outside character select.
@@ -255,7 +403,12 @@ impl Game {
 
     /// 0x7562 / 0x7580: redraw absent-player strips after the HUD slides in.
     pub fn flow_join_prompts(&mut self) {
-        // These redraw states 4 and 8 only. Both drawing paths belong to M2-19/20.
+        for i in 0..3 {
+            if self.players[i].b.live == 0 && self.flow.join[i].state == 4 {
+                self.flow_join_draw_strip(i); // 0x7592..0x759E
+            }
+        }
+        // State 8 redraw (0x75AC) belongs to M2-20.
     }
 
     /// Game mode 0x10 (0xE9E6). TODO(M2-20): continue screen.
@@ -332,6 +485,89 @@ mod tests {
         g.w.system = 2;
         g.flow_join_credit(1);
         assert_eq!(g.flow.join[1].state, 2, "G.$4DB inhibits the request");
+    }
+
+    #[test]
+    fn join_strip_and_clock_rules() {
+        let Some(a) = assets() else { return };
+        let mut g = Game::new(a);
+        g.flow.mode = 0xC;
+        g.flow.started = 1;
+        g.flow.join[0].state = 6;
+        g.players[0].b.live = 1;
+        g.flow_join_init(1);
+        assert_eq!(g.players[1].b.id, 2);
+        assert_eq!(g.players.iter().map(|p| p.score).collect::<Vec<_>>(), vec![1, 1, 1]);
+        g.flow_join_strip(1);
+        assert_eq!((g.flow.join[1].seconds, g.flow.join[1].frames), (0x10, 40));
+        for _ in 0..39 { g.flow_join_strip(1); }
+        assert_eq!(g.flow.join[1].seconds, 0x10);
+        g.flow_join_strip(1);
+        assert_eq!((g.flow.join[1].seconds, g.flow.join[1].frames), (9, 40));
+        // A dead hero in the continue countdown no longer holds his choice.
+        g.flow.join[0].state = 8;
+        g.flow_join_cursor(1, -1);
+        assert_eq!(g.players[1].b.id, 0);
+        for time in [0x100, 0x350] {
+            g.rank_set_time(time);
+            g.spawn.g.wave_timer = 0xFF00;
+            g.rank_join_time();
+            assert_eq!((g.rank.time_min, g.rank.time_sec), (4, 0));
+            assert_eq!(g.spawn.g.wave_timer, 0x158);
+        }
+        g.players[0].score = 0x123499;
+        g.flow_join_scores();
+        assert_eq!(g.players[0].score, 0x123499);
+    }
+
+    /// D4d A14: replay the join task from each MAME snapshot, including HUD cells.
+    #[test]
+    fn join_a14_strip_matches_mame() {
+        let Some(a) = assets() else { return };
+        for name in ["flow_j-p2", "flow_j-p2-wait", "flow_j-p2-moves", "flow_j-p23"] {
+            let path = format!("../../../re/out/traces/{name}.mame.trc");
+            if !Path::new(&path).exists() { continue; }
+            let mut rd = TraceReader::open(&path).unwrap();
+            let mut previous: Option<(Vec<u8>, Vec<u8>)> = None;
+            let mut checked = 0;
+            while let Some(f) = rd.next() {
+                let ram = &rd.region("ram").unwrap().data;
+                let gfx = &rd.region("gfx").unwrap().data;
+                if let Some((pr, pg)) = &previous {
+                    if f >= 1813 && pr[0x84D0] == 0xC {
+                        let mut g = Game::new(a);
+                        g.trace_load(pr, pg);
+                        g.w.system = ram[0x801A];
+                        g.w.coins = ram[0x8020];
+                        g.w.input.copy_from_slice(&ram[0x8016..0x8019]);
+                        g.flow_coin_isr();
+                        g.flow_system_task();
+                        g.flow_join_task();
+                        for i in 1..3 {
+                            let at = 0xB274 + 0x180 * i;
+                            if pr[at + 0xA2] != 4 { continue; }
+                            assert_eq!((g.flow.join[i].state, g.flow.join[i].seconds, g.flow.join[i].frames),
+                                (ram[at + 0xA2], ram[at + 0xB0], ram[at + 0xB1]), "{name} frame {f} P{} timer/pick", i+1);
+                            assert_eq!(g.players[i].b.id, ram[at+3], "{name} frame {f} cursor");
+                            if g.flow.join[i].state == 6 { checked += 1; continue; }
+                            for col in 16*i..16*i+16 {
+                                for row in 34..38 {
+                                    let idx = crate::game::vram::Vram::index1(col, row);
+                                    let off = 0x8000 + idx*4;
+                                    let expected = (u16::from_be_bytes([gfx[off], gfx[off+1]]), u16::from_be_bytes([gfx[off+2], gfx[off+3]]));
+                                    let cell = g.vram.scroll1[idx];
+                                    assert_eq!((cell.code,cell.attr), expected, "{name} frame {f} P{} cell {col},{row}", i+1);
+                                }
+                            }
+                            checked += 1;
+                        }
+                    }
+                }
+                previous = Some((ram.clone(),gfx.clone()));
+            }
+            assert!(checked > 0);
+            eprintln!("{name}: strip timers, cursor, pick and HUD equal for {checked} player frames");
+        }
     }
 
     /// D4d A14: step from MAME's previous frame, including the system task before slot 0x10.

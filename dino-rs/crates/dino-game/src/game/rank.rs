@@ -397,6 +397,12 @@ impl Game {
         self.rank_add_time(0x330);
     }
 
+    /// 0x1049E: a join adds 600 wave frames and 3:30 stage time, capped at 4:00.
+    pub fn rank_join_time(&mut self) {
+        self.spawn.g.wave_timer = self.spawn.g.wave_timer.wrapping_add(600);
+        self.rank_add_time(0x330);
+    }
+
     /// 0x104A8: add BCD time `v` (high byte minutes, low byte seconds), capped at 04:00.
     pub fn rank_add_time(&mut self, v: u16) {
         let (mut m, mut s) = (self.rank.time_min, self.rank.time_sec);
