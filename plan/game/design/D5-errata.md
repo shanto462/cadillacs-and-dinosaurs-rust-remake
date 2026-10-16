@@ -202,3 +202,6 @@ MAME wins over the design text; the design documents themselves are not edited.
 - G.$4D1 at the poke: the recordings `flow_end-*` show the sub 0 pass starting in the first record after the poke, the pass of sub 2 four video frames later: the clear 0xAE0 takes the CPU through three video frames (the first clears the sprites,
   scroll1 and about 1376 cells of scroll2). M3-23.
 
+- D3f classes 16 and 17 (M2-21): class 16 (handler 0x93FFC, +$20 = 0x40) is the GAME and OVER raw sprite words that slide in (lists 0x940A4 and 0x940AE, MAME equal), not a spark burst; class 17 (0x94100, +$20 = 0x44) is the countdown digit (frames 0x9421A), with spark children only while more than seven pool C slots are free, not a blood effect. The red flash of 0xEC5E is class 6 variant 4 (0x92CF6). M2-21.
+- D5 decision 8 (ranking car): the continue code 0xE9E6..0xEE6C does not make the car. It has no call to 0x8B428 or to a pool B spawn; 0x92308 only restores a palette. Pool B 86 stays with the ranking screen (M1-07). M2-21.
+- D4d A15 and A16 frame numbers: the k-1p recording (`flow_k-1p.mame.trc`) has the design time base 1812 frames before its record numbers (mode 0x10 at record 2015 is design 203; mode 0x14 at 3797 is design 1985). M2-21.

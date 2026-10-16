@@ -14,6 +14,8 @@ pub struct Continue {
     pub level3: Vec<Cell>,
     /// 0xEE82 crosses a vblank while loading the return picture.
     pub return_pending: bool,
+    /// Sleeps inside 0xEE3A, 0xAC06 and 0xAC26, including video clear time.
+    pub exit_wait: u16,
 }
 
 impl Game {
@@ -21,7 +23,7 @@ impl Game {
     pub(super) fn flow_continue_player(&mut self, i: usize) {
         if self.flow.mode == 0x10 {
             if self.flow.sub == 4 {
-                // TODO(M2-21/22): 0x7396 ranking qualification and GAME OVER.
+                // TODO(M2-22): 0x7396 ranking qualification (the GAME OVER scene itself is `flow_continue_game_over`).
                 return;
             }
         } else {
@@ -143,12 +145,12 @@ impl Game {
         }
     }
 
-    /// 0xE9E6: mode 0x10 dispatch. Sub 4 belongs to M2-21's game-over scene.
+    /// 0xE9E6: mode 0x10 dispatch. Sub 4 is the game-over scene (0xEBA6..0xEE6C).
     pub fn flow_continue_mode(&mut self) {
         match self.flow.sub {
             0 => self.flow_continue_setup(),
             2 => self.flow_continue_countdown(),
-            4 => {} // TODO(M2-21): 0xEBA6, blood, GAME OVER and exit.
+            4 => self.flow_continue_game_over(),
             6 => self.flow_continue_return(),
             _ => {}
         }
@@ -295,6 +297,172 @@ impl Game {
             self.flow.b4db = 1;
             self.flow.b4d7 = 1;
             self.flow.sub = 4;
+        }
+    }
+
+    /// 0xEBA6..0xEE6C: red flash, countdown digit spawns, palette drain and GAME OVER.
+    fn flow_continue_game_over(&mut self) {
+        match self.flow.sub2 >> 8 {
+            0 => {
+                self.flow.sub2 = 0x200;
+                self.flow.cont.raw.sb(0xA, 100);
+                self.flow.cont.raw.sb(0x10, 0);
+                return;
+            }
+            2 => match self.flow.sub2 as u8 {
+                0 => {
+                    self.flow.sub2 += 2;
+                    // 0xF118: erase the speech rectangle on scroll2.
+                    for col in 0..8 {
+                        for row in 0..5 {
+                            let k = ((0x91F00C + col * 0x40 + row * 4 - 0x90C000) / 4 & 0xFFF) as usize;
+                            self.vram.scroll2[k] = Cell { code: 0x5800, attr: 0 };
+                        }
+                    }
+                    self.flow_clear_scroll1();
+                    self.flow.cont.raw.sb(9, 0);
+                    self.flow.cont.raw.sb(0x10, 5);
+                }
+                2 => {
+                    if self.flow.chosen != 0 {
+                        self.flow.sub = 6;
+                        self.flow.sub2 = 0;
+                    } else {
+                        let n = self.flow.cont.raw.b(9);
+                        if n == 0 {
+                            self.flow_continue_red_flash();
+                        } else if n == 2 {
+                            self.cam.s3.cam_y = 0;
+                        } else if n == 5 && self.effects.free_count() > 2 {
+                            if let Some(i) = self.effects.alloc() {
+                                let index = self.flow.cont.raw.b(0x10) as u32 * 4;
+                                let t = &self.assets.frontend.text;
+                                let b = &mut self.effects.slots[i].b;
+                                b.live = 1;
+                                b.k20 = 0x44;
+                                b.var26 = 0;
+                                b.x = (t.u16(0xED40, index) as i32) << 16;
+                                b.y = (t.u16(0xED40, index + 2) as i32) << 16;
+                                b.z = 0;
+                            }
+                        }
+                        let n = n.wrapping_add(1);
+                        self.flow.cont.raw.sb(9, n);
+                        if (n as i8) >= 18 {
+                            self.flow.cont.raw.sb(9, 0);
+                            let n = self.flow.cont.raw.b(0x10).wrapping_sub(1);
+                            self.flow.cont.raw.sb(0x10, n);
+                            if (n as i8) < 0 {
+                                self.flow.sub2 += 2;
+                                self.flow.cont.raw.sb(0x19, 16);
+                                self.flow.cont.raw.sb(0x1A, 0);
+                                self.flow_continue_red_flash();
+                            }
+                        }
+                    }
+                }
+                4 => {
+                    if self.flow.chosen != 0 {
+                        self.flow.sub = 6;
+                        self.flow.sub2 = 0;
+                    } else {
+                        self.cam.s3.cam_y = 0;
+                        let n = self.flow.cont.raw.b(0x1A);
+                        self.flow.cont.raw.sb(0x1A, n.wrapping_sub(1));
+                        if n == 0 {
+                            self.flow.cont.raw.sb(0x1A, 4);
+                            let n = self.flow.cont.raw.b(0x19).wrapping_sub(1);
+                            self.flow.cont.raw.sb(0x19, n);
+                            if (n as i8) < 0 {
+                                self.flow.sub2 += 2;
+                            } else {
+                                self.flow_continue_palette();
+                            }
+                        }
+                    }
+                }
+                6 => {
+                    // 0xEFC2: name entry owns state 0xA. M2-22 resumes here when it ends.
+                    if !self.flow.join.iter().any(|j| j.state == 0xA) {
+                        self.flow.sub2 += 2;
+                        self.flow.cont.raw.sw(0x14, 200);
+                        self.sound(0x1D);
+                        for var in [0, 4] {
+                            if let Some(i) = self.effects.alloc() {
+                                let b = &mut self.effects.slots[i].b;
+                                b.live = 1;
+                                b.k20 = 0x40;
+                                b.var26 = var;
+                            }
+                        }
+                    }
+                    if self.flow.cont.raw.b(0x18) == 1 {
+                        self.flow.cont.raw.sb(0x18, 2);
+                        self.sound(0x1F);
+                    }
+                }
+                8 => {
+                    if self.flow.join.iter().any(|j| j.state == 4) {
+                        self.flow.sub = 6;
+                        self.flow.sub2 = 0x400;
+                    } else {
+                        let n = self.flow.cont.raw.w(0x14).wrapping_sub(1);
+                        self.flow.cont.raw.sw(0x14, n);
+                        if n == 0 {
+                            self.flow.sub2 += 0x200;
+                        }
+                    }
+                }
+                _ => {}
+            },
+            4 => {
+                if self.flow.cont.exit_wait == 0 {
+                    self.flow.cont.exit_wait = 90; // 0xA82 (60) followed by 0xA7E (30).
+                } else {
+                    self.flow.cont.exit_wait -= 1;
+                    if self.flow.cont.exit_wait == 0 {
+                        self.flow.mode = 0x14;
+                        self.flow.sub = 0;
+                        self.flow.sub2 = 0;
+                        self.flow_clear_screen();
+                        self.flow.cont.exit_wait = 4; // 0xAE0 clear and 0xA76.
+                    }
+                }
+                return;
+            }
+            _ => return,
+        }
+        self.pool_c_update();
+        self.build_sprite_list();
+    }
+
+    /// 0xEC5E: the red flash (sound 0xE6, class 6 variant 4), also used after the last digit loop.
+    fn flow_continue_red_flash(&mut self) {
+        self.snd_request(0xE6, 0x72020, 0x10000000);
+        if let Some(i) = self.effects.alloc() {
+            let b = &mut self.effects.slots[i].b;
+            b.live = 1;
+            b.k20 = 0x18;
+            b.var26 = 4;
+        }
+        self.cam.s3.cam_y = 0x100;
+    }
+
+    /// 0xED86 / 0xB91A: lower each RGB nibble toward the six ROM palette targets.
+    fn flow_continue_palette(&mut self) {
+        let t = &self.assets.frontend.text;
+        for pair in 0..6 {
+            let at = t.u32(0xFAF8, pair * 8);
+            let src = t.u32(0xFAF8, pair * 8 + 4);
+            for k in 0..16 {
+                let dst = &mut self.pal.words[((at - 0x914000) / 2 + k) as usize];
+                let target = t.u16(src, k * 2);
+                for shift in [0, 4, 8] {
+                    if (*dst >> shift) & 15 > (target >> shift) & 15 {
+                        *dst = dst.wrapping_sub(1 << shift);
+                    }
+                }
+            }
         }
     }
 
@@ -461,7 +629,7 @@ impl Game {
         self.flow_continue_reset_effects();
     }
     /// 0x92C9A / 0x92CC4 / 0x92D5E: class 6 variant 0, the return flash.
-    /// Variants 1 and 2 are the game-over effects of M2-21.
+    /// Variant 4 is the game-over red flash (`effect.rs`, 0x92CF6).
     pub(crate) fn flow_continue_flash(&mut self, i: usize) {
         let e = &mut self.effects.slots[i];
         if e.b.mode == 0 {
@@ -512,6 +680,81 @@ mod tests {
             p.exists()
                 .then(|| &*Box::leak(Box::new(dino_extract::extract(p).unwrap())))
         })
+    }
+
+    /// D4d A16: uninterrupted game-over scene through 0xAC06 / 0xAC26.
+    #[test]
+    fn continue_a16_game_over_matches_mame() {
+        let Some(a) = assets() else { return };
+        for name in ["flow_k-1p", "flow_k-mash", "flow_k-nocoin-start"] {
+            let path = format!("../../../re/out/traces/{name}.mame.trc");
+            if !Path::new(&path).exists() { continue; }
+            let mut rd = TraceReader::open(&path).unwrap();
+            let mut game: Option<Game> = None;
+            let mut checked = 0;
+            let mut sound_pos = 0u16;
+            while let Some(f) = rd.next() {
+                let ram = &rd.region("ram").unwrap().data;
+                let gfx = &rd.region("gfx").unwrap().data;
+                if let Some(g) = &mut game {
+                    g.w.system = ram[0x801A];
+                    g.w.coins = ram[0x8020];
+                    g.w.input.copy_from_slice(&ram[0x8016..0x8019]);
+                    g.tick();
+                    assert_eq!((g.flow.mode, g.flow.sub, g.flow.sub2, g.flow.in_game),
+                        (ram[0x84D0], ram[0x84D1], u16::from_be_bytes([ram[0x84D2], ram[0x84D3]]), ram[0x84CC]),
+                        "{name} frame {f} mode");
+                    if g.flow.mode == 0x10 {
+                        assert_eq!(&g.flow.cont.raw.0[..0x1E], &ram[0x85CC..0x85EA], "{name} frame {f} scene state");
+                        let actual = g.trace_ram();
+                        for i in 0..POOL_C.2 {
+                            let at = POOL_C.0 as usize + POOL_C.1 as usize * i;
+                            assert_eq!(actual.ram[at], ram[at], "{name} frame {f} effect {i} presence");
+                            if ram[at] == 0 { continue; }
+                            for k in 0..0x68 {
+                                if actual.mask[at + k] != 0 {
+                                    assert_eq!(actual.ram[at + k], ram[at + k], "{name} frame {f} effect {i} +{k:X}");
+                                }
+                            }
+                        }
+                        assert_eq!(g.w.rng, u16::from_be_bytes([ram[0x8014], ram[0x8015]]), "{name} frame {f} RNG");
+                        for (k, word) in g.pal.words.iter().enumerate() {
+                            let off = 0x14000 + 2 * k;
+                            assert_eq!(*word, u16::from_be_bytes([gfx[off], gfx[off + 1]]), "{name} frame {f} palette {k:X}");
+                        }
+                    }
+                    let word = |bytes: &[u8], o: usize| u16::from_be_bytes([bytes[o], bytes[o + 1]]);
+                    let end = word(ram, 0x8034) & 0x3F0;
+                    let mut sounds = Vec::new();
+                    while sound_pos != end {
+                        sounds.push(word(ram, 0x803A + sound_pos as usize));
+                        sound_pos = (sound_pos + 16) & 0x3F0;
+                    }
+                    assert_eq!(g.w.sounds, sounds, "{name} frame {f} sounds");
+                    if g.flow.mode == 0x10 && g.flow.sub2 >> 8 == 2 {
+                        let base = if word(ram, 0xE9B4) != 0 { 0x4000 } else { 0 };
+                        let mut expected = Vec::new();
+                        for i in 0..256 {
+                            let off = base + 8 * i;
+                            if word(gfx, off + 6) == 0xFF00 { break; }
+                            expected.push((word(gfx, off), word(gfx, off + 2), word(gfx, off + 4), word(gfx, off + 6)));
+                        }
+                        if expected.len() == 256 { expected.clear(); }
+                        let actual: Vec<_> = g.sprites.entries.iter().map(|e| (e.x as u16, e.y as u16, e.code, e.attr)).collect();
+                        assert_eq!(actual, expected, "{name} frame {f} sprite list");
+                    }
+                    checked += 1;
+                    if g.flow.in_game == 0 { break; }
+                } else if ram[0x84D0] == 0x10 && ram[0x84D1] == 4 && ram[0x84D2] == 0 {
+                    let mut g = Game::new(a);
+                    g.trace_load(ram, gfx);
+                    sound_pos = u16::from_be_bytes([ram[0x8034], ram[0x8035]]) & 0x3F0;
+                    game = Some(g);
+                }
+            }
+            assert!(checked > 0);
+            eprintln!("{name}: A16 equal for {checked} frames");
+        }
     }
 
     #[test]
