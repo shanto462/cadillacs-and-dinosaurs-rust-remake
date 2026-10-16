@@ -187,15 +187,17 @@ impl Game {
     }
 
     /// 0x2A10E: the treasure is taken: HUD message, score (table 0x2A164), free next frame. The
-    /// RADIO of stage 3 (+$26 = 0xC, G.$4D9 = 2) also calls 0x8BD24 (the kill-all event of that
-    /// stage, pool B class 0x58: not ported, phase 7).
+    /// RADIO of stage 3 (+$26 = 0xC, G.$4D9 = 2, no kill-all) also calls 0x2A12C -> 0x8BD24, the radio event: three pool B
+    /// class 0x58 objects (the car and its two helpers, G.$51A), G.$4D5 = 1, G.$4DB = 1 and G.$50E = 1. That event is a stand in
+    /// until M6 (the car, D3c section 5): the radio only gives its 3000 points and the road goes on on foot. The camera side
+    /// (the chase of mode 8, G.$518) is ported (`camera.rs`, M3-09) and waits for the car object to set G.$518 and G.$51A.
     fn item_treasure_collect(&mut self, it: &mut Item, h: Handle) {
         self.item_in_slot(it, h, |g| g.hud_treasure(h));
         let off = self.assets.enemy.t.u8(0x2A164, it.b.var26.wrapping_sub(1) as u32);
         let v = self.assets.text.u32(0x10292, off as u32);
         self.hud_add_score_to(it.b.who, v);
         if self.w.stage == 2 && self.spawn.g.kill_all == 0 && it.b.var26 == 0xC {
-            // TODO(phase 7): 0x8BD24 spawns three pool B objects of class 0x58 (the radio event).
+            // M6: 0x8BD24 (the radio event) goes here.
         }
         it.set_mode_sub(6, 0);
     }

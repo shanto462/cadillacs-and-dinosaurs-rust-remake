@@ -24,7 +24,7 @@ frame range, e.g.
     enemy.*            # pool A classes 0x36 / 0x37 (cut-scene thugs) are not ported
     global.rng 0-120   # ...
 Keys: "<kind>.<field>" for objects (kinds: player enemy prop item effect special), "global.<name>",
-"scroll1", "scroll2", "scroll3", "palette", "sprites", "sounds".
+"scroll1", "scroll2", "scroll3", "palette", "rowscroll", "sprites", "sounds".
 """
 
 import argparse
@@ -201,7 +201,7 @@ def main():
     first_frame = None
     first_list = []
     allowed = defaultdict(int)
-    video = {k: [0, None, None] for k in ("scroll1", "scroll2", "scroll3", "palette", "sprites", "sounds")}
+    video = {k: [0, None, None] for k in ("scroll1", "scroll2", "scroll3", "palette", "rowscroll", "sprites", "sounds")}
     changed = np.zeros(0x10000, dtype=bool)
     lag_frames = []
     prev_ram = None
@@ -323,6 +323,20 @@ def main():
                 desc = f"{len(words)} words, first word {w:#x} (bank {w // 512}, palette {(w % 512) // 16}): MAME {value(mgfx, RAM + 0x14000 + 2 * w, 2):04X} port {value(pgfx, RAM + 0x14000 + 2 * w, 2):04X}"
                 frame_diffs.append((0x1014000, "palette", desc, ""))
                 v = video["palette"]
+                v[0] += 1
+                if v[1] is None:
+                    v[1], v[2] = f, desc
+        # the row scroll RAM 0x915800 .. 0x918000 (stage 2: one X offset per screen line, word index = line + 16)
+        d = np.nonzero(gmask[0x15800:0x18000] & (pgfx[0x15800:0x18000] != mgfx[0x15800:0x18000]))[0]
+        if len(d):
+            words = sorted(set(int(x) // 2 for x in d))
+            if allow.ok("rowscroll", f):
+                allowed["rowscroll"] += 1
+            else:
+                w = words[0]
+                desc = f"{len(words)} words, first word {w:#x} (screen line {w - 16}): MAME {value(mgfx, RAM + 0x15800 + 2 * w, 2):04X} port {value(pgfx, RAM + 0x15800 + 2 * w, 2):04X}"
+                frame_diffs.append((0x1015800, "rowscroll", desc, ""))
+                v = video["rowscroll"]
                 v[0] += 1
                 if v[1] is None:
                     v[1], v[2] = f, desc

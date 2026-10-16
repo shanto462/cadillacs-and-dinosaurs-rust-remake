@@ -1707,3 +1707,18 @@ the words (y 100 to 150) for all ten frames; the rest of the picture differs by 
   in these columns and rows, index = column * 32 + row, are not compared).
 - `trace_slice.py SOURCE NAME ADDR=VALUE:-N` cuts N records before the first record where the byte has the value (the record before a poke).
 
+
+## The Episode 3 camera and the row scroll (M3-08 to M3-12)
+
+- `pokes/m308.txt` is a probe batch (one MAME process, nine scenarios, a few minutes): `m308_foot1p` (Jack alone, the empty waves at 0x300 and 0x500, 1000 frames), `m308_foot3p` (three
+  heroes, kill all every frame, the locks of 0x300, 0x500 and the biker wave of 0x900, 1500 frames), `m308_car`, `m308_car_end`, `m308_car_time` (the radio at camera X 0x300: the car, the heroes
+  board, G.$518 = 1 at about t = 360 and the chase camera; at t = 500 G.$518 is poked to 0 or 2), `m308_row300`, `m308_row1000`, `m308_row2400` (the 32 row scroll words and pictures at the
+  three camera positions of D4c A13) and `m308_rowmove` (pictures of the road while the camera moves).
+  Record: `PR_SNAPS=none PR_SHEET=0 re/harness/probe/probe_record.sh re/harness/pokes/m308.txt all`.
+- `m308_check.sh [NAME[:FRAMES] ...]` runs every scenario in `step` mode (`port.sh`), prints the first difference, the summary, the differences of the camera fields, the row scroll words and the
+  tilemaps, and checks the chase formula on the recording of the radio. The car scenarios use `allow/m3.txt` (the causes are in the file and in `specs/stage/HANDOFF.md`).
+- `diff.py` compares the row scroll RAM 0x915800 .. 0x918000 as a video item `rowscroll` (the allow key `rowscroll`; the port trace masks it in every stage, MAME has zeros outside Episode 3).
+- `watch.py TRACE FIRST LAST ADDR:SIZE[:NAME] ...` prints chosen RAM values of a trace (MAME or port) for a range of frames, only the frames where one changed (`G+744:2:camx` = G.$744 as a word).
+- Pictures: `dino-game --headless --load-state re/out/traces/m308_row300.state --poke-file re/out/traces/m308_row300.pokes.txt --input-file re/out/traces/m308_row300.input.txt --screenshots 12 --shot-dir DIR`
+  equals the probe snapshot `re/out/probe/m308-rec/m308_row300/snap/0001.png`: the snapshot is at t = 10, so the picture of probe time t is the port's frame t - 10 (t = 22, frame 12; the first
+  two frames after a load show the video latency of the loaded state, so take later ones). One headless run, then a pixel compare with the PNG (`PIL`, as `shot_check.sh`).

@@ -7,6 +7,8 @@
 use dino_assets::stage::Cell;
 
 pub const CELLS: usize = 64 * 64;
+/// Words of the "other" RAM 0x915800 .. 0x918000 (the row scroll task clears all of it).
+pub const ROWSCROLL_WORDS: usize = 0x1400;
 
 /// The three tile layers. Cell index = original VRAM byte offset / 4.
 pub struct Vram {
@@ -16,11 +18,19 @@ pub struct Vram {
     pub scroll2: Vec<Cell>,
     /// 32x32 far background.
     pub scroll3: Vec<Cell>,
+    /// The "other" RAM 0x915800 .. 0x918000 (CPS-A register 0x108 = 0x9158): the row scroll table, 1024 words used. Screen line
+    /// s (0 to 223) adds `rowscroll[(s + 16) & 0x3FF]` to the scroll2 X when the video control bit 0 is set (stage 2 only).
+    pub rowscroll: Vec<u16>,
 }
 
 impl Default for Vram {
     fn default() -> Self {
-        Vram { scroll1: vec![Cell::default(); CELLS], scroll2: vec![Cell::default(); CELLS], scroll3: vec![Cell::default(); CELLS] }
+        Vram {
+            scroll1: vec![Cell::default(); CELLS],
+            scroll2: vec![Cell::default(); CELLS],
+            scroll3: vec![Cell::default(); CELLS],
+            rowscroll: vec![0; ROWSCROLL_WORDS],
+        }
     }
 }
 

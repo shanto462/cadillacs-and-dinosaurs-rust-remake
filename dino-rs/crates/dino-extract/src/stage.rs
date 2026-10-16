@@ -5,8 +5,8 @@ use crate::rom::Rom;
 use dino_assets::stage::*;
 
 /// Areas per stage (stage table in SPEC 4.6).
-/// Episode 8 has a fourth area (the lair, a 2 x 1 screen map, header at 0x2166A + 30). Episode 3's
-/// second part is driven by its own camera controller 0x22398 (not ported yet, M3-08).
+/// Episode 8 has a fourth area (the lair, a 2 x 1 screen map, header at 0x2166A + 30). Episode 3 is driven by its own camera
+/// controller 0x22398 (`game/camera.rs`): its event table is 0x22B9E and its map header 0x22AFA (`Stage::controller_map`).
 const AREAS: [u8; 8] = [3, 3, 1, 3, 2, 3, 4, 4];
 
 /// Scroll2 screen tables per stage, plus the table that follows the last one (end marker).
@@ -24,7 +24,7 @@ fn area_map(rom: &Rom, hdr: u32) -> AreaMap {
     // reads the ROM words that follow the array. Keep some of them so the port reads the same ids.
     const PAST_END: u32 = 32;
     let screens = if w == 0 { Vec::new() } else { (0..w as u32 * h as u32 + PAST_END).map(|i| rom.u16(ptr + 2 * i)).collect() };
-    AreaMap { rom_addr: hdr, w, h, screens, init_x: rom.u16(hdr + 6), init_y: rom.u16(hdr + 8) }
+    AreaMap { rom_addr: hdr, screens_addr: ptr, w, h, screens, init_x: rom.u16(hdr + 6), init_y: rom.u16(hdr + 8) }
 }
 
 fn palette_bank(rom: &Rom, addr: u32) -> Vec<u16> {
@@ -87,7 +87,9 @@ pub fn extract(rom: &Rom) -> StageData {
                 }
             })
             .collect();
-        data.stages.push(Stage { scroll2_screen_words: screens, scroll2_blocks: blocks, camera_events, camera_events_addr, areas });
+        // Stage 2: the controller 0x22398 loads its own copy of the map header (0x22404).
+        let controller_map = (stage == 2).then(|| area_map(rom, 0x22AFA));
+        data.stages.push(Stage { scroll2_screen_words: screens, scroll2_blocks: blocks, camera_events, camera_events_addr, areas, controller_map });
     }
     data
 }

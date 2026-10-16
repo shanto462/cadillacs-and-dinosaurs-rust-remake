@@ -20,6 +20,9 @@ pub struct Scroll2 {
     /// +$14 / +$16: camera X / Y before this frame's follow; velocity X / Y in mode 5.
     pub w14: u16,
     pub w16: u16,
+    /// +$10 camera Z (16.16, G.$74C; only the stage 2 chase integrates it, spawners read it).
+    pub cam_z: u16,
+    pub cam_z_frac: u16,
     /// +$18 velocity Z, +$1A..+$1E accelerations (mode 5).
     pub w18: u16,
     pub a1a: i16,
@@ -27,6 +30,9 @@ pub struct Scroll2 {
     pub a1e: i16,
     /// Area whose map header is loaded (+$40..+$42 come from it).
     pub map_area: u8,
+    /// Stage 2: the map is the controller's own header 0x22AFA (its init 0x22404) and not the table's (0x207CA, the demo's area setup):
+    /// the screen array pointer +$42 is 0x22B04 instead of 0x2173E. Only the word 77 of the arrays differs (the top rows of the last column).
+    pub own_map: bool,
     /// +$46 / +$48 last streamed X / Y (multiples of 32).
     pub sx46: u16,
     pub sy48: u16,
@@ -64,6 +70,30 @@ pub struct Scroll2 {
     /// +$79 events trigger on Y (also freezes scroll3 parallax), +$7B mode after a mode-4 lock.
     pub by_y79: u8,
     pub next_mode7b: u8,
+}
+
+/// The row scroll task of stage 2 (struct at G.$7780, 0x2335A): +$04 state (0 init, 2 run), +$08 a word that is
+/// cleared at the init and never written again (the formula subtracts it from the camera X).
+#[derive(Clone, Debug, Default)]
+pub struct RowScroll {
+    pub state: u8,
+    pub base8: u16,
+}
+
+impl Scroll2 {
+    /// 0x189C with a6 = the controller: velocity += acceleration (the 8.8 words +$14 / +$16 / +$18 and +$1A / +$1C / +$1E),
+    /// then the 16.16 position (X +$08, Y +$0C, Z +$10) moves by velocity * 256.
+    fn integrate(&mut self) {
+        fn axis(v: &mut u16, a: i16, hi: &mut u16, lo: &mut u16) {
+            *v = (*v as i16).wrapping_add(a) as u16;
+            let p = (((*hi as u32) << 16) | *lo as u32).wrapping_add(((*v as i16 as i32) << 8) as u32);
+            *hi = (p >> 16) as u16;
+            *lo = p as u16;
+        }
+        axis(&mut self.w14, self.a1a, &mut self.cam_x, &mut self.cam_x_frac);
+        axis(&mut self.w16, self.a1c, &mut self.cam_y, &mut self.cam_y_frac);
+        axis(&mut self.w18, self.a1e, &mut self.cam_z, &mut self.cam_z_frac);
+    }
 }
 
 /// Scroll3 controller (struct at G.$7DC).
@@ -108,6 +138,11 @@ pub struct ScrollLatch {
 pub struct Camera {
     pub s2: Scroll2,
     pub s3: Scroll3,
+    /// Stage 2 row scroll task (G.$7780).
+    pub row: RowScroll,
+    /// G.$51A: the handle of the car object (pool B class 88, made by the radio event, M6). Mode 8 of the stage 2
+    /// controller reads its X, and its velocity and acceleration when the time is over (G.$518 = 2).
+    pub car: super::Handle,
     /// Scroll1 camera (G.$6C4 / $6C8). In game it is (0, 0): 0xAE0 clears it at stage start and
     /// the HUD lives at scroll1 rows 34+ (0x90A014). 0xAC4E sets Y = 0x100 for a non-game screen.
     pub cam1_x: u16,
@@ -131,7 +166,7 @@ pub struct Camera {
 
 impl Default for Camera {
     fn default() -> Self {
-        Camera { s2: Scroll2::default(), s3: Scroll3::default(), cam1_x: 0, cam1_y: 0, shake_req: 0, shake_state: 0, shake_strength: 0, shake_timer: 0, shake_sign: 0, shake_amp: 0,
+        Camera { s2: Scroll2::default(), s3: Scroll3::default(), row: RowScroll::default(), car: 0, cam1_x: 0, cam1_y: 0, shake_req: 0, shake_state: 0, shake_strength: 0, shake_timer: 0, shake_sign: 0, shake_amp: 0,
             shake_dy1: 0, shake_dy2: 0, shake_scroll1_y: 0, latch: ScrollLatch::default() }
     }
 }
@@ -249,7 +284,11 @@ fn screen_lookup(map: &AreaMap, xs: u16, y: u16) -> u16 {
 
 impl Game {
     fn s2_map(&self) -> &'static AreaMap {
-        &self.assets.stages.area(self.w.stage, self.cam.s2.map_area).scroll2
+        let st = &self.assets.stages.stages[self.w.stage as usize];
+        match &st.controller_map {
+            Some(own) if self.cam.s2.own_map => own,
+            _ => &self.assets.stages.area(self.w.stage, self.cam.s2.map_area).scroll2,
+        }
     }
 
     fn s3_map(&self) -> &'static AreaMap {
@@ -475,11 +514,16 @@ impl Game {
         }
     }
 
-    /// 0x2042E: background controllers, called at the end of the object update.
+    /// 0x2042E: background controllers, called at the end of the object update. Stage 2 (Episode 3) runs the row scroll
+    /// task 0x2335A and its own scroll2 controller 0x22398 (mode table 0x2250A, events 0x22B9E) before scroll3.
     pub fn background_update(&mut self) {
-        // Stage 2 (desert drive) runs its own scroll2 task (0x22398) and rowscroll (0x2335A); not ported yet.
-        self.scroll2_task();
-        self.scroll3_task();
+        if self.w.stage == 2 {
+            self.rowscroll_task(); // 0x2335A
+            self.scroll2_task_stage2(); // 0x22398
+        } else {
+            self.scroll2_task(); // 0x206D4
+        }
+        self.scroll3_task(); // 0x22CAA
     }
 
     /// 0x206D4.
@@ -584,6 +628,7 @@ impl Game {
         let map = &self.assets.stages.area(self.w.stage, area).scroll2;
         let s = &mut self.cam.s2;
         s.map_area = area;
+        s.own_map = false;
         s.sx46 = map.init_x;
         s.sy48 = map.init_y;
         s.cam_x = map.init_x;
@@ -912,7 +957,11 @@ impl Game {
         self.hook_acd0();
         self.load_all_palettes();
         self.cam.s3.state = 0;
-        self.area_setup();
+        if self.w.stage == 2 {
+            self.stage2_reinit(); // 0x22404 (modes 1 and 6 of the stage 2 controller)
+        } else {
+            self.area_setup();
+        }
         self.cam.s2.sub += 2;
         self.hook_12be4();
         self.cam.s2.go = 0;
@@ -1005,7 +1054,7 @@ impl Game {
         }
     }
 
-    /// Mode 8 (0x20E78): switch to a sub-area without reloading the map.
+    /// Mode 8 (0x20E78; stage 2: mode 4, 0x229AE): switch to a sub-area without reloading the map.
     fn mode_sub_area(&mut self) {
         let s = &mut self.cam.s2;
         if s.sub == 0 {
@@ -1025,7 +1074,9 @@ impl Game {
             self.hook_aae2();
             self.hook_1031a();
             self.hook_ace0();
-            self.hook_9236c();
+            if self.w.stage != 2 {
+                self.hook_9236c(); // the stage 2 copy of this mode (4, 0x229AE) does not call it
+            }
         }
         self.cam.s2.go = 0;
     }
@@ -1131,19 +1182,7 @@ impl Game {
 
     /// Mode 5 (0x210E0): stage 6 elevator ride.
     fn mode_elevator(&mut self) {
-        // Velocities live in +$14/+$16 (as i16), integrated on the 16.16 camera by 0x189C.
-        fn integrate(s: &mut Scroll2) {
-            let vx = (s.w14 as i16).wrapping_add(s.a1a);
-            s.w14 = vx as u16;
-            let x = (((s.cam_x as u32) << 16) | s.cam_x_frac as u32).wrapping_add(((vx as i32) << 8) as u32);
-            s.cam_x = (x >> 16) as u16;
-            s.cam_x_frac = x as u16;
-            let vy = (s.w16 as i16).wrapping_add(s.a1c);
-            s.w16 = vy as u16;
-            let y = (((s.cam_y as u32) << 16) | s.cam_y_frac as u32).wrapping_add(((vy as i32) << 8) as u32);
-            s.cam_y = (y >> 16) as u16;
-            s.cam_y_frac = y as u16;
-        }
+        // Velocities live in +$14/+$16 (as i16), integrated on the 16.16 camera by 0x189C (`Scroll2::integrate`).
         if self.cam.s2.sub == 0 {
             self.sound(0x86);
             let s = &mut self.cam.s2;
@@ -1158,7 +1197,7 @@ impl Game {
         }
         if self.cam.s2.sub == 2 {
             if (self.cam.s2.w16 as i16) > -0x600 {
-                integrate(&mut self.cam.s2);
+                self.cam.s2.integrate();
                 self.stream2();
                 return;
             }
@@ -1182,7 +1221,7 @@ impl Game {
                 s.a1c = 0;
             }
             if s.cam_y <= 0xFFFC {
-                integrate(s);
+                s.integrate();
             } else {
                 s.cam_y = 0;
                 s.mode = 1;
@@ -1192,6 +1231,244 @@ impl Game {
             }
         }
         self.stream2();
+    }
+
+    // ------------------------------------------------------------------------------------------------------------
+    // Stage 2 (Episode 3): the row scroll task and the scroll2 controller with its own mode table (M3-08, M3-09, M3-11)
+    // ------------------------------------------------------------------------------------------------------------
+
+    /// 0x2335A: the row scroll task (struct G.$7780). State 0 (0x23370) clears the rowscroll RAM 0x915800 .. 0x918000 and the
+    /// base word +$08 and falls into state 2 (0x23390) in the same frame. Every frame the 32 words at 0x915920 .. 0x91595E
+    /// (screen lines 128 to 159, `other[0x90..0xAF]`) get `(camX - base) / 2` steps of a perspective ramp: the word k (1 =
+    /// the last line) is `((d0 - k * d1) + low word add of -d0) >> 5`, taken mod 256 from 0x180 on (the road screens repeat
+    /// every 256 pixels). Written in the order of the original (from the last line up); the word arithmetic is the
+    /// 68000's: `add.w` changes only the low word, `asr.l` shifts the whole long.
+    fn rowscroll_task(&mut self) {
+        if self.cam.row.state == 0 {
+            self.cam.row.state += 2; // addq.b #2, 4(a6)
+            self.vram.rowscroll.fill(0); // 0x23374: 0x915800 .. 0x918000
+            self.cam.row.base8 = 0; // move.w #0, 8(a6)
+        }
+        let start = self.cam.s2.cam_x.wrapping_sub(self.cam.row.base8) as i16 as i32; // moveq #0,d0; move.w $744; sub.w 8(a6); ext.l
+        let d3 = (start as u16).wrapping_neg(); // neg.w d3
+        let d1 = start >> 1; // asr.l #1, d1
+        let mut d0 = start;
+        for k in 1..=32usize {
+            d0 = d0.wrapping_sub(d1); // sub.l d1, d0
+            let d2 = (d0 as u32 & 0xFFFF_0000) | (d0 as u16).wrapping_add(d3) as u32; // add.w d3, d2
+            let mut v = ((d2 as i32) >> 5) as u16; // asr.l #5, d2
+            if v >= 0x180 {
+                v &= 0xFF; // cmpi.w #$180 / bcs / andi.w #$ff
+            }
+            self.vram.rowscroll[0xB0 - k] = v; // move.w d2, -(a0) from 0x915960
+        }
+    }
+
+    /// 0x22398: the stage 2 scroll2 controller (state 0 init 0x223AE, state 2 run 0x224A4).
+    fn scroll2_task_stage2(&mut self) {
+        if self.cam.s2.state == 0 {
+            self.scroll2_init_stage2();
+        } else {
+            self.scroll2_run_stage2();
+        }
+    }
+
+    /// 0x223AE: the init. No tile animation timers and no area setup (0x20766): the palettes, the rowscroll bit of the
+    /// video control, the event of the start, then the map (0x22404).
+    fn scroll2_init_stage2(&mut self) {
+        self.cam.s2.state += 2; // addq.b #2, 4(a6)
+        self.load_all_palettes(); // 0x8A44
+        self.brightness_full_current(); // 0x8932
+        self.w.video_ctrl |= 1; // ori.w #1, $26(a5): the row scroll is on
+        let s = &mut self.cam.s2;
+        if (s.mode as i8) < 0x0E {
+            s.area = 0;
+        }
+        s.go = 0;
+        s.lock78 = 0;
+        s.event_idx = 0;
+        if s.mode != 0x0E && s.mode != 0x0F {
+            self.load_event_index(); // 0x2251C
+            self.cam.s2.next_event += 1; // addi.l #$10, $56(a6)
+        }
+        self.stage2_reinit();
+    }
+
+    /// 0x22404: the map of stage 2: the header at 0x22AFA (the same 60 screens as the table of 0x21580), the camera at the
+    /// header's start, both layers cleared and 32 columns of 14 blocks drawn from x - 0x20 (x = 0 starts at 0) at y + 0x140.
+    /// No pre-draw at +0xBC8 (that is 0x20520 of the standard controller).
+    fn stage2_reinit(&mut self) {
+        let st = &self.assets.stages.stages[self.w.stage as usize];
+        let map = st.controller_map.as_ref().unwrap_or(&self.assets.stages.area(self.w.stage, self.cam.s2.area).scroll2);
+        let s = &mut self.cam.s2;
+        s.map_area = s.area;
+        s.own_map = st.controller_map.is_some();
+        s.sx46 = map.init_x;
+        s.sy48 = map.init_y;
+        s.cam_x = map.init_x;
+        s.cam_y = map.init_y;
+        self.vram.clear2();
+        self.vram.clear3();
+        let (mut x, y) = (self.cam.s2.sx46, self.cam.s2.sy48);
+        if x != 0 {
+            x = x.wrapping_sub(0x20);
+        }
+        for _ in 0..32 {
+            self.draw_column2(x, y.wrapping_add(0x140), 0xD);
+            x = x.wrapping_add(0x20);
+        }
+    }
+
+    /// 0x224A4: the run state. The car state G.$518 forces mode 8. The event check (X only, unsigned) is skipped in the modes
+    /// 1, 3, 6 and 8. Then the player extents (0x22600, the same as 0x20A8C) and the mode table 0x2250A:
+    /// 0 follow, 1 area end with a fade, 2 lock, 3 stage end, 4 sub area, 5 auto scroll, 6 area change without a fade,
+    /// 7 stage end with a fade, 8 the car drive. The event table (0x22B9E) only has the modes 0 and 2; the car sets 8 and 3.
+    fn scroll2_run_stage2(&mut self) {
+        if self.spawn.g.car_mode != 0 {
+            self.cam.s2.mode = 8;
+        }
+        if ![1, 3, 6, 8].contains(&self.cam.s2.mode) {
+            let events = &self.assets.stages.stages[self.w.stage as usize].camera_events;
+            let ev = events.get(self.cam.s2.next_event).copied().unwrap_or_default();
+            if ev.x <= self.cam.s2.cam_x {
+                self.load_event(); // 0x22532
+                self.cam.s2.next_event += 1;
+            }
+        }
+        self.player_extents();
+        match self.cam.s2.mode {
+            0 => {
+                self.follow_x();
+                self.follow_y();
+                self.stream2();
+            }
+            1 => self.mode_area_end(),
+            2 => self.mode_lock_stage2(),
+            3 => self.mode_stage_end_stage2(),
+            4 => self.mode_sub_area(),
+            5 => {
+                self.cam.s2.cam_x = self.cam.s2.cam_x.wrapping_add(3); // addq.w #3, 8(a6)
+                self.stream2();
+            }
+            6 => self.mode_area_change(),
+            7 => self.mode_stage_end_fade(),
+            8 => self.mode_car_chase(),
+            _ => {}
+        }
+    }
+
+    /// Mode 2 (0x22A04): the lock of a stage 2 event (a fight on foot). Different from the standard lock (mode 4,
+    /// 0x21086): the lock state G.$7B4 is set only in a vertical scene (a quirk, never true in stage 2), so the camera stays
+    /// "free" for the other code while it holds X. No stream (the camera does not move).
+    fn mode_lock_stage2(&mut self) {
+        let s = &mut self.cam.s2;
+        if s.sub == 0 {
+            s.sub += 2;
+            s.go = 0;
+            if self.w.vertical_scene != 0 {
+                self.sound(0x87);
+                self.cam.s2.lock78 = 1;
+            }
+        }
+        let s = &mut self.cam.s2;
+        if s.by_y79 == 0 {
+            s.cam_x = s.x4c;
+        } else {
+            s.cam_y = s.y4e;
+        }
+        if s.go != 0 {
+            s.mode = s.next_mode7b;
+            s.sub = 0;
+            s.lock78 = 0;
+        }
+        s.go = 0;
+    }
+
+    /// Mode 3 (0x2290C): the end of the stage: the lock state is 2 and the camera holds the X it had when the mode began (the
+    /// drive ended there). Sub 0 stores the camera X as the event X; sub 2 holds it and, when the go flag is set, raises the
+    /// stage clear flag G.$4D4. The go flag is not cleared here. No stream.
+    fn mode_stage_end_stage2(&mut self) {
+        let s = &mut self.cam.s2;
+        if s.sub == 0 {
+            s.sub += 2;
+            s.lock78 = 2;
+            s.go = 0;
+            s.x4c = s.cam_x;
+        }
+        if s.sub == 2 {
+            s.cam_x = s.x4c;
+            if s.go != 0 {
+                self.w.stage_clear = 1;
+            }
+        }
+    }
+
+    /// The X of the car object (word +$08), the velocity (+$14) and the acceleration (+$1A) of the handle G.$51A. A handle that
+    /// is no object reads zeros (the original would read the ROM at the same offsets; the car section always has the car).
+    fn car_fields(&self) -> (u16, u16, u16) {
+        let h = self.cam.car;
+        if super::slot_of(h).is_none() {
+            return (0, 0, 0);
+        }
+        let b = self.body(h);
+        (b.xi() as u16, b.vx as u16, b.ax as u16)
+    }
+
+    /// Mode 8 (0x22A68): the Cadillac drive. Sub 0 steps to 2 and goes on at once. Sub 2: with G.$518 = 1 the camera chases the
+    /// car: camX += clamp(car X - (camX + 0xC0), 8, 20) (11 px per frame at the right stick of the drive: the car's own
+    /// speed). With G.$518 = 2 (time over) it takes the car's velocity and acceleration (sub 4) and integrates them on its
+    /// 16.16 position (0x189C, X, Y and Z); with G.$518 = 0 (the car is gone) the drive ends: both zeroed and mode 3 at the
+    /// current X. The stream of the map (0x2126E) follows in every case.
+    fn mode_car_chase(&mut self) {
+        match self.cam.s2.sub {
+            0 => {
+                self.cam.s2.sub += 2; // addq.b #2, 6(a6), then falls into sub 2
+                self.car_chase_sub2();
+            }
+            2 => self.car_chase_sub2(),
+            4 => self.car_chase_sub4(),
+            _ => {}
+        }
+        self.stream2();
+    }
+
+    /// 0x22A86.
+    fn car_chase_sub2(&mut self) {
+        match self.spawn.g.car_mode {
+            2 => {
+                let (_, vx, ax) = self.car_fields();
+                let s = &mut self.cam.s2;
+                s.sub += 2; // 0x22AC4
+                s.w14 = vx;
+                s.a1a = ax as i16;
+                self.car_chase_sub4();
+            }
+            0 => self.car_chase_end(),
+            _ => {
+                let (car_x, _, _) = self.car_fields();
+                let s = &mut self.cam.s2;
+                let d = car_x.wrapping_sub(s.cam_x.wrapping_add(0xC0)) as i16; // sub.w d3, d0
+                let step = if d < 0 { 8 } else if d > 0x14 { 0x14 } else { d.max(8) };
+                s.cam_x = s.cam_x.wrapping_add(step as u16); // add.w d0, 8(a6)
+            }
+        }
+    }
+
+    /// 0x22AD8: integrate the camera on the velocities of the car; the end of the drive when the car is gone.
+    fn car_chase_sub4(&mut self) {
+        self.cam.s2.integrate(); // jsr 0x189C
+        if self.spawn.g.car_mode == 0 {
+            self.car_chase_end();
+        }
+    }
+
+    /// 0x22AE6: the drive is over: velocity X and acceleration X cleared, mode 3 (stage end) at this X.
+    fn car_chase_end(&mut self) {
+        let s = &mut self.cam.s2;
+        s.w14 = 0;
+        s.a1a = 0;
+        s.mode = 3;
+        s.sub = 0;
     }
 
     /// 0x22CAA: scroll3 controller.
@@ -1372,5 +1649,170 @@ mod shake_tests {
         c.latch_scroll();
         assert_eq!(c.shown_scroll().s2.1, (-4i16) as u16);
         assert_eq!(c.s2.cam_y, 0);
+    }
+}
+
+#[cfg(test)]
+mod stage2_tests {
+    use super::*;
+    use dino_assets::AssetPack;
+
+    fn game() -> Game {
+        Game::new(Box::leak(Box::new(AssetPack::default())))
+    }
+
+    /// A car object (pool B slot) at X `x`, handle in G.$51A and the car state G.$518.
+    fn car_at(g: &mut Game, x: i16, mode: u8) -> usize {
+        let i = g.props.alloc().unwrap();
+        g.props.slots[i].b.live = 1;
+        g.props.slots[i].b.set_xi(x);
+        g.cam.car = g.props.handle(i);
+        g.spawn.g.car_mode = mode;
+        i
+    }
+
+    /// 0x2335A on the three positions of D4c A13 (MAME peeks of 0x915920 .. 0x91595E): the word of line 159 - j (j = 0 .. 31) is
+    /// `-(j + 1) * (camX / 64) mod 256` (the values are above 0x180, so they are taken mod 256) and the first call also clears
+    /// the RAM and sets the state.
+    #[test]
+    fn the_row_scroll_words_of_the_three_camera_positions() {
+        for cam_x in [0x300u16, 0x1000, 0x2400] {
+            let mut g = game();
+            g.vram.rowscroll[0x200] = 0x1234; // the init clears all of 0x915800 .. 0x918000
+            g.cam.s2.cam_x = cam_x;
+            g.rowscroll_task();
+            assert_eq!((g.cam.row.state, g.cam.row.base8, g.vram.rowscroll[0x200]), (2, 0, 0));
+            for j in 0..32usize {
+                let want = ((j as u16 + 1).wrapping_mul(cam_x / 64)).wrapping_neg() & 0xFF;
+                assert_eq!(g.vram.rowscroll[0xAF - j], want, "camX {cam_x:#x}, screen line {}", 159 - j);
+            }
+            assert_eq!(g.vram.rowscroll[0xB0], 0, "the line after the ramp is not written");
+            assert_eq!(g.vram.rowscroll[0x8F], 0, "the line before the ramp is not written");
+        }
+        // D4c 7.3: at camera X 0x300 the words run from 0x80 (line 128) up by 12 a line to 0xF4 (line 159)
+        let mut g = game();
+        g.cam.s2.cam_x = 0x300;
+        g.rowscroll_task();
+        assert_eq!((g.vram.rowscroll[0x90], g.vram.rowscroll[0x91], g.vram.rowscroll[0xAF]), (0x80, 0x8C, 0xF4));
+    }
+
+    /// The task keeps its state: the second call does not clear the table again (the words above the ramp stay).
+    #[test]
+    fn the_row_scroll_init_runs_once() {
+        let mut g = game();
+        g.rowscroll_task();
+        g.vram.rowscroll[0x300] = 7;
+        g.cam.s2.cam_x = 0x80;
+        g.rowscroll_task();
+        assert_eq!(g.vram.rowscroll[0x300], 7);
+    }
+
+    /// 0x22A86, G.$518 = 1 (BS-C2: the car drives at 2816 / 256 = 11.0 pixels a frame): the camera takes
+    /// clamp(car X - (camX + 0xC0), 8, 20), so once the car is 11 pixels ahead of the chase line the camera moves 11 a frame.
+    #[test]
+    fn the_chase_camera_follows_a_car_at_eleven_pixels_a_frame() {
+        let mut g = game();
+        let car = car_at(&mut g, 0x3C0 + 11, 1);
+        g.cam.s2.cam_x = 0x300;
+        let mut cars = 0x3C0 + 11;
+        for frame in 1..=60u16 {
+            g.car_chase_sub2();
+            assert_eq!(g.cam.s2.cam_x, 0x300 + 11 * frame, "frame {frame}");
+            cars += 11;
+            g.props.slots[car].b.set_xi(cars);
+        }
+    }
+
+    /// The clamp of the step: behind or on the line (even a negative distance) 8, ahead 8 to 20 as it is, further ahead 20.
+    #[test]
+    fn the_chase_step_is_clamped_to_8_to_20() {
+        for (gap, step) in [(-0x100i32, 8u16), (-1, 8), (0, 8), (7, 8), (8, 8), (13, 13), (20, 20), (21, 20), (0x300, 20)] {
+            let mut g = game();
+            g.cam.s2.cam_x = 0x1000;
+            car_at(&mut g, (0x1000 + 0xC0 + gap) as i16, 1);
+            g.car_chase_sub2();
+            assert_eq!(g.cam.s2.cam_x, 0x1000 + step, "gap {gap}");
+        }
+        // sub.w works on words: a car 0x80B0 behind wraps to a positive word (0x7F50), so the step is the maximum
+        let mut g = game();
+        g.cam.s2.cam_x = 0x8000;
+        car_at(&mut g, 0x10, 1);
+        g.car_chase_sub2();
+        assert_eq!(g.cam.s2.cam_x, 0x8014);
+    }
+
+    /// Sub 0 steps to sub 2 in the same call; G.$518 = 0 ends the drive: velocity and acceleration X cleared, mode 3 (stage
+    /// end), sub 0, and the position is not touched (0x22AE6).
+    #[test]
+    fn the_end_of_the_drive_starts_the_stage_end_mode() {
+        let mut g = game();
+        g.cam.s2.mode = 8;
+        g.cam.s2.cam_x = 0x453A;
+        g.cam.s2.w14 = 0x0B00;
+        g.cam.s2.a1a = 5;
+        g.spawn.g.car_mode = 0;
+        g.car_chase_sub2();
+        assert_eq!((g.cam.s2.mode, g.cam.s2.sub, g.cam.s2.w14, g.cam.s2.a1a, g.cam.s2.cam_x), (3, 0, 0, 0, 0x453A));
+    }
+
+    /// G.$518 = 2 (time over): sub 2 takes the car's velocity (+$14) and acceleration (+$1A), goes to sub 4 and integrates
+    /// (0x189C): velocity += acceleration, position += velocity * 256 on the 16.16 camera (X, and Y and Z with their own
+    /// words). The next frames stay in sub 4 and keep integrating; the car state 0 ends it after the step.
+    #[test]
+    fn the_time_over_drive_integrates_the_car_velocity() {
+        let mut g = game();
+        let car = car_at(&mut g, 0x400, 2);
+        g.props.slots[car].b.vx = 0x0B00;
+        g.props.slots[car].b.ax = -0x40;
+        g.cam.s2.mode = 8;
+        g.cam.s2.sub = 2; // sub 0 has stepped to 2 in the frame the mode starts
+        g.cam.s2.cam_x = 0x500;
+        g.car_chase_sub2();
+        assert_eq!((g.cam.s2.sub, g.cam.s2.w14, g.cam.s2.a1a), (4, 0x0B00 - 0x40, -0x40));
+        // (0xAC0 << 8) = 0xAC000 on the 16.16 position: 10.75 pixels
+        assert_eq!((g.cam.s2.cam_x, g.cam.s2.cam_x_frac), (0x500 + 0x0A, 0xC000));
+        g.car_chase_sub4();
+        // second step: velocity 0xA80, 0xA8000 on the 16.16 position: 0x50A.C000 + 0xA.8000 = 0x515.4000
+        assert_eq!((g.cam.s2.w14, g.cam.s2.cam_x, g.cam.s2.cam_x_frac), (0x0B00 - 0x80, 0x515, 0x4000));
+        g.spawn.g.car_mode = 0;
+        g.car_chase_sub4();
+        assert_eq!((g.cam.s2.mode, g.cam.s2.w14, g.cam.s2.a1a), (3, 0, 0));
+    }
+
+    /// Mode 2 (0x22A04): the fight lock holds the event X and ends when the go flag is set; the lock state G.$7B4 stays 0
+    /// (it is set only in a vertical scene, a quirk of this copy of the lock); the go flag is cleared in every frame.
+    #[test]
+    fn the_stage_2_lock_holds_x_and_ends_on_go() {
+        let mut g = game();
+        g.cam.s2.mode = 2;
+        g.cam.s2.x4c = 0x300;
+        g.cam.s2.cam_x = 0x305;
+        g.cam.s2.go = 1; // sub 0 clears a go from before
+        g.mode_lock_stage2();
+        assert_eq!((g.cam.s2.sub, g.cam.s2.cam_x, g.cam.s2.lock78, g.cam.s2.go, g.cam.s2.mode), (2, 0x300, 0, 0, 2));
+        g.cam.s2.cam_x = 0x303;
+        g.mode_lock_stage2();
+        assert_eq!((g.cam.s2.cam_x, g.cam.s2.mode), (0x300, 2));
+        g.cam.s2.go = 1;
+        g.cam.s2.next_mode7b = 0;
+        g.mode_lock_stage2();
+        assert_eq!((g.cam.s2.mode, g.cam.s2.sub, g.cam.s2.go), (0, 0, 0));
+    }
+
+    /// Mode 3 (0x2290C): the stage end holds the X it had, lock state 2, and the go flag raises the stage clear flag G.$4D4.
+    #[test]
+    fn the_stage_2_stage_end_holds_the_current_x() {
+        let mut g = game();
+        g.cam.s2.mode = 3;
+        g.cam.s2.cam_x = 0x453A;
+        g.cam.s2.x4c = 0x2D00;
+        g.mode_stage_end_stage2();
+        assert_eq!((g.cam.s2.lock78, g.cam.s2.x4c, g.cam.s2.sub, g.w.stage_clear), (2, 0x453A, 2, 0));
+        g.cam.s2.cam_x = 0x4540;
+        g.mode_stage_end_stage2();
+        assert_eq!(g.cam.s2.cam_x, 0x453A);
+        g.cam.s2.go = 1;
+        g.mode_stage_end_stage2();
+        assert_eq!(g.w.stage_clear, 1);
     }
 }

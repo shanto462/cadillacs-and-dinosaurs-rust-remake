@@ -63,6 +63,9 @@ pub struct TileDraw {
     pub flash: u8,
     /// Pens to draw (bit n = pen n). 0xFFFF draws every pen except the transparent pen 15.
     pub mask: u16,
+    /// Only the lines `r0 .. r1` (exclusive, counted from the top of the tile on the screen) are drawn: scroll2 with the row
+    /// scroll of stage 2 shows one tile row in pieces with different X offsets. `None` draws the whole tile.
+    pub rows: Option<(u8, u8)>,
 }
 
 /// Draw commands shared by the GPU and the CPU screenshot renderer.
@@ -93,6 +96,7 @@ pub trait DrawTarget {
                     flip_y,
                     flash,
                     mask: 0xFFFF,
+                    rows: None,
                 });
             }
         }
@@ -237,14 +241,25 @@ impl Gpu {
             };
             let row = d.bank as u8 * 32 + (d.palette & 31);
             let s = atlas.size as f32;
+            let (mut y, mut h, mut source) = (d.y as f32, s, atlas.source(d.tile));
+            if let Some((r0, r1)) = d.rows {
+                // A piece of the tile: the destination lines r0 .. r1 show the source lines r0 .. r1, or, flipped in Y, the
+                // source lines (size - r1) .. (size - r0) (the quad flips inside the cropped source).
+                let (r0, r1) = (r0 as f32, r1 as f32);
+                let (a, b) = if d.flip_y { (s - r1, s - r0) } else { (r0, r1) };
+                y += r0;
+                h = r1 - r0;
+                source.y += a;
+                source.h = b - a;
+            }
             draw_texture_ex(
                 &atlas.tex,
                 d.x as f32,
-                d.y as f32,
+                y,
                 Color::from_rgba(row, d.flash, d.mask as u8, (d.mask >> 8) as u8),
                 DrawTextureParams {
-                    source: Some(atlas.source(d.tile)),
-                    dest_size: Some(vec2(s, s)),
+                    source: Some(source),
+                    dest_size: Some(vec2(s, h)),
                     flip_x: d.flip_x,
                     flip_y: d.flip_y,
                     ..Default::default()

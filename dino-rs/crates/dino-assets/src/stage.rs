@@ -17,6 +17,8 @@ pub struct Cell {
 #[derive(Clone, Debug, Default)]
 pub struct AreaMap {
     pub rom_addr: u32,
+    /// ROM address of the screen array (the long at +2 of the header; the controller's +$42).
+    pub screens_addr: u32,
     /// Width and height in screens of 256x256 px (0 = no map / keep the previous one).
     pub w: u8,
     pub h: u8,
@@ -70,6 +72,10 @@ pub struct Stage {
     /// ROM address of `camera_events[0]` (the scroll2 controller's +$56 points into this table).
     pub camera_events_addr: u32,
     pub areas: Vec<Area>,
+    /// Stage 2 only: the scroll2 map header 0x22AFA that its own controller (0x22398, init 0x22404) loads instead of the one of the
+    /// table 0x21580 that the standard controller (and the demo's area setup) uses. The screen arrays are the same 60 screens and
+    /// the same words up to index 76; the word 77 (the screen above the last column the map wraps at, 0x4C00) differs.
+    pub controller_map: Option<AreaMap>,
 }
 
 #[derive(Clone, Debug, Default)]

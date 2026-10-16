@@ -1,0 +1,121 @@
+# M3-08, M3-09, M3-11, M3-12: the stage 2 (Episode 3) camera controller 0x22398, the car drive camera and the row scroll 0x2335A.
+# Record (one MAME process): PR_SNAPS=none PR_SHEET=0 re/harness/probe/probe_record.sh re/harness/pokes/m308.txt all
+# Compare: MODE=step re/harness/port.sh re/out/traces/NAME.input.txt NAME N ; re/.venv/bin/python -I re/harness/diff.py re/out/traces/NAME.mame.trc re/out/traces/NAME.step.trc
+# The pokes after a snapshot (G.$518, G.$7A9) are written to NAME.pokes.txt and repeated by the port. Pictures of the road: see re/harness/README.md (M3-08 .. M3-12).
+
+# Foot road: three heroes walk right and punch now and then, kill all every frame (D4c A11): the locks at 0x300 and 0x500 last 32 game frames each.
+segment m308_foot3p
+jump 3 0 0x2C0 char=jack,hannah,mess
+god on
+hold 0xFF850E 1 2
+10 snapshot keep
+0-3:1RA2RA3RA
+4-99:1R2R3R
+100-103:1RA2RA3RA
+104-199:1R2R3R
+200-203:1RA2RA3RA
+204-299:1R2R3R
+300-303:1RA2RA3RA
+304-399:1R2R3R
+400-403:1RA2RA3RA
+404-499:1R2R3R
+500-503:1RA2RA3RA
+504-599:1R2R3R
+600-603:1RA2RA3RA
+604-699:1R2R3R
+700-703:1RA2RA3RA
+704-799:1R2R3R
+800-803:1RA2RA3RA
+804-899:1R2R3R
+900-903:1RA2RA3RA
+904-999:1R2R3R
+1000-1003:1RA2RA3RA
+1004-1099:1R2R3R
+1100-1103:1RA2RA3RA
+1104-1199:1R2R3R
+1200-1203:1RA2RA3RA
+1204-1299:1R2R3R
+1300-1303:1RA2RA3RA
+1304-1399:1R2R3R
+1400-1403:1RA2RA3RA
+1404-1499:1R2R3R
+trace 1500
+
+# One hero, no kill all: the empty waves at 0x300 and 0x500 end by themselves.
+segment m308_foot1p
+jump 3 0 0x2C0 char=jack
+god on
+10 snapshot keep
+0-999:R
+trace 1000
+
+# The radio: Jack takes it at camera X 0x300 (car1 of D4c): the car comes, the heroes board, G.$518 = 1 at about t = 364 and the camera chases the car (mode 8, 11 px per frame from t = 380).
+segment m308_car
+jump 3 0 0x300 char=jack
+god on
+spawn E 9 var=0xC x=+0x60
+2 snapshot keep
+0-1199:R
+3-4:A
+trace 1200
+
+# The same, and at t = 500 the car state G.$518 goes to 0 (the car is gone): the drive ends, mode 3 at this X (the go flag G.$7A9 is set at 520).
+segment m308_car_end
+jump 3 0 0x300 char=jack
+god on
+spawn E 9 var=0xC x=+0x60
+2 snapshot keep
+0-799:R
+3-4:A
+500 poke 0xFF8518 1 0
+520 poke 0xFF87A9 1 1
+trace 800
+
+# The same, and at t = 500 G.$518 goes to 2 (time over): the camera takes the velocity and acceleration of the car.
+segment m308_car_time
+jump 3 0 0x300 char=jack
+god on
+spawn E 9 var=0xC x=+0x60
+2 snapshot keep
+0-799:R
+3-4:A
+500 poke 0xFF8518 1 2
+trace 800
+
+# The road at three camera positions (D4c A13): the row scroll words and the pictures. Heroes stand still, no keys.
+segment m308_row300
+jump 3 0 0x300 char=jack
+god on
+10 snapshot keep
+0-24:
+snaps 12,22,32
+trace 25
+
+segment m308_row1000
+jump 3 0 0x1000 char=jack
+god on
+10 snapshot keep
+0-24:
+snaps 12,22,32
+trace 25
+
+segment m308_row2400
+jump 3 0 0x2400 char=jack
+god on
+10 snapshot keep
+0-24:
+snaps 12,22,32
+trace 25
+
+# The road while the camera moves (the picture of the row scroll words of this frame with the scroll registers of two frames ago): Jack runs right
+# (double tap) at camera X 0x600; the camera starts to push when he is 0xC0 from its left edge.
+segment m308_rowmove
+jump 3 0 0x600 char=jack
+god on
+10 snapshot keep
+0-2:R
+3-4:
+5-100:R
+snaps 52,56,60,64,68,72,80,90
+trace 90
+

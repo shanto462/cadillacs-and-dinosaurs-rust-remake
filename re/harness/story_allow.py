@@ -59,13 +59,13 @@ def main():
     for k in ("enemy.live", "global.free_count", "global.free_ptr", "global.free_slot"):
         out.append(f"{k} {level}-{level}")
     # the derived pointers of the stage that is poked in (the lists belong to the stage before until the level starts)
-    for k in ("spawn_list1", "spawn_list2", "floor_ptr", "next_event"):
+    for k in ("spawn_list1", "spawn_list2", "floor_ptr", "next_event", "map_ptr"):
         out.append(f"global.{k} {first}-{fe}")
     out.append(f"global.display_y1 {level - 2}-{level - 1}")
     out.append(f"global.display_y2 {fl}-{fl}")
     if stage == 2:
-        # the first game frame of Episode 3: the third frame of the story panel's body is cut (scroll1, scroll2, palette); the camera map of the stage 2 is not ported
-        out += [f"scroll1 {first + 2}-{first + 2}", f"scroll2 {first + 2}-{first + 2}", f"palette {first + 2}-{first + 2}", f"scroll2 {fl}-99999"]
+        # the first game frame of Episode 3: the third frame of the story panel's body is cut (scroll1, scroll2, palette)
+        out += [f"scroll1 {first + 2}-{first + 2}", f"scroll2 {first + 2}-{first + 2}", f"palette {first + 2}-{first + 2}"]
     if ep5:
         out.append(f"scroll2 {first + 302}-{first + 302}")  # the second picture of the panel is cut at the boundary
         out.append(f"palette {level - 2}-{level - 2}")  # 0x8A44 is cut

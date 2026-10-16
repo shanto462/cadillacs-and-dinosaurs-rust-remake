@@ -648,7 +648,10 @@ impl Prop {
                     self.m.sl(0xA0, p);
                 } else {
                     let (g, r) = (self.m.w(0xA0) as usize, self.m.w(0xA2) as usize);
-                    let mut p = wave_ptr(w, g, r, self.b.sub);
+                    // A controller that has ended (mode 6, 0x7B4DE / 0x7B4F2 / 0x7B506 write the word 0x0600 over mode and sub) keeps
+                    // the pointer of the end word (+6) in RAM; the port keeps the group index, which is past the last group then.
+                    let sub = if self.b.mode == 6 && g >= w.groups.len() { 4 } else { self.b.sub };
+                    let mut p = wave_ptr(w, g, r, sub);
                     f.u32(0xA0, "wave_ptr", &mut p);
                     if f.loading() {
                         match wave_pos(w, p) {
@@ -1221,6 +1224,8 @@ impl Game {
         f.u16(b + 0x0A, "cam_x_frac", &mut s.cam_x_frac);
         f.u16(b + 0x0C, "cam_y", &mut s.cam_y);
         f.u16(b + 0x0E, "cam_y_frac", &mut s.cam_y_frac);
+        f.u16(b + 0x10, "cam_z", &mut s.cam_z);
+        f.u16(b + 0x12, "cam_z_frac", &mut s.cam_z_frac);
         f.u16(b + 0x14, "cam2_w14", &mut s.w14);
         f.u16(b + 0x16, "cam2_w16", &mut s.w16);
         f.u16(b + 0x18, "cam2_w18", &mut s.w18);
@@ -1243,6 +1248,18 @@ impl Game {
             s.next_event = (p.wrapping_sub(ev_base) / 16) as usize;
             s.map_area = s.area;
         }
+        // +$42: the screen array of the scroll2 map. Stage 2 has two copies of the map header (the controller's own, 0x22AFA, and the
+        // table's, used by the demo): the pointer tells which one was loaded last (`Scroll2::own_map`).
+        if let Some(own) = self.assets.stages.stages.get(2).and_then(|x| x.controller_map.as_ref()) {
+            if f.all() || (self.w.stage == 2 && s.state != 0) {
+                let table = self.assets.stages.stages[2].areas.get(s.map_area as usize).map_or(0, |a| a.scroll2.screens_addr);
+                let mut p = if s.own_map { own.screens_addr } else { table };
+                f.u32(b + 0x42, "map_ptr", &mut p);
+                if f.loading() {
+                    s.own_map = p == own.screens_addr;
+                }
+            }
+        }
         f.u16(b + 0x5A, "cam2_x5a", &mut s.x5a);
         f.u16(b + 0x5C, "cam2_y5c", &mut s.y5c);
         f.u16(b + 0x60, "max_x60", &mut s.max_x60);
@@ -1259,6 +1276,10 @@ impl Game {
         f.u8(b + 0x78, "lock78", &mut s.lock78);
         f.u8(b + 0x79, "by_y79", &mut s.by_y79);
         f.u8(b + 0x7B, "next_mode7b", &mut s.next_mode7b);
+        // Stage 2: the row scroll task G.$7780 (state +$04, base word +$08) and the car object of the drive, G.$51A.
+        f.u8(0x7784, "rowscroll_state", &mut self.cam.row.state);
+        f.u16(0x7788, "rowscroll_base", &mut self.cam.row.base8);
+        f.u16(0x051A, "car_handle", &mut self.cam.car);
         let t = &mut self.cam.s3;
         let b = 0x07DC;
         f.u8(b + 0x04, "cam3_state", &mut t.state);
@@ -1616,6 +1637,10 @@ impl Game {
             *p = w(0x14000 + 2 * i);
         }
         self.pal.dirty = true;
+        // the row scroll RAM 0x915800 .. 0x918000
+        for (i, r) in self.vram.rowscroll.iter_mut().enumerate() {
+            *r = w(0x15800 + 2 * i);
+        }
     }
 
     // --------------------------------------------------------------------------------------
@@ -1662,6 +1687,11 @@ impl Game {
             img[0x14000 + 2 * i..0x14000 + 2 * i + 2].copy_from_slice(&p.to_be_bytes());
         }
         mask[0x14000..0x15000].fill(1);
+        // the row scroll RAM 0x915800 .. 0x918000 (all zero outside stage 2 in the recordings)
+        for (i, r) in self.vram.rowscroll.iter().enumerate() {
+            img[0x15800 + 2 * i..0x15800 + 2 * i + 2].copy_from_slice(&r.to_be_bytes());
+        }
+        mask[0x15800..0x15800 + 2 * self.vram.rowscroll.len()].fill(1);
         (img, mask)
     }
 

@@ -1,0 +1,36 @@
+# Approved known differences of the Episode 3 car scenarios m308_car, m308_car_end and m308_car_time (M3-08 to M3-12, re/harness/m308_check.sh).
+# One rule per line: a key pattern (fnmatch) and an optional record range, then a "# reason". Only the camera and its tilemaps are listed here: the
+# objects of the car section (pool B class 88 and the heroes it carries) are unported classes and show up as differences of their own.
+#
+# The foot scenarios (m308_foot1p, m308_foot3p) and the row scroll scenarios (m308_row300, m308_row1000, m308_row2400) need no rule: every camera field,
+# every tilemap cell and every row scroll word equals MAME in every record (the differences left in m308_foot3p are the biker and Hammer placeholders and
+# the effects they make, unported classes).
+#
+# 1. The chase camera of mode 8 takes the X of the car object (G.$51A) of THE SAME FRAME: the original moves the car (the pool B update) before the
+#    camera (0x2042E, the end of the object update). In `step` mode the port is loaded with MAME's state of the frame before and the car is an unported
+#    class, so it stands where it stood one frame earlier (11 pixels behind at the car's speed) and the step is clamped to 8 instead of 11: the camera X is
+#    3 pixels behind MAME in every frame of the drive. The formula itself is exact: with the car X of the frame it equals MAME in all 839 frames of the
+#    drive (the check at the end of re/harness/m308_check.sh) and in the unit tests of `camera.rs`. The slower scroll3, the stream of the maps (scroll2 and
+#    scroll3 cells, one column a frame late) and the sx46 values follow from it. The camera of the port ends equal to MAME once the car is ported (M6).
+global.cam_x
+global.cam3_x
+global.cam2_sx46
+global.cam3_sx46
+scroll2
+scroll3
+# 2. The heroes ride the car (their X follows an unported object) and board it with the scripted jump 0x34 in a frame the radio event (0x8BD24, a stand
+#    in until M6: G.$4D5, G.$4DB, G.$50E, G.$51A, the input lock of the heroes) does not run: the player extents the camera reads differ.
+global.max_x60
+global.min_x64
+global.max_y62
+global.min_y66
+# 3. The car object sets G.$518 (to 1 when it has stopped and the heroes are aboard, to 0 when it is destroyed) inside the frame, before the camera: the
+#    port sees the value of the frame before. The mode, sub and the car state differ in that one frame (m308_car 360, m308_car_time 502).
+global.cam2_mode 360-360
+global.cam2_sub 360-360
+global.car_mode 360-360
+global.cam2_mode 502-502
+global.cam2_sub 502-502
+global.cam2_w14 360-360   # the velocity word: mode 0 (the port, follow X) or the value mode 8 keeps (MAME) in the frame the car sets G.$518
+global.cam2_w14 502-502   # the same frame in m308_car_time: the integrated velocity of the port against the end of the drive (w14 = 0) in MAME
+global.car_mode 502-502
