@@ -194,6 +194,13 @@ impl Game {
     /// 0xA870 / mode 0 with the given players and characters, without the select screen, then
     /// the stage start 0xAC4E.
     pub fn start_stage(&mut self, stage: u8, chars: &[u8]) {
+        self.start_stage_at(stage, 0, 0, chars);
+    }
+
+    /// Review aid (`--episode`, `--area`, `--camx`, M3-05): `start_stage` in camera area `area`, with the camera at X `camx`
+    /// (0 = the area's start). The players move with the camera, and the spawn records the camera has passed are skipped
+    /// (like the probe jump, see `re/harness/probe/probe.lua`). Not exact: no camera events ran to reach X.
+    pub fn start_stage_at(&mut self, stage: u8, area: u8, camx: u16, chars: &[u8]) {
         self.hud_hiscore_init();
         let mut bits = 0u8;
         for i in 0..chars.len().min(3) {
@@ -208,8 +215,34 @@ impl Game {
         self.flow.chosen = bits;
         self.flow_mode_init();
         self.w.stage = stage;
-        self.cam.s2.area = 0;
+        self.cam.s2.area = area;
         self.flow_stage_start();
+        if camx != 0 {
+            self.flow_jump_camera(camx);
+        }
+    }
+
+    /// Moves the camera to X (review aid, see `start_stage_at`): the present players move by the same distance, and the spawn
+    /// lists go on after the records the camera has already passed (`spawn.rs` trigger test: X unsigned, `bhi`/`bls`).
+    fn flow_jump_camera(&mut self, x: u16) {
+        let d = x.wrapping_sub(self.cam.s2.cam_x) as i16;
+        self.cam.s2.cam_x = x;
+        for p in self.players.iter_mut().filter(|p| p.b.live != 0) {
+            let nx = p.b.xi().wrapping_add(d);
+            p.b.set_xi(nx);
+        }
+        let area = self.cam.s2.area;
+        let assets = self.assets;
+        let sc = &assets.enemy.stages[self.w.stage as usize].areas[area as usize & 3];
+        let passed = |t: u16| t <= x;
+        self.spawn.init = 2; // the list driver keeps its position (it resets only when init is 0)
+        self.spawn.area = area;
+        while sc.list1.get(self.spawn.l1).is_some_and(|r| passed(r.trig)) {
+            self.spawn.l1 += 1;
+        }
+        while sc.list2.get(self.spawn.l2).is_some_and(|r| passed(r.trig)) {
+            self.spawn.l2 += 1;
+        }
     }
 
     /// One frame of all flow tasks, in task slot order.

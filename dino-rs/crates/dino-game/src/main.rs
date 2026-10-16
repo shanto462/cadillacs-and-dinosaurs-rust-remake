@@ -6,9 +6,12 @@
 //!         [--screenshot out.png --frames N] [--screenshots F1,F2 --shot-dir DIR]
 //!         [--headless | --windowed] [--load-state FILE] [--trace FILE --frames N]
 //!         [--step-from MAME.trc] [--follow-rng MAME.trc]
-//!         [--poke FRAME:ADDR:SIZE:VALUE]... [--poke-file FILE]... [--poke-clock power|game]`
-//! Without `--stage` and `--chars` the game starts from power on (the boot screens and the attract
-//! mode); `--stage N` / `--chars` start directly in a stage (development).
+//!         [--poke FRAME:ADDR:SIZE:VALUE]... [--poke-file FILE]... [--poke-clock power|game]
+//!         [--episode 1..8 | --stage 0..7] [--area 0..3] [--camx X] [--autoplay] [--debug-keys]`
+//! Without `--stage`, `--episode` and `--chars` the game starts from power on (the boot screens and the attract
+//! mode); `--stage N` / `--episode N` / `--chars` start directly in a stage (development). `--area` and `--camx` (hex or
+//! decimal) start that area with the camera at X. `--autoplay` is the bot of `autoplay.rs` (power on to the ending as far as
+//! it gets, mode changes on stderr); `--debug-keys` turns on the debug keys of `debug.rs` in windowed runs.
 //! `--config FILE` reads the settings file (`key = value` lines: difficulty, coin mode, free play ...; without the
 //! option `dino.cfg` next to the ROM is read, see `game/flow/config.rs`), `--print-config` prints the factory settings file.
 //! `--poke` / `--poke-file` write RAM values into the running game at a frame (the lines of MAME's
@@ -17,6 +20,8 @@
 //! See `input.rs` for keys and the input script format, `harness.rs` and `re/harness/README.md`
 //! for `--load-state` (start from a MAME snapshot) and `--trace` (headless run for the diff).
 
+mod autoplay;
+mod debug;
 mod game;
 mod harness;
 mod headless;
@@ -49,10 +54,14 @@ struct Args {
     frames: u32,
     view: Option<(usize, usize, u16)>,
     viewer: bool,
-    /// `--stage` and `--chars` start directly in a stage; without both the game boots (power on).
+    /// `--stage`, `--episode`, `--area`, `--camx` or `--chars` start directly in a stage; without them the game boots (power on).
     direct: bool,
     stage: u8,
+    area: u8,
+    camx: u16,
     chars: Vec<u8>,
+    autoplay: Option<autoplay::Bot>,
+    debug: debug::Debug,
     config: Option<String>,
     script: Option<input::Script>,
     trace: Option<String>,
@@ -83,6 +92,20 @@ fn args() -> Args {
         shots.push((frames, path));
     }
     shots.sort_by_key(|s| s.0);
+    let num = |v: String| -> Option<u32> {
+        match v.strip_prefix("0x") {
+            Some(h) => u32::from_str_radix(h, 16).ok(),
+            None => v.parse().ok(),
+        }
+    };
+    let episode = value("--episode").map(|v| v.parse::<u8>().ok().filter(|e| (1..=8).contains(e)).unwrap_or_else(|| fail("--episode must be 1 to 8")));
+    if episode.is_some() && value("--stage").is_some() {
+        fail("--episode and --stage cannot be combined");
+    }
+    let stage = episode.map(|e| e - 1).or_else(|| value("--stage").and_then(|v| v.parse().ok())).unwrap_or(0);
+    let area = value("--area").map(|v| v.parse::<u8>().ok().filter(|a| *a < 4).unwrap_or_else(|| fail("--area must be 0 to 3")));
+    let camx = value("--camx").map(|v| num(v).filter(|x| *x <= 0xFFFF).unwrap_or_else(|| fail("--camx must be 0 to 0xFFFF")));
+    let direct = ["--stage", "--chars", "--episode", "--area", "--camx"].iter().any(|f| value(f).is_some());
     let viewer = view.is_some() || a.iter().any(|x| x == "--viewer");
     let explicit_headless = a.iter().any(|x| x == "--headless");
     let windowed = a.iter().any(|x| x == "--windowed");
@@ -97,8 +120,12 @@ fn args() -> Args {
         frames,
         viewer,
         view,
-        direct: value("--stage").is_some() || value("--chars").is_some(),
-        stage: value("--stage").and_then(|v| v.parse().ok()).unwrap_or(0),
+        direct,
+        stage,
+        area: area.unwrap_or(0),
+        camx: camx.unwrap_or(0) as u16,
+        autoplay: a.iter().any(|x| x == "--autoplay").then(autoplay::Bot::default),
+        debug: debug::Debug::new(a.iter().any(|x| x == "--debug-keys")),
         chars: value("--chars").map(|v| v.split(',').filter_map(|c| c.parse().ok()).collect()).unwrap_or(vec![0]),
         config: value("--config"),
         script: match value("--input-file") {
@@ -215,7 +242,7 @@ fn start_game(assets: &'static dino_assets::AssetPack, args: &mut Args, config: 
                 std::process::exit(1);
             }
         },
-        None if args.direct => game.start_stage(args.stage, &args.chars),
+        None if args.direct => game.start_stage_at(args.stage, args.area, args.camx, &args.chars),
         None => game.flow_boot(), // power on: the boot screens, then the attract mode
     }
     // Pokes (`--poke`): the same clocks as a headless run, where tick n is trace record n.
@@ -230,6 +257,9 @@ fn start_game(assets: &'static dino_assets::AssetPack, args: &mut Args, config: 
 }
 
 fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Frame) {
+    if let Some(bot) = &mut args.autoplay {
+        f = bot.frame(game, tick, &mut args.debug);
+    }
     if let Some(script) = &args.script {
         let s = script.at(tick);
         for p in 0..3 { f.players[p] |= s.players[p]; }
@@ -240,7 +270,12 @@ fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Fr
     game.w.system = f.system | 0x08; // 0x738 quirk, see harness.rs
     game.w.coins = f.coins;
     args.pokes.apply(game, tick as i32, false).unwrap_or_else(|e| fail(&e));
+    args.debug.before_tick(game);
     game.tick();
+    args.debug.after_tick(game);
+    if let Some(bot) = &mut args.autoplay {
+        bot.report(game, tick);
+    }
     args.pokes.apply(game, tick as i32, true).unwrap_or_else(|e| fail(&e));
 }
 
@@ -299,6 +334,9 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
         }
         if is_key_pressed(KeyCode::F1) {
             game.sprites.debug_boxes = !game.sprites.debug_boxes; // hit box overlay
+        }
+        if viewer.is_none() {
+            args.debug.keys(&mut game);
         }
         match &mut viewer {
             Some(v) => v.draw(assets, &mut gpu),
