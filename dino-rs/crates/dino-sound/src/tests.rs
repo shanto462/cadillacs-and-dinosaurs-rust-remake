@@ -565,9 +565,9 @@ fn run_frames(d: &mut Driver, code: u16, frames: usize) -> Vec<(usize, u8, u16)>
     out
 }
 
-/// The writes the sequencer owns at a key-on and in the track steps that the M4-04 port does
-/// write: key-on, echo, sample load and the bank word. The volume (reg `v*8+6`) and pitch
-/// (`v*8+2`) writes of the steps come with M4-05, so they are left out.
+/// The writes the sequencer owns at a key-on and in the track steps: key-on, echo, sample load
+/// and the bank word. The volume (reg `v*8+6`) and pitch (`v*8+2`) writes of the steps and the
+/// pan writes are left out here; `check_full_writes` compares them too (M4-05).
 fn sequencer_owned(reg: u8, value: u16) -> bool {
     let _ = value;
     if reg == 0x93 || reg == 0xD9 || (0xBA..=0xC9).contains(&reg) {
@@ -643,3 +643,71 @@ fn rom_coin_0030_sequencer_writes_match_mame_trace() {
 
 
 
+
+/// Compares every DSP register write of one request with the MAME trace (no filter: volume,
+/// pitch, pan, key-on and echo). Frames are compared through the write order only.
+fn check_full_writes(code: &str, frames: usize) {
+    let Some(expected) = mame_frame_writes(code) else {
+        eprintln!("skipped: no MAME trace of code {code} (set DINO_SOUND_TRACE_DIR)");
+        return;
+    };
+    let pack = dino_extract::extract(&rom_path()).expect("dino.zip reads");
+    let mut d = Driver::new(&pack.sound, true);
+    settle(&mut d);
+    d.take_dsp_writes();
+    let code_n = u16::from_str_radix(code, 16).expect("hex code");
+    // One extra frame is run: the 250 Hz ticks are spread over the frames by rounding, so the
+    // last tick of MAME's final frame can fall into our next frame. Writes are compared by frame.
+    let mine: Vec<(u8, u16)> = run_frames(&mut d, code_n, frames + 1)
+        .into_iter()
+        .map(|(_, r, v)| (r, v))
+        .collect();
+    let want: Vec<(u8, u16)> = expected
+        .into_iter()
+        .filter(|(f, _, _)| *f < frames)
+        .map(|(_, r, v)| (r, v))
+        .collect();
+    // Ours must start with the whole MAME list (the extra frame supplies the writes of the
+    // last tick, see above).
+    let n = want.len();
+    let first = (0..n.min(mine.len())).find(|&i| mine[i] != want[i]);
+    eprintln!("code {code}: ours {} writes (one extra frame), MAME {} writes, first difference {:?}", mine.len(), want.len(), first);
+    if let Some(i) = first {
+        eprintln!("ours {:?}", &mine[i.saturating_sub(3)..(i + 4).min(mine.len())]);
+        eprintln!("MAME {:?}", &want[i.saturating_sub(3)..(i + 4).min(want.len())]);
+    }
+    assert!(first.is_none());
+    assert!(mine.len() >= n, "ours has fewer writes than MAME");
+}
+
+/// Coin 0x30 over its 240 frames: every register write (volume, pitch, pan, twin) equals MAME.
+#[test]
+fn rom_coin_0030_full_writes_match_mame_trace() {
+    check_full_writes("0030", 240);
+}
+
+/// Music 0x01 over 600 frames: every register write (volume with the tremolo, pitch with the
+/// vibrato, pan) equals MAME.
+#[test]
+fn rom_music_0001_full_writes_match_mame_trace() {
+    check_full_writes("0001", 600);
+}
+
+
+/// Music 0x00 over its 240 frames: every register write equals MAME.
+#[test]
+fn rom_music_0000_full_writes_match_mame_trace() {
+    check_full_writes("0000", 240);
+}
+
+/// Effect 0x2C over 600 frames: every register write equals MAME.
+#[test]
+fn rom_effect_002c_full_writes_match_mame_trace() {
+    check_full_writes("002c", 600);
+}
+
+/// Voice bank effect 0xCA over 600 frames: every register write equals MAME.
+#[test]
+fn rom_effect_00ca_full_writes_match_mame_trace() {
+    check_full_writes("00ca", 600);
+}

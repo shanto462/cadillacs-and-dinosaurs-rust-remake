@@ -3,9 +3,8 @@
 //! 0x0C4F), the commands 0x00..0x1F (table 0x0C84), the sample load (0x0D5E), the track end
 //! (0x0EA4) and the tied-note resume (0x0EF0).
 //!
-//! Not here yet (M4-05 and M4-06): the no-event step 0x1007 (pan motion, LFO, envelope and the
-//! writes of volume and pitch), the volume and pitch writes 0x12C2 and 0x12CC, the ADPCM slots
-//! 0x212C (no ADPCM header exists in this ROM, SPEC 11). The sequence reads follow the Z80 bank
+//! The no-event step 0x1007 and the volume and pitch writes 0x12C2 are in `voice.rs` (M4-05).
+//! Not here: the ADPCM slots 0x212C (no ADPCM header exists in this ROM, SPEC 11). The sequence reads follow the Z80 bank
 //! window (0x0A8B), and the sample, instrument and table reads go through the data image.
 
 use crate::driver::Driver;
@@ -128,13 +127,6 @@ impl<'a> Driver<'a> {
         let rate = le_at(self, TAB_ENV_DECAY + 2 * idx);
         self.w16(t.wrapping_add(T_ENV_RATE), rate);
     }
-
-    /// 0x1007: pan motion, LFO, envelope and the volume and pitch writes. Not ported yet
-    /// (M4-05 and M4-06). Until then a step with no event writes nothing.
-    fn no_event_step(&mut self, _t: u16) {}
-
-    /// 0x12C2 and 0x12CC: the volume and pitch writes of the voice. Not ported yet (M4-05).
-    fn level_writes(&mut self) {}
 
     // ----- 0x0A8B: events -------------------------------------------------------------------
 
@@ -271,7 +263,7 @@ impl<'a> Driver<'a> {
     /// 0x0C1C: mute cleared, then the volume and pitch writes.
     fn note_end_levels(&mut self, t: u16) {
         self.w8(t.wrapping_add(T_MUTE), 0);
-        self.level_writes();
+        self.level_writes(t);
     }
 
     /// The key-on writes (0x0BD1 .. 0x0C13): pitch 0, 0x93, 0xD9, echo send, sample start and
@@ -534,7 +526,7 @@ impl<'a> Driver<'a> {
         self.dsp(b8.wrapping_add(1), self.r16(m.wrapping_add(T_SAMPLE_START)));
         self.dsp(b8.wrapping_add(3), 0x8000);
         self.w8(SEQ_FLAG, 0xFF);
-        self.level_writes();
+        self.level_writes(m);
         self.w8(SEQ_FLAG, 0);
     }
 
