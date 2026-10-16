@@ -24,6 +24,8 @@ pub mod cards;
 pub mod config;
 #[path = "flow/demo.rs"]
 pub mod demo;
+#[path = "flow/ending.rs"]
+pub mod ending;
 #[path = "flow/front.rs"]
 pub mod front;
 #[path = "flow/join.rs"]
@@ -140,6 +142,10 @@ pub struct Flow {
     pub b4d7: u8,
     pub b4db: u8,
     pub b507: u8,
+    /// G.$5E4: a name entry is going on (set by the ending, cleared by the join task).
+    pub b5e4: u8,
+    /// The ending (mode 0x1C, `ending.rs`).
+    pub ending: ending::Ending,
     /// G.$4DA game frame counter (prompt blink timing).
     pub frame: u8,
     /// G.$4E2 stage clear sequence running, G.$4E3 player script reached its mark (set by the
@@ -172,6 +178,12 @@ pub struct Flow {
     /// Video frames in which no task runs (the interrupt code does): a game frame that takes the CPU for more than one frame. The first
     /// level frame of an episode (the area setup, the map and the script start) takes two (`select.rs`).
     pub lag: u8,
+    /// The harness compares against a game clock recording (`DINO_GAME_CLOCK`, `re/harness/port.sh`): its records leave out the video frames a
+    /// game frame overran and the pass that overran, so a record of the harness is the tick after them (`harness::run` ticks until `lag` is
+    /// used up and a pass has run).
+    pub game_clock: bool,
+    /// The last `flow_frame` used up a lag frame (no task ran in it).
+    pub lag_tick: bool,
     /// The phase of 0xAC4E that the character select is in after its fade out (`select.rs`, `flow_stage_start_staged`); 0 = not in it.
     pub select_exit: u8,
     /// The globals of the scripted control (`script.rs`): G.$4D8, G.$4DF, G.$4EC.., G.$4FD, G.$503, G.$514, G.$516.
@@ -279,9 +291,12 @@ impl Game {
     /// One frame of all flow tasks, in task slot order.
     pub fn flow_frame(&mut self) {
         self.flow_coin_isr(); // the interrupt: 0x9D4BE reads the coin inputs before the tasks
+        self.flow.lag_tick = false;
         if self.flow.lag > 0 {
+            self.flow.lag_tick = true;
             // a task keeps the CPU through this video frame: no task runs (the next vertical blank only runs the interrupts)
             self.flow.lag -= 1;
+            self.flow_attract_clear_step(); // the clear 0xAE0 that kept the CPU goes on in this frame
             self.flow.front.prev_input = self.w.input;
             self.flow.front.prev_system = self.w.system;
             return;
@@ -381,7 +396,8 @@ impl Game {
             }
             0x10 => self.flow_continue_mode(),
             0x14 | 0x18 => self.flow_game_over(),
-            _ => self.flow_game_over(), // 0x1C ending 0xA69B8: not ported
+            0x1C => self.flow_ending_mode(), // 0xAC48: jmp 0xA69B8
+            _ => self.flow_game_over(),
         }
     }
 

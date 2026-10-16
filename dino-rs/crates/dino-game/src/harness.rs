@@ -506,6 +506,7 @@ pub fn run(
 ) -> Result<(), String> {
     let mut game = Game::new(assets);
     game.flow_apply_config(config);
+    game.flow.game_clock = std::env::var_os("DINO_GAME_CLOCK").is_some();
     let mut warnings = Vec::new();
     let mut reader = match step {
         Some(p) => Some(TraceReader::open(p)?),
@@ -585,6 +586,11 @@ pub fn run(
         game.w.system = f.system | 0x08;
         game.w.coins = f.coins;
         game.tick();
+        // a game clock recording leaves out the video frames a game frame overran: one record spans the pass that overran, the frames of
+        // the lag and the pass after them
+        while game.flow.game_clock && (game.flow.lag > 0 || game.flow.lag_tick) {
+            game.tick();
+        }
         pokes.apply(&mut game, k as i32, true)?; // power clock: after the tick, before the record
         tw.record(&mut game, k as i32)?;
     }

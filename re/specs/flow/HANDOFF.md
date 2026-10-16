@@ -598,3 +598,33 @@ Tools: `re/harness/link_check.sh [NAME ...]` (`STORY_ONLY=1` stops at the first 
   one area). Tests in `debug.rs`: `the_area_change_key_uses_the_mode_of_the_stage_controller`, `the_area_change_key_ends_in_episode_3` (mode 6 sub 4, sub 6, back to mode 0).
 * Gates: `cargo build` and `cargo test` green (341 in dino-game with the 4 new tests, 8 ignored), `re/harness/regress.sh`: 49 of 52 at 0, `mp_join` 3, `armed` 4, `c14c_mustapha` 8 (the baseline).
 
+### M3-23: the ending, part 1 (lab corridor scene and the explosion chain; green, record exact to the wall of the sunset scene)
+
+* **What.** Mode 0x1C is the routine 0xA69B8 (`flow/ending.rs`: sub 0, 2, 4, 6, 8, the object loop in the ending's own order), the master pool B 82 (`prop/b82_85.rs`,
+  all its states up to the desert master 81), the showers pool B 83, 84, 85 and the pool A classes 90, 92, 93, 96 (`enemy/class90.rs`, `class92.rs`, `class93.rs`,
+  `class96.rs`), `snd_rumble` 0x9F12, `fx_spawn_class21` 0x94640 (the effect is made, the ending never updates pool C). The classes are in `PORTED_CLASSES`, the animation tables
+  0x6531C, 0x678A0, 0x67C3A, 0x69E00 in `OBJECT_ANIM_TABLES`, the tables 0x8B112, 0xC1252, 0x8B402 in `FRONT_TABLES`. Read `re/specs/flow/ENDING.md` for what the classes do.
+  New trace fields: `b5e4` (G.$5E4), `ending_timer` (G.-$6FFA). Join task: the state 6 of a player without a continue (0x7392: blank the HUD block, the qualification 0x154EE ->
+  `flow_join_qualify`, `flow_hiscore_qualifies`) and the minimal state 0xC (0x74E2, `flow_join_game_over`: the counter `+$80` runs out, the block is free again). The name entry
+  (state 0xA, M2-22) is not ported: `flow_name_entry_available()` is false, so a qualifying hero goes to state 0xC and the ending does not wait for him; `flow_name_entry_setup`
+  (0x15AE2) and `flow_name_entry_busy` (0xEFC2, real) are the hooks for M2-22 and M3-27.
+* **Checks.** Video clock: `cargo test the_ending_matches_mame` loads the record before the probe's poke of `flow_end-jack` / `end-hannah` / `end-3p`, pokes the ending in and
+  compares 520 records (the three layers, the palettes, the sprite list, the sound codes, G.$14, mode and sub, the camera X of scroll2 and scroll3: all equal; scroll2 at record +0
+  is not compared, see below); `ending_report` (ignored, `DINO_ENDING`, `DINO_LAST`, `DINO_ALL`) lists differences for any length. The whole of 960 records differs only in the 29
+  cells of the wall of the sunset scene (pool B 3 variant 4, from record +530: the class of M3-19, see below). Game clock (`re/out/ending/run.sh m328_end-jack step|run 1000`, uses
+  `DINO_GAME_CLOCK=1`, which makes `harness::run` tick through the lag frames of one record): in `run` mode (free run from the snapshot) all 1000 records equal MAME in every object
+  field, the random number, the sounds and the three layers except pool B 3 / pool C 21 (var 0x14 from the wall), the staff roll (B87 from 771) and the desert (B81 from 970); the
+  derived pointers of the poked stage (G.$674, G.$678, G.$792) and the frame pointer of objects that never drew (`prop.frame`, `enemy.frame`: MAME 0, the port shows the first frame)
+  are harness artifacts (`re/harness/allow/m3e.txt`). The same for `m328_end-hannah`, `end-3p` and `end-mess-jack` over 700 records.
+* **Timing, the lag of the 68000.** `Flow::lag` skips the next video frame (no task runs). Sub 0 runs in two parts (`Ending::phase`): the clear (the sprites and scroll1 now, scroll2
+  up to `CLEAR2_FIRST` cells, then the rest of it and scroll3 up to `CLEAR3_FIRST` in the lag frame, the rest of scroll3 in the third frame) and the lag, then the pools, the palette and the
+  timer and, in the same video frame, the pass of sub 2 (G.$0 counts once). The master's state 0 does the same: the palettes and the clear, a lag frame, then its four pages in the
+  frame of the next pass (`Ending::pages_for`, `b82_pages`); the state 0x16 end (two layer clears) takes a lag frame too. `flow_frame` runs a clear that is under way in a lag
+  frame (`flow_attract_clear_step`). The cut of the scroll2 clear in the first frame varies between 1367 and 1384 cells with the work the frame did before (six recordings): the test
+  does not compare scroll2 at record +0. `Flow::lag_tick`, `Flow::game_clock`: the harness joins the pass that overran, the lag frames and the next pass into one record when the
+  recording uses the game clock (`DINO_GAME_CLOCK`, set by `re/out/ending/run.sh`; `port.sh` users add it themselves).
+* **Also changed.** `trace.rs`: the derived pointers G.$674 / G.$678 / G.$792 wrap instead of panicking for a snapshot poked to another stage; the spawn lists keep their
+  indexes through the ending's pool reset (0xFBE8 does not clear them).
+* **Waiting for other tasks.** Pool B 3 variant 4 (the wall that breaks at record 525 and its pool C 21 variant 0x14) is class 3 of M3-19 (the same code path as variant 8, 0x7667E):
+  check records 525 to 560 of `m328_end-jack` after it is merged. The staff roll (B87, 0x8B60E, from record 771) and the desert (B81 / pool A 81, from 969) are M3-25 and M3-26.
+

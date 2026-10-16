@@ -2706,3 +2706,119 @@ fn story_panel_and_card_match_mame() {
 fn flow_trace_named(name: &str) -> Option<String> {
     flow_trace(name)
 }
+
+/// M3-23 to M3-27, the ending (mode 0x1C) against the video clock recordings of `flow_ending` (re/harness/scripts/flow_ending.txt, `end-jack` and the party
+/// recordings): the port is loaded with the first record that has the mode 0x1C (the probe's poke of the ending, the state of the Episode 1 opening
+/// level) and runs without input. In every record the three layers, the palettes, the sprite list, the sound codes and the random number equal MAME, for
+/// `ENDING_RECORDS` records after it (the lab corridor, the sunset and the still picture are the first 975). `ending_report` (ignored) prints the first
+/// difference of each kind for any length (`DINO_ENDING` names the recording, `DINO_LAST` the last record after the start).
+const ENDING_RECORDS: i32 = 520; // to the wall of the sunset scene (pool B 3, M3-19: 29 cells of scroll2 from record 530; M3-24 raises it)
+
+fn ending_run(a: &'static AssetPack, name: &str, last: i32, report: bool) -> Vec<String> {
+    let Some(trace) = flow_trace_named(name) else { return vec![] };
+    let mut rd = TraceReader::open(&trace).expect("the recording opens");
+    let mut start = None;
+    while let Some(f) = rd.next() {
+        if f >= 0 && rd.region("ram").unwrap().data[0x84D0] == 0x1C {
+            start = Some(f);
+            break;
+        }
+    }
+    let start = start.expect("the recording reaches the ending");
+    // the record before the poke: load it, give the port the poke (stage 7, G.$4D7 = G.$4DB = G.$507 = 1, sub 0, mode 0x1C) and run
+    let mut rd = TraceReader::open(&trace).expect("the recording opens");
+    let (mut ram0, mut gfx0) = (Vec::new(), Vec::new());
+    while let Some(f) = rd.next() {
+        if f == start - 1 {
+            (ram0, gfx0) = (rd.region("ram").unwrap().data.clone(), rd.region("gfx").unwrap().data.clone());
+            break;
+        }
+    }
+    let mut g = Game::new(a);
+    g.hold_unported = true;
+    let _ = g.trace_load(&ram0, &gfx0);
+    g.w.stage = 7;
+    (g.flow.b4d7, g.flow.b4db, g.flow.b507, g.flow.sub, g.flow.mode) = (1, 1, 1, 0, 0x1C);
+    let mut bad: Vec<String> = Vec::new();
+    let mut prev_ram = ram0;
+    for n in 0..=last {
+        g.w.input = [0; 3];
+        g.w.system = 8;
+        g.w.coins = 0;
+        g.tick();
+        let Some(f) = rd.next() else { break };
+        assert_eq!(f - start, n, "{name}: the next record");
+        let (ram, gfx) = (rd.region("ram").unwrap().data.clone(), rd.region("gfx").unwrap().data.clone());
+        let mut d = (diff(&g, &gfx, 1).len(), diff(&g, &gfx, 2).len(), diff(&g, &gfx, 3).len(), palette_diff(&g, &gfx, 0xFFFF).len());
+        if n == 0 {
+            d.1 = 0; // how far the clear of scroll2 has got when the first frame ends depends on the work before it (`CLEAR2_FIRST`)
+        }
+        if d != (0, 0, 0, 0) {
+            bad.push(format!("{name} +{n}: cells {d:?}"));
+            if report && n < 8 {
+                for l in 1..=3u8 {
+                    let v = diff(&g, &gfx, l);
+                    if let (Some(first), Some(last)) = (v.first(), v.last()) {
+                        println!("  layer {l}: first {first:?} last {last:?}");
+                    }
+                }
+            }
+        }
+        if report && n < 9 {
+            println!("  +{n}: G.$0 MAME {:#x} port {:#x}, B82 MAME {:#x} port {:?}", ram16(&ram, 0xFF8000), g.w.frame, ram16(&ram, 0xFFC834 + 4), g.props.slots.iter().find(|p| p.b.k20 == 0x148).map(|p| (p.b.mode, p.b.sub)));
+        }
+        let ms: Vec<_> = mame_sprites(&ram, &gfx);
+        let ps: Vec<_> = g.sprites.entries.iter().map(|e| (e.x as u16, e.y as u16, e.code, e.attr)).collect();
+        if ms != ps {
+            bad.push(format!("{name} +{n}: sprite list {} / {}", ms.len(), ps.len()));
+        }
+        if ram16(&ram, 0xFF8014) != g.w.rng {
+            bad.push(format!("{name} +{n}: random number MAME {:#x} port {:#x}", ram16(&ram, 0xFF8014), g.w.rng));
+        }
+        let (msn, psn) = (mame_sounds(&prev_ram, &ram), g.w.sounds.clone());
+        if msn != psn {
+            bad.push(format!("{name} +{n}: sounds MAME {msn:?} port {psn:?}"));
+        }
+        if (ram[0x84D0], ram[0x84D1]) != (g.flow.mode, g.flow.sub) {
+            bad.push(format!("{name} +{n}: mode {:#x}/{:#x} port {:#x}/{:#x}", ram[0x84D0], ram[0x84D1], g.flow.mode, g.flow.sub));
+        }
+        if ram16(&ram, 0xFF8744) != g.cam.s2.cam_x || ram16(&ram, 0xFF87E4) != g.cam.s3.cam_x {
+            bad.push(format!("{name} +{n}: camera X MAME {:#x} / {:#x} port {:#x} / {:#x}", ram16(&ram, 0xFF8744), ram16(&ram, 0xFF87E4), g.cam.s2.cam_x, g.cam.s3.cam_x));
+        }
+        prev_ram = ram;
+        if !report && bad.len() > 5 {
+            break;
+        }
+    }
+    bad
+}
+
+#[test]
+fn the_ending_matches_mame() {
+    let Some(a) = assets() else { return };
+    for name in ["end-jack", "end-hannah", "end-3p"] {
+        let bad = ending_run(a, name, ENDING_RECORDS, false);
+        assert!(bad.is_empty(), "{} problems, first: {:#?}", bad.len(), &bad[..bad.len().min(5)]);
+    }
+}
+
+#[test]
+#[ignore]
+fn ending_report() {
+    let Some(a) = assets() else { return };
+    let name = std::env::var("DINO_ENDING").unwrap_or("end-jack".into());
+    let last: i32 = std::env::var("DINO_LAST").ok().and_then(|v| v.parse().ok()).unwrap_or(ENDING_RECORDS);
+    let bad = ending_run(a, &name, last, true);
+    let mut kinds: Vec<(String, usize)> = Vec::new();
+    for b in &bad {
+        let kind = b.split(": ").nth(1).map(|s| s.split(' ').next().unwrap_or("").to_string()).unwrap_or_default();
+        match kinds.iter_mut().find(|(k, _)| *k == kind) {
+            Some(e) => e.1 += 1,
+            None => kinds.push((kind.clone(), 1)),
+        }
+        if kinds.iter().find(|(k, _)| *k == kind).unwrap().1 <= 2 || std::env::var_os("DINO_ALL").is_some() {
+            println!("{b}");
+        }
+    }
+    println!("{} differences: {kinds:?}", bad.len());
+}

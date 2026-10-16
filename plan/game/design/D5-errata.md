@@ -186,3 +186,19 @@ MAME wins over the design text; the design documents themselves are not edited.
 ## From the G.$7B4 fix (2026-10-17)
 
 - M3-08 note and D4b s2 (rank and the lock flag): G.$7B4 is one RAM byte, the camera's lock state (`cam.s2.lock78`, +$78 of the struct G.$73C). Its readers are 0x182BA (lock 1 selects the second aggression table 0x18364), 0xA55A (lock 2 selects the boss music table 0xA5C8, with the entry 8 when the boss on the HUD bar has +$7D = 0xFE in Episode 8), 0x1042E (time over with the car), 0x105B6 (the G.$518 pass 0x12454, not ported) and the hint 0x7BBF4 / 0x7BC1E; the writers are the camera, the stage start 0xACAC (clear) and the boss inits (0x4FDCA, 0x6187A, 0x687A0, 0x819BE: 2). The port had a second copy (`Rank::b7b4`) that nothing wrote, so in a free run the second aggression table and the boss music were never chosen. One field now.
+
+## From M3-23 (the ending, lab corridor scene, 2026-10-17)
+
+- D4d s8 and D5 M3-23 ("pool A classes 90 to 93 and 96", "debris showers B83 (200 frames) and B84 (400 frames, A93 pieces every 32 frames)"): class 90 is the explosion cloud next to the heroes (four of them, 460 frames), 92 the flying
+  debris piece (made by B83 and B85), 93 a falling piece (made by B84 and by itself), 96 a flying piece of the sunset scene (two, made by B82 state 8). The explosions of D4d are class 90 and 92; there is no separate "chain": B82 spawns
+  the clouds once and the showers make the pieces. The sound 0x66 every 16 frames is the rumble 0x9F12 of B83 / B85 (d1 = 0x51200 | pan, d2 = 0x1561080), not a call of the explosion class. M3-23.
+- D4d s8 (explosion objects "the chain uses the random generator, so the same state gives the same explosions"): right, and the heroes do not matter: the recordings with Jack, Hannah, three heroes and Mess with Jack equal each other and the port
+  for 700 records (the players are removed at sub 0 before any object runs). D4d's "3 players differ" is the HUD only. M3-23.
+- D4d s8 (class 21 "effect class 21 at 531 and 551"): they are made (pool C 21 variants 0x14 by the wall, 0xE by B82 state 0x10) but never updated: 0xA69B8 does not call the pool C update 0x237B2, so they stay in state 0 for the rest of the ending
+  and only take pool C slots. M3-23.
+- D4d s8 / D4c (the camera in the corridor): the explosion scene scrolls the camera by B82 (`+$A4` pixels a frame to G.$744), not by the camera controller (the ending does not run it). M3-23.
+- D5 M3-23 check ("pictures every 100 frames equal MAME"): the ending's frames are record exact in the video clock recordings, including the three frame clear of sub 0 and the lag frames of the master's state 0 and the end of the still picture
+  (`the_ending_matches_mame`, 520 records plus the wall of M3-19). M3-23.
+- G.$4D1 at the poke: the recordings `flow_end-*` show the sub 0 pass starting in the first record after the poke, the pass of sub 2 four video frames later: the clear 0xAE0 takes the CPU through three video frames (the first clears the sprites,
+  scroll1 and about 1376 cells of scroll2). M3-23.
+

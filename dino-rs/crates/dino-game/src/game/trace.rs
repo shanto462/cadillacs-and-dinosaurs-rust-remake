@@ -927,8 +927,8 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 /// `pool_c_update`, `pool_e_update`.
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
-    ("enemy", &[2, 10, 14, 15, 16, 17, 20, 27, 34, 41, 43, 49, 50, 54, 55, 56, 57, 60]),
-    ("prop", &[11, 14, 15, 18, 20, 21, 22, 25, 31, 66, 73, 74, 96]),
+    ("enemy", &[2, 10, 14, 15, 16, 17, 20, 27, 34, 41, 43, 49, 50, 54, 55, 56, 57, 60, 90, 92, 93, 96]),
+    ("prop", &[11, 14, 15, 18, 20, 21, 22, 25, 31, 66, 73, 74, 82, 83, 84, 85, 96]),
     (
         "item",
         &[
@@ -1146,8 +1146,8 @@ impl Game {
         let st = self.w.stage as usize;
         let area = self.cam.s2.area as usize & 3;
         if let Some(sc) = a.enemy.stages.get(st).and_then(|s| s.areas.get(area)) {
-            let mut p1 = sc.list1_addr + 14 * self.spawn.l1 as u32;
-            let mut p2 = sc.list2_addr + 16 * self.spawn.l2 as u32;
+            let mut p1 = sc.list1_addr.wrapping_add(14u32.wrapping_mul(self.spawn.l1 as u32)); // wraps: a snapshot poked to another stage holds a stale pointer
+            let mut p2 = sc.list2_addr.wrapping_add(16u32.wrapping_mul(self.spawn.l2 as u32));
             f.u32(0x0674, "spawn_list1", &mut p1);
             f.u32(0x0678, "spawn_list2", &mut p2);
             if f.loading() {
@@ -1253,7 +1253,7 @@ impl Game {
         f.u16(b + 0x52, "up52", &mut s.up52);
         f.u16(b + 0x54, "down54", &mut s.down54);
         let ev_base = self.assets.stages.stages.get(self.w.stage as usize).map(|x| x.camera_events_addr).unwrap_or(0);
-        let mut p = ev_base + 16 * s.next_event as u32;
+        let mut p = ev_base.wrapping_add(16u32.wrapping_mul(s.next_event as u32));
         f.u32(b + 0x56, "next_event", &mut p);
         if f.loading() {
             s.next_event = (p.wrapping_sub(ev_base) / 16) as usize;
@@ -1363,6 +1363,8 @@ impl Game {
         f.u8(0x04D7, "b4d7", &mut fl.b4d7);
         f.u8(0x04DB, "b4db", &mut fl.b4db);
         f.u8(0x0507, "b507", &mut fl.b507);
+        f.u8(0x05E4, "b5e4", &mut fl.b5e4);
+        f.u16(n(0x6FFA), "ending_timer", &mut fl.ending.timer);
         f.u8(0x04DA, "game_frame", &mut fl.frame);
         f.u8(0x04E2, "b4e2", &mut fl.b4e2);
         f.u8(0x04E3, "b4e3", &mut fl.b4e3);
