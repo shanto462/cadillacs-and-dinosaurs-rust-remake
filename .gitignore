@@ -19,7 +19,7 @@ re/specs/enemy/c2.txt
 re/specs/enemy/hit_2a606.txt
 
 # Tooling
-re/.venv/
+re/.venv
 __pycache__/
 dino-rs/target/
 .DS_Store
