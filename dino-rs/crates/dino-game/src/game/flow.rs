@@ -197,6 +197,7 @@ impl Game {
     /// 0xA870 / mode 0 with the given players and characters, without the select screen, then
     /// the stage start 0xAC4E.
     pub fn start_stage(&mut self, stage: u8, chars: &[u8]) {
+        self.flow_sys_init(); // Direct starts bypass boot's 0x9CFC6 credit/task setup.
         self.hud_hiscore_init();
         let mut bits = 0u8;
         for i in 0..chars.len().min(3) {
@@ -213,6 +214,10 @@ impl Game {
         self.w.stage = stage;
         self.cam.s2.area = 0;
         self.flow_stage_start();
+        // Direct starts bypass the select task's 0x71DA transition to playing.
+        for j in self.flow.join.iter_mut().take(chars.len().min(3)) {
+            j.state = 6;
+        }
     }
 
     /// One frame of all flow tasks, in task slot order.
