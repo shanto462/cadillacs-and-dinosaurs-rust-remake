@@ -18,6 +18,8 @@
 pub mod attract;
 #[path = "flow/boot.rs"]
 pub mod boot;
+#[path = "flow/cards.rs"]
+pub mod cards;
 #[path = "flow/config.rs"]
 pub mod config;
 #[path = "flow/demo.rs"]
@@ -45,6 +47,8 @@ pub mod select;
 pub mod slides;
 #[path = "flow/system.rs"]
 pub mod system;
+#[path = "flow/tally.rs"]
+pub mod tally;
 #[path = "flow/text.rs"]
 pub mod text;
 
@@ -83,14 +87,6 @@ pub struct Intro {
     pub init: bool,
     /// The HUD redraw 0x162AE that follows the `jsr 0xA76` inside 0xCC58: it runs in the frame after the one that saw G.$4E3.
     pub redraw: bool,
-}
-
-/// Stage clear task 0xB97E (simplified: see `flow_clear_task`).
-#[derive(Clone, Copy, Debug, Default)]
-pub struct Clear {
-    pub live: bool,
-    pub state: u8,
-    pub timer: u16,
 }
 
 #[derive(Default)]
@@ -138,7 +134,8 @@ pub struct Flow {
     /// G.$510 game mode saved while the continue screen (mode 0x10) runs.
     pub saved_mode: [u8; 4],
     pub intro: Intro,
-    pub clear: Clear,
+    /// The stage clear task 0xB97E (`flow/tally.rs`).
+    pub tally: tally::Tally,
     pub front: front::Front,
     /// The opening movie's own state (`movie.rs`).
     pub movie: movie::Movie,
@@ -234,7 +231,7 @@ impl Game {
             self.flow_attract_task(); // slots 0x10 / 0x20
         }
         self.flow_intro_task(); // slot 0x30
-        self.flow_clear_task(); // slot 0x30
+        self.flow_tally_task(); // slot 0x30
         // The vertical blank of the next frame copies G.$16..18 to G.$1B..1D and G.$1A to G.$1F
         // (0x738) before it reads the new inputs, so during a task the "previous" bytes are the
         // inputs of the frame before.
@@ -570,7 +567,7 @@ impl Game {
                 // 0xAB66: walk-off (or 1800 frames), then the clear task
                 self.flow.timer508 = self.flow.timer508.wrapping_sub(1);
                 if (self.flow.timer508 as i16) < 0 || self.flow.b4e3 != 0 {
-                    self.flow_clear_start(); // task 0xB97E in slot 0x30
+                    self.flow_tally_start(); // task 0xB97E in slot 0x30
                     self.flow.b4e2 = 1;
                     self.flow.timer508 = if self.w.stage == 7 { 0xE10 } else { 0x708 };
                     self.flow.sub = 6;
@@ -620,7 +617,7 @@ impl Game {
     /// Modes 0x14 / 0x18 (0xAC06 / 0xAC26): game over, back to the attract mode.
     fn flow_game_over(&mut self) {
         self.flow.intro.live = false;
-        self.flow.clear.live = false;
+        self.flow.tally.live = false;
         self.flow.front.game_over_flag = 1; // G.-$702E
         self.flow_clear_screen();
         self.sound(0xFF00);
@@ -646,6 +643,7 @@ impl Game {
     /// 0xB9F6 (the stage 0 entry; the other stages first show the map panel and the episode title, states 0 to 2, not ported: they use
     /// the same HUD slide-in below): the struct, then `jsr 0xA76` (sleep 1).
     fn flow_intro_init(&mut self) {
+        self.flow.tally.owner = false; // the struct G.$735E is the intro task's again (the tally image is not shown any more)
         self.flow.intro = Intro {
             live: true,
             state: 4,
@@ -732,29 +730,6 @@ impl Game {
 
     fn flow_cell(a: u32) -> usize {
         ((a.wrapping_sub(0x908000) / 4) & 0xFFF) as usize
-    }
-
-    // ---------------------------------------------------------------- stage clear 0xB97E
-
-    fn flow_clear_start(&mut self) {
-        self.flow.clear = Clear { live: true, state: 0, timer: 0 };
-    }
-
-    /// Stage clear task 0xB97E, simplified: the tally panels (vitality, enemies, final blow,
-    /// M.V.P., bonus count-up) are not ported yet; the task waits 120 frames and ends the stage
-    /// (G.$4E2 = 0).
-    fn flow_clear_task(&mut self) {
-        if !self.flow.clear.live {
-            return;
-        }
-        self.flow.clear.timer += 1;
-        if self.flow.clear.timer >= 120 {
-            self.flow.b4e2 = 0;
-            // 0xC4C8: the tally clears the pose lock G.$503 when its panels are gone (the heroes hold their pose in the scripted
-            // scene until then, `script.rs` actions 0x04 and 0x06). The real tally does it after the fade out of its panels (M2-28).
-            self.flow.script.b503 = 0;
-            self.flow.clear.live = false;
-        }
     }
 
     // ---------------------------------------------------------------- camera hooks

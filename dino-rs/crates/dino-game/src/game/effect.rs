@@ -32,6 +32,9 @@ use super::{Game, Handle, POOL_C, Slot, collide, slot_of};
 // Pool C classes of the front end (M1-07): the clouds of the ranking screen.
 #[path = "effect/fx_cloud.rs"]
 mod fx_cloud;
+// Pool C classes 22 and 34 (M2-24): the number palettes and the WINNER! sparkle of the stage clear tally.
+#[path = "effect/fx_tally.rs"]
+mod fx_tally;
 // Pool C class 28 (M2-14): the words TIME and OVER.
 #[path = "effect/fx_time_over.rs"]
 mod fx_time_over;
@@ -45,6 +48,8 @@ pub const FX_FLAMES: u16 = 0x20;
 pub const FX_RIPPLE: u16 = 0x68;
 pub const FX_TIME_OVER: u16 = 0x70;
 pub const FX_CLOUD: u16 = 0x80;
+pub const FX_TALLY_FLASH: u16 = 0x58;
+pub const FX_TALLY_WINNER: u16 = 0x88;
 
 /// Hit spark animation table (0x924BE stores it in +$40).
 const SPARK_TABLE: u32 = 0x924F6;
@@ -242,6 +247,8 @@ impl Game {
                 FX_RIPPLE => self.fx_ripple(i),
                 FX_TIME_OVER => self.fx_time_over(i),
                 FX_CLOUD => self.fx_cloud(i),
+                FX_TALLY_FLASH => self.fx_tally_flash(i),
+                FX_TALLY_WINNER => self.fx_tally_winner(i),
                 // TODO(port): remaining classes (handler addresses from the table at 0x237E6):
                 // 0x00 0x923E0, 0x08 0x92808, 0x0C 0x929B8, 0x14 0x92B7A, 0x18 0x92C9A,
                 // 0x1C 0x92ECC, 0x24 0x93184, 0x28 0x932D2, 0x2C 0x934F6 (debris, needs 0x12DAC),

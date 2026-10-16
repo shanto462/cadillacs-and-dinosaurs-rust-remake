@@ -1679,3 +1679,17 @@ strike (pool B 18, from the respawn on), the respawn sparkles and dust (pool C),
 of `m213_over_2p_both` (53 slowdown frames in MAME). The pictures equal MAME in the clock rectangle (x 160 to 232, y 48 to 80) and in the band of
 the words (y 100 to 150) for all ten frames; the rest of the picture differs by up to 2.4 percent in the top line (the join prompts of players
 2 and 3, which blink in another phase) and in the flying bird.
+
+## Cutting a snapshot out of a recording, and the clear tally check (M2-24, M2-25)
+
+- `trace_slice.py SOURCE.mame.trc NAME RECORD|ADDR=VALUE [--frames N]`: writes `re/out/traces/NAME.state` (the whole state after one record of a power-on or batch
+  recording, as frame -1) and `NAME.mame.trc` (that state, then the records after it as frames 0 ..), without another MAME run. `FF84D1=6` is the first record of the clear
+  tally. `check.sh run|step NAME` (with `SCRIPT=` an input script, `FRAMES=`) and `dino-game --load-state NAME.state` then start from that record.
+- `tally_check.sh [SCENARIO ...]`: the 31 `flow_tally` recordings (D4d A18), each cut at the first record of the tally (`m224_NAME`), the port run without input
+  (`scripts/m224_tally.txt`) and the first difference printed. Every scenario is equal to MAME up to the story panel (mode 8, M2-28: the port's stub starts the next stage
+  there, so the first difference is `spawn_list` / `floor_ptr` at that record; `tv-k150` and `tv-fb` end before it). For the four recordings with a busy panel frame
+  (`tv-2p-eq`, `tv-3p-a`, `td-3p-231`, `td-3p-tie`) the first difference is the scroll1 cells of the panel draw (below); the script allows that one record and checks on.
+  The same equality is the test `clear_tally_matches_mame` (`cargo test -p dino-game clear_tally`).
+- Pictures: `dino-game --rom dino.zip --headless --load-state re/out/traces/m224_tv-hp100.state --screenshots 59,99,119,159 --shot-dir DIR` equal the MAME snapshots
+  `re/out/flow/flow_tally/tv-hp100/snap/0000..0003.png` (t = 60, 100, 120, 160: the snapshot of time t is the picture of the tick t - 1).
+

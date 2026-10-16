@@ -127,3 +127,22 @@ MAME wins over the design text; the design documents themselves are not edited.
   sees G.$4E3 in 1672, redraws the HUD (0x162AE) in 1673 and does its first slide step (scroll1 X + 12) in 1674.
 - D4d s9.2 and D3e (pool B 66, HUD): the "INSERT COIN" prompts of the absent heroes are drawn into the lower half of scroll1 by 0x7562, called from the intro task at every slide
   step, so they slide in with the HUD (MAME pictures of the records 1680 and later; the port has them with M2-18).
+
+## From M2-24 and M2-25 (the clear tally, 2026-10-17)
+
+- D5 M2-24 (pool B classes 75 to 78) and M2-25 (the map panel object pool B 58): the tally uses no pool B 75 to 78 and has no map panel object. The panel is drawn by the
+  states 4 and 6 of the clear task itself (0xC4CE, 0xC576, cells written into scroll1 and copied by the slide). The objects of the tally are pool B class 25 (the figures and the
+  TOTAL, `prop/b25.rs`), pool C 0x58 (the colour flash of the first panel, `0x9582A`) and pool C 0x88 (the WINNER! sparkle).
+- D5 M2-24 ("anti tamper 0xD860 not ported"): its random roll is needed. When hero 0's HP is even and not negative the first panel step calls `rand()` (0x119C) once, which moves
+  the rng; without it every number after the tally differs from MAME.
+- D5 M2-24 (the best of a panel, 0xBC96 / 0xBDD4 / 0xBFFC / 0xC1BA): ties share the mark, but a hero who beats a tie only takes the mark of the last leader, so with the figures
+  3, 3, 9 the first hero keeps the mark; the best starts at 0, so a negative figure is never best. Vitality and M.V.P. compare signed words,
+  enemies unsigned bytes, totals signed longs.
+- D5 M2-25 ("marker blinks 120 frames"): +4 starts at 0x78 and counts down every frame, but the state goes on only at the end of a 20 frame period when it is negative: the marker blinks
+  for 140 frames, then 60 frames of sleep (0xA82), then state 8 and 0xA. The fade mask is 2 (not 0) while the map panel is shown (0xCD1A sets the palettes and the brightness).
+- D4d s9.1 and D5 M2-24 (the length): the task ends at 443 + max_total / 100 records after its first run (G.$4E2 = 0), the story panel (mode 8) starts one record later. When many objects
+  are alive (3 heroes, 2 heroes and a tie: live pool D slots + 2 * live pool A slots >= 17 in the port's estimate) the panel draw overruns the frame and everything after it is
+  one record later; MAME's record of that frame shows the last panel cells undrawn.
+- D5 M2-25 (check "b9 link-ep2"): the link recordings `flow_link-ep2` to `ep8` start in the story panel (mode 8), not in the tally; the panel and map frames of Episode 1 to 2 are in the
+  `flow_tally` recordings (the `tv-` and `td-` scenarios, stage 0), up to the story panel.
+

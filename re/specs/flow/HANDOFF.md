@@ -490,3 +490,43 @@ bystander (the boss) and the six thugs come in, the boss speaks the three captio
 
 Tools for this (git-ignored, `re/out/m210/`): `timeline.py` (globals and objects of a trace), `fields.py` (named fields, MAME and port side by side), `cells.py`, `cellhist.py`,
 `nonblank.py`, `screenrows.py` (tilemap cells), `pw.sh` (power on run and diff).
+
+## M2-24 and M2-25: the stage clear tally and its map panel (done 2026-10-17)
+
+The clear task 0xB97E (slot 0x30) is ported whole, from the three heroes' panels to the map panel that slides in (`flow/tally.rs`, `flow/cards.rs`, `prop/b25.rs`,
+`effect/fx_tally.rs`). It replaces the 120 frame stub. `cargo test` green (277 in dino-game); `regress.sh` 49 of 52 at 0, `mp_join` 37, `armed` 4, `c14c_mustapha` 8 (unchanged).
+All 31 `flow_tally` recordings equal MAME in every record from the first run of the task to the story panel (the three layers, palettes, sprite list, sound codes, rng, fade
+mask, scores, G.$4E2 and the whole 0x80 byte struct G.$735E in `clear_tally_matches_mame`; every object field in `tally_check.sh`). Pictures t = 60, 100, 120, 160 and 700 of
+`tv-hp100` are equal pixel for pixel.
+
+* **The struct G.$735E** is shared with the intro task (`Intro`, M2-10): `Tally.raw` is its byte image with the original offsets, three blocks of 0x20 bytes at +0x20, +0x40
+  and +0x60 (G.$737E, $739E, $73BE: one per hero, `blk::` names the offsets: PTR +0, BEST_VIT +4, BEST_ENEMIES +5, PRESENT +6, BEST_FB +7, X +8, Y +$A, TOTAL +$C (BCD long),
+  BEST_MVP +$10, TARGET +$14, COUNTING +$16, BEST_TOTAL +$17, STEP +$18, BLINK +$1C, PHASE +$1D). The trace shows it as `tally` while the task owns it.
+* **The task** (`flow_tally_task`): states 0 (clear, fade) 2 (the 4 panel steps VITALITY, ENEMIES, FINAL BLOW, M.V.P. at sub 0, 2, 4, 6, 30 frames each; TOTAL; the count down
+  of the totals 100 a frame into the scores and the HUD, the winner blinks; the cleanup and the fade) 4 (the map panel is drawn) 6 (it slides in, the marker blinks) 8, 0xA (end,
+  G.$4E2 = 0). The sleeps of the original (`jsr 0xA76` / `0xA7E` inside a state) are the `After` continuations; a task made by the game task runs in the same frame.
+* **The numbers** are pool B class 25 objects (`prop/b25.rs`): the panel figures and the TOTAL, the score words that count. Pool C 0x58 (index 22) is the colour flash at the first
+  panel and pool C 0x88 (index 34) the WINNER! sparkle (`effect/fx_tally.rs`). The class 22 effect of M5-06 (screen flash, lightning) is the same handler: M5-06 should build on it.
+* **The best heroes** (`tally_best`) is the listing of 0xBC96, 0xBDD4, 0xBFFC and 0xC1BA, quirks kept: ties share the mark, but a hero who beats a tie only takes the mark
+  of the last leader (so with 3, 3, 9 the first hero keeps his mark), the best starts at 0 (a negative figure is never best), vitality and M.V.P. compare signed words, the
+  enemies unsigned bytes, the totals signed longs. The anti tamper 0xD860 is not ported but its random roll is: when the HP of hero 0 is even and not negative it calls
+  `rand()` once (0x119C), which moves the rng and is needed to equal MAME.
+* **The map panel** (`cards.rs`, used again by the intro card M2-26): scroll1 is cleared (0xB52), the palettes 1 to 13 of scroll1 come from the ROM palettes 0xBC252 by the
+  stage's list (0xCD6C) and the fade mask stays 2, the panel is three blocks of tile columns (10 x 13, 8 x 15 two cells higher, 10 x 13; codes 0xCEC4, attributes 0xD1BC; the
+  stages 6 and 7 add blocks 0xD4DC and 0xD6CE), the name plate is 12 codes at the panel + 0x42C. The slide copies 17 cells of each column to the page behind the right edge
+  and moves scroll1 X by 12 a frame to 0x130 (26 frames); then the marker (a palette swap, `flow_card_marker`) is lit and dark in periods of 20 frames; the state goes on at
+  the period end when the counter +4 (0x78) is negative: 140 frames; 60 frames of sleep; state 8, 0xA. Episode 8 (stage 7) has no panel (state 0xA at once) and, in area 3,
+  leaves G.$4E2 set, so the game task waits for its timer (0xE10) and goes to the ending, mode 0x1C (`flow_ingame_switch`, the ending itself is M3).
+* **The length**: with one hero the task ends (G.$4E2 = 0) 749 records after its first run for the largest total 30600, and 100 records fewer for every 10000 less (443 + max_total / 100);
+  mode 8 comes one record later. The plan's "177 + max_total / 100 + 268" is the same up to its starting point.
+* **A busy frame** (`tally_state4`, the only estimate in the task): with many objects alive (3 heroes, or 2 heroes and a tie) the draw of the panel takes the 68000 through the next
+  vertical blank. MAME's record of that frame shows the last cells of the panel and the name plate undrawn (the scroll1 difference the check allows), and the next pass of the
+  tasks starts late: the game task counts in the next record, the tally task one record later. The port draws all cells at once and sleeps the tally task one more frame
+  when the live objects of pool D plus twice those of pool A are 17 or more (the cycles are not counted; the rule classifies all 31 recordings right).
+
+**Not done here**
+* The story panel (mode 8, M2-28): the port's stub starts the next stage, so every run differs from MAME from the hand over record on. The links `flow_link-ep2` .. `ep8`
+  start in that panel; they have no tally.
+* The tally's only sound is 0x49 (d1 = 0x10): at each of the four panel steps and every 11 frames of the count down; the map panel makes none. They equal MAME in every record.
+  Episode 8's tally and the ending are not recorded (`flow_tally` is Episode 1 only): the Episode 8 path is from the listing and a unit test.
+

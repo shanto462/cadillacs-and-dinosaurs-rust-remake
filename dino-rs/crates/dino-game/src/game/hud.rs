@@ -137,16 +137,18 @@ impl Default for Hud {
     }
 }
 
-/// 0x11C4: binary to BCD (bits 0..12).
+/// 0x11C4: binary to BCD (bits 0..12). For each bit set the table 0x11F4 (the four digits of the power of two, low byte first) is added with two `abcd`: the
+/// first (low byte) starts with X = 0, the second (high byte) takes the carry of the first, and the carry out of the high byte is lost.
 pub fn to_bcd(v: u16) -> u16 {
     let (mut lo, mut hi) = (0u8, 0u8);
     for bit in (0..=12).rev() {
         if v & (1 << bit) != 0 {
             let w: u32 = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096][bit];
-            // table 0x11F4: the BCD digits of 2^bit, low byte and high byte
             let b = to_bcd_table(w);
-            lo = bcd_add(lo, (b & 0xFF) as u8);
-            hi = bcd_add(hi, (b >> 8) as u8);
+            let (l, x) = abcd(lo, (b & 0xFF) as u8, 0);
+            let (h, _) = abcd(hi, (b >> 8) as u8, x);
+            lo = l;
+            hi = h;
         }
     }
     ((hi as u16) << 8) | lo as u16
@@ -157,16 +159,21 @@ fn to_bcd_table(w: u32) -> u16 {
     u16::from_str_radix(&s, 16).unwrap()
 }
 
-/// `abcd` of two bytes with X = 0 (carry dropped, as the 0x11C4 loop clears it each time).
-fn bcd_add(a: u8, b: u8) -> u8 {
-    let mut lo = (a & 15) + (b & 15);
-    let mut carry = 0;
+/// `abcd.b` of two bytes with the extend flag `x`: the sum and the carry out (the new X).
+fn abcd(a: u8, b: u8, x: u8) -> (u8, u8) {
+    let mut lo = (a & 15) + (b & 15) + x;
+    let mut c = 0;
     if lo > 9 {
         lo -= 10;
-        carry = 1;
+        c = 1;
     }
-    let hi = ((a >> 4) + (b >> 4) + carry) % 10;
-    (hi << 4) | lo
+    let mut hi = (a >> 4) + (b >> 4) + c;
+    let mut out = 0;
+    if hi > 9 {
+        hi -= 10;
+        out = 1;
+    }
+    ((hi << 4) | lo, out)
 }
 
 /// 4-byte BCD add with the 68000 `abcd` chain; returns (sum, carry out).
@@ -193,7 +200,7 @@ pub fn bcd_add32(a: u32, b: u32) -> (u32, bool) {
 }
 
 /// 4-byte BCD subtract with `sbcd` and an incoming X flag; returns (difference, borrow out).
-fn bcd_sub32(a: u32, b: u32, mut x: u8) -> (u32, u8) {
+pub(crate) fn bcd_sub32(a: u32, b: u32, mut x: u8) -> (u32, u8) {
     let mut out = 0u32;
     for i in 0..4 {
         let (da, db) = ((a >> (8 * i)) as i16, (b >> (8 * i)) as i16);
@@ -237,7 +244,7 @@ impl Game {
         }
     }
 
-    fn hud_read(&self, a: u32) -> u16 {
+    pub(crate) fn hud_read(&self, a: u32) -> u16 {
         let c = &self.vram.scroll1[Self::hud_cell(a)];
         if a & 2 == 0 { c.code } else { c.attr }
     }
@@ -1222,6 +1229,13 @@ mod tests {
     fn bcd() {
         assert_eq!(to_bcd(10), 0x10);
         assert_eq!(to_bcd(51), 0x51);
+        // the carry of the low byte goes to the high byte (the vitality 100 of the clear tally is 0x0100, 150 kills 0x0150 ...)
+        assert_eq!(to_bcd(100), 0x0100);
+        assert_eq!(to_bcd(199), 0x0199);
+        assert_eq!(to_bcd(200), 0x0200);
+        assert_eq!(to_bcd(8191), 0x8191);
+        // bits above 12 are not looked at
+        assert_eq!(to_bcd(0x2000 | 5), 5);
         assert_eq!(bcd_add32(0x0000_9500, 0x0000_0500), (0x0001_0000, false));
         assert_eq!(bcd_add32(0x9999_9999, 1), (0, true));
         assert_eq!(bcd_sub32(0x0010_0000, 0x0001_0000, 0), (0x0009_0000, 0));

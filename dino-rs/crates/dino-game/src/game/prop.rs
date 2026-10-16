@@ -55,6 +55,9 @@ mod class32;
 mod class66;
 #[path = "prop/class72.rs"]
 mod class72;
+// Pool B class 25 (M2-24): the numbers of the stage clear tally.
+#[path = "prop/b25.rs"]
+mod b25;
 // Pool B class 74 (M2-11): the master of the Episode 1 opening scene (it makes the pool A cast 54, 55, 56).
 #[path = "prop/b74.rs"]
 mod b74;
@@ -115,6 +118,7 @@ impl Game {
                 17 => self.prop_class17(&mut p, i),
                 19 => self.prop_class19(&mut p, i),
                 20 => self.prop_go_hint(&mut p, i),
+                25 => self.prop_class25(&mut p, i),
                 31 => self.prop_clock(&mut p, i),
                 32 => self.prop_class32(&mut p, i),
                 66 => self.prop_class66(&mut p, i),

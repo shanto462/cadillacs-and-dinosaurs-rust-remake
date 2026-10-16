@@ -465,7 +465,7 @@ impl Game {
         self.flow.front.blink.kill();
         self.flow.front.press.kill();
         self.flow.intro.live = false;
-        self.flow.clear.live = false;
+        self.flow.tally.live = false;
         self.fade.task = None;
     }
 

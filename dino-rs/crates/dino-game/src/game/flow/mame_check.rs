@@ -2522,3 +2522,99 @@ fn episode_one_opening_matches_mame() {
     let first: Vec<String> = bad.iter().take(4).map(|m| m.chars().take(700).collect()).collect();
     assert!(bad.is_empty(), "{} problems, first: {:#?}", bad.len(), first);
 }
+
+/// M2-24, the stage clear tally against the recordings of `flow_tally` (re/harness/scripts/flow_tally.txt, one MAME process): the port is loaded
+/// with the state of the first record where the stage clear sequence G.$4D1 is 6 (the tally task has run once) and runs without input to the record
+/// before the story panel (mode 8, M2-28: the port's stub starts the next stage there). In every record the three layers, the
+/// palettes, the sprite list, the sound codes, the random number, the fade, the scores and the whole struct of the task G.$735E (0x80 bytes) equal MAME:
+/// one hero with every HP boundary (100 gives 20000), kills (150), the final blow, two and three heroes (the best of each panel, M.V.P. by damage with a tie,
+/// WINNER! and its sparkle) and the damage ties. The end of the count is the frame 177 + the largest total / 100 + the map panel (M2-25: the slide in and
+/// the blinking marker, 140 frames of it and 60 of sleep); the number of records checked per scenario is printed with `--nocapture`. The one record of
+/// the panel draw where the 68000 overruns the frame (3 heroes, a tie of 2) shows the last cells of the panel undrawn in MAME: its scroll1 is not compared.
+#[test]
+fn clear_tally_matches_mame() {
+    let Some(a) = assets() else { return };
+    let mut checked = Vec::new();
+    for name in ["tv-hp100", "tv-hp99", "tv-hp1", "tv-k150", "tv-k255", "tv-fb", "tv-2p-a", "tv-2p-eq", "tv-3p-a", "td-2p-12", "td-3p-tie"] {
+        let Some(trace) = flow_trace_named(name) else { continue };
+        let mut rd = TraceReader::open(&trace).expect("the recording opens");
+        // the first record with G.$4D1 = 6, the stage clear tally
+        let mut start = None;
+        while let Some(f) = rd.next() {
+            if f >= 0 && rd.region("ram").unwrap().data[0x84D1] == 6 {
+                start = Some(f);
+                break;
+            }
+        }
+        let start = start.expect("the recording reaches the tally");
+        let mut g = Game::new(a);
+        g.hold_unported = true;
+        let warn = g.trace_load(&rd.region("ram").unwrap().data.clone(), &rd.region("gfx").unwrap().data.clone());
+        assert!(warn.iter().all(|w| w.contains("fade") || w.contains("intro")), "{name}: {warn:?}");
+        let mut bad: Vec<String> = Vec::new();
+        let mut n = 0;
+        let mut prev_ram = rd.region("ram").unwrap().data.clone();
+        loop {
+            g.w.input = [0; 3];
+            g.w.system = 8;
+            g.w.coins = 0;
+            g.tick();
+            match rd.next() {
+                Some(f) => assert_eq!(f - start, n + 1, "{name}: the next record"),
+                None => break, // the recording ends before the story panel (k150, fb)
+            }
+            let (ram, gfx) = (rd.region("ram").unwrap().data.clone(), rd.region("gfx").unwrap().data.clone());
+            if ram[0x84D0] == 8 {
+                break; // the story panel (M2-28)
+            }
+            n += 1;
+            let k = n;
+            let d = (diff(&g, &gfx, 1).len(), diff(&g, &gfx, 2).len(), diff(&g, &gfx, 3).len(), palette_diff(&g, &gfx, 0xFFFF).len());
+            // the frame overrun of the panel draw (`tally_state4`): the recording is cut in the middle of it
+            let overrun = ram[0xF35E] == 6 && prev_ram[0xF35E] == 4 && g.flow.tally.sleep == 2;
+            if d != (0, 0, 0, 0) && !(overrun && d == (d.0, 0, 0, 0)) {
+                bad.push(format!("{name} +{k}: cells {d:?}"));
+            }
+            let ms: Vec<_> = mame_sprites(&ram, &gfx);
+            let ps: Vec<_> = g.sprites.entries.iter().map(|e| (e.x as u16, e.y as u16, e.code, e.attr)).collect();
+            if ms != ps {
+                bad.push(format!("{name} +{k}: sprite list {} / {}", ms.len(), ps.len()));
+            }
+            if ram[0xF35E..0xF3DE] != g.flow.tally.raw.0[..0x80] {
+                let at = (0..0x80).find(|&i| ram[0xF35E + i] != g.flow.tally.raw.0[i]).unwrap();
+                bad.push(format!("{name} +{k}: the struct G.$735E differs at +{at:#x}: MAME {:#x} port {:#x}", ram[0xF35E + at], g.flow.tally.raw.0[at]));
+            }
+            for p in 0..3 {
+                let o = 0xB374 + 0x180 * p;
+                if ram[o..o + 4] != g.players[p].score.to_be_bytes() {
+                    bad.push(format!("{name} +{k}: score of player {p}"));
+                }
+            }
+            if ram16(&ram, 0xFF8014) != g.w.rng {
+                bad.push(format!("{name} +{k}: random number"));
+            }
+            if ram[0x84E2] != g.flow.b4e2 {
+                bad.push(format!("{name} +{k}: G.$4E2"));
+            }
+            if ram[0x844A] != g.fade.mask {
+                bad.push(format!("{name} +{k}: fade mask"));
+            }
+            let (msn, psn) = (mame_sounds(&prev_ram, &ram), g.w.sounds.clone());
+            if msn != psn {
+                bad.push(format!("{name} +{k}: sounds MAME {msn:?} port {psn:?}"));
+            }
+            prev_ram = ram;
+            if bad.len() > 5 || n > 900 {
+                break;
+            }
+        }
+        assert!(bad.is_empty(), "{} problems, first: {:#?}", bad.len(), &bad[..bad.len().min(5)]);
+        checked.push((name, n));
+    }
+    println!("clear tally records equal to MAME before the story panel: {checked:?}");
+}
+
+/// The recording `flow_NAME.mame.trc` of a batch segment (`re/out/traces`), or None (the test skips).
+fn flow_trace_named(name: &str) -> Option<String> {
+    flow_trace(name)
+}

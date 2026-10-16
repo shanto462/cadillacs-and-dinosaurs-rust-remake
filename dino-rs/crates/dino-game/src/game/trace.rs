@@ -860,7 +860,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 20, 34, 41, 49, 50, 54, 55, 56, 57, 60]),
-    ("prop", &[15, 20, 31, 66, 73, 74]),
+    ("prop", &[15, 20, 25, 31, 66, 73, 74]),
     (
         "item",
         &[
@@ -877,7 +877,7 @@ pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
             class::ATTACK_BOX,
         ],
     ),
-    ("effect", &[0x04 / 4, 0x10 / 4, 0x20 / 4, 0x68 / 4, 0x70 / 4]),
+    ("effect", &[0x04 / 4, 0x10 / 4, 0x20 / 4, 0x58 / 4, 0x68 / 4, 0x70 / 4, 0x88 / 4]),
     // a pool D slot has no class word: the diff tool reads +$20 of the slot, which is 0 for the clock's slot (a sprite word)
     ("special", &[0]),
 ];
@@ -1271,14 +1271,26 @@ impl Game {
         f.u8(0x0635, "select_seconds", &mut sel.seconds);
         f.u8(0x0636, "select_frames", &mut sel.frames);
         f.u8(n(0x702E), "game_over_flag", &mut fl.front.game_over_flag);
-        // Stage intro task struct G.$735E (the task itself: task slot 0x30, see trace_load_tasks).
-        let it = &mut fl.intro;
-        f.u8(0x735E, "intro_state", &mut it.state);
-        f.u8(0x735F, "intro_sub", &mut it.sub);
-        f.u16(0x7364, "intro_w6", &mut it.w6);
-        f.u16(0x7366, "intro_w8", &mut it.w8);
-        f.u32(0x7368, "intro_src", &mut it.src);
-        f.u32(0x736C, "intro_dst", &mut it.dst);
+        // The struct G.$735E (the task itself: task slot 0x30, see trace_load_tasks) belongs to the stage clear task (the tally, a byte image)
+        // while the game is in its tally steps (G.$4D1 = 6) and until the stage intro task of the next stage starts, else to the stage intro task.
+        if f.loading() {
+            fl.tally.owner = fl.sub >= 6 && fl.mode == 0xC;
+        }
+        if fl.tally.owner {
+            for k in 0..super::flow::tally::SIZE {
+                let mut v = fl.tally.raw.b(k);
+                f.u8(0x735E + k as u32, "tally", &mut v);
+                fl.tally.raw.sb(k, v);
+            }
+        } else {
+            let it = &mut fl.intro;
+            f.u8(0x735E, "intro_state", &mut it.state);
+            f.u8(0x735F, "intro_sub", &mut it.sub);
+            f.u16(0x7364, "intro_w6", &mut it.w6);
+            f.u16(0x7366, "intro_w8", &mut it.w8);
+            f.u32(0x7368, "intro_src", &mut it.src);
+            f.u32(0x736C, "intro_dst", &mut it.dst);
+        }
     }
 
     fn trace_hud(&mut self, f: &mut F) {
@@ -1417,9 +1429,27 @@ impl Game {
         // over with the sleep counter of the snapshot. The clear task (0xB97E) is not (the tally is M2-28).
         let (st, cnt) = task(3);
         self.flow.intro.live = false;
-        self.flow.clear.live = false;
+        self.flow.tally.live = false;
         if st != 0 {
-            if self.flow.mode == 0xC && self.flow.sub == 0 && self.flow.intro.state <= 6 {
+            if self.flow.tally.owner && self.flow.mode == 0xC {
+                // The clear task: the position inside its routine follows from the sleep counter (a counter above 1 is a sleep inside a
+                // routine of the tally, 0xA7E or 0xA82), the state and the sub step (a task is made and runs for the first time in the same frame, so a snapshot never holds one that has not run).
+                use super::flow::tally::After;
+                let (state, sub) = (self.flow.tally.raw.b(0), self.flow.tally.raw.b(1));
+                let t = &mut self.flow.tally;
+                t.live = true;
+                t.sleep = if st == 1 { cnt as u16 } else { 1 };
+                t.after = if cnt > 1 {
+                    match (state, sub) {
+                        (2, 0xA) => After::AdvanceTotal,
+                        (2, _) => After::Advance,
+                        (6, _) => After::Resume,
+                        _ => After::Loop,
+                    }
+                } else {
+                    After::Loop
+                };
+            } else if self.flow.mode == 0xC && self.flow.sub == 0 && self.flow.intro.state <= 6 {
                 let it = &mut self.flow.intro;
                 it.live = true;
                 it.sleep = if st == 1 { cnt as u16 } else { 1 };
@@ -1436,10 +1466,17 @@ impl Game {
             }
         }
         // Slot 4 (0x40): fade task.
-        let (st, _) = task(4);
+        let (st, cnt) = task(4);
         self.fade.task = None;
         if st != 0 {
-            warn.push(format!("task slot 0x40 (fade) is active (state {st}): not taken over"));
+            if self.flow.tally.live {
+                // The fade of the clear tally: down (0x8854) in its first sub steps, up (0x8838) from the clean up (sub 0xE). The kernel counter is
+                // the sleep between two steps; the step count, the delay and the mask are the globals G.$44B, G.$44C and G.$44A.
+                let fade_in = self.flow.tally.raw.b(1) >= 0xE;
+                self.fade.task = Some(crate::game::palette::FadeTask { fade_in, sleep: cnt as u16, started: true });
+            } else {
+                warn.push(format!("task slot 0x40 (fade) is active (state {st}): not taken over"));
+            }
         }
         self.flow.front.prev_system = ram[0x801F];
         for i in 0..3 {
