@@ -10,6 +10,7 @@
 
 use std::collections::HashMap;
 
+pub mod boss;
 pub mod effect;
 pub mod enemy;
 pub mod frontend;
@@ -55,6 +56,8 @@ pub struct AssetPack {
     pub player: player::PlayerData,
     /// Enemy, stage-script and item tables (`enemy.rs`).
     pub enemy: enemy::EnemyData,
+    /// Boss reinforcement controller lists (`boss.rs`).
+    pub boss: boss::BossData,
     /// Draw-path lists (shadows, splashes) and effect animations (`effect.rs`).
     pub effects: effect::EffectData,
     /// HUD and flow strings and tables (`text.rs`).

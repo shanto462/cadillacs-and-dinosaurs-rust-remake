@@ -55,7 +55,7 @@ enemies 0x23420, shake 0x222D6, props 0x23604, effects 0x237B2, held players 0x1
 
 Every module adds methods to `Game`, so all method names share one name space. Prefix the
 methods you add with your area: `player_`, `enemy_`, `item_`, `prop_`, `spawn_`, `rank_`, `fx_`,
-`draw_`, `hud_`, `flow_`, `snd_` (existing hook names like `pass_10664`, `hook_a5ea` stay).
+`draw_`, `hud_`, `flow_`, `snd_`, `boss_` (`game/boss.rs`, the boss services), `script_` (existing hook names like `pass_10664`, `hook_a5ea` stay).
 Helpers that only need your own object can be methods on your own type or free functions.
 
 ## Shared services

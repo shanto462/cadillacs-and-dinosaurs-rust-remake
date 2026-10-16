@@ -3,6 +3,7 @@
 //! It only reads bytes. No original code is executed or emulated: tables found by reverse
 //! engineering the 68000 program are decoded here into plain Rust types.
 
+pub mod boss;
 pub mod effect;
 pub mod enemy;
 pub mod frontend;
@@ -51,6 +52,7 @@ pub fn extract_with(rom_path: &Path, extra: &ExtraFrames) -> Result<AssetPack, S
         obj_palette_sets,
         player: player::extract(&rom),
         enemy: enemy::extract(&rom),
+        boss: boss::extract(&rom),
         effects: effect::extract(&rom, extra),
         text: text::extract(&rom),
         terrain: terrain::extract(&rom),
