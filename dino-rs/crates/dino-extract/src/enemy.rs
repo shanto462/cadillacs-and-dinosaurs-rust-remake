@@ -170,6 +170,13 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x811CA, 0x14, "clock: tile code of the digits 0 to 9 (0x8114E)"),
     // pool B class 18 (respawn air strike, 0x7B65E)
     (0x7B7A6, 0x20, "air strike records: 5 x (X offset, depth offset, variant) then a negative end word"),
+    // pool B class 3 (mine wall, 0x763F6)
+    (0x76666, 0x18, "prop B3: body box table (0x76432)"),
+    (0x76530, 0x40, "prop B3 var 0: tile codes (0x76488)"),
+    (0x766FA, 0x36, "prop B3 var 8: tile codes (0x766CC)"),
+    // pool B class 1 (chain-link gate / fence, 0x75238)
+    (0x75414, 0x18, "prop B1: body box table (0x7525E)"),
+    (0x7535E, 0x9C, "prop B1: attribute rewrite table (0x7532E)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {

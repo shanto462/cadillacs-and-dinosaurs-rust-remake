@@ -86,6 +86,12 @@ mod class19;
 mod class67;
 #[path = "prop/class68.rs"]
 mod class68;
+// Pool B class 1 (M3-19): chain-link fence / gate (0x75238).
+#[path = "prop/b1.rs"]
+mod b1;
+// Pool B class 3 (M3-19): mine wall (0x763F6).
+#[path = "prop/b3.rs"]
+mod b3;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -125,6 +131,8 @@ impl Game {
             let h = self.props.handle(i);
             let mut p = std::mem::take(&mut self.props.slots[i]);
             match p.b.k20 / 4 {
+                1 => self.prop_b1(&mut p, h, i),
+                3 => self.prop_b3(&mut p, h, i),
                 15 => self.prop_wave(&mut p, h, i),
                 22 => self.boss_controller(&mut p, i),
                 17 => self.prop_class17(&mut p, i),
