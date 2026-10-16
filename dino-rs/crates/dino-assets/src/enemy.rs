@@ -66,10 +66,6 @@ pub struct StageScript {
     /// Areas 0..3 (unused areas repeat area 0).
     pub areas: Vec<AreaScript>,
     pub waves: Vec<Wave>,
-    /// Boss reinforcement controller (pool B class 22): timed list (0x7BF36) and threshold
-    /// groups (0x7BF56). Same record format as waves.
-    pub boss_timed: Vec<SpawnRec>,
-    pub boss_groups: Wave,
 }
 
 /// Byte blobs copied from the ROM, named by start address.

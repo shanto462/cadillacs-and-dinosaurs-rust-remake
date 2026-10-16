@@ -11,9 +11,6 @@ const LIST1_TABLE: u32 = 0xFC2E;
 const LIST2_TABLE: u32 = 0xFC4E;
 /// Wave script tables by stage (word offsets per wave), used by pool B class 15 (0x7B336).
 const WAVE_TABLE: u32 = 0x7B37C;
-/// Boss reinforcement lists by stage (pool B class 22, init 0x7BF0A).
-const BOSS_TIMED_TABLE: u32 = 0x7BF36;
-const BOSS_GROUP_TABLE: u32 = 0x7BF56;
 /// Trigger values at or above this never fire (list sentinels).
 const SENTINEL: u16 = 0x9FFF;
 
@@ -228,7 +225,7 @@ pub fn extract(rom: &Rom) -> EnemyData {
     d
 }
 
-fn rec(rom: &Rom, a: u32, long: bool) -> SpawnRec {
+pub(crate) fn rec(rom: &Rom, a: u32, long: bool) -> SpawnRec {
     SpawnRec {
         trig: rom.u16(a),
         flags: rom.u16(a + 2),
@@ -257,10 +254,10 @@ fn list(rom: &Rom, start: u32, long: bool) -> Vec<SpawnRec> {
 }
 
 /// Wave format: { thr[3], (16-byte record)+, 16-byte terminator }* thr[3] end_word.
-fn wave(rom: &Rom, start: u32) -> Wave {
+pub(crate) fn wave(rom: &Rom, start: u32) -> Wave {
     let mut w = Wave { addr: start, ..Default::default() };
     let mut a = start;
-    for _ in 0..64 {
+    for _ in 0..256 {
         let thr = [rom.u16(a), rom.u16(a + 2), rom.u16(a + 4)];
         a += 6;
         if (rom.u16(a) as i16) < 0 {
@@ -280,10 +277,10 @@ fn wave(rom: &Rom, start: u32) -> Wave {
 }
 
 /// Records with a delay word until a negative delay (boss timed list).
-fn delay_list(rom: &Rom, start: u32) -> Vec<SpawnRec> {
+pub(crate) fn delay_list(rom: &Rom, start: u32) -> Vec<SpawnRec> {
     let mut v = Vec::new();
     let mut a = start;
-    for _ in 0..64 {
+    for _ in 0..256 {
         let r = rec(rom, a, true);
         v.push(r);
         if (r.trig as i16) < 0 {
@@ -309,8 +306,6 @@ fn stage_script(rom: &Rom, st: u32) -> StageScript {
     StageScript {
         areas,
         waves,
-        boss_timed: delay_list(rom, rom.u32(BOSS_TIMED_TABLE + 4 * st)),
-        boss_groups: wave(rom, rom.u32(BOSS_GROUP_TABLE + 4 * st)),
     }
 }
 

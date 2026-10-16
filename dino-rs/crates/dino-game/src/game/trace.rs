@@ -628,6 +628,9 @@ impl Prop {
                 self.m.sw(off, v);
             }
         }
+        if f.all() || self.b.k20 == 22 * 4 {
+            self.trace_boss_controller(f, stage);
+        }
         if f.all() || self.b.k20 == 15 * 4 {
             let mut t = self.m.w(0x80);
             f.u16(0x80, "wave_timer", &mut t);
@@ -659,6 +662,56 @@ impl Prop {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+impl Prop {
+    /// The boss reinforcement controller (class 22, 0x7BEF6, `boss.rs`): the port keeps list indexes (`+$A0` timed
+    /// record, `+$A4` / `+$A6` group and record), the original ROM pointers at `+$A0` and `+$A4`.
+    fn trace_boss_controller(&mut self, f: &mut F, stage: u8) {
+        for (off, name) in [(0x80, "boss_group_timer"), (0xA8, "boss_timed_timer")] {
+            let mut v = self.m.w(off);
+            f.u16(off as u32, name, &mut v);
+            self.m.sw(off, v);
+        }
+        let mut done = self.m.b(0xAE);
+        f.u8(0xAE, "boss_done", &mut done);
+        self.m.sb(0xAE, done);
+        let mut boss = self.m.l(0xAA);
+        f.u32(0xAA, "boss_obj", &mut boss);
+        self.m.sl(0xAA, boss);
+        let Some(l) = f.assets.boss.stages.get(stage as usize) else { return };
+        if self.b.mode == 0 && !f.all() {
+            // A new controller: the init (0x7BF0A) has not run, the pointers are stale bytes. Keep them.
+            for (off, name) in [(0xA0, "boss_timed_ptr"), (0xA4, "boss_group_ptr")] {
+                let mut p = self.m.l(off);
+                f.u32(off as u32, name, &mut p);
+                self.m.sl(off, p);
+            }
+            return;
+        }
+        let mut t = l.timed_addr + 16 * self.m.w(0xA0) as u32;
+        f.u32(0xA0, "boss_timed_ptr", &mut t);
+        let (g, r) = (self.m.w(0xA4) as usize, self.m.w(0xA6) as usize);
+        // after the final thresholds (0x7C060) the pointer stays 6 bytes past them
+        let mut p = if done != 0 { wave_ptr(&l.groups, g, 0, 0) + 6 } else { wave_ptr(&l.groups, g, r, self.b.sub) };
+        f.u32(0xA4, "boss_group_ptr", &mut p);
+        if f.loading() {
+            let k = t.wrapping_sub(l.timed_addr);
+            if k % 16 == 0 && ((k / 16) as usize) < l.timed.len() {
+                self.m.sw(0xA0, (k / 16) as u16);
+            } else if self.b.live != 0 {
+                f.v.error(format!("boss controller: timed pointer {t:#x} not in the list {:#x}", l.timed_addr));
+            }
+            match wave_pos(&l.groups, p) {
+                Some((g, r)) => {
+                    self.m.sw(0xA4, g as u16);
+                    self.m.sw(0xA6, r as u16);
+                }
+                None if self.b.live != 0 => f.v.error(format!("boss controller: group pointer {p:#x} not in the list {:#x}", l.groups.addr)),
+                None => {}
             }
         }
     }
@@ -860,7 +913,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 20, 34, 41, 49, 50, 54, 55, 56, 57, 60]),
-    ("prop", &[15, 18, 20, 25, 31, 66, 73, 74]),
+    ("prop", &[15, 18, 20, 22, 25, 31, 66, 73, 74]),
     (
         "item",
         &[

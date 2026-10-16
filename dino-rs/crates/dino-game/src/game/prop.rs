@@ -118,6 +118,7 @@ impl Game {
             let mut p = std::mem::take(&mut self.props.slots[i]);
             match p.b.k20 / 4 {
                 15 => self.prop_wave(&mut p, h, i),
+                22 => self.boss_controller(&mut p, i),
                 17 => self.prop_class17(&mut p, i),
                 18 => self.prop_b18(&mut p, h, i),
                 19 => self.prop_class19(&mut p, i),
