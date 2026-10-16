@@ -23,6 +23,10 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x7BCAC, 14, "GO scroll1 palette 10 colours"),
     (0x7BCEA, 40, "GO glyph cells"),
     (0x7BD12, 40, "GO erase cells"),
+    // Pool B class 47 (0x84282), manhole hole patch tile codes (M3-21).
+    (0x842F6, 24, "B47 manhole hole patch tile codes (0x84282)"),
+    // Pool B class 35 (0x81FDE), manhole cover hero offsets (M3-21).
+    (0x820FE, 0x70, "B35 manhole cover hero offsets (0x81FDE)"),
     // score
     (0x10292, 0x90, "BCD score values (0x10036), indexed by byte offset"),
     (0x325F8, 0x28, "kill score offset by name id (0x325E6)"),

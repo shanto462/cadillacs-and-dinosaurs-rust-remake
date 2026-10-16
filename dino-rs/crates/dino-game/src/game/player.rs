@@ -1796,6 +1796,52 @@ impl Game {
         }
     }
 
+    /// 0x81FB0: spawn pool B class 35 at the player's position, holding the player's handle in +$76.
+    pub fn player_b35_spawn(&mut self, i: usize) -> Option<Handle> {
+        let (x, y, z) = (self.players[i].b.xi(), self.players[i].b.yi(), self.players[i].b.zi());
+        let h = self.spawn_prop(35, 0, Some((x, y, z)))?;
+        if let Some(crate::game::Slot::Prop(k)) = crate::game::slot_of(h) {
+            self.props.slots[k].m.sw(0x76, Game::player_handle(i));
+        }
+        Some(h)
+    }
+
+    /// 0x19F40 state 0x2C entry (action 0x3E, leader only): the pose with an effect at the chest.
+    /// The spark 0xD (0x92422) at the hero's X, height + 0x58 and depth, then 41 frames of waiting in the handler.
+    pub fn player_chest_pose_entry(&mut self, i: usize) {
+        let p = &mut self.players[i];
+        p.b.set_state(0x0200_002C);
+        p.b90 = 0;
+        p.set_b80(0x28);
+        let (x, y, z) = (p.b.xi(), p.b.yi(), p.b.zi());
+        self.fx_spawn_spark_at(Game::player_handle(i), x, y.wrapping_add(0x58), z, 0xD);
+    }
+
+    /// 0x19F6A / 0x19F8A (a second copy of the pose routine is at 0x2864) state 0x2C: step 0 waits (`+$80` counts 0x28 to below 0),
+    /// then makes a pool B class 35 object at the hero's place that holds his handle in `+$76` (0x81FB0) and starts animation 0x1F (0x19F8A / 0x2864);
+    /// step 2 plays it and goes idle (0x19122) when finished.
+    pub fn player_chest_pose(&mut self, i: usize) {
+        match self.players[i].b90 {
+            0 => {
+                let p = &mut self.players[i];
+                let old = p.b80();
+                p.set_b80(old.wrapping_sub(1));
+                if old != 0 {
+                    return; // bcs only on the borrow
+                }
+                p.b90 += 2;
+                self.player_b35_spawn(i);
+                self.player_panim(i, 0, 0x1F);
+            }
+            2 => {
+                if self.player_pstep(i) {
+                    self.player_idle_entry(i); // bra 0x19122
+                }
+            }
+            _ => {}
+        }
+    }
+
     /// 0x19FC6 run_entry (falls through).
     fn player_run_entry(&mut self, i: usize) {
         self.player_panim(i, 0, 2);

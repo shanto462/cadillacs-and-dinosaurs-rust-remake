@@ -106,6 +106,8 @@ pub const OBJECT_FRAMES: &[u32] = &[
     0x88882, 0x8888E, 0x8889A, 0x888A6, 0x88A60, 0x88A6C, 0x88A78,
     // Pool B class 1 (chain-link gate / fence, 0x75294).
     0x75400,
+    // Pool B class 35 (the manhole cover grate, 0x81FDE, loaded by 0x81FF6).
+    0x82172,
 ];
 
 pub fn extract(rom: &Rom, extra: &crate::ExtraFrames) -> SpriteData {

@@ -84,6 +84,10 @@ mod b12;
 mod b20;
 #[path = "prop/b31.rs"]
 mod b31;
+#[path = "prop/b35.rs"]
+mod b35;
+#[path = "prop/b47.rs"]
+mod b47;
 // Pool B class 18 (M2-16): the respawn air strike (five bombs from the record list 0x7B7A6).
 #[path = "prop/b18.rs"]
 mod b18;
@@ -163,6 +167,8 @@ impl Game {
                 21 => self.prop_b21(&mut p, i),
                 31 => self.prop_clock(&mut p, i),
                 32 => self.prop_class32(&mut p, i),
+                35 => self.prop_b35(&mut p, i),
+                47 => self.prop_b47(&mut p, i),
                 66 => self.prop_class66(&mut p, i),
                 67 => self.prop_class67(&mut p, i),
                 68 => self.prop_class68(&mut p, i),
