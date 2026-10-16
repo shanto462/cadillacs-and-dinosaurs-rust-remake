@@ -16,7 +16,7 @@ const N: u16 = 0x106;
 /// `(code, header byte, voices)`: the header holds the byte and a BE offset per voice
 /// (0x40 + 0x10 * v for a voice in the list, 0 otherwise).
 fn synth(headers: &[(u16, u8, &[u8])]) -> SoundData {
-    let mut data = vec![0u8; 0x2_0000];
+    let mut data = vec![0u8; 0x3_1000];
     data[0x8000..0x8002].copy_from_slice(&N.to_be_bytes());
     for code in 0..N {
         let hdr = header_addr(code);
@@ -32,6 +32,9 @@ fn synth(headers: &[(u16, u8, &[u8])]) -> SoundData {
             let off: u16 = if voices.contains(&(v as u8)) { 0x40 + 0x10 * v as u16 } else { 0 };
             data[hdr + 1 + 2 * v..hdr + 3 + 2 * v].copy_from_slice(&off.to_be_bytes());
         }
+        // Rests (0x20): a track that is read once takes one event and then waits, because the
+        // tempo of a new track is 0 and its duration never reaches 0 again.
+        data[hdr + 0x40..hdr + 0x140].fill(0x20);
     }
     SoundData {
         data,
@@ -40,7 +43,13 @@ fn synth(headers: &[(u16, u8, &[u8])]) -> SoundData {
 }
 
 fn header_addr(code: u16) -> u32 {
-    0x1_0000 + 0x40 * code as u32
+    0x1_0000 + 0x200 * code as u32
+}
+
+/// True when a track pointer is still at its start or one rest past it (the first sequencer
+/// step of a new track reads one rest, SPEC 7).
+fn at_start(ptr: u32, start: u32) -> bool {
+    ptr == start || ptr == start + 1
 }
 
 /// Sends one request the way the game does: queue, vblank flush, one tick (the IRQ copy and
@@ -146,13 +155,13 @@ fn priority_rule_replaces_on_equal_or_higher_only() {
     send(&mut d, 0x10, d1, d2);
     let a_ptr = d.track(0, false).ptr;
     assert_eq!((d.track(0, false).priority, d.track(1, false).priority), (5, 5));
-    assert_eq!(a_ptr, header_addr(0x10) + 0x40);
+    assert!(at_start(a_ptr, header_addr(0x10) + 0x40));
 
     send(&mut d, 0x11, d1, d2);
     assert_eq!(d.track(0, false).ptr, a_ptr, "prio 4 does not replace prio 5");
 
     send(&mut d, 0x12, d1, d2);
-    assert_eq!(d.track(0, false).ptr, header_addr(0x12) + 0x40, "prio 5 replaces prio 5");
+    assert!(at_start(d.track(0, false).ptr, header_addr(0x12) + 0x40), "prio 5 replaces prio 5");
     assert_eq!(d.track(0, false).priority, 5);
 
     send(&mut d, 0x13, d1, d2);
@@ -160,7 +169,7 @@ fn priority_rule_replaces_on_equal_or_higher_only() {
 
     send(&mut d, 0x14, d1, d2);
     assert_eq!(d.track(0, false).priority, 6, "prio 6 replaces on voice 0");
-    assert_eq!(d.track(1, false).ptr, header_addr(0x10) + 0x40 + 0x10, "voice 1 keeps A");
+    assert!(at_start(d.track(1, false).ptr, header_addr(0x10) + 0x40 + 0x10), "voice 1 keeps A");
 }
 
 #[test]
@@ -220,7 +229,7 @@ fn fade_starts_once_and_zero_speed_cancels() {
     send(&mut d, 0xFF07, 0x0444_0000, 0);
     assert_eq!(d.peek(FADE2_ON), 0xFF);
     assert_eq!(d.r16_for_test(FADE2_SPEED), 0x0444);
-    assert_eq!(d.r16_for_test(FADE2_LEVEL), 0xFFFF);
+    assert!(matches!(d.r16_for_test(FADE2_LEVEL), 0xFFFF | 0xFBBB), "one step at most");
     send(&mut d, 0xFF07, 0x0100_0000, 0);
     assert_eq!(d.r16_for_test(FADE2_SPEED), 0x0444, "a running fade is not restarted");
     send(&mut d, 0xFF07, 0, 0);
@@ -229,7 +238,7 @@ fn fade_starts_once_and_zero_speed_cancels() {
     send(&mut d, 0xFF06, 0x0200_0000, 0);
     assert_eq!(d.peek(FADE1_ON), 0xFF);
     assert_eq!(d.r16_for_test(FADE1_SPEED), 0x0200);
-    assert_eq!(d.r16_for_test(FADE1_LEVEL), 0xFFFF);
+    assert!(matches!(d.r16_for_test(FADE1_LEVEL), 0xFFFF | 0xFDFF), "one step at most");
 }
 
 #[test]
@@ -448,9 +457,9 @@ fn rom_codes_allocate_the_voices_their_header_lists() {
             if listed && h != 0 {
                 assert_eq!(t.priority, h, "code {code:#04x} voice {v}");
             }
-            if listed {
-                assert_eq!(t.ptr, cmd.track(v as usize).expect("listed voice has a track"), "code {code:#04x} voice {v}");
-            }
+            // The pointer is not compared: the start tick may already run a sequencer step
+            // (SPEC 4), and a track can jump back into a shared pattern (SPEC 7). The events are
+            // checked against MAME in the sequencer tests.
         }
     }
 }
@@ -472,6 +481,26 @@ fn mame_start_writes(code: &str) -> Option<Vec<(u8, u16)>> {
             let reg = u8::from_str_radix(f[3], 16).ok()?;
             let val = u16::from_str_radix(f[5], 16).ok()?;
             out.push((reg, val));
+        }
+    }
+    Some(out)
+}
+
+/// Every DSP register write of a MAME QSound trace with its frame (`f N r REG v VALUE`).
+fn mame_frame_writes(code: &str) -> Option<Vec<(usize, u8, u16)>> {
+    let dir = match std::env::var("DINO_SOUND_TRACE_DIR") {
+        Ok(d) => PathBuf::from(d),
+        Err(_) => Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../re/out/sound"),
+    };
+    let text = std::fs::read_to_string(dir.join(format!("{code}.qs.trc"))).ok()?;
+    let mut out = Vec::new();
+    for line in text.lines() {
+        let f: Vec<&str> = line.split_whitespace().collect();
+        if f.len() == 6 && f[0] == "f" && f[2] == "r" && f[4] == "v" {
+            let frame: usize = f[1].parse().ok()?;
+            let reg = u8::from_str_radix(f[3], 16).ok()?;
+            let val = u16::from_str_radix(f[5], 16).ok()?;
+            out.push((frame, reg, val));
         }
     }
     Some(out)
@@ -514,3 +543,103 @@ fn rom_music_start_writes_match_mame_trace() {
     assert!(mine.len() >= 4 * 14, "music 0x00 uses 14 voices, got {} writes", mine.len());
     assert_eq!(&expected[..mine.len()], &mine[..]);
 }
+
+/// Frame-by-frame run of one request: `frames` video frames (59.6374 Hz) with the 250 Hz tick
+/// spread over them. Returns the DSP writes of each frame. Used to compare with MAME (M4-04).
+fn run_frames(d: &mut Driver, code: u16, frames: usize) -> Vec<(usize, u8, u16)> {
+    d.command(code, 0, 0);
+    let per_frame = 250.0 / 59.6374;
+    let mut out = Vec::new();
+    let mut ticks_done = 0usize;
+    for f in 0..frames {
+        d.vblank();
+        let want = ((f + 1) as f64 * per_frame).floor() as usize;
+        while ticks_done < want {
+            d.tick();
+            ticks_done += 1;
+        }
+        for w in d.take_dsp_writes() {
+            out.push((f, w.reg, w.value));
+        }
+    }
+    out
+}
+
+/// The writes the sequencer owns at a key-on and in the track steps that the M4-04 port does
+/// write: key-on, echo, sample load and the bank word. The volume (reg `v*8+6`) and pitch
+/// (`v*8+2`) writes of the steps come with M4-05, so they are left out.
+fn sequencer_owned(reg: u8, value: u16) -> bool {
+    let _ = value;
+    if reg == 0x93 || reg == 0xD9 || (0xBA..=0xC9).contains(&reg) {
+        return true;
+    }
+    reg < 0x80 && reg % 8 != 2 && reg % 8 != 6
+}
+
+/// Compares the sequencer writes of one request with the MAME trace, frame by frame over
+/// `frames` frames. Frames are not compared: the ticks are spread over the frames.
+fn check_sequencer_writes(code: &str, frames: usize) {
+    let Some(expected) = mame_frame_writes(code) else {
+        eprintln!("skipped: no MAME trace of code {code} (set DINO_SOUND_TRACE_DIR)");
+        return;
+    };
+    let pack = dino_extract::extract(&rom_path()).expect("dino.zip reads");
+    let mut d = Driver::new(&pack.sound, true);
+    settle(&mut d);
+    d.take_dsp_writes();
+    let code_n = u16::from_str_radix(code, 16).expect("hex code");
+    let mine: Vec<(u8, u16)> = run_frames(&mut d, code_n, frames)
+        .into_iter()
+        .filter(|(_, r, _)| sequencer_owned(*r, 0))
+        .map(|(_, r, v)| (r, v))
+        .collect();
+    let want: Vec<(u8, u16)> = expected
+        .into_iter()
+        .filter(|(f, r, _)| *f < frames && sequencer_owned(*r, 0))
+        .map(|(_, r, v)| (r, v))
+        .collect();
+    let n = mine.len().min(want.len());
+    let first = (0..n).find(|&i| mine[i] != want[i]);
+    eprintln!("code {code}: ours {} writes, MAME {} writes, first difference {:?}", mine.len(), want.len(), first);
+    if let Some(i) = first {
+        eprintln!("ours {:?}", &mine[i.saturating_sub(3)..(i + 4).min(mine.len())]);
+        eprintln!("MAME {:?}", &want[i.saturating_sub(3)..(i + 4).min(want.len())]);
+    }
+    assert!(first.is_none());
+    assert_eq!(mine.len(), want.len());
+}
+
+/// Music 0x00: the key-on, sample load and echo writes of the first 240 frames equal the MAME
+/// trace of M4-01 (order and values).
+#[test]
+fn rom_music_0000_sequencer_writes_match_mame_trace() {
+    check_sequencer_writes("0000", 240);
+}
+
+/// Music 0x01 over 600 frames (10 s): the sequencer writes equal MAME, including the tempo,
+/// the gates, the loops and the sample changes of a whole piece.
+#[test]
+fn rom_music_0001_sequencer_writes_match_mame_trace() {
+    check_sequencer_writes("0001", 600);
+}
+
+/// Effect 0x2C (the first effect of the ROM list, SPEC 5) over 600 frames.
+#[test]
+fn rom_effect_002c_sequencer_writes_match_mame_trace() {
+    check_sequencer_writes("002c", 600);
+}
+
+/// Effect 0xCA (a voice bank, SPEC 5) over 600 frames.
+#[test]
+fn rom_effect_00ca_sequencer_writes_match_mame_trace() {
+    check_sequencer_writes("00ca", 600);
+}
+
+/// Coin 0x30 (an effect): the same check over the frames of its MAME trace.
+#[test]
+fn rom_coin_0030_sequencer_writes_match_mame_trace() {
+    check_sequencer_writes("0030", 240);
+}
+
+
+

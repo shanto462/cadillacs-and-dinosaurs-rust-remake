@@ -5,9 +5,10 @@
 //! Every DSP register write goes to a log ([`RegWrite`]) so a later mixer, or a test, can read it.
 //!
 //! Part 1 (task M4-03): mailbox, command dispatch, priorities, track setup and the pan setup
-//! of the eight modes. Not yet here: the sequencer (M4-04), envelope, LFO and the volume and
-//! pitch writes (M4-05), the pan motion steps, fades, masking of music by effects and twins of
-//! mode 7 in the step (M4-06), ADPCM (not used by this ROM).
+//! of the eight modes. Part 2 (task M4-04, `seq.rs`): the sequencer step, events, notes, key-on,
+//! the commands and track end. Not yet here: envelope, LFO and the volume and pitch writes
+//! (M4-05), the pan motion steps and the no-event step, twins of mode 7 in the step (M4-06),
+//! ADPCM (not used by this ROM).
 //!
 //! The crate does not depend on `dino-game`. Sound data comes from `dino_assets::sound::SoundData`,
 //! which `dino-extract` reads from the user's `dino.zip` at run time. No ROM bytes live here.
@@ -15,6 +16,7 @@
 mod driver;
 mod map;
 mod pan;
+mod seq;
 
 #[cfg(test)]
 mod tests;
