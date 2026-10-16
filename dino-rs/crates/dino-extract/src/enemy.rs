@@ -177,6 +177,13 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x78A8E, 42, "B11 metal door codes, 3 columns of 7 (0x78A5A)"),
     (0x7B14A, 56, "B14 hole codes, 4 columns of 7 (0x7B108)"),
     (0x7B2E6, 72, "B14 wooden door codes, 4 columns of 9 (0x7B2A4)"),
+    // pool B class 3 (mine wall, 0x763F6)
+    (0x76666, 0x18, "prop B3: body box table (0x76432)"),
+    (0x76530, 0x40, "prop B3 var 0: tile codes (0x76488)"),
+    (0x766FA, 0x36, "prop B3 var 8: tile codes (0x766CC)"),
+    // pool B class 1 (chain-link gate / fence, 0x75238)
+    (0x75414, 0x18, "prop B1: body box table (0x7525E)"),
+    (0x7535E, 0x9C, "prop B1: attribute rewrite table (0x7532E)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {

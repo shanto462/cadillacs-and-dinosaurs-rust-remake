@@ -99,6 +99,12 @@ mod class96;
 // The ending (M3-23): the master of the scenes (82) and the showers and quakes (83, 84, 85).
 #[path = "prop/b82_85.rs"]
 mod b82_85;
+// Pool B class 1 (M3-19): chain-link fence / gate (0x75238).
+#[path = "prop/b1.rs"]
+mod b1;
+// Pool B class 3 (M3-19): mine wall (0x763F6).
+#[path = "prop/b3.rs"]
+mod b3;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -140,6 +146,8 @@ impl Game {
             match p.b.k20 / 4 {
                 11 => self.prop_b11(&mut p, i),
                 14 => self.prop_b14(&mut p, i),
+                1 => self.prop_b1(&mut p, h, i),
+                3 => self.prop_b3(&mut p, h, i),
                 15 => self.prop_wave(&mut p, h, i),
                 22 => self.boss_controller(&mut p, i),
                 17 => self.prop_class17(&mut p, i),

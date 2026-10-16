@@ -230,19 +230,24 @@ impl Game {
         }
     }
 
-    /// 0x94640: one pool C object, class word 0x54 (class 21), the prop's X Y Z, variant d0, facing d1.
-    fn prop_burst_effect(&mut self, p: &Prop, fx: BurstEffect) {
+    /// 0x94640: one pool C object, class word 0x54 (class 21), variant d0, facing d1 at (x, y, z).
+    pub fn prop_c21_spawn(&mut self, x: i16, y: i16, z: i16, var: u16, facing: u8) {
         let Some(j) = self.effects.alloc() else {
             return;
         };
         let e = &mut self.effects.slots[j];
         e.b.live = 1;
         e.b.k20 = 0x54;
-        e.b.set_xi(p.b.xi());
-        e.b.set_yi(p.b.yi());
-        e.b.set_zi(p.b.zi());
-        e.b.var26 = fx.var;
-        e.b.facing = fx.facing;
+        e.b.set_xi(x);
+        e.b.set_yi(y);
+        e.b.set_zi(z);
+        e.b.var26 = var;
+        e.b.facing = facing;
+    }
+
+    /// 0x94640: one pool C object, class word 0x54 (class 21), the prop's X Y Z, variant d0, facing d1.
+    fn prop_burst_effect(&mut self, p: &Prop, fx: BurstEffect) {
+        self.prop_c21_spawn(p.b.xi(), p.b.yi(), p.b.zi(), fx.var, fx.facing);
     }
 
     /// One update of a burst prop. True on the update that fires. Mode 6 and anything past it free the

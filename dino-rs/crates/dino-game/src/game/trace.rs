@@ -616,6 +616,24 @@ impl Prop {
             f.u16(0xA0, "hole_wait", &mut w);
             self.m.sw(0xA0, w);
         }
+        if f.all() || matches!(self.b.k20 / 4, 1 | 3) {
+            f.u32(0x44, "box_table", &mut self.b.box_table);
+            f.u8(0x48, "body_box", &mut self.b.body_box);
+            f.u8(0x49, "attack_box", &mut self.b.attack_box);
+            f.u8(0x59, "hitstop", &mut self.b.hitstop);
+            f.u8(0x5E, "serial", &mut self.b.serial);
+            f.u16(0x6A, "hp_bar", &mut self.b.hp_bar);
+            f.u16(0x6C, "hp", &mut self.b.hp);
+            f.u16(0x6E, "hp_prev", &mut self.b.hp_prev);
+            let mut wa0 = self.m.w(0xA0);
+            f.u16(0xA0, "wa0", &mut wa0);
+            self.m.sw(0xA0, wa0);
+        }
+        if f.all() || self.b.k20 == 1 * 4 {
+            let mut r5f = self.m.b(0x5F);
+            f.u8(0x5F, "r5f", &mut r5f);
+            self.m.sb(0x5F, r5f);
+        }
         if f.all() || self.b.k20 == 73 * 4 || self.b.k20 == 96 * 4 {
             // The bird spawner's delay (class 73, 0x89AE0) and class 96 music timer sit in the same word.
             let mut t = self.m.w(0x80);
@@ -932,7 +950,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 16, 17, 20, 27, 34, 41, 43, 49, 50, 54, 55, 56, 57, 60, 90, 92, 93, 96]),
-    ("prop", &[11, 14, 15, 18, 20, 21, 22, 25, 31, 66, 73, 74, 82, 83, 84, 85, 96]),
+    ("prop", &[1, 3, 11, 14, 15, 18, 20, 21, 22, 25, 31, 66, 73, 74, 82, 83, 84, 85, 96]),
     (
         "item",
         &[
