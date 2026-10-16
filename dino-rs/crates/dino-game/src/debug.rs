@@ -86,9 +86,9 @@ impl Debug {
     }
 }
 
-/// Next area: the camera's area end with no fade (mode 1, sub 4 = `area_end_next_area`), which takes the next area of the
-/// camera events.
+/// Next area: the camera's area change without a fade (mode 0x12 at sub 4 = `area_end_next_area(false)`, 0x20D3A), which
+/// takes the next area of the camera events. Mode 1 sub 4 would wait for the end of a fade that was never started.
 pub fn next_area(g: &mut Game) {
-    g.cam.s2.mode = 1;
+    g.cam.s2.mode = 0x12;
     g.cam.s2.sub = 4;
 }

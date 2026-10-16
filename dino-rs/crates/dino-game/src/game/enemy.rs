@@ -203,12 +203,17 @@ impl Game {
             }
             self.enemies.slots[i] = e;
         }
+        self.enemy_ph_hide_sprites();
     }
 
-    /// Classes not ported yet: freed at once so waves and thresholds keep working.
+    /// Classes not ported yet: a placeholder when the registry has the class (`placeholder.rs`),
+    /// else freed at once so waves and thresholds keep working.
     pub fn enemy_class_unported(&mut self, e: &mut Enemy, h: Handle, i: usize) {
         if self.trace_hold(h, &e.b) {
             return; // harness: kept as the snapshot had it
+        }
+        if super::placeholder::spec_of(e.b.k20 / 4).is_some() {
+            return self.enemy_ph_update(e, h, i);
         }
         eprintln!("pool A class {:#x} not ported (freed)", e.b.k20 / 4);
         self.enemy_free_pool_a(e, i);

@@ -7,7 +7,7 @@
 //!         [--headless | --windowed] [--load-state FILE] [--trace FILE --frames N]
 //!         [--step-from MAME.trc] [--follow-rng MAME.trc]
 //!         [--poke FRAME:ADDR:SIZE:VALUE]... [--poke-file FILE]... [--poke-clock power|game]
-//!         [--episode 1..8 | --stage 0..7] [--area 0..3] [--camx X] [--autoplay] [--debug-keys]`
+//!         [--episode 1..8 | --stage 0..7] [--area 0..3] [--camx X] [--autoplay] [--debug-keys] [--list-placeholders]`
 //! Without `--stage`, `--episode` and `--chars` the game starts from power on (the boot screens and the attract
 //! mode); `--stage N` / `--episode N` / `--chars` start directly in a stage (development). `--area` and `--camx` (hex or
 //! decimal) start that area with the camera at X. `--autoplay` is the bot of `autoplay.rs` (power on to the ending as far as
@@ -59,6 +59,8 @@ struct Args {
     stage: u8,
     area: u8,
     camx: u16,
+    /// `--area` above 0: the area still to reach and the camera X to jump to there (see `tick_game`).
+    goto: Option<(u8, u16)>,
     chars: Vec<u8>,
     autoplay: Option<autoplay::Bot>,
     debug: debug::Debug,
@@ -124,6 +126,7 @@ fn args() -> Args {
         stage,
         area: area.unwrap_or(0),
         camx: camx.unwrap_or(0) as u16,
+        goto: area.filter(|&a| a > 0).map(|a| (a, camx.unwrap_or(0) as u16)),
         autoplay: a.iter().any(|x| x == "--autoplay").then(autoplay::Bot::default),
         debug: debug::Debug::new(a.iter().any(|x| x == "--debug-keys")),
         chars: value("--chars").map(|v| v.split(',').filter_map(|c| c.parse().ok()).collect()).unwrap_or(vec![0]),
@@ -213,6 +216,10 @@ fn main() {
         println!("{}", usage());
         return;
     }
+    if std::env::args().any(|a| a == "--list-placeholders") {
+        print!("{}", game::placeholder::list_text());
+        return;
+    }
     if std::env::args().any(|a| a == "--print-config") {
         print!("{}", game::flow::Config::default().to_text());
         return;
@@ -256,7 +263,8 @@ fn start_game(assets: &'static dino_assets::AssetPack, args: &mut Args, config: 
                 std::process::exit(1);
             }
         },
-        None if args.direct => game.start_stage_at(args.stage, args.area, args.camx, &args.chars),
+        // a later area is reached in play (`tick_game`): the stage start always begins in area 0
+        None if args.direct => game.start_stage_at(args.stage, 0, if args.goto.is_some() { 0 } else { args.camx }, &args.chars),
         None => game.flow_boot(), // power on: the boot screens, then the attract mode
     }
     // Pokes (`--poke`): the same clocks as a headless run, where tick n is trace record n.
@@ -271,6 +279,20 @@ fn start_game(assets: &'static dino_assets::AssetPack, args: &mut Args, config: 
 }
 
 fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Frame) {
+    // `--area`: the game's own end of area (camera mode 1 sub 4, the debug key F6) once the hero has control, area after
+    // area like the probe `jump`, then `--camx`. Stage 2 (Episode 3) has its own camera controller: not handled yet.
+    if let Some((area, camx)) = args.goto {
+        if game.flow.mode == 0xC && game.w.scripted == 0 && game.cam.s2.mode == 0 {
+            if game.cam.s2.area < area {
+                debug::next_area(game);
+            } else {
+                if camx != 0 {
+                    game.flow_jump_camera(camx);
+                }
+                args.goto = None;
+            }
+        }
+    }
     if let Some(bot) = &mut args.autoplay {
         f = bot.frame(game, tick, &mut args.debug);
     }

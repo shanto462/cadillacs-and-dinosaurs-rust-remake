@@ -24,6 +24,7 @@ pub mod hud;
 pub mod item;
 pub mod palette;
 pub mod player;
+pub mod placeholder;
 pub mod player_combat;
 pub mod prop;
 pub mod rank;

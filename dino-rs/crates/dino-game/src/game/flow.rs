@@ -220,11 +220,13 @@ impl Game {
         if camx != 0 {
             self.flow_jump_camera(camx);
         }
+        // `area` above 0 only sets the area byte before the start: the camera init (0x20A9C) resets it, so `main.rs`
+        // reaches later areas in play with the game's own area change.
     }
 
     /// Moves the camera to X (review aid, see `start_stage_at`): the present players move by the same distance, and the spawn
     /// lists go on after the records the camera has already passed (`spawn.rs` trigger test: X unsigned, `bhi`/`bls`).
-    fn flow_jump_camera(&mut self, x: u16) {
+    pub fn flow_jump_camera(&mut self, x: u16) {
         let d = x.wrapping_sub(self.cam.s2.cam_x) as i16;
         self.cam.s2.cam_x = x;
         for p in self.players.iter_mut().filter(|p| p.b.live != 0) {

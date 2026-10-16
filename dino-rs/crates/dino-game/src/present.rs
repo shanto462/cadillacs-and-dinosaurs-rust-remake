@@ -23,6 +23,7 @@ pub fn draw(g: &mut Game, gpu: &mut impl DrawTarget) {
     draw_scroll2(g, gpu, scroll.s2);
     draw_scroll1(g, gpu, scroll.cam1, if scroll1_behind { Layer::TextBehind } else { Layer::Hud });
     g.sprites.submit(gpu);
+    crate::game::placeholder::draw_boxes(g, gpu);
 }
 
 /// Scroll3: 32x32 tiles, codes 0x1C00..0x1FFF (others are hidden by the bank mapper).
