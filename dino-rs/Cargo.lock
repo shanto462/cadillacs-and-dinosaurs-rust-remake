@@ -109,6 +109,7 @@ dependencies = [
  "dino-extract",
  "gilrs",
  "macroquad",
+ "png 0.18.1",
 ]
 
 [[package]]
