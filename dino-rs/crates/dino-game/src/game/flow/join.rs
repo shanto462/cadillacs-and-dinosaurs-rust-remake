@@ -42,11 +42,16 @@ impl Game {
                             self.flow_join_clear(i, 0x7FB6, 0x7FC2);
                             self.flow_continue_draw_hud(i); // 0x7328
                         }
-                        // TODO(M2-21/22): no-continue qualification.
+                        if self.flow.b4d7 != 0 {
+                            // 0x7392: no continue. The HUD prompt is cleared, then the qualification.
+                            self.flow_join_clear(i, 0x7FB6, 0x7FC2);
+                            self.name_qualify(i);
+                        }
                     }
                 }
                 8 => self.flow_continue_player(i),
-                _ => {} // M2-21/22: name entry and GAME OVER.
+                10 => self.name_state(i), // 0x74A4: name entry
+                _ => {} // 0xC: the game over label (no task work).
             }
         }
         // 0x6C8A..0x6D46: nobody playing, or only continue countdowns left.

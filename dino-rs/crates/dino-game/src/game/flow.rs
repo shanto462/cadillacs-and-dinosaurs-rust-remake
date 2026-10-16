@@ -28,6 +28,7 @@ pub mod demo;
 pub mod front;
 #[path = "flow/join.rs"]
 pub mod join;
+pub mod name_entry;
 pub mod cont;
 #[cfg(test)]
 #[path = "flow/mame_check.rs"]
@@ -140,6 +141,10 @@ pub struct Flow {
     pub b4d7: u8,
     pub b4db: u8,
     pub b507: u8,
+    /// G.$5E4 name entry running (1 while a player enters, 2 at the game over wait).
+    pub b5e4: u8,
+    /// The name entry blocks and shared blink state (`name_entry.rs`).
+    pub name: name_entry::NameEntry,
     /// G.$4DA game frame counter (prompt blink timing).
     pub frame: u8,
     /// G.$4E2 stage clear sequence running, G.$4E3 player script reached its mark (set by the
