@@ -257,6 +257,7 @@ impl Game {
     pub fn enemy_class43(&mut self, e: &mut Enemy, h: Handle) {
         match e.b.mode {
             0 => {
+                self.spawn.g.b4fc = 1; // 0x55F3E: move.b #1,$4FC(a5), the opening's flag (the banner wait of 0x55FA0 is the gate)
                 e.b.live = 2;
                 e.b.anim_table = 0x56106;
                 e.m.sw(WA0, 0);
