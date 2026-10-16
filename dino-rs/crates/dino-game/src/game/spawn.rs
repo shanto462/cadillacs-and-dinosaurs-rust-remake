@@ -23,6 +23,9 @@ pub struct Globals {
     pub killer: Handle,
     /// G.$50C wave group time budget (7200 frames).
     pub wave_timer: u16,
+    /// G.$4FE idle hint countdown and G.$500 camera X saved by 0x7BB84.
+    pub go_timer: u16,
+    pub go_camera_x: u16,
     /// G.$518 special mode (1 = Cadillac drive section). [I]
     pub car_mode: u8,
     /// G.$502 boss threshold list enable (set by the boss summon).
@@ -58,6 +61,8 @@ pub struct Globals {
     /// Harness only (`DINO_STEP_PLAYERS`): MAME's RAM image after the frame being run; the pool E
     /// update loads the players from it before it runs (`Game::trace_load_players`).
     pub step_players: Option<Vec<u8>>,
+    /// Harness only: null derived pointers in snapshots taken before initialization.
+    pub trace_dormant: super::trace::DormantPointers,
 }
 
 /// State of the interpreter (struct at G.$66C).

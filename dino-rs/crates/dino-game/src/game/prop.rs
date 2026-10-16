@@ -59,6 +59,8 @@ mod class72;
 #[path = "prop/b74.rs"]
 mod b74;
 // Pool B class 31 (M2-13): the stage clock (it keeps its sprite list in a pool D slot).
+#[path = "prop/b20.rs"]
+mod b20;
 #[path = "prop/b31.rs"]
 mod b31;
 // Pool B classes of the character select (M2-04): the frame (17), the pictures over the group picture (67) and the player tags (68).
@@ -112,6 +114,7 @@ impl Game {
                 15 => self.prop_wave(&mut p, h, i),
                 17 => self.prop_class17(&mut p, i),
                 19 => self.prop_class19(&mut p, i),
+                20 => self.prop_go_hint(&mut p, i),
                 31 => self.prop_clock(&mut p, i),
                 32 => self.prop_class32(&mut p, i),
                 66 => self.prop_class66(&mut p, i),

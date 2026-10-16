@@ -19,6 +19,10 @@ const SENTINEL: u16 = 0x9FFF;
 
 /// Small tables copied as byte blobs: (ROM address, length, user).
 const TABLES: &[(u32, u32, &str)] = &[
+    // Pool B class 20, GO picture (0x7BB68).
+    (0x7BCAC, 14, "GO scroll1 palette 10 colours"),
+    (0x7BCEA, 40, "GO glyph cells"),
+    (0x7BD12, 40, "GO erase cells"),
     // score
     (0x10292, 0x90, "BCD score values (0x10036), indexed by byte offset"),
     (0x325F8, 0x28, "kill score offset by name id (0x325E6)"),
