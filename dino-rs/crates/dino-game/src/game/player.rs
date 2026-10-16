@@ -1705,7 +1705,8 @@ impl Game {
                 if self.players[i].b.vy < 0 {
                     self.player_splash_check(i);
                     if self.players[i].b.airborne == 0 {
-                        // 0x19E62 state 0x26 (G.$755C = 3: screen shake, enemy port)
+                        // 0x19E70: hard landing requests strength 3 (G.$755C).
+                        self.cam_shake(3);
                         self.players[i].b.set_state(0x0200_0026);
                         self.player_sfx(i, 0x9B9E);
                         self.player_panim(i, 1, 0xF);

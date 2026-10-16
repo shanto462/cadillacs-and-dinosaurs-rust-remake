@@ -1222,7 +1222,23 @@ impl Game {
         }
         f.u16(0x06C4, "cam1_x", &mut self.cam.cam1_x);
         f.u16(0x06C8, "cam1_y", &mut self.cam.cam1_y);
+        f.u8(0x755A, "shake_state", &mut self.cam.shake_state);
         f.u8(0x755C, "shake_req", &mut self.cam.shake_req);
+        f.u8(0x755D, "shake_strength", &mut self.cam.shake_strength);
+        f.u8(0x755E, "shake_timer", &mut self.cam.shake_timer);
+        let mut sign = self.cam.shake_sign as u8;
+        f.u8(0x755F, "shake_sign", &mut sign);
+        self.cam.shake_sign = sign as i8;
+        f.i16(0x7560, "shake_amp", &mut self.cam.shake_amp);
+        f.u16(0x07B8, "shake_scroll1_y", &mut self.cam.shake_scroll1_y);
+        let mut y1 = self.cam.cam1_y.wrapping_add(self.cam.shake_dy1 as u16);
+        let mut y2 = self.cam.s2.cam_y.wrapping_add(self.cam.shake_dy2 as u16);
+        f.u16(0x0860, "display_y1", &mut y1);
+        f.u16(0x0868, "display_y2", &mut y2);
+        if f.loading() {
+            self.cam.shake_dy1 = y1.wrapping_sub(self.cam.cam1_y) as i16;
+            self.cam.shake_dy2 = y2.wrapping_sub(self.cam.s2.cam_y) as i16;
+        }
     }
 
     fn trace_flow(&mut self, f: &mut F) {
