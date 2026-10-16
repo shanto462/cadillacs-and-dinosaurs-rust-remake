@@ -2411,3 +2411,114 @@ fn press_report() {
         println!("record {k}: sprites {:?} layer {:?} counter {:?} sounds {:?} state {:?} sys {:?}", d.sprites, d.layer, d.counter, d.sounds, d.state, d.sys);
     }
 }
+
+/// The live objects of pool A (base 0xFFC8F4, 24 slots of 0xE0 bytes) and pool B (0xFFB6F4, 24 of 0xC0) of a MAME RAM image that have one of the
+/// given classes (`+$20 / 4`), as (pool, class, variant, X, height, depth, mode, sub, act), sorted: the slot numbers are not compared.
+fn mame_objects(ram: &[u8], classes_a: &[u16], classes_b: &[u16]) -> Vec<(char, u16, u16, u16, u16, u16, u8, u8, u8)> {
+    let mut v = Vec::new();
+    for (pool, base, stride, classes) in [('A', 0xFFC8F4u32, 0xE0u32, classes_a), ('B', 0xFFB6F4, 0xC0, classes_b)] {
+        for i in 0..24 {
+            let o = base + stride * i;
+            let class = ram16(ram, o + 0x20) / 4;
+            if ram[(o - 0xFF0000) as usize] != 0 && classes.contains(&class) {
+                let b = |k: u32| ram[(o + k - 0xFF0000) as usize];
+                v.push((pool, class, ram16(ram, o + 0x26), ram16(ram, o + 8), ram16(ram, o + 0xC), ram16(ram, o + 0x10), b(4), b(5), b(6)));
+            }
+        }
+    }
+    v.sort();
+    v
+}
+
+/// The same list from the port.
+fn port_objects(g: &Game, classes_a: &[u16], classes_b: &[u16]) -> Vec<(char, u16, u16, u16, u16, u16, u8, u8, u8)> {
+    let mut v = Vec::new();
+    for e in g.enemies.slots.iter().filter(|e| e.b.live != 0 && classes_a.contains(&(e.b.k20 / 4))) {
+        let b = &e.b;
+        v.push(('A', b.k20 / 4, b.var26, b.xi() as u16, b.yi() as u16, b.zi() as u16, b.mode, b.sub, b.act));
+    }
+    for p in g.props.slots.iter().filter(|p| p.b.live != 0 && classes_b.contains(&(p.b.k20 / 4))) {
+        let b = &p.b;
+        v.push(('B', b.k20 / 4, b.var26, b.xi() as u16, b.yi() as u16, b.zi() as u16, b.mode, b.sub, b.act));
+    }
+    v.sort();
+    v
+}
+
+/// M2-10 to M2-12: the Episode 1 opening from power on (coin 598, start 698, Jack at 898: `coinstart.mame.trc`), record by record from the first
+/// frame after the level start (1059) to the end of the special attack (1760): the layers scroll2 and scroll3 and the palettes equal MAME in every
+/// record, scroll1 to 1677 (after it the join prompts of the absent heroes are drawn by the original's 0x7562, M2-18), the sprite list and the sound
+/// codes in every record, and the state: the game mode, G.$0000 and G.$4DA, G.$4DD, G.$4E2, G.$4E3, G.$4D5, G.$4D8, G.$4F0, G.$506, the six scroll
+/// shadows, the random number, hero 1 (position, state, action) and the objects of the opening (the bystander, the thugs and the flying member
+/// with the master, the three banners, the birds and their spawner), by class, variant, position and state (not by slot: the hint object B20
+/// is unported until M2-15 and is freed at once, so the later props take other slots). Not compared: records 1057 and 1058, where the original's
+/// first level frame (the area setup, the map and the start of the scripts) takes about 2.5 video frames and the port runs it whole in 1057.
+/// The timeline it checks (D4c A1): the camera pans 3 pixels a frame (mode 0x11) to 0x381 and stops (mode 0) at 1358, G.$506 is 1 from 1059 to
+/// 1669, G.$4E3 is 1 in 1672, G.$4D5 is 0 in 1674 and G.$4DD is 0 in 1704.
+#[test]
+fn episode_one_opening_matches_mame() {
+    let Some(a) = assets() else { return };
+    let mut bad: Vec<String> = Vec::new();
+    let mut seen = [0i32; 5]; // the records of 4E3, 4D5 = 0, 4DD = 0 and the camera mode 0 that the port shows, and 506 = 0
+    let classes_a = [49u16, 50, 54, 55, 56, 57];
+    let classes_b = [66u16, 73, 74];
+    let (_, rows) = compare_power_on_with(
+        a,
+        TRACE_COINSTART,
+        1760,
+        |k| [if (898..=903).contains(&k) { 0x10 } else { 0 }, 0, 0],
+        |k, g, _| {
+            g.w.coins = (598..=605).contains(&k) as u8;
+            g.w.system = 8 | (698..=703).contains(&k) as u8;
+        },
+        |k, g, ram, _| {
+            if k < 1059 {
+                return;
+            }
+            let b = |a: u32| ram[(a - 0xFF0000) as usize];
+            let w = |a: u32| ram16(ram, a);
+            let mut diff = |what: &str, m: u32, p: u32| {
+                if m != p {
+                    bad.push(format!("record {k}: {what} MAME {m:#x} port {p:#x}"));
+                }
+            };
+            diff("G.$0000", w(0xFF8000) as u32, g.w.frame as u32);
+            diff("G.$4DA", b(0xFF84DA) as u32, g.flow.frame as u32);
+            diff("mode G.$4D0", b(0xFF84D0) as u32, g.flow.mode as u32);
+            diff("G.$4DD", b(0xFF84DD) as u32, g.w.scripted as u32);
+            diff("G.$4E2", b(0xFF84E2) as u32, g.flow.b4e2 as u32);
+            diff("G.$4E3", b(0xFF84E3) as u32, g.flow.b4e3 as u32);
+            diff("G.$4D5", b(0xFF84D5) as u32, g.spawn.g.b4d5 as u32);
+            diff("G.$4D8", b(0xFF84D8) as u32, g.flow.script.b4d8 as u32);
+            diff("G.$4F0", b(0xFF84F0) as u32, g.w.floor_only as u32);
+            diff("G.$506", b(0xFF8506) as u32, g.w.no_clamp as u32);
+            diff("camera mode G.$741", b(0xFF8741) as u32, g.cam.s2.mode as u32);
+            diff("random number G.$14", w(0xFF8014) as u32, g.w.rng as u32);
+            let p1 = &g.players[0];
+            diff("P1 X", w(0xFFB274 + 8) as u32, p1.b.xi() as u16 as u32);
+            diff("P1 height", w(0xFFB274 + 0xC) as u32, p1.b.yi() as u16 as u32);
+            diff("P1 depth", w(0xFFB274 + 0x10) as u32, p1.b.zi() as u16 as u32);
+            diff("P1 state", (w(0xFFB274 + 4) as u32) << 16 | w(0xFFB274 + 6) as u32, p1.b.state());
+            if mame_objects(ram, &classes_a, &classes_b) != port_objects(g, &classes_a, &classes_b) {
+                bad.push(format!(
+                    "record {k}: objects MAME {:?} port {:?}",
+                    mame_objects(ram, &classes_a, &classes_b),
+                    port_objects(g, &classes_a, &classes_b)
+                ));
+            }
+            if b(0xFF84E3) != 0 && seen[0] == 0 {
+                seen[0] = k;
+            }
+        },
+    );
+    for (k, d) in rows.iter().enumerate().skip(1059) {
+        let k = k as i32;
+        if d.s2 + d.s3 + d.pal > 0 || (k < 1678 && d.s1 > 0) || d.sprites.is_some() || d.sounds.is_some() || d.cams.is_some() || d.layer.is_some() {
+            bad.push(format!("record {k}: picture {d:?}"));
+        }
+    }
+    assert!(seen[0] != 0, "the heroes were released: G.$4E3 was set");
+    assert_eq!(seen[0], 1672, "G.$4E3 is set in record 1672 (D4c A1: frame 615 of the level, which starts in record 1057)");
+    let first: Vec<String> = bad.iter().take(4).map(|m| m.chars().take(700).collect()).collect();
+    assert!(bad.is_empty(), "{} problems, first: {:#?}", bad.len(), first);
+}

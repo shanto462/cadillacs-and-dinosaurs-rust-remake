@@ -322,6 +322,7 @@ impl Game {
             0x46 => {
                 self.spawn_script_prop(0x46); // 0x1DD0E: the forced GO blink, pool B class 20 variant 2 (no pad clear)
             }
+            0x42 => self.script_clear_sequence(i), // 0x1E650
             0x4A => self.script_barrier(i), // 0x1DC60
             0x4C => self.script_wait_flag(i, self.spawn.g.car_mode != 0), // 0x1DC42: the car G.$518
             0x4E => {
@@ -439,6 +440,54 @@ impl Game {
         s.timer = after;
         s.step += 2;
     }
+
+    /// 0x1E650 action 0x42: the clear sequence of Episode 8 (the end of script 24: the last boss is dead, the heroes have walked to their
+    /// end spots). The first run of the first hero (`+$D3` = 0 and G.-$70AA = 0) starts it for everybody: G.-$70AA = 1, G.$516 = 1 (the
+    /// player update skips the hero state machine, `player.rs`), the sound 0x23, and one pool A class 97 stand in for each of the four
+    /// heroes: the present ones (0x69E32, copied from the player) and, for the characters nobody plays (the bits of d5 that are not set, from 3
+    /// down to 0), the absent ones (0x69E66, at X 0x10E0). Every run of every hero then sets the timer: 1 (the record ends) when the boss's `+$A6`
+    /// (the object G.$4E0) is not 0, 0xFFFF (run again next frame) while it is 0. No pad clear (the action ends with `rts`). D4c 5.4 has the
+    /// wait the wrong way round (D5 errata).
+    ///
+    /// The stand ins are pool A class 97 objects (M3: the ending); until then `script_stand_in_present` / `_absent` only mark G.-$70A9.
+    fn script_clear_sequence(&mut self, i: usize) {
+        if self.players[i].sc.step == 0 && self.flow.script.b70aa == 0 {
+            self.players[i].sc.step += 2; // 0x1E660
+            self.flow.script.b70aa = 1;
+            self.flow.script.b516 = 1;
+            self.sound(0x23); // moveq #$23,d0 / jsr 0xA63C
+            let mut present = 0u8; // d5
+            for k in 0..3 {
+                if self.players[k].b.live != 0 {
+                    let id = self.players[k].b.id & 7; // `+$03`: the character
+                    present |= 1 << id;
+                    self.flow.script.b70a9 |= 1 << id;
+                    self.script_stand_in_present(k, id);
+                }
+            }
+            for id in (0..4u8).rev() {
+                if present & (1 << id) == 0 {
+                    present |= 1 << id;
+                    self.script_stand_in_absent(id);
+                }
+            }
+        }
+        // 0x1E6E2: the boss `+$A6`
+        let boss = self.spawn.g.killer; // movea.w $4E0(a5),a0
+        let a6 = match super::slot_of(boss) {
+            Some(super::Slot::Enemy(e)) => self.enemies.slots[e].m.b(0xA6),
+            _ => 0,
+        };
+        self.players[i].sc.timer = if a6 != 0 { 1 } else { 0xFFFF };
+    }
+
+    /// 0x69E32 (called by 0x1E650 for a present hero, d0 = his character): a pool A class 97 object (`+$20` = 0x184, variant `2 * id`) at the
+    /// hero's position and facing. Not ported (M3-27, the staff roll and the clear scene): the hook is here so the action is complete.
+    fn script_stand_in_present(&mut self, _hero: usize, _id: u8) {}
+
+    /// 0x69E66 (called by 0x1E650 for a character nobody plays, d0 = its id): a pool A class 97 object (variant `2 * id`) at X 0x10E0, height 0,
+    /// facing 1, the depth from the table 0x69E9A. Not ported (M3-27).
+    fn script_stand_in_absent(&mut self, _id: u8) {}
 
     /// 0x1DC60 action 0x4A: the barrier. Waits until every scripted hero has reached this action, has HP and is not in the invulnerable
     /// state (`+$00` = 2, after a hit or a respawn). A scripted hero whose object is free (`+$00` = 0) is taken out of G.$4DD, but the frame still
@@ -1334,6 +1383,14 @@ mod tests {
                 let limit: u32 = g.assets.script.script(id).records.iter().map(|r| r.timer as u32 + 90).sum::<u32>() * 2 + 100;
                 // a leader as the wave end sets it
                 g.prop_set_leader();
+                if id == 24 {
+                    // the clear sequence (0x42) waits for the last boss's `+$A6` (G.$4E0)
+                    let boss = g.enemies.alloc().map(|e| g.enemies.handle(e)).unwrap();
+                    g.body_mut(boss).live = 1;
+                    g.spawn.g.killer = boss;
+                    let e = g.enemy_index(boss);
+                    g.enemies.slots[e].m.sb(0xA6, 1);
+                }
                 assert!(run_frames(&mut g, id, limit).is_some(), "script {id} with {} heroes does not end in {limit} frames", who.len());
             }
         }
@@ -1675,6 +1732,73 @@ mod tests {
         g.w.scripted = 3;
         run(&mut g, 0x0A);
         assert_eq!((g.flow.b4e3, g.w.scripted, g.flow.script.b4d8), (0, 0, 0));
+    }
+
+    /// The actions that make objects or ask for a sound (M2-12): 0x22 the caption banner (pool B class 66) of G.$4FD, 0x24 the tile change
+    /// (class 21), 0x40 the door smash (class 11 at X 0x670, Z 0x118) and 0x46 the forced GO (class 20, variant 2, the only one of them without the
+    /// pad clear), 0x4E the sound of G.$4FD, 0x50 the music fade out. All of them but 0x46 end with 0x1DEA6.
+    #[test]
+    fn the_object_actions_make_their_objects() {
+        let Some(mut g) = game(0, 0, &[0, 1]) else { return };
+        g.flow.script.b4fd = 0x49;
+        g.players[1].held = ATK;
+        g.players[1].pressed = ATK;
+        g.players[0].sc.act = 0x22;
+        g.script_action(0);
+        let live: Vec<_> = g.props.slots.iter().filter(|p| p.b.live != 0).map(|p| (p.b.k20 / 4, p.b.var26)).collect();
+        assert_eq!(live, vec![(66, 0x49)], "the banner of the record's argument");
+        assert_eq!(g.players[1].held, 0, "the pad of every hero is cleared");
+        for (act, class, var) in [(0x24u8, 21u16, 0u16), (0x40, 11, 0), (0x46, 20, 2)] {
+            g.players[1].held = ATK;
+            g.players[0].sc.act = act;
+            g.script_action(0);
+            let p = g.props.slots.iter().filter(|p| p.b.live != 0).last().map(|p| (p.b.k20 / 4, p.b.var26)).unwrap();
+            let newest = g.props.slots.iter().filter(|p| p.b.live != 0 && p.b.k20 / 4 == class).count();
+            assert_eq!(newest, 1, "action {act:#x} makes one class {class} object");
+            let _ = (p, var);
+            assert_eq!(g.players[1].held == 0, act != 0x46, "action {act:#x}: pad clear");
+        }
+        let door = g.props.slots.iter().find(|p| p.b.live != 0 && p.b.k20 / 4 == 11).unwrap();
+        assert_eq!((door.b.xi(), door.b.zi()), (0x670, 0x118));
+        let hint = g.props.slots.iter().find(|p| p.b.live != 0 && p.b.k20 / 4 == 20).unwrap();
+        assert_eq!(hint.b.var26, 2);
+        g.w.sounds.clear();
+        g.flow.script.b4fd = 0x31;
+        g.players[0].sc.act = 0x4E;
+        g.script_action(0);
+        g.players[0].sc.act = 0x50;
+        g.script_action(0);
+        assert_eq!(g.w.sounds, vec![0x31, 0xFF07]);
+    }
+
+    /// 0x42, the clear sequence of Episode 8 (0x1E650): the first run starts it once (G.-$70AA, G.$516, the sound 0x23, the bits of the present
+    /// characters in G.-$70A9); every run sets the timer from the boss's `+$A6` (G.$4E0): 1 when it is not 0, else 0xFFFF. No pad clear.
+    #[test]
+    fn the_clear_sequence_starts_once_and_waits_for_the_boss() {
+        let Some(mut g) = game(7, 3, &[0, 2]) else { return };
+        let boss = g.enemies.alloc().map(|e| g.enemies.handle(e)).unwrap();
+        g.body_mut(boss).live = 1;
+        g.spawn.g.killer = boss;
+        g.players[0].held = ATK;
+        g.players[0].sc.act = 0x42;
+        g.script_action(0);
+        assert_eq!((g.flow.script.b70aa, g.flow.script.b516, g.players[0].sc.step), (1, 1, 2));
+        assert_eq!(g.flow.script.b70a9, 0b101, "Jack (0) and Hannah (2) are on the stage");
+        assert_eq!(g.w.sounds.iter().filter(|&&c| c == 0x23).count(), 1);
+        assert_eq!(g.players[0].sc.timer, 0xFFFF, "the boss's +$A6 is 0: wait");
+        assert_eq!(g.players[0].held, ATK, "no pad clear");
+        // the second hero in the same frame does not start it again
+        g.players[2].sc.act = 0x42;
+        g.script_action(2);
+        assert_eq!(g.w.sounds.iter().filter(|&&c| c == 0x23).count(), 1);
+        assert_eq!(g.players[2].sc.timer, 0xFFFF);
+        let i = g.enemy_index(boss);
+        g.enemies.slots[i].m.sb(0xA6, 1);
+        g.script_action(0);
+        g.script_action(2);
+        assert_eq!((g.players[0].sc.timer, g.players[2].sc.timer), (1, 1));
+        // a later hero whose own step is still 0 does not start it either (G.-$70AA is set)
+        assert_eq!(g.flow.script.b70a9, 0b101);
     }
 
     /// 0x3C walks right until X reaches 0xB80 (signed), then it is an arrival.

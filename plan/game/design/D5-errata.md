@@ -109,3 +109,21 @@ MAME wins over the design text; the design documents themselves are not edited.
 ## From M9-07 (paused, 2026-10-13)
 
 * M9-06's note "Vice stays in his intro state when spawned" comes from a 230-frame run; Vice's intro lasts about 710 frames. His shell and pellet factors are open, not blocked (M9-07 section 6).
+
+## From M2-10 to M2-12 (the Episode 1 opening, 2026-10-17)
+
+- D3e s3.7, D5 M2-11 and mechanics T16 (the cast): the bystander class 54 is the big man on the right who speaks the three lines (the boss, Vice T. in the story); class 56 is
+  not a "flying cast member that you see": it is drawn in one frame only (its step 4, the frame after the master leaves its step 4, record 1571) and makes the class 57 object
+  at (0x4E5, 0x6C, 0x131), a 16 frame flash with the sound 0xE7. The master (0x89B48) makes the first cast 2 frames after it starts (one frame for its own start), the
+  second cast (the three thugs from the left) 361 frames later, and does nothing after 0x5A + 0x1E more frames. The thugs of the second cast walk in from the left edge
+  (X 0x370, facing right). M: `episode_one_opening_matches_mame`, `intro` in step and run mode.
+- D5 M2-10 check ("B66 vars 0x49, 0x54, 0x4A at t = 40, 162, 284"): the place caption var 9 starts at level frame 24 (record 1080, camera X 0x48); the three lines are made together
+  by the stage list in one frame at camera X 0x2A0 (record 1282, level frame 226); their delays are 0, 122 and 244 (D3e 3.6 is right), each shows for 120 frames, so the lines are
+  up in the records 1285 to 1405, 1407 to 1527 and 1529 to 1649. The banner tables have 0x60 entries: the variants 0x68 to 0x6F read other data and are never made (the pointer
+  table has 112 entries, the game uses 0 to 0x67).
+- D4c s6 (opening, Episode 1) and A1: with the level starting in record 1057 of `coinstart.mame.trc`, G.$506 = 1 from 1059 to 1669, G.$4E3 = 1 in 1672 (frame 615), G.$4D5 = 0 in
+  1674, G.$4DD = 0 in 1704 (frame 647) and the camera mode is 0 from record 1358. The first level frame is not one video frame: the original's first game frame (area setup, map, script
+  start) takes about 2.5 video frames, G.$0000 counts in 1057 and again in 1059, and no task runs in record 1058. The intro task (0xB9BE) first runs in 1057 (its struct is 0 before),
+  sees G.$4E3 in 1672, redraws the HUD (0x162AE) in 1673 and does its first slide step (scroll1 X + 12) in 1674.
+- D4d s9.2 and D3e (pool B 66, HUD): the "INSERT COIN" prompts of the absent heroes are drawn into the lower half of scroll1 by 0x7562, called from the intro task at every slide
+  step, so they slide in with the HUD (MAME pictures of the records 1680 and later; the port has them with M2-18).

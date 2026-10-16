@@ -22,6 +22,7 @@ mod f {
     pub const A2: usize = 0xA2;
     pub const A8: usize = 0xA8;
     pub const AA: usize = 0xAA;
+    pub const AC: usize = 0xAC;
 }
 
 /// The tables of the original (in `FRONT_TABLES`).
@@ -75,7 +76,9 @@ impl Game {
                 }
             }
             2 => {
-                // 0x86FBA: the text of the variant (the pointer table by variant * 4)
+                // 0x86FBA: the text of the variant (the pointer table by variant * 4); `clr.b $AC(a6)` first (the compares after it
+                // change nothing: every branch goes to 0x87008)
+                p.m.sb(f::AC, 0);
                 let t = &self.assets.frontend.text;
                 let s = t.slice_from(t.u32(TEXTS, 4 * p.b.var26 as u32));
                 self.text_tall(s);
@@ -114,6 +117,76 @@ impl Game {
     fn prop_c66_blank_cells(&mut self) {
         for k in 0..2u32 {
             self.hud_put(0x90A068 + 0x80 * k, 0x1F, 0);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dino_assets::AssetPack;
+    use std::path::Path;
+    use std::sync::OnceLock;
+
+    /// The user's ROM set (`dino.zip` in the repository root); without it the tests of this module pass without checking anything.
+    fn assets() -> Option<&'static AssetPack> {
+        static A: OnceLock<Option<&'static AssetPack>> = OnceLock::new();
+        *A.get_or_init(|| {
+            let rom = Path::new("../../../dino.zip");
+            rom.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(rom).expect("the ROM set loads"))))
+        })
+    }
+
+    fn cells(g: &Game) -> Vec<(u16, u16)> {
+        g.vram.scroll1.iter().map(|c| (c.code, c.attr)).collect()
+    }
+
+    /// M2-10: every caption variant that the game uses (0 to 0x67: the places of the Episodes 1 to 8 and the boss speech lines; the flag
+    /// and chain tables are 0x60 entries long and the variants 0x68 to 0x6F read other data, they are never made) can be shown with the
+    /// real strings. The object waits, prints its text, waits, erases it, makes the next banner of its chain when the table says so and frees
+    /// itself, whatever the variant: no string runs past the extracted blob, and no banner stays for ever.
+    #[test]
+    fn every_caption_variant_runs_to_its_end() {
+        let Some(a) = assets() else { return };
+        for var in 0..0x68u16 {
+            let mut g = Game::new(a);
+            g.spawn_prop(66, var, None).unwrap();
+            let blank = cells(&g);
+            let mut printed = false;
+            let mut frames = 0;
+            while g.props.slots.iter().any(|p| p.b.live != 0) {
+                g.pool_b_update();
+                printed |= cells(&g) != blank;
+                frames += 1;
+                assert!(frames < 3000, "variant {var:#x} does not end");
+            }
+            // The only variant that shows nothing is the empty string of Episode 8 area 3 (var 7).
+            assert!(printed || var == 7, "variant {var:#x} printed nothing");
+        }
+    }
+
+    /// The banner object follows the tables: it waits `+$A0` frames, prints for `+$A2` frames and frees itself, so its life is the sum
+    /// plus the init frame and the print step (the tables are read from the ROM, the sum is checked against the object's own fields).
+    #[test]
+    fn a_banner_lives_as_long_as_its_tables_say() {
+        let Some(a) = assets() else { return };
+        for var in [9u16, 0x12, 0x27, 0x50, 0x61, 0x66] {
+            let mut g = Game::new(a);
+            let h = g.spawn_prop(66, var, None).unwrap();
+            let i = (0..24).find(|&k| g.props.handle(k) == h).unwrap();
+            g.pool_b_update(); // mode 0: the four fields from the tables
+            let (before, shown, next) = {
+                let p = &g.props.slots[i];
+                (p.m.w(f::A0) as u32, p.m.w(f::A2) as u32, p.m.b(f::A8))
+            };
+            let mut frames = 1;
+            while g.props.slots[i].b.live != 0 {
+                g.pool_b_update();
+                frames += 1;
+                assert!(frames < 3000);
+            }
+            // init (1) + wait (before + 1) + print (1) + show (shown) + erase (1) + free (1)
+            assert_eq!(frames, 1 + before + 1 + 1 + shown + 1 + 1, "variant {var:#x} (next banner flag {next})");
         }
     }
 }

@@ -458,55 +458,35 @@ not measured). Data: `FRONT_TABLES` (select tables, the prompt strings 0x83EB..,
   of heroes of an in-level join (0x723E, 0x7476, 0x7F86, state 4 in mode 0xC), the credit line of the in-level HUD (0x82E8), the switch to the continue mode and the states 8 to 0xC
   of the join task (M2-05 and later); the join task runs only in modes 0 and 4 so far.
 
-## Paused here (M2-10/11/12), next steps
+## M2-10, M2-11, M2-12: the Episode 1 opening (done 2026-10-17)
 
-Work was stopped on request. `cargo build` and `cargo test` are green (260 tests in dino-game, 8 in dino-extract). `re/harness/regress.sh`:
-49 of 52 at 0 (`intro` went from 3 to 0), `mp_join` 37, `armed` 4, `c14c_mustapha` 8 (no worse than before). Nothing is committed.
+The opening now plays from power on as the original does: the camera pans along the roof tops (3 pixels a frame, mode 0x11) under the place caption, birds fly over, the
+bystander (the boss) and the six thugs come in, the boss speaks the three caption lines, the thugs close in, Jack does the special, the thugs fly away and the HUD slides in.
+`cargo test` is green (265 tests in dino-game); `re/harness/regress.sh`: 49 of 52 at 0 (`intro` 0, was 3), `mp_join` 37, `armed` 4, `c14c_mustapha` 8, no worse than before.
 
-**Done**
-- M2-10: `prop/class66.rs` (M1-10) was already the whole of 0x86D76 (all steps, the erase text choice, the next banner chain); checked against the
-  listing. Class 66 is now in `PORTED_CLASSES` (`trace.rs`), so the harness runs it instead of holding it. The table blob 0x86DD8 (length 0x1830) in
-  `FRONT_TABLES` holds the tables and all 112 strings.
-- M2-11: `prop/b74.rs` (class 74 master 0x89B48, three unit tests), class 56 (0x57C9C) in `enemy/scenery.rs`, its animation table 0x57D84 in
-  `OBJECT_ANIM_TABLES`, the dispatch lines in `prop.rs` and `enemy.rs`, `PORTED_CLASSES`: enemy 56 and 57, prop 66 and 74. Class 57 was already
-  ported (`enemy/class57.rs`, M1-10); class 56 makes it. `intro` scenario, step mode, 600 frames: 0 object differences, 0 globals, with the master and the
-  cast running for real. The test `extra_frames_are_decoded_on_demand` (dino-extract) now uses 0x57F4A (the table 0x57D84 is registered).
-- M2-12 (part): the actions 0x22, 0x24, 0x2A, 0x38, 0x40, 0x46, 0x4E, 0x50 of `script.rs` were compared with the ROM code (0x1DED4, 0x1DECC, 0x1DE6C with
-  0x32762, 0x1DE86 with 0x327CA, 0x1DD30, 0x1DD0E, 0x1DC28, 0x1DC38): all equal, no change needed. The flags `scripted`, `floor_only`, `no_clamp` already
-  have their setters (the script step) and their readers.
-- The harness takes over the intro task from a snapshot (`trace.rs` `trace_load_tasks`: mode 0xC, G.$4D1 = 0; sleep counter, `redraw` guessed from the
-  rank byte +$10A).
-- The level start from the select is closer to the recording (`flow.rs`, `flow/select.rs`): the intro task is created in phase 2 and first runs in phase 4
-  (`Intro::init`, struct still 0 until then); the HUD redraw 0x162AE comes one frame after the frame that saw G.$4E3, the first slide step one frame later
-  (`Intro::redraw`); phase 3 keeps the select's props in pool B (the pool B init 0x4C76 is in phase 4); phase 4 counts G.$0000 / G.$4DA and runs the first level
-  frame at once, then `Flow::lag = 1` (one video frame in which no task runs); `flow_area_reset` sets the splash timer to 1 (0x49B4).
-- Power on run (`re/out/m210/pw.sh`: `dino-game --trace` with `coinstart.txt`, `diff.py` against `coinstart.mame.trc`, from record 1040): with the unported
-  hint B20 held in its slot (a local hack, removed again) only 16 fields differ: the allowed init ones of `allow/m1.txt` (`hud_boss_msg`, `next_event`,
-  `spawn_list1/2`, `player.frame`), the first level frame (records 1057 and 1058: `cam3_state`, `cam3_shift5f`, `spawn_init`, splash timer and phase, 210
-  scroll2 and 187 scroll3 cells: the original's first game frame takes about 2.5 video frames, the port runs it whole in 1057), the frame pointer of fresh
-  objects (`enemy.frame`, `prop.frame`, `effect.frame`, the port shows the default frame, MAME 0), `enemy.r82` (pool tag 4), and the B20 slot itself. G.$4DD,
-  G.$4E3, G.$4D5, G.$506, the camera, P1 and the whole cast (A54, A55, A56, A57, B74, B66) show no difference. Without the B20 hold the slots of the later props
-  shift by one (B20 is freed at once: M2-15).
+* **M2-10, captions** (`prop/class66.rs`): checked against 0x86D76 (all steps, the erase text choice, the chain) and finished: `clr.b $AC` of the print step, two tests with the
+  real ROM (`every_caption_variant_runs_to_its_end`: variants 0 to 0x67 print, erase and free; `a_banner_lives_as_long_as_its_tables_say`). In `PORTED_CLASSES`.
+* **M2-11, the cast** (`prop/b74.rs`, `enemy/scenery.rs`): master 0x89B48, class 56 (0x57C9C, makes the class 57 flash), table 0x57D84. `intro` equals MAME in step mode,
+  in run mode and in follow mode for all 600 frames (0 object fields, 0 globals); only the join prompt cells of scroll1 differ (below).
+* **M2-12, scripted objects and the opening**: the actions 0x22, 0x24, 0x2A, 0x38, 0x40, 0x46, 0x4E, 0x50 were compared with the ROM (no change); 0x42 is new
+  (`script_clear_sequence` in `script.rs`, 0x1E650, with two hooks for the class 97 stand ins that M3 fills: `script_stand_in_present` 0x69E32 and `_absent` 0x69E66);
+  a test of each (`the_object_actions_make_their_objects`, `the_clear_sequence_starts_once_and_waits_for_the_boss`; script 24 of `all_26_scripts_end` gets a boss with `+$A6`).
+  The flags `scripted`, `floor_only`, `no_clamp` have their setters (the script step) and their readers (combat, player, terrain). The level start after the select is
+  record exact (see the errata of M2-10 to M2-12): intro task `Intro::init` / `redraw`, `Flow::lag`, the pool B init in phase 4, the first level frame in the frame of
+  the mode 0xC. The harness takes over the intro task from a snapshot (`trace.rs`).
+* **The acceptance test** `episode_one_opening_matches_mame` (`flow/mame_check.rs`): power on, coin 598, start 698, Jack 898 against `coinstart.mame.trc`, records 1059 to 1760:
+  the three layers (scroll1 to 1677), palettes, sprite list, sound codes, game state, hero 1 and the objects of the opening equal MAME in every record; G.$4E3 comes in 1672.
+  The field by field diff with its allowed differences (and why) is `re/harness/allow/m2.txt`.
+* **Pictures**: `re/out/shots/m210_f*.png` (17 pictures of the opening, tick numbers from power on, made with one `--headless --screenshots` run) and the 18 MAME pictures of
+  `re/harness/scripts/m210_opening.txt` (`re/out/flow/m210_opening/open/snap`, power frame f = tick f + 2): 17 of 18 equal pixel for pixel; f = 1720 differs in the
+  "INSERT COIN" prompts of players 2 and 3 (below).
 
-**Half done or not done (in this order)**
-1. Action 0x42 (`script.rs`, 0x1E650): not written. Plan: `0x42 => self.script_clear_sequence(i)`. First run (step 0 and G.-$70AA clear): step += 2, G.-$70AA = 1
-   (`flow.script.b70aa`), G.$516 = 1 (`b516`), sound 0x23, for each live hero set his bit (+$03) in a local mask and in G.-$70A9 (`b70a9`) and call the stand in
-   0x69E32 (pool A class 97, var = id * 2, position and facing copied from the hero); then for d4 = 3 down to 0 the ids not in the mask get 0x69E66 (X 0x10E0,
-   Z from the table at 0x69E9A, facing 1). In every run: the boss handle is G.$4E0; timer = 1 when its `+$A6` is not 0, else 0xFFFF. Class 97 is not ported (M3), so
-   the two stand in calls are documented hooks that do nothing yet. Add a unit test for the timer rule.
-2. `re/harness/allow/m2.txt` for the opening with the causes above (not written).
-3. A test `episode_one_opening_matches_mame` in `flow/mame_check.rs` (power on, `coinstart.txt`, `coinstart.mame.trc`, records 1055 to 1760: G.$0000, mode, G.$4DD,
-   G.$4E3, G.$4D5, G.$506, camera, P1, the cast). Not written.
-4. A test that prints every caption variant 0 to 0x6F with the real ROM (skipped without it), so a string past the end of the blob would show up.
-5. Class 66 sub 2 misses `clr.b $AC(a6)` (0x86FCC, a stale byte, harmless). Add `p.m.sb(0xAC, 0)`.
-6. The final pictures `re/out/shots/m210_*.png` are not made. Use ONE window run: add `--screenshots F1,F2,F3 --shot-dir DIR` to `main.rs` (allowed), never a loop
-   of runs. MAME pictures of the same opening are in `re/out/flow/m210_opening/open/snap/` (made by `re/harness/scripts/m210_opening.txt`; file number = snap order,
-   the `SNAP` lines in `log.txt` give the power frame f, the port tick is f - 2). The 18 port pictures made earlier equal MAME, except f = 1572 (3.06 %, probably the
-   one frame of class 56 and the flash of class 57) and f = 1720 (1.67 %): look at these two first (`re/out/m210/port_pics`, `shotdiff.png`).
-7. scroll1 differs from record 1681 (MAME shows no difference in the picture): blank cells with attribute 0x018B where the port has 0x0006, and tile codes 0x04C2 ..
-   0x04DD at screen rows 4 and 5, columns 19 to 30, that the port does not write; invisible in the MAME pictures. It starts 4 frames after the first thug is hit, so
-   it belongs to the HUD enemy message (0x16B36, `hud.rs`); not found yet.
-8. The still unported B20 (M2-15) is freed at once in a power on run, so the later pool B slots differ by one there (and the hint sound 0x3E and its palette from record 1883).
+**Not done here (other tasks)**
+* The join prompts of the absent heroes (0x7562, `flow_join_prompts` in `flow/join.rs` is an empty stub): "INSERT COIN" in the HUD slots of players 2 and 3, drawn into the
+  lower half of scroll1 at every slide step, so scroll1 differs from record 1678 and the pictures from f = 1700. It belongs to M2-18 (join states 0 to 6 and prompts).
+* The hint object B20 (M2-15) is freed at once, so in a power on run the later pool B slots are one lower than MAME's, and the hint sound 0x3E and its palette (record 1883)
+  are missing. The stand ins of the clear sequence (class 97, M3-27) are hooks. The first level frame takes 2.5 video frames in MAME: records 1057 and 1058 differ in the
+  scroll3 controller, the spawn list start, the splash timer and the map cells (allow file).
 
-Tools made for this (git-ignored, `re/out/m210/`): `timeline.py` (globals and objects of a trace), `fields.py` (named fields, MAME and port side by side),
-`cells.py`, `cellhist.py`, `nonblank.py`, `screenrows.py` (tilemap cells), `pw.sh` (power on run and diff).
+Tools for this (git-ignored, `re/out/m210/`): `timeline.py` (globals and objects of a trace), `fields.py` (named fields, MAME and port side by side), `cells.py`, `cellhist.py`,
+`nonblank.py`, `screenrows.py` (tilemap cells), `pw.sh` (power on run and diff).

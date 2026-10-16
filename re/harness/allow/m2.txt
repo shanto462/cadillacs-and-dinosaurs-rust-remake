@@ -1,0 +1,45 @@
+# Approved known differences of the Episode 1 opening from power on (M2-10 to M2-12).
+# One rule per line: a key pattern (fnmatch) and an optional record range, then a "# reason".
+#
+# What is compared (power on, coin 598, start 698, Jack 898, 2322 records, the opening is the records 1057 to 1760):
+#   MAME  re/out/traces/coinstart.mame.trc   (re/harness/README.md "Power-on references")
+#   port  dino-game --rom dino.zip --input-file re/harness/scripts/coinstart.txt --trace re/out/traces/m210_coinstart.port.trc --frames 2322
+#   diff  re/.venv/bin/python -I re/harness/diff.py re/out/traces/coinstart.mame.trc re/out/traces/m210_coinstart.port.trc --from 1040 --allow re/harness/allow/m2.txt
+# The test `episode_one_opening_matches_mame` (dino-rs, `cargo test`, flow/mame_check.rs) is the gate: from record 1059 to 1760 the three layers (scroll1
+# to 1677), the palettes, the sprite list, the sound codes, the game state, hero 1 and the objects of the opening equal MAME in every record.
+#
+# NOT listed because they are tasks and not differences: the hint object B20 (pool B class 20, M2-15) is freed at once by the port, so in this run the
+# pool B slots of the later props (the bird spawner, the master, the three banners) are one lower than in MAME (prop.live, prop.class, prop.mode,
+# prop.sub, prop.var26, enemy.detour = the low byte of the master address in +$A4 of the cast, G.$65F6 / G.$6600 / G.$663A of the free list), and from
+# record 1883 the hint's own sound 0x3E and its palette words differ. The join prompts of the absent heroes ("INSERT COIN" of players 2 and 3, drawn
+# by 0x7562 from the intro task, M2-18) make scroll1 differ from record 1678 on (the picture of scroll1 shows them, the cells before them are blank
+# cells with the attribute 0x018B in MAME).
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 1. Fields that the port initialises when it is created and the original only sets later (the same as m1.txt)
+global.hud_boss_msg        # the HUD message ring: the port starts it at 0xFFFF (empty), the original at 0
+global.next_event          # G.$792, G.$674, G.$678: the pointers of the stage scripts, set by the stage setup (the port sets them one record earlier)
+global.spawn_list1
+global.spawn_list2
+player.frame               # +$28 of the three player slots: the port shows a default frame where the original's absent players have 0
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 2. The first level frame, records 1057 and 1058. The original's first game frame (the area setup, the map and the start of the scripts) takes
+#    about 2.5 video frames: its end (the scroll3 controller, the spawn list start, the sprite list builder, the map cells) comes in record 1059.
+#    The port runs the whole frame in record 1057 (the mode, G.$0000, the camera mode, the hero state and the script start are equal there).
+global.cam3_state 1057-1058
+global.cam3_shift5f 1057-1058
+global.spawn_init 1057-1058
+global.splash_timer 1057-1058
+global.splash_phase 1057-1058
+scroll2 1057-1058
+scroll3 1057-1058
+global.cam3_* 1057-1058
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 3. Fresh objects. Until its first update an object has the frame pointer 0 in the original; the port shows the default frame (id 0, 0x9E45E), and
+#    the pool tag +$82 = 4 that the original's pool init writes into every pool A slot is not modeled.
+enemy.frame
+prop.frame
+effect.frame 1677-1690
+enemy.r82
