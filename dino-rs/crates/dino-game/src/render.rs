@@ -63,6 +63,41 @@ pub struct TileDraw {
     pub mask: u16,
 }
 
+/// Draw commands shared by the GPU and the CPU screenshot renderer.
+pub trait DrawTarget {
+    fn upload_palettes(&mut self, words: &[u16]);
+    fn tile(&mut self, draw: TileDraw);
+    fn debug_rect(&mut self, x: f32, y: f32, w: f32, h: f32, color: Color);
+
+    /// One sprite in the original attribute format, at a top-left screen position:
+    /// attr bits 0-4 palette, 5 X flip, 6 Y flip, 8-11 block width-1, 12-15 block height-1.
+    /// Blocks expand like the hardware: column i, row j -> (code & !0xF) + ((code + i) & 0xF) + 0x10 * j.
+    fn sprite(&mut self, layer: Layer, x: i32, y: i32, code: u16, attr: u16, flash: u8) {
+        let (w, h) = (((attr >> 8) & 0xF) as i32 + 1, ((attr >> 12) & 0xF) as i32 + 1);
+        let (flip_x, flip_y) = (attr & 0x20 != 0, attr & 0x40 != 0);
+        for j in 0..h {
+            for i in 0..w {
+                let (ti, tj) = (if flip_x { w - 1 - i } else { i }, if flip_y { h - 1 - j } else { j });
+                let c = (code as u32 & !0xF) + ((code as u32 + ti as u32) & 0xF) + 0x10 * tj as u32;
+                self.tile(TileDraw {
+                    layer,
+                    atlas: Atlas::T16,
+                    x: x + 16 * i,
+                    y: y + 16 * j,
+                    tile: c & 0x7FFF,
+                    bank: Bank::Sprites,
+                    palette: (attr & 0x1F) as u8,
+                    flip_x,
+                    flip_y,
+                    flash,
+                    mask: 0xFFFF,
+                });
+            }
+        }
+    }
+
+}
+
 const VERTEX: &str = r#"#version 100
 attribute vec3 position;
 attribute vec2 texcoord;
@@ -173,31 +208,8 @@ impl Gpu {
         self.draws.push(draw);
     }
 
-    /// One sprite in the original attribute format, at a top-left screen position:
-    /// attr bits 0-4 palette, 5 X flip, 6 Y flip, 8-11 block width-1, 12-15 block height-1.
-    /// Blocks expand like the hardware: column i, row j -> (code & !0xF) + ((code + i) & 0xF) + 0x10 * j.
     pub fn sprite(&mut self, layer: Layer, x: i32, y: i32, code: u16, attr: u16, flash: u8) {
-        let (w, h) = (((attr >> 8) & 0xF) as i32 + 1, ((attr >> 12) & 0xF) as i32 + 1);
-        let (flip_x, flip_y) = (attr & 0x20 != 0, attr & 0x40 != 0);
-        for j in 0..h {
-            for i in 0..w {
-                let (ti, tj) = (if flip_x { w - 1 - i } else { i }, if flip_y { h - 1 - j } else { j });
-                let c = (code as u32 & !0xF) + ((code as u32 + ti as u32) & 0xF) + 0x10 * tj as u32;
-                self.tile(TileDraw {
-                    layer,
-                    atlas: Atlas::T16,
-                    x: x + 16 * i,
-                    y: y + 16 * j,
-                    tile: c & 0x7FFF,
-                    bank: Bank::Sprites,
-                    palette: (attr & 0x1F) as u8,
-                    flip_x,
-                    flip_y,
-                    flash,
-                    mask: 0xFFFF,
-                });
-            }
-        }
+        DrawTarget::sprite(self, layer, x, y, code, attr, flash);
     }
 
     /// Debug outline drawn on top of everything (hit box viewer).
@@ -259,5 +271,13 @@ impl Gpu {
             // Render targets come back upside down (OpenGL texture origin is bottom-left).
             DrawTextureParams { dest_size: Some(vec2(w, h)), flip_y: true, ..Default::default() },
         );
+    }
+}
+
+impl DrawTarget for Gpu {
+    fn upload_palettes(&mut self, words: &[u16]) { Gpu::upload_palettes(self, words); }
+    fn tile(&mut self, draw: TileDraw) { Gpu::tile(self, draw); }
+    fn debug_rect(&mut self, x: f32, y: f32, w: f32, h: f32, color: Color) {
+        Gpu::debug_rect(self, x, y, w, h, color);
     }
 }

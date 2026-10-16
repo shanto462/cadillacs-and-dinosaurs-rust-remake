@@ -5,10 +5,10 @@
 use crate::game::Game;
 use crate::game::camera::layer_origin;
 use crate::game::vram::Vram;
-use crate::render::{Atlas, Bank, Gpu, Layer, TileDraw};
+use crate::render::{Atlas, Bank, DrawTarget, Layer, TileDraw};
 use dino_assets::{TILES8_COUNT, TILES32_FIRST};
 
-pub fn draw(g: &mut Game, gpu: &mut Gpu) {
+pub fn draw(g: &mut Game, gpu: &mut impl DrawTarget) {
     if g.pal.dirty {
         gpu.upload_palettes(g.pal.shown_words());
         g.pal.dirty = false;
@@ -26,7 +26,7 @@ pub fn draw(g: &mut Game, gpu: &mut Gpu) {
 }
 
 /// Scroll3: 32x32 tiles, codes 0x1C00..0x1FFF (others are hidden by the bank mapper).
-fn draw_scroll3(g: &Game, gpu: &mut Gpu, cam: (u16, u16)) {
+fn draw_scroll3(g: &Game, gpu: &mut impl DrawTarget, cam: (u16, u16)) {
     let (ox, oy) = layer_origin(cam.0, cam.1, 0x700);
     let (c0, r0) = ((ox & 0x7FF) as i32 >> 5, (oy & 0x7FF) as i32 >> 5);
     let (fx, fy) = ((ox & 31) as i32, (oy & 31) as i32);
@@ -56,7 +56,7 @@ fn draw_scroll3(g: &Game, gpu: &mut Gpu, cam: (u16, u16)) {
 
 /// Scroll2: 16x16 tiles, codes 0x4000..0x6FFF. Tiles whose priority group mask is nonzero are
 /// drawn again over the sprites with only the masked pens.
-fn draw_scroll2(g: &Game, gpu: &mut Gpu, cam: (u16, u16)) {
+fn draw_scroll2(g: &Game, gpu: &mut impl DrawTarget, cam: (u16, u16)) {
     let (ox, oy) = layer_origin(cam.0, cam.1, 0x300);
     let (c0, r0) = ((ox & 0x3FF) as i32 >> 4, (oy & 0x3FF) as i32 >> 4);
     let (fx, fy) = ((ox & 15) as i32, (oy & 15) as i32);
@@ -91,7 +91,7 @@ fn draw_scroll2(g: &Game, gpu: &mut Gpu, cam: (u16, u16)) {
 }
 
 /// Scroll1: 8x8 text tiles; the column parity picks the left or right half of the 16x8 cell.
-fn draw_scroll1(g: &Game, gpu: &mut Gpu, cam: (u16, u16), layer: Layer) {
+fn draw_scroll1(g: &Game, gpu: &mut impl DrawTarget, cam: (u16, u16), layer: Layer) {
     let (ox, oy) = layer_origin(cam.0, cam.1, 0x100);
     let (c0, r0) = ((ox & 0x1FF) as i32 >> 3, (oy & 0x1FF) as i32 >> 3);
     let (fx, fy) = ((ox & 7) as i32, (oy & 7) as i32);

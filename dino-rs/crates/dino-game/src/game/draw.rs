@@ -15,7 +15,7 @@ use super::body::Body;
 use super::camera::VIDEO_LATENCY;
 use super::enemy::Ram;
 use super::{Game, Handle, Slot, collide, slot_of};
-use crate::render::{Gpu, Layer};
+use crate::render::{DrawTarget, Layer};
 use dino_assets::effect::{EffectData, RawSprite};
 use dino_assets::{Composition, Frame, FrameDraw, FrameId, SpriteData};
 use macroquad::prelude::{Color, GREEN, ORANGE, RED};
@@ -331,7 +331,7 @@ impl SpriteList {
     }
 
     /// Hands the list the screen shows to the GPU, last entry first, so the first entry ends on top.
-    pub fn submit(&self, gpu: &mut Gpu) {
+    pub fn submit(&self, gpu: &mut impl DrawTarget) {
         let (entries, rects) = match &self.shown {
             Some(s) => (&s.now.0, &s.now.1),
             None => (&self.entries, &self.debug_rects),

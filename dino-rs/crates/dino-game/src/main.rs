@@ -3,7 +3,8 @@
 //! Usage: `cargo run -p dino-game -- [--rom path/to/dino.zip] [--stage N] [--chars 0,2]
 //!         [--config FILE] [--print-config]
 //!         [--input SCRIPT | --input-file PATH] [--viewer] [--view char,set,anim]
-//!         [--screenshot out.png --frames N] [--load-state FILE] [--trace FILE --frames N]
+//!         [--screenshot out.png --frames N] [--screenshots F1,F2 --shot-dir DIR]
+//!         [--headless | --windowed] [--load-state FILE] [--trace FILE --frames N]
 //!         [--step-from MAME.trc] [--follow-rng MAME.trc]
 //!         [--poke FRAME:ADDR:SIZE:VALUE]... [--poke-file FILE]... [--poke-clock power|game]`
 //! Without `--stage` and `--chars` the game starts from power on (the boot screens and the attract
@@ -18,6 +19,7 @@
 
 mod game;
 mod harness;
+mod headless;
 mod input;
 mod present;
 mod render;
@@ -42,7 +44,8 @@ fn window_conf() -> Conf {
 }
 
 struct Args {
-    screenshot: Option<String>,
+    shots: Vec<(u32, String)>,
+    headless: bool,
     frames: u32,
     view: Option<(usize, usize, u16)>,
     viewer: bool,
@@ -66,10 +69,33 @@ fn args() -> Args {
         let n: Vec<u16> = v.split(',').filter_map(|x| x.parse().ok()).collect();
         (n.len() == 3).then(|| (n[0] as usize, n[1] as usize, n[2]))
     });
+    let frames = value("--frames").map(|v| v.parse::<u32>().unwrap_or_else(|_| fail("invalid --frames"))).unwrap_or(2);
+    let mut shots = Vec::new();
+    if let Some(list) = value("--screenshots") {
+        let dir = value("--shot-dir").unwrap_or_else(|| fail("--screenshots requires --shot-dir"));
+        for f in list.split(',') {
+            let f = f.parse::<u32>().ok().filter(|&f| f > 0).unwrap_or_else(|| fail("--screenshots needs positive frame numbers"));
+            shots.push((f, std::path::Path::new(&dir).join(format!("f{f:05}.png")).to_string_lossy().into_owned()));
+        }
+    }
+    if let Some(path) = value("--screenshot") {
+        if frames == 0 { fail("--screenshot needs --frames greater than zero"); }
+        shots.push((frames, path));
+    }
+    shots.sort_by_key(|s| s.0);
+    let viewer = view.is_some() || a.iter().any(|x| x == "--viewer");
+    let explicit_headless = a.iter().any(|x| x == "--headless");
+    let windowed = a.iter().any(|x| x == "--windowed");
+    if explicit_headless && (viewer || windowed) {
+        fail("--headless cannot be combined with --viewer, --view or --windowed");
+    }
+    let headless = explicit_headless || (!shots.is_empty() && !windowed && !viewer);
+    let frames = shots.iter().map(|s| s.0).max().unwrap_or(frames);
     Args {
-        screenshot: value("--screenshot"),
-        frames: value("--frames").and_then(|v| v.parse().ok()).unwrap_or(2),
-        viewer: view.is_some() || a.iter().any(|x| x == "--viewer"),
+        shots,
+        headless,
+        frames,
+        viewer,
         view,
         direct: value("--stage").is_some() || value("--chars").is_some(),
         stage: value("--stage").and_then(|v| v.parse().ok()).unwrap_or(0),
@@ -88,6 +114,11 @@ fn args() -> Args {
         follow_rng: value("--follow-rng"),
         pokes: pokes(&a),
     }
+}
+
+fn fail(message: &str) -> ! {
+    eprintln!("error: {message}");
+    std::process::exit(1);
 }
 
 /// `--poke F:ADDR:SIZE:VAL` (repeatable), `--poke-file FILE` (repeatable), `--poke-clock power|game`
@@ -161,15 +192,19 @@ fn main() {
         }
         return;
     }
+    for (_, path) in &args.shots {
+        if let Some(parent) = std::path::Path::new(path).parent().filter(|p| !p.as_os_str().is_empty()) {
+            std::fs::create_dir_all(parent).unwrap_or_else(|e| fail(&format!("{}: {e}", parent.display())));
+        }
+    }
+    if args.headless {
+        run_headless(args, config);
+        return;
+    }
     macroquad::Window::from_config(window_conf(), windowed(args, config));
 }
 
-async fn windowed(mut args: Args, config: game::flow::Config) {
-    let assets = load_assets(args.load_state.as_deref(), None);
-    let mut gpu = Gpu::new(assets);
-
-    let mut viewer = args.viewer.then(|| viewer::Viewer::new(assets, args.view));
-    let mut inputs = input::Inputs::new();
+fn start_game(assets: &'static dino_assets::AssetPack, args: &mut Args, config: game::flow::Config) -> game::Game {
     let mut game = game::Game::new(assets);
     game.flow_apply_config(config);
     match &args.load_state {
@@ -183,26 +218,69 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
         None if args.direct => game.start_stage(args.stage, &args.chars),
         None => game.flow_boot(), // power on: the boot screens, then the attract mode
     }
-    let mut tick_no = 0u32;
     // Pokes (`--poke`): the same clocks as a headless run, where tick n is trace record n.
-    let mut pokes = std::mem::take(&mut args.pokes);
+
     let poke_fail = |e: String| -> ! {
         eprintln!("error: {e}");
         std::process::exit(1);
     };
-    pokes.check(&mut game).unwrap_or_else(|e| poke_fail(e));
-    pokes.apply(&mut game, -1, true).unwrap_or_else(|e| poke_fail(e));
+    args.pokes.check(&mut game).unwrap_or_else(|e| poke_fail(e));
+    args.pokes.apply(&mut game, -1, true).unwrap_or_else(|e| poke_fail(e));
+    game
+}
+
+fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Frame) {
+    if let Some(script) = &args.script {
+        let s = script.at(tick);
+        for p in 0..3 { f.players[p] |= s.players[p]; }
+        f.system |= s.system;
+        f.coins |= s.coins;
+    }
+    game.w.input = f.players;
+    game.w.system = f.system | 0x08; // 0x738 quirk, see harness.rs
+    game.w.coins = f.coins;
+    args.pokes.apply(game, tick as i32, false).unwrap_or_else(|e| fail(&e));
+    game.tick();
+    args.pokes.apply(game, tick as i32, true).unwrap_or_else(|e| fail(&e));
+}
+
+fn run_headless(mut args: Args, config: game::flow::Config) {
+    let assets = load_assets(args.load_state.as_deref(), None);
+    let mut game = start_game(assets, &mut args, config);
+    let mut cpu = headless::Cpu::new(assets);
+    for tick in 0..args.frames {
+        tick_game(&mut game, &mut args, tick, input::Frame::default());
+        if args.shots.iter().any(|s| s.0 == tick + 1) {
+            cpu.draw(&mut game);
+            for (_, path) in args.shots.iter().filter(|s| s.0 == tick + 1) {
+                cpu.save(path).unwrap_or_else(|e| fail(&e));
+            }
+        }
+    }
+}
+
+async fn windowed(mut args: Args, config: game::flow::Config) {
+    let assets = load_assets(args.load_state.as_deref(), None);
+    let mut gpu = Gpu::new(assets);
+
+    let mut viewer = args.viewer.then(|| viewer::Viewer::new(assets, args.view));
+    let mut inputs = input::Inputs::new();
+    let mut game = start_game(assets, &mut args, config);
+    let mut tick_no = 0u32;
     if viewer.is_some() {
         gpu.upload_palettes(&viewer::Viewer::palettes(assets).words);
     }
 
     let mut acc = 0.0;
     let mut frame = 0u32;
+    let screenshot_run = !args.shots.is_empty();
     loop {
         acc += get_frame_time() as f64;
         // Screenshots run exactly one tick per rendered frame, so they are reproducible.
-        let mut ticks = if args.screenshot.is_some() { 1 } else { 0 };
-        while args.screenshot.is_none() && acc >= TICK && ticks < 4 {
+        let mut ticks = if screenshot_run {
+            args.shots.iter().find(|s| s.0 > frame).map_or(1, |s| s.0 - frame)
+        } else { 0 };
+        while !screenshot_run && acc >= TICK && ticks < 4 {
             acc -= TICK;
             ticks += 1;
         }
@@ -213,21 +291,8 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
             match &mut viewer {
                 Some(v) => v.update(assets),
                 None => {
-                    let mut f = inputs.poll();
-                    if let Some(script) = &args.script {
-                        let s = script.at(tick_no);
-                        for p in 0..3 {
-                            f.players[p] |= s.players[p];
-                        }
-                        f.system |= s.system;
-                        f.coins |= s.coins;
-                    }
-                    game.w.input = f.players;
-                    game.w.system = f.system | 0x08; // 0x738 quirk, see harness.rs
-                    game.w.coins = f.coins;
-                    pokes.apply(&mut game, tick_no as i32, false).unwrap_or_else(|e| poke_fail(e));
-                    game.tick();
-                    pokes.apply(&mut game, tick_no as i32, true).unwrap_or_else(|e| poke_fail(e));
+                    let f = if screenshot_run { input::Frame::default() } else { inputs.poll() };
+                    tick_game(&mut game, &mut args, tick_no, f);
                     tick_no += 1;
                 }
             }
@@ -244,13 +309,11 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
             draw_text(&v.label, 8.0, 20.0, 20.0, WHITE);
         }
 
-        frame += 1;
-        if let Some(path) = &args.screenshot
-            && frame >= args.frames
-        {
+        frame += if screenshot_run { ticks } else { 1 };
+        for (_, path) in args.shots.iter().filter(|s| s.0 == frame) {
             get_screen_data().export_png(path);
-            break;
         }
+        if screenshot_run && frame >= args.frames { break; }
         next_frame().await;
     }
 }
