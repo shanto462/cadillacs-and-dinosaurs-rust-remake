@@ -3,14 +3,14 @@
 //!
 //! | var | kind (+$A0) | what | var | kind | what |
 //! |---|---|---|---|---|---|
-//! | 0 | 0x205 | rifle (6 shots) | 0xE | 0x203 | heavy melee, 10 uses |
-//! | 2 | 0x204 | pistol | 0x10 | 0x202 | melee |
-//! | 4 | 0x202 | melee (counts on screen) | 0x12 | 0x203 | melee, re-inits when it leaves |
-//! | 6 | 0x206 | Uzi (48) | 0x14 | 0x203 | heavy melee |
-//! | 8 | 0x207 | M-16 (48) | 0x16 | 0x203 | heavy melee with an overlay (class 6) |
-//! | 0xA | 0x208 | shotgun (6) | 0x18 | 0x201 | time bomb |
-//! | 0xC | 0x209 | bazooka (4) | 0x1A | 0x201 | fire bomb |
-//! | | | | 0x1C | 0x201 | thrown explosive (G.$4F1 counts them) |
+//! | 0 | 0x205 | rifle (6 shots) | 0xE | 0x203 | rod, 10 uses |
+//! | 2 | 0x204 | pistol | 0x10 | 0x202 | stick |
+//! | 4 | 0x202 | knife (counts on screen) | 0x12 | 0x203 | butcher knife, re-inits when it leaves |
+//! | 6 | 0x206 | Uzi (48) | 0x14 | 0x203 | club |
+//! | 8 | 0x207 | M-16 (48) | 0x16 | 0x203 | torch, with an overlay (class 6) |
+//! | 0xA | 0x208 | shotgun (6) | 0x18 | 0x201 | dynamite |
+//! | 0xC | 0x209 | bazooka (4) | 0x1A | 0x201 | grenade |
+//! | | | | 0x1C | 0x201 | stone (G.$4F1 counts them) |
 //!
 //! Kind 0x201 = thrown only, 0x202 / 0x203 = melee (swing), 0x204..0x209 = guns (ammo in +$6C;
 //! an empty gun becomes a melee 0x203 or a throwable 0x201).
@@ -254,7 +254,7 @@ impl Game {
             }
         }
         if kind == 0x201 && var == 0x18 && it.m.w(B0) != 0 {
-            // 0x24724: a lit time bomb counts down.
+            // 0x24724: a lit dynamite counts down.
             it.b.palette_override = 0;
             if it.b.param_a != 0 {
                 it.b.palette_override = 0x84;
@@ -671,7 +671,7 @@ impl Game {
         self.weapon_throw(it, h, p, table, atk, 0x10, 0x10, false);
     }
 
-    /// Type 2 (0x253FA): club; the owner's frame byte 1 swings, 2 throws.
+    /// Type 2 (0x253FA): knife; the owner's frame byte 1 swings, 2 throws.
     fn weapon_held_2(&mut self, it: &mut Item, h: Handle, p: usize) {
         if self.players[p].weapon_atk != 0 {
             if self.players[p].weapon_atk ^ it.m.b(B0) != 0 {
@@ -839,7 +839,7 @@ impl Game {
         self.item_draw_check(it, h);
     }
 
-    /// Type 7 (0x25968): a wooden bat; each hit may break it into the stick of type 8.
+    /// Type 7 (0x25968): rod (a long wooden bar); each hit may break it into the stick of type 8.
     fn weapon_held_7(&mut self, it: &mut Item, h: Handle, p: usize) {
         if self.players[p].weapon_atk != 0 {
             if self.players[p].weapon_atk ^ it.m.b(B0) != 0 {
@@ -916,7 +916,7 @@ impl Game {
         self.weapon_held_end(it, h, p)
     }
 
-    /// Type 10 (0x25BCC): heavy weapon with two swings (frame byte 1: attack 0x58, 2: attack 0x60).
+    /// Type 10 (0x25BCC): club, heavy weapon with two swings (frame byte 1: attack 0x58, 2: attack 0x60).
     fn weapon_held_10(&mut self, it: &mut Item, h: Handle, p: usize) {
         if self.players[p].weapon_atk != 0 {
             self.weapon_press_wear(it, p, 0x30);
@@ -927,7 +927,7 @@ impl Game {
         self.weapon_held_end(it, h, p)
     }
 
-    /// Type 12 (0x25CBC): time bomb: thrown on the owner's attack flag (animation 8, sub 0x18).
+    /// Type 12 (0x25CBC): dynamite: thrown on the owner's attack flag (animation 8, sub 0x18).
     fn weapon_held_12(&mut self, it: &mut Item, h: Handle, p: usize) {
         if self.players[p].weapon_atk == 0 {
             return self.item_draw_check(it, h);
@@ -935,7 +935,7 @@ impl Game {
         self.weapon_throw(it, h, p, THROW_BASE + 0x50, 0x28, 8, 0x18, true);
     }
 
-    /// Type 13 (0x25D62): fire bomb (animation 0x10, sub 0x1C).
+    /// Type 13 (0x25D62): grenade (animation 0x10, sub 0x1C).
     fn weapon_held_13(&mut self, it: &mut Item, h: Handle, p: usize) {
         if self.players[p].weapon_atk == 0 {
             return self.item_draw_check(it, h);
@@ -943,7 +943,7 @@ impl Game {
         self.weapon_throw(it, h, p, THROW_BASE + 0x60, 0x26, 0x10, 0x1C, true);
     }
 
-    /// Type 14 (0x25E08): the explosive stick (sub 0x20); also clears +$80 and +$B1.
+    /// Type 14 (0x25E08): stone (sub 0x20); also clears +$80 and +$B1.
     fn weapon_held_14(&mut self, it: &mut Item, h: Handle, p: usize) {
         if self.players[p].weapon_atk == 0 {
             return self.item_draw_check(it, h);
@@ -1025,7 +1025,7 @@ impl Game {
         Self::weapon_count_bounce(it, limit)
     }
 
-    /// 0x25EB6 (sub 0x10): a thrown gun, bat or stick. A hit (+$59) bounces it back (it can
+    /// 0x25EB6 (sub 0x10): a thrown gun, club or stick. A hit (+$59) bounces it back (it can
     /// hurt only before its first bounce: the attacker list is skipped afterwards); four
     /// bounces end the flight (sub 0x24).
     fn weapon_fly_10(&mut self, it: &mut Item, h: Handle) {
@@ -1079,7 +1079,7 @@ impl Game {
         self.item_draw_check(it, h);
     }
 
-    /// 0x2606E (sub 0x18): the time bomb in flight. A hit makes it jump up; after four bounces
+    /// 0x2606E (sub 0x18): the dynamite in flight. A hit makes it jump up; after four bounces
     /// it lies on the floor, armed (0x26158).
     fn weapon_fly_18(&mut self, it: &mut Item, h: Handle) {
         if it.b.hitstop != 0 {
@@ -1135,7 +1135,7 @@ impl Game {
         true
     }
 
-    /// 0x26182 (sub 0x1C): the fire bomb: it explodes on a hit or on the third floor contact
+    /// 0x26182 (sub 0x1C): the grenade: it explodes on a hit or on the third floor contact
     /// (0x26252), after bouncing with a random depth speed (table 0x265D4).
     fn weapon_fly_1c(&mut self, it: &mut Item, h: Handle) {
         if it.b.hitstop != 0 {
@@ -1174,7 +1174,7 @@ impl Game {
         self.item_draw_check(it, h);
     }
 
-    /// 0x26252: the fire bomb bursts: state 0x02280000 (sub 0x28: a chain of explosions) and the
+    /// 0x26252: the grenade bursts: state 0x02280000 (sub 0x28: a chain of explosions) and the
     /// first explosion (0x26266).
     fn weapon_explode(&mut self, it: &mut Item) {
         it.b.set_state(0x0228_0000);
@@ -1183,7 +1183,7 @@ impl Game {
         self.weapon_spawn_blast(it);
     }
 
-    /// 0x262BC (sub 0x20): the explosive stick: bounces twice and then stops (state 0x24); a hit
+    /// 0x262BC (sub 0x20): the stone: bounces twice and then stops (state 0x24); a hit
     /// (unless +$A8) or a wall turns it around.
     fn weapon_fly_20(&mut self, it: &mut Item, h: Handle) {
         let mut turn = false;
@@ -1243,7 +1243,7 @@ impl Game {
         }
     }
 
-    /// 0x263CC (sub 0x28): the chain of explosions of the fire bomb: every 10 frames one more,
+    /// 0x263CC (sub 0x28): the chain of explosions of the grenade: every 10 frames one more,
     /// moved by the table 0x26408 (record +$81, two words: dx, dz).
     fn weapon_fly_28(&mut self, it: &mut Item) {
         let b80 = it.m.b(B80).wrapping_sub(1);

@@ -1,5 +1,5 @@
 //! Explosions and the projectile classes of pool E: 1 explosion (0x27E16), 3 bullet of a held gun
-//! (0x2860A), 6 overlay of weapon type 11 (0x29B06, not ported), 7 rocket shell (0x29D1E),
+//! (0x2860A), 6 torch overlay of weapon type 11 (0x29B06, not ported), 7 rocket shell (0x29D1E),
 //! 8 ballistic projectile (0x29EC4), 10 shotgun pellet (0x2A39A), 11 invisible attack box
 //! (0x2A534).
 //!
