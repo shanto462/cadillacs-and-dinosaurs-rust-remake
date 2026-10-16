@@ -667,3 +667,105 @@ mod tests {
         assert_eq!(bcd_add(0x9999_9990, 0x0000_0100), 0x9999_9999);
     }
 }
+
+/// Rule tests that read the user's `dino.zip` at run time (they return early when it is absent).
+#[cfg(test)]
+mod rom_tests {
+    use super::*;
+    use crate::game::flow::config::Config;
+    use dino_assets::AssetPack;
+    use std::path::Path;
+    use std::sync::OnceLock;
+
+    /// The asset pack of the user's ROM (`../../../dino.zip`), `None` when it is not there.
+    fn rom() -> Option<&'static AssetPack> {
+        static A: OnceLock<Option<&'static AssetPack>> = OnceLock::new();
+        *A.get_or_init(|| {
+            let path = Path::new("../../../dino.zip");
+            path.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(path).expect("the ROM set loads"))))
+        })
+    }
+
+    /// The enemy damage on Jack, Mustapha, Hannah and Mess (ids 0 to 3) for one enemy and attack.
+    fn per_hero(t: &PlayerData, base: u8, w84: u16) -> Vec<u16> {
+        (0..4).map(|chr| enemy_damage(t, base, 0, w84, chr, 100, 0)).collect()
+    }
+
+    /// 0x2C88E: the hero factors are 32, 34, 35, 30 by character id (Jack, Mustapha, Hannah, Mess).
+    /// Enemy to hero damage (0x6422) multiplies by the factor of the hero's id (D2b section 5.2).
+    #[test]
+    fn hero_damage_factor_order_from_rom() {
+        let Some(a) = rom() else { return };
+        let t = &a.player;
+        assert_eq!(t.defense, [32, 34, 35, 30]);
+        // The level 0 and HP 100 steps are x1.0 and x33/32 here, so only the hero factor differs.
+        assert_eq!(t.enemy_level_scale[0], 32, "Ferris (name 0) at level 0");
+        assert_eq!(t.enemy_hp_reduce[0], 0, "row 0 of the random reduction is all zero");
+        assert_eq!(t.enemy_hp_scale[12], 33, "HP 100 falls in the row of 88 and more");
+        // Base 32 keeps every step exact: 32 * defense >> 5, then * 33 >> 5.
+        assert_eq!(per_hero(t, 32, 0), vec![33, 35, 36, 30]);
+        // Thug (name 9, enemy +$84 = 36) at level 0, jab bases 8 and 6 (D2b section 5.2 and S13).
+        assert_eq!(t.enemy_level_scale[36 * 8], 32, "thug at level 0");
+        assert_eq!(per_hero(t, 8, 36), vec![8, 8, 8, 7]);
+        assert_eq!(per_hero(t, 6, 36), vec![6, 6, 6, 5]);
+    }
+
+    /// 0x1D1C4, 0x1D204, 0x1CF5C, 0x1CEDC, 0x1D166: the code reads row 0 only, because the level
+    /// band is always 0 (`move.b` reads the high byte of the level word, D2b section 4.4). The
+    /// level band lookup itself is tested in `player_weapon.rs`.
+    #[test]
+    fn lie_and_dizzy_tables_row_0_values_from_rom() {
+        let Some(a) = rom() else { return };
+        let t = &a.player;
+        let count = |v: &[u8], n: u8| v[..16].iter().filter(|&&x| x == n).count();
+        // Lie time: 5 (6 cells), 15 (8 cells), 30 (2 cells). Mash meter: 15, 20, 25 with the same counts.
+        assert_eq!((count(&t.lie_time, 5), count(&t.lie_time, 15), count(&t.lie_time, 30)), (6, 8, 2));
+        assert_eq!((count(&t.lie_mash, 15), count(&t.lie_mash, 20), count(&t.lie_mash, 25)), (6, 8, 2));
+        // Dizzy: stars to mash and maximum dizzy frames (16 cells each, in the ROM order).
+        assert_eq!(t.dizzy_stars[..16], [15, 35, 35, 35, 50, 50, 50, 50, 65, 65, 65, 65, 80, 80, 80, 125]);
+        assert_eq!(t.dizzy_time[..16], [40, 40, 50, 50, 50, 70, 70, 70, 90, 90, 90, 120, 120, 120, 150, 180]);
+        // Dizzy chance masks by hit count 0..5: never below 4 hits, 75 percent at 4, always at 5.
+        assert_eq!(t.dizzy_mask, [0, 0, 0, 0, 0xFFF0, 0xFFFF]);
+    }
+
+    /// 0x6BFE / G.$777B bits 5-6: the factory setting (option 2) gives one extra life at 500000 and
+    /// one more at 1000000, one life per step (D2b section 1.3). The crossing runs through
+    /// `hud_draw_all_scores` -> `hud_extend_check` (0x6B98).
+    #[test]
+    fn extra_life_thresholds_factory_setting_from_rom() {
+        let Some(a) = rom() else { return };
+        // Crosses 500000: prev score 499950, new score 500050 gives one life (1 -> 2).
+        let mut g = Game::new(a);
+        g.flow_apply_config(Config::from_text("").unwrap());
+        g.start_stage(0, &[0]); // a real start gives the player a rank (the place text needs one)
+        assert_eq!(g.flow.extend_sel(), 4, "factory: table entry 2 of 0x6BFE");
+        let p = &mut g.players[0];
+        p.b.live = 1;
+        p.b.who = 0;
+        p.lives = 1;
+        p.score = 0x0049_9950;
+        g.hud.stats[0].score_prev = 0x0049_9950;
+        g.players[0].score = 0x0050_0050;
+        g.hud_draw_all_scores();
+        assert_eq!((g.players[0].lives, g.players[0].b10e), (2, 1));
+        // The 1UP pose has not started yet: no second life at the same score.
+        g.hud_draw_all_scores();
+        assert_eq!(g.players[0].lives, 2);
+        // Pose done (+$10E cleared): crossing 1000000 gives the next life (2 -> 3).
+        g.players[0].b10e = 0;
+        g.hud.stats[0].score_prev = 0x0050_0050;
+        g.players[0].score = 0x0100_0050;
+        g.hud_draw_all_scores();
+        assert_eq!(g.players[0].lives, 3);
+        // One big jump from 0 to 1500000 is one life only (one step per check).
+        let mut g = Game::new(a);
+        g.flow_apply_config(Config::from_text("").unwrap());
+        g.start_stage(0, &[0]);
+        g.players[0].b.live = 1;
+        g.players[0].b.who = 0;
+        g.players[0].lives = 1;
+        g.players[0].score = 0x0150_0000;
+        g.hud_draw_all_scores();
+        assert_eq!(g.players[0].lives, 2);
+    }
+}
