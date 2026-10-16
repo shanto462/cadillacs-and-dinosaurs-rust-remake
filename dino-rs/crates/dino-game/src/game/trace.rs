@@ -604,6 +604,18 @@ impl Prop {
     pub fn trace_visit(&mut self, f: &mut F, stage: u8) {
         self.b.trace_header(f, false);
         self.m.trace_load_all(f, 0xC0);
+        if f.all() || self.b.k20 == 11 * 4 {
+            // The metal door's armed wait (class 11, 0x78A20) is the byte at +$80.
+            let mut w = self.m.b(0x80);
+            f.u8(0x80, "door_wait", &mut w);
+            self.m.sb(0x80, w);
+        }
+        if f.all() || self.b.k20 == 14 * 4 {
+            // The hole's hold (class 14 var 0, 0x7B0E2) is the word at +$A0. Var 4 does not use it.
+            let mut w = self.m.w(0xA0);
+            f.u16(0xA0, "hole_wait", &mut w);
+            self.m.sw(0xA0, w);
+        }
         if f.all() || self.b.k20 == 73 * 4 {
             // The bird spawner's delay (class 73, 0x89AE0) sits in the same word.
             let mut t = self.m.w(0x80);
@@ -860,7 +872,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 20, 34, 41, 49, 50, 54, 55, 56, 57, 60]),
-    ("prop", &[15, 20, 31, 66, 73, 74]),
+    ("prop", &[11, 14, 15, 20, 21, 31, 66, 73, 74]),
     (
         "item",
         &[

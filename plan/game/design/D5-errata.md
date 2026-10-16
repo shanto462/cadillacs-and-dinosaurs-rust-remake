@@ -127,3 +127,7 @@ MAME wins over the design text; the design documents themselves are not edited.
   sees G.$4E3 in 1672, redraws the HUD (0x162AE) in 1673 and does its first slide step (scroll1 X + 12) in 1674.
 - D4d s9.2 and D3e (pool B 66, HUD): the "INSERT COIN" prompts of the absent heroes are drawn into the lower half of scroll1 by 0x7562, called from the intro task at every slide
   step, so they slide in with the HUD (MAME pictures of the records 1680 and later; the port has them with M2-18).
+
+## From M3-17 (Episode 1 transition props, 2026-10-17)
+
+- D3e inventory row 21 (class 21, 0x7BDC4): the one-shot change is `and.w #$FE7F` (bits 7 and 8, the priority group) on 48 attribute words at 0x90F002 stepping by 4, then 16 marks, not a clear of bit 8 alone and not 12 tiles. Fifteen marks are `(attr & #$3FF) | #$2000` and the last (0x7BECE, cell 0x90F170) is `| #$2400`. A MAME peek after the Episode 1 area 1 change shows those masks.
