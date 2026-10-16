@@ -987,6 +987,9 @@ impl Game {
 
     /// Mode 0x12 (0x20CFE): area change without a fade. Sub-states 0/2/4/6 -> 0x20D14 (falls
     /// into 0x20D22), 0x20D22, 0x20D3A, 0x20D88.
+    /// Hard cut: sub 4 loads the palettes at brightness 0, sub 6 (the next game frame) sets full brightness (0x20D9E
+    /// jmp 0x892C). MAME shows 2 to 4 black video frames: the area load of sub 4 (map 0x20766, palettes 0x8A44) runs past
+    /// the next vertical blank, so those are lag frames. TODO(M10): model that lag (`flow.lag`) from the CPU time.
     fn mode_area_change(&mut self) {
         match self.cam.s2.sub {
             0 | 2 => {
@@ -1649,6 +1652,49 @@ mod shake_tests {
         c.latch_scroll();
         assert_eq!(c.shown_scroll().s2.1, (-4i16) as u16);
         assert_eq!(c.s2.cam_y, 0);
+    }
+
+    fn rom() -> Option<&'static dino_assets::AssetPack> {
+        static A: std::sync::OnceLock<Option<&'static dino_assets::AssetPack>> = std::sync::OnceLock::new();
+        *A.get_or_init(|| {
+            let path = std::path::Path::new("../../../dino.zip");
+            path.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(path).expect("the ROM set loads"))))
+        })
+    }
+
+    #[test]
+    fn mode_0x12_hard_cut_black_frames() {
+        let Some(assets) = rom() else { return };
+        let mut g = Game::new(assets);
+        g.w.stage = 0;
+        g.cam.s2.area = 1;
+        g.cam.s2.mode = 0x12;
+        g.cam.s2.sub = 2;
+        g.cam.s2.go = 1;
+
+        g.cam.s2.state = 2;
+        let events = &assets.stages.stages[0].camera_events;
+        let (ev_idx, _) = events.iter().enumerate().find(|(_, ev)| ev.mode == 0x12).expect("mode 0x12 event");
+        g.cam.s2.next_event = ev_idx;
+        g.cam.s2.event_idx = ev_idx as u8;
+
+        // Ensure full brightness initially
+        g.brightness_full();
+        assert_eq!(g.pal.words[0] & 0xF000, 0xF000);
+
+        // Frame 0: sub 2 sees go != 0 -> sub becomes 4
+        g.background_update();
+        assert_eq!(g.cam.s2.sub, 4);
+
+        // Frame 1: sub 4 runs area_end_next_area(false): palettes loaded at brightness 0, sub 6
+        g.background_update();
+        assert_eq!(g.cam.s2.sub, 6);
+        assert_eq!(g.pal.words[0] & 0xF000, 0);
+
+        // Frame 2: sub 6 (the go flag is clear): the next event, full brightness (0x20D9E)
+        g.background_update();
+        assert_eq!(g.cam.s2.sub, 0);
+        assert_eq!(g.pal.words[0] & 0xF000, 0xF000);
     }
 }
 
