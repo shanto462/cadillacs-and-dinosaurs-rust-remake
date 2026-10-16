@@ -23,8 +23,10 @@
 //!   body box, nothing special for props. D3e part 3 section 2.6 sums it up for the common jab and kick boxes (about
 //!   8 deep): a hero at depth Z hits a prop whose box depth range is `[start, end]` when `Z + 8 >= start` and
 //!   `Z <= end`, and the X and height ranges overlap. The mine wall (Z 0x60, range 32 to 128) is hit from Z 32 and not
-//!   from Z 16, a vent whose range starts at Z 832 from Z 824 and not from Z 816 (the tests of this file).
+//!   from Z 16, a vent whose range starts at Z 832 from Z 824 and not from Z 816 (the tests of this file). M3-16
+//!   leaves this as the box test: the jab's `Z + 8` is that summary, not a second rule (M2-05 finished it).
 //! - Mode 4 (the break) is the prop's own: tiles (`tile_block.rs`), sound (`Game::snd_break`), effect, then free.
+//!   The palette cycler, the tile clock and the door burst shared by the later classes are in `drivers.rs` (M3-16).
 
 use super::body::Body;
 use super::collide;
@@ -37,6 +39,9 @@ use dino_assets::HitBox;
 // The tile block writer and the block table driver of the scenery props (T-B0, M2-05 / M2-06).
 #[path = "prop/tile_block.rs"]
 pub mod tile_block;
+// Palette cycler, tile clock and door burst (T3-0, M3-16).
+#[path = "prop/drivers.rs"]
+pub mod drivers;
 
 // Pool B classes of the front end (M1-06): the profile card board (93) and its scroll (94).
 #[path = "prop/class93.rs"]
