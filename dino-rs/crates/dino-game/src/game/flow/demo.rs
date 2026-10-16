@@ -466,7 +466,7 @@ impl Game {
             p.b.hp_prev = 100;
             p.b.hp_bar = 100;
         }
-        self.rank.b7b4 = 0; // clr.b $7B4(a5)
+        self.cam.s2.lock78 = 0; // clr.b $7B4(a5)
         self.sound(0xFF00); // 0xA5D2
         if self.w.stage == 0 {
             self.sound(1); // 0xA63C with d0 = 1

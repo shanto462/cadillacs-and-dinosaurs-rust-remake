@@ -34,8 +34,6 @@ pub struct Rank {
     /// G.$777B: bits 0-2 difficulty 0..7, bits 3-4 timer level (rank speed = level + 1). The settings file
     /// `dino.cfg` (`flow/config.rs`, cooked by 0xAC794) is the source: the game start copies `Flow::dip.dip_b` here.
     pub dip: u8,
-    /// G.$7B4 selects the second aggression table (0x18364).
-    pub b7b4: u8,
     /// G.$4E8 / G.$4E9 stage time (BCD minutes, seconds), G.$4EA second divider, G.$4EB lock.
     pub time_min: u8,
     pub time_sec: u8,
@@ -227,7 +225,8 @@ impl Game {
         let v = if self.rank.force_x != 0 {
             self.rank.force_val
         } else {
-            let table = if self.rank.b7b4 == 1 { 0x18364 } else { 0x182E4 };
+            // `cmpi.b #1, $7B4(a5)`: the camera lock state (G.$7B4 = `cam.s2.lock78`) 1 selects the second table.
+            let table = if self.cam.s2.lock78 == 1 { 0x18364 } else { 0x182E4 };
             let r = self.rand() & 0xF;
             let off = (self.rank.aggression << 4).wrapping_add(r);
             self.assets.enemy.t.u8(table, off as u32) as u16
@@ -374,7 +373,8 @@ impl Game {
         if self.spawn.g.b4d5 != 0 || self.w.scripted != 0 || r.time_lock != 0 || r.time_min != 0 || r.time_sec != 0 || r.time_div != 0 {
             return;
         }
-        if self.spawn.g.car_mode != 0 && self.rank.b7b4 != 0 {
+        // 0x1042A: `tst.b $518(a5)` and `tst.b $7B4(a5)` (the camera lock state, G.$7B4 = `cam.s2.lock78`).
+        if self.spawn.g.car_mode != 0 && self.cam.s2.lock78 != 0 {
             self.spawn.g.car_mode = 2;
             self.rank_add_time(0x300);
             return;

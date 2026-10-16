@@ -56,10 +56,8 @@ heroes are aboard, 0 when the car is gone); the camera reads the car's X (`Body:
 When the car exists, the car scenarios should lose most of `allow/m3.txt` (rules 1 and 3).
 
 Open points for the main session:
-* `Rank::b7b4` (G.$7B4, read by the aggression table choice 0x182A2, the music choice 0xA55A and the time over of the car) is the same byte as the camera's lock state `Scroll2::lock78`, but the camera
-  never writes `rank.b7b4`: in a free run the second aggression table (lock = 1) and the boss music variant (lock = 2) are never selected, in any stage. It only shows in `step` mode as two fields
-  that load the same MAME byte. Fix: let rank.rs and flow.rs read `cam.s2.lock78` and drop the field (and its trace line). Not done here (rank.rs, flow.rs are other owners' files).
-* Review aids: F6 (`debug::next_area`) sets mode 0x12 sub 4, which is not in the stage 2 mode table (Episode 3 has one area): the camera would stand still. `--area` above 0 for Episode 3 is not meaningful.
+* DONE (2026-10-17, main code worker): `Rank::b7b4` is gone, G.$7B4 is `cam.s2.lock78` only (aggression table, area music, time over, stage start, demo start, trace: see `re/specs/flow/HANDOFF.md`, "G.$7B4 has one owner").
+* DONE: F6 (`debug::next_area`) sets mode 6 sub 4 in stage 2 (mode 0x12 elsewhere); `--area` above 0 with Episode 3 is refused (one area).
 * `--camx` (`flow_jump_camera`) moves the camera but not the event index; the events load one per frame afterwards, so a jump to X 0x1000 ends in the lock of its event.
 
 # Older notes (before M3)

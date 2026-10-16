@@ -1110,7 +1110,6 @@ impl Game {
         f.u16(0x0606, "w606", &mut r.w606);
         f.u16(0x0608, "calm", &mut r.calm);
         f.u16(0x04F6, "w4f6", &mut r.w4f6);
-        f.u8(0x07B4, "b7b4", &mut r.b7b4);
         f.u8(0x04E8, "time_min", &mut r.time_min);
         f.u8(0x04E9, "time_sec", &mut r.time_sec);
         f.u8(0x04EA, "time_div", &mut r.time_div);

@@ -86,9 +86,68 @@ impl Debug {
     }
 }
 
-/// Next area: the camera's area change without a fade (mode 0x12 at sub 4 = `area_end_next_area(false)`, 0x20D3A), which
-/// takes the next area of the camera events. Mode 1 sub 4 would wait for the end of a fade that was never started.
+/// Next area: the camera's area change without a fade (`area_end_next_area(false)`, 0x20D3A at sub 4), which takes the next
+/// area of the camera events. Mode 1 sub 4 would wait for the end of a fade that was never started. The standard controller
+/// (0x206D4) calls that code mode 0x12; the controller of Episode 3 (0x22398, stage 2) has no mode 0x12, its mode 6 (0x22864)
+/// is the same routine.
 pub fn next_area(g: &mut Game) {
-    g.cam.s2.mode = 0x12;
+    g.cam.s2.mode = if g.w.stage == 2 { 6 } else { 0x12 };
     g.cam.s2.sub = 4;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dino_assets::AssetPack;
+
+    fn rom() -> Option<&'static AssetPack> {
+        static A: std::sync::OnceLock<Option<&'static AssetPack>> = std::sync::OnceLock::new();
+        *A.get_or_init(|| {
+            let path = std::path::Path::new("../../dino.zip");
+            let path = if path.exists() { path } else { std::path::Path::new("../../../dino.zip") };
+            path.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(path).expect("the ROM set loads"))))
+        })
+    }
+
+    /// The area change of the debug key: mode 0x12 in the standard controller (0x206D4), mode 6 in the controller of Episode 3
+    /// (0x22398, stage 2: it has no mode 0x12, its table 0x2250A stops at 8). Both at sub 4 (0x20D3A / 0x22864 + 0xD6).
+    #[test]
+    fn the_area_change_key_uses_the_mode_of_the_stage_controller() {
+        let mut g = Game::new(Box::leak(Box::new(AssetPack::default())));
+        for (stage, mode) in [(0, 0x12), (1, 0x12), (2, 6), (3, 0x12), (7, 0x12)] {
+            g.w.stage = stage;
+            next_area(&mut g);
+            assert_eq!((g.cam.s2.mode, g.cam.s2.sub), (mode, 4), "stage {stage}");
+        }
+    }
+
+    /// In Episode 3 the key leads through the area change (modes 6, sub 4 then 6) back to the free camera (mode 0), as in the
+    /// other stages. The test starts the stage like `--episode 3`.
+    #[test]
+    fn the_area_change_key_ends_in_episode_3() {
+        let Some(assets) = rom() else { return eprintln!("test skipped: dino.zip is absent") };
+        let mut g = Game::new(assets);
+        g.start_stage_at(2, 0, 0, &[0]);
+        let mut free = None;
+        for t in 0..3000 {
+            g.tick();
+            if g.flow.mode == 0xC && g.w.scripted == 0 && g.cam.s2.mode == 0 && g.cam.s2.state == 2 {
+                free = Some(t);
+                break;
+            }
+        }
+        assert!(free.is_some(), "the camera is free after the opening");
+        next_area(&mut g);
+        let mut seen = vec![(g.cam.s2.mode, g.cam.s2.sub)];
+        for _ in 0..40 {
+            g.tick();
+            let s = (g.cam.s2.mode, g.cam.s2.sub);
+            if seen.last() != Some(&s) {
+                seen.push(s);
+            }
+        }
+        assert_eq!(seen.first(), Some(&(6, 4)));
+        assert!(seen.contains(&(6, 6)), "the change goes through sub 6: {seen:?}");
+        assert_eq!(seen.last(), Some(&(0, 0)), "and ends in the free camera: {seen:?}");
+    }
 }

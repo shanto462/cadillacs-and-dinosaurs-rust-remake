@@ -65,7 +65,10 @@ pub struct Scroll2 {
     pub phase72: u8,
     pub prev73: u8,
     pub t75: u8,
-    /// +$78 lock state: 0 free, 1 locked (wave / area end), 2 stage end.
+    /// +$78 = G.$7B4, the lock state: 0 free, 1 locked (wave / area end), 2 stage end or boss fight. The one owner of the byte: the
+    /// aggression table (0x182BA), the area music (0xA55A), the time over check (0x1042E), the hint (0x7BBF4) and the stage start
+    /// (0xACAC) read and clear it here. The boss inits that write 2 (0x4FDCA Hogg, 0x6187A class 84, 0x687A0 class 91, 0x819BE the Slisaur
+    /// starter, every frame) belong to the real class ports; the placeholders do not write it.
     pub lock78: u8,
     /// +$79 events trigger on Y (also freezes scroll3 parallax), +$7B mode after a mode-4 lock.
     pub by_y79: u8,

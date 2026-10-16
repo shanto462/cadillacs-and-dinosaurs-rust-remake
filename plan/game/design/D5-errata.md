@@ -181,3 +181,8 @@ MAME wins over the design text; the design documents themselves are not edited.
 ## From M3-17 (Episode 1 transition props, 2026-10-17)
 
 - D3e inventory row 21 (class 21, 0x7BDC4): the one-shot change is `and.w #$FE7F` (bits 7 and 8, the priority group) on 48 attribute words at 0x90F002 stepping by 4, then 16 marks, not a clear of bit 8 alone and not 12 tiles. Fifteen marks are `(attr & #$3FF) | #$2000` and the last (0x7BECE, cell 0x90F170) is `| #$2400`. A MAME peek after the Episode 1 area 1 change shows those masks.
+
+
+## From the G.$7B4 fix (2026-10-17)
+
+- M3-08 note and D4b s2 (rank and the lock flag): G.$7B4 is one RAM byte, the camera's lock state (`cam.s2.lock78`, +$78 of the struct G.$73C). Its readers are 0x182BA (lock 1 selects the second aggression table 0x18364), 0xA55A (lock 2 selects the boss music table 0xA5C8, with the entry 8 when the boss on the HUD bar has +$7D = 0xFE in Episode 8), 0x1042E (time over with the car), 0x105B6 (the G.$518 pass 0x12454, not ported) and the hint 0x7BBF4 / 0x7BC1E; the writers are the camera, the stage start 0xACAC (clear) and the boss inits (0x4FDCA, 0x6187A, 0x687A0, 0x819BE: 2). The port had a second copy (`Rank::b7b4`) that nothing wrote, so in a free run the second aggression table and the boss music were never chosen. One field now.

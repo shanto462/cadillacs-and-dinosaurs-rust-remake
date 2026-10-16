@@ -580,3 +580,21 @@ start phases), `prop/class26.rs` (the typewriter in pool B), `prop.rs` (classes 
 Tools: `re/harness/link_check.sh [NAME ...]` (`STORY_ONLY=1` stops at the first level frames; `FRAMES=`), `link_prep.py` (cuts the record before the poke and writes the pokes file),
 `story_allow.py`, `shot_check.sh KIND NAME T1,T2,...` (pictures against the MAME snapshots), `trace_slice.py ... ADDR=VALUE:-N`.
 
+## Running list of the main code worker (2026-10-17)
+
+### G.$7B4 has one owner, F6 in Episode 3 (task 1, green)
+
+* `Rank::b7b4` is deleted. G.$7B4 is the camera's lock state `cam.s2.lock78` (struct G.$73C + $78) for every reader and writer: the aggression table choice
+  0x182BA (`rank_reroll_aggression`: lock 1 = table 0x18364), the time over with the car 0x1042E (`rank_time_over`), the area music 0xA55A (`flow_area_music`: lock 2 = the
+  table 0xA5C8), the clear at the stage start 0xACAC and at the demo start (`flow_stage_start_tail`, `flow_demo_stage_tail`) and the hint (`prop/b20.rs`, already used it). The trace
+  line `b7b4` is gone, so a snapshot loads the byte once (as `lock78`). The old trace name `b7b4` is in no script or allow file.
+* 0xA55A was checked against the code: the stage 7 case `cmpi.b #$FE, $7D(a0)` with `a0 = G.-$70BC` (the boss of the HUD bar) is now real (`hud.boss`, `+$7D` = `ATTACKING` of the pool A
+  object): entry 8 of the table when it is 0xFE (the old code had a stand in that never changed the entry). Tests: `the_rank_and_the_music_read_the_camera_lock_state`,
+  `the_last_boss_music_follows_the_boss_mark` (`flow.rs`).
+* Not done, for the class ports: the original boss inits write 2 (Hogg 0x4FDCA, class 84 0x6187A, class 91 0x687A0, the Slisaur starter B 33 every frame 0x819BE). The placeholders
+  do not write it, so the boss music variant and the car time over rule need the real classes. 0x105B6 (pass 0x12454 when the lock is not 0) is still the M6 stub in `combat.rs`.
+* Free runs now use the second aggression table during the camera locks of Episode 1 and the others (lock 1), as the original does.
+* `debug::next_area` (F6) sets mode 6 sub 4 in stage 2 (the controller 0x22398 has no mode 0x12) and mode 0x12 elsewhere; `--area` above 0 with `--episode 3` is refused (Episode 3 has
+  one area). Tests in `debug.rs`: `the_area_change_key_uses_the_mode_of_the_stage_controller`, `the_area_change_key_ends_in_episode_3` (mode 6 sub 4, sub 6, back to mode 0).
+* Gates: `cargo build` and `cargo test` green (341 in dino-game with the 4 new tests, 8 ignored), `re/harness/regress.sh`: 49 of 52 at 0, `mp_join` 3, `armed` 4, `c14c_mustapha` 8 (the baseline).
+

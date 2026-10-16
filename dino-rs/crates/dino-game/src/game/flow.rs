@@ -618,7 +618,7 @@ impl Game {
             p.b.hp_prev = 100;
             p.b.hp_bar = 100;
         }
-        self.rank.b7b4 = 0;
+        self.cam.s2.lock78 = 0; // 0xACAC clr.b $7B4(a5)
         self.sound(0xFF00);
         if self.w.stage == 0 {
             self.sound(1);
@@ -627,14 +627,18 @@ impl Game {
         }
     }
 
-    /// 0xA55A: music of the stage and area (table 0xA582; the G.$7B4 == 2 variant 0xA5C8).
+    /// 0xA55A: music of the stage and area (table 0xA582; with the lock state G.$7B4 = `cam.s2.lock78` at 2 the boss variant 0xA5A2, table 0xA5C8).
     fn flow_area_music(&mut self) {
         let t = &self.assets.text;
-        let id = if self.rank.b7b4 == 2 {
+        let id = if self.cam.s2.lock78 == 2 {
             let mut k = self.w.stage as u32;
-            if k == 7 && self.hud.boss != 0 {
-                // stage 7: a boss with +$7D == 0xFE selects entry 8 (not tracked here) [U]
-                k = 7;
+            if k == 7 {
+                // 0xA5AE: `movea.w -$70BC(a5),a0; cmpi.b #$FE,$7D(a0)`: the boss of the HUD bar with +$7D = 0xFE takes entry 8.
+                if let Some(super::Slot::Enemy(i)) = super::slot_of(self.hud.boss) {
+                    if self.enemies.slots[i].m.b(super::enemy::off::ATTACKING) == 0xFE {
+                        k = 8;
+                    }
+                }
             }
             t.u8(0xA5C8, k)
         } else {
@@ -950,6 +954,66 @@ mod tests {
                 "time mismatch on {name}"
             );
         }
+    }
+
+    /// G.$7B4 is one byte, the camera's lock state (`cam.s2.lock78`): the second aggression table (0x182BA: lock 1) and the boss
+    /// music (0xA55A: lock 2) follow what the camera writes, and the stage start clears it (0xACAC).
+    #[test]
+    fn the_rank_and_the_music_read_the_camera_lock_state() {
+        let Some(assets) = rom() else { return eprintln!("test skipped: dino.zip is absent") };
+        // aggression 1: the row 1 of the two tables differs at the column 10 (0x182E4: 1, 0x18364: 2)
+        let row1 = |lock: u8, seed: u16| {
+            let mut g = Game::new(assets);
+            g.cam.s2.lock78 = lock;
+            g.w.rng = seed;
+            g.rank.aggression = 1;
+            let col = {
+                let mut probe = Game::new(assets);
+                probe.w.rng = seed;
+                probe.rand() & 0xF
+            };
+            g.rank_reroll_aggression();
+            (col, g.rank.aggression)
+        };
+        let seed = (0..0x400u16).find(|&s| row1(0, s).0 == 10).expect("a seed that draws column 10");
+        assert_eq!(row1(0, seed).1, 1, "lock 0: the first table");
+        assert_eq!(row1(1, seed).1, 2, "lock 1: the second table");
+        assert_eq!(row1(2, seed).1, 1, "lock 2: the first table again (cmpi.b #1)");
+        // music of Episode 2 area 0: the area table 0xA582 gives 5, the boss table 0xA5C8 gives 0x0F
+        let music = |lock: u8| {
+            let mut g = Game::new(assets);
+            g.w.stage = 1;
+            g.cam.s2.area = 0;
+            g.cam.s2.lock78 = lock;
+            g.flow_area_music();
+            *g.w.sounds.last().unwrap()
+        };
+        assert_eq!((music(0), music(1), music(2)), (5, 5, 0x0F));
+        // the stage start clears the lock state before the music (0xACAC)
+        let mut g = Game::new(assets);
+        g.w.stage = 1;
+        g.cam.s2.lock78 = 2;
+        g.flow_stage_start_tail();
+        assert_eq!((g.cam.s2.lock78, *g.w.sounds.last().unwrap()), (0, 5));
+    }
+
+    /// 0xA5AE: in Episode 8 with the boss of the HUD bar marked 0xFE in +$7D, the boss music is entry 8 (0x0F), else entry 7 (0x12).
+    #[test]
+    fn the_last_boss_music_follows_the_boss_mark() {
+        let Some(assets) = rom() else { return eprintln!("test skipped: dino.zip is absent") };
+        let mut g = Game::new(assets);
+        g.w.stage = 7;
+        g.cam.s2.lock78 = 2;
+        g.flow_area_music();
+        assert_eq!(*g.w.sounds.last().unwrap(), 0x12, "no boss on the bar");
+        let i = g.enemies.alloc().unwrap();
+        g.hud.boss = g.enemies.handle(i);
+        g.enemies.slots[i].m.sb(crate::game::enemy::off::ATTACKING, 0xFF);
+        g.flow_area_music();
+        assert_eq!(*g.w.sounds.last().unwrap(), 0x12, "+$7D = 0xFF");
+        g.enemies.slots[i].m.sb(crate::game::enemy::off::ATTACKING, 0xFE);
+        g.flow_area_music();
+        assert_eq!(*g.w.sounds.last().unwrap(), 0x0F, "+$7D = 0xFE");
     }
 
     #[test]

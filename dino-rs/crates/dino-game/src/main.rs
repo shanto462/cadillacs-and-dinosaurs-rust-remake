@@ -106,6 +106,9 @@ fn args() -> Args {
     }
     let stage = episode.map(|e| e - 1).or_else(|| value("--stage").and_then(|v| v.parse().ok())).unwrap_or(0);
     let area = value("--area").map(|v| v.parse::<u8>().ok().filter(|a| *a < 4).unwrap_or_else(|| fail("--area must be 0 to 3")));
+    if area.is_some_and(|a| a > 0) && stage == 2 {
+        fail("--area above 0 is not meaningful in Episode 3 (its camera has one area): use --camx");
+    }
     let camx = value("--camx").map(|v| num(v).filter(|x| *x <= 0xFFFF).unwrap_or_else(|| fail("--camx must be 0 to 0xFFFF")));
     let direct = ["--stage", "--chars", "--episode", "--area", "--camx"].iter().any(|f| value(f).is_some());
     let viewer = view.is_some() || a.iter().any(|x| x == "--viewer");
@@ -280,7 +283,7 @@ fn start_game(assets: &'static dino_assets::AssetPack, args: &mut Args, config: 
 
 fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Frame) {
     // `--area`: the game's own end of area (camera mode 1 sub 4, the debug key F6) once the hero has control, area after
-    // area like the probe `jump`, then `--camx`. Stage 2 (Episode 3) has its own camera controller: not handled yet.
+    // area like the probe `jump`, then `--camx`. Episode 3 has one area (`--area` above 0 is refused at the start).
     if let Some((area, camx)) = args.goto {
         if game.flow.mode == 0xC && game.w.scripted == 0 && game.cam.s2.mode == 0 {
             if game.cam.s2.area < area {
