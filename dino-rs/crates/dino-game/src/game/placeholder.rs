@@ -63,10 +63,6 @@ const fn walker(class: u16, what: &'static str, name: Option<u8>, counted: bool)
     Spec { class, what, name, name_v2: None, counted, dino: false, hazard: false, still: false, boss: None }
 }
 
-const fn actor(class: u16, what: &'static str, counted: bool) -> Spec {
-    Spec { class, what, name: None, name_v2: None, counted, dino: false, hazard: false, still: true, boss: None }
-}
-
 const fn dino(class: u16, what: &'static str, name: Option<u8>) -> Spec {
     Spec { class, what, name, name_v2: None, counted: false, dino: true, hazard: false, still: false, boss: None }
 }
@@ -81,17 +77,14 @@ pub const SPECS: &[Spec] = &[
     Spec { boss: boss(1, true), ..walker(5, "BUTCHER", Some(0x0F), true) },
     walker(6, "BLUDGE", Some(0x10), true),
     walker(13, "POACHER", Some(0x02), true),
-    actor(16, "CADILLAC (blue)", true),
     Spec { class: 18, what: "VICE T. / WALTHER", name: Some(0x0C), name_v2: Some(0x0D), counted: true, dino: false, hazard: false, still: false, boss: boss(0, true) },
     dino(22, "BRONTOSAURUS foot", None),
     dino(24, "SHIVAT", Some(0x07)),
     Spec { boss: boss(0, true), ..walker(25, "SLICE", Some(0x05), true) },
-    actor(27, "OPENING man", false),
     dino(29, "R HOPPER", Some(0x04)),
     Spec { boss: boss(2, true), ..walker(31, "HOGG", Some(0x26), true) },
     Spec { boss: Some(Boss { hp_row: 4, controller: true, score: false, rebirth: Some(40), group: false }), ..walker(35, "MORGAN", Some(0x15), true) },
     dino(38, "MACK", Some(0x11)),
-    actor(43, "OPENING leader", false),
     walker(45, "MORGAN villager", None, true),
     Spec { boss: boss(5, true), ..walker(40, "MORGUE", Some(0x16), false) },
     Spec { boss: boss(6, false), ..walker(4, "TYROG", Some(0x19), false) },

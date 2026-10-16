@@ -16,6 +16,9 @@ const SENTINEL: u16 = 0x9FFF;
 
 /// Small tables copied as byte blobs: (ROM address, length, user).
 const TABLES: &[(u32, u32, &str)] = &[
+    // Scene actors (M3-20): the Cadillac's rider rows (0x42350) and offsets (0x42374); the crouching men's variants (0x4D992).
+    (0x42350, 0x3C, "Cadillac rider rows and offsets (class 16)"),
+    (0x4D992, 0x1C, "crouching men variants: name, +$84, animation (class 27)"),
     // Pool B class 20, GO picture (0x7BB68).
     (0x7BCAC, 14, "GO scroll1 palette 10 colours"),
     (0x7BCEA, 40, "GO glyph cells"),
