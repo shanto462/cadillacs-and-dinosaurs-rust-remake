@@ -198,7 +198,21 @@ fn load_config(path: Option<&str>) -> game::flow::Config {
     })
 }
 
+/// The usage text: the `//!` lines at the top of this file, so the help cannot drift from the code.
+fn usage() -> String {
+    include_str!("main.rs")
+        .lines()
+        .filter_map(|l| l.strip_prefix("//!"))
+        .map(|l| l.strip_prefix(' ').unwrap_or(l))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 fn main() {
+    if std::env::args().any(|a| a == "--help" || a == "-h") {
+        println!("{}", usage());
+        return;
+    }
     if std::env::args().any(|a| a == "--print-config") {
         print!("{}", game::flow::Config::default().to_text());
         return;
