@@ -114,6 +114,13 @@ mod b87;
 #[path = "prop/b81.rs"]
 mod b81;
 // Pool B classes 57 and 64 (M3-14): the floor labels and the cage posts of the lift of Episode 7.
+// Episode 5 scenery (M7-22): chimney smoke B5, interior flames B6, fire strips B10.
+#[path = "prop/b5.rs"]
+mod b5;
+#[path = "prop/b6.rs"]
+mod b6;
+#[path = "prop/b10.rs"]
+mod b10;
 #[path = "prop/b57.rs"]
 mod b57;
 // Pool B class 1 (M3-19): chain-link fence / gate (0x75238).
@@ -204,6 +211,9 @@ impl Game {
             let mut p = std::mem::take(&mut self.props.slots[i]);
             match p.b.k20 / 4 {
                 0 => self.prop_b0(&mut p, h, i),
+                5 => self.prop_b5(&mut p, i),
+                6 => self.prop_b6(&mut p, i),
+                10 => self.prop_b10(&mut p, i),
                 11 => self.prop_b11(&mut p, i),
                 12 => self.prop_b12(&mut p, i),
                 14 => self.prop_b14(&mut p, i),
