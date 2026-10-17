@@ -18,6 +18,8 @@ pub struct Vram {
     pub scroll2: Vec<Cell>,
     /// 32x32 far background.
     pub scroll3: Vec<Cell>,
+    /// Alternate scroll3 map at 0x920000, filled by the boss intro flash (0x8A03C).
+    pub intro3: Vec<Cell>,
     /// The "other" RAM 0x915800 .. 0x918000 (CPS-A register 0x108 = 0x9158): the row scroll table, 1024 words used. Screen line
     /// s (0 to 223) adds `rowscroll[(s + 16) & 0x3FF]` to the scroll2 X when the video control bit 0 is set (stage 2 only).
     pub rowscroll: Vec<u16>,
@@ -29,6 +31,7 @@ impl Default for Vram {
             scroll1: vec![Cell::default(); CELLS],
             scroll2: vec![Cell::default(); CELLS],
             scroll3: vec![Cell::default(); CELLS],
+            intro3: Vec::new(),
             rowscroll: vec![0; ROWSCROLL_WORDS],
         }
     }

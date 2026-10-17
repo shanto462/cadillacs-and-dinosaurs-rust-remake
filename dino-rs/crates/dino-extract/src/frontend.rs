@@ -72,6 +72,18 @@ fn scene_palettes(rom: &Rom, set: u32) -> ScenePalettes {
 pub fn extract(rom: &Rom) -> FrontendData {
     // Layout pointer tables used by join prompts (0x8050..0x83D4).
     const TABLES: &[(u32, u32, &str)] = &[
+        (0x84584, 0x80, "B50 variant and hero routine pointers"),
+        (0xA5E42, 0x230, "B50 per-hero dialogue state pointers"),
+        (0x84E8A, 0xC0, "B50 portrait RGB palette rows"),
+        (0x8A020, 0x1C, "B76 backdrop flash tile codes and attributes"),
+        (0x84A3E, 0x14, "B50 Jack mouth and eyes"),
+        (0x84AD6, 0x1C, "B50 Hannah mouth and eyes"),
+        (0x84B40, 0x14, "B50 Mustapha mouth and eyes"),
+        (0x84B78, 0xC, "B50 Mess mouth"),
+        (0x84BD2, 0x14, "B50 Fessenden mouth and eyes"),
+        (0x84C34, 0x14, "B50 Vice mouth and eyes"),
+        (0x84C96, 0x14, "B50 Butcher mouth and eyes"),
+        (0x84CF8, 0x14, "B50 Slice mouth and eyes"),
         (0x7F48, 0x3E, "continue HUD origins and digit tiles"),
         (0xED40, 24, "countdown digit origins (0xED2E)"),
         (0xFAF8, 0xF0, "game-over palette pointers and targets (0xED86)"),

@@ -154,6 +154,8 @@ pub struct World {
     pub layer_ctrl: u16,
     /// G.$26 bit 0: scroll2 rowscroll enabled (stage 2).
     pub video_ctrl: u16,
+    /// G.$2E: scroll3 tilemap base, 0x9100 normally, 0x9200 during B76 flashes.
+    pub scroll3_base: u16,
     /// CPS-B priority masks for tile groups 0..3 (written by 0x8D92).
     pub priority_masks: [u16; 4],
     /// G.$16 / $17 / $18 cooked inputs of players 1-3 (active high: 1 R, 2 L, 4 D, 8 U, 0x10 attack, 0x20 jump).
@@ -208,7 +210,7 @@ impl Game {
     pub fn new(assets: &'static AssetPack) -> Game {
         Game {
             assets,
-            w: World { layer_ctrl: 0x12D6, ..Default::default() },
+            w: World { layer_ctrl: 0x12D6, scroll3_base: 0x9100, ..Default::default() },
             vram: Vram::default(),
             pal: PaletteRam::default(),
             fade: Fade::default(),
