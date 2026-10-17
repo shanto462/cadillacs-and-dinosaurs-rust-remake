@@ -70,3 +70,25 @@
 - Corrections for the design documents (the main session decides about D5-errata): D4e s0 calls the middle byte of d1
   "fixed", it is the pan spread; D4e s0 lists 0xFF0B as "commands enabled", it clears the Z80 debug flag (the enable is the
   0x88 byte at 0xF19FFB).
+
+## M4-08: pan law, echo, WAV example (mixer part 2)
+The DSP internal ROM is zero in `re/mame/roms`, so MAME's audio is not a reference for the pan law or the echo.
+These are models. Every assumption is marked [A] in the code (`dino-sound/src/mixer.rs`).
+- **Pan law [I, SPEC 8]**: equal power, linear in the 33 steps: gain left = sqrt((32 - p) / 32), gain right = sqrt(p / 32),
+  p = reg - 0x110 (0 full left, 0x10 centre at 0.707 each). Not checked against the chip. Which side p = 0 is stays [I] (SPEC 17).
+- **Mono [SPEC 8, D4e]**: the cabinet flag forces pan 0x10 in the driver (F040 == 0). The mixer has the same switch
+  (`Mixer::set_mono`): every voice is centred, so both channels are equal.
+- **Echo [A]**: one mono delay line of 0x800 frames. Delay = reg 0xD9 low 11 bits in frames (0x07FF = 2047 frames,
+  about 85 ms). Feedback = reg 0x93 / 0x8000 (0x27FF = 0.31). Send of voice v = sample level x reg 0xBA+v / 0x4000
+  (0xBA+v holds the table 0x23A9 value x 4, SPEC 8). The echo return adds to both channels at the output gain.
+  The chip's real echo taps and send scale are not known; the shape (repeat after the delay, decaying by the feedback) is the only claim.
+- **WAV example**: `dino-sound/examples/play.rs` writes 16-bit stereo WAV at 24038 Hz of any code (`--codes`, `--d1`, `--d2`,
+  `--seconds`, `--tail`, `--mono`). Default output `re/out/sound/` (git-ignored). Default request d1 = d2 = 0, the request of the MAME
+  recordings. Nothing is played.
+- **Lengths (checked on 2026-10-17)**: coin 0x30 = last DSP write at 1.840 s (44230 frames). The MAME recording of the same request
+  (`re/out/sound/0030.qs.trc`) has its last register write in video frame 109, which is the same as our last write, so our driver
+  matches MAME here. D4e section 0 says 1.81 s; that is about 2 video frames shorter than MAME (difference 1.7 %). Left for the main
+  session to decide. Music 0x00 and 0x01 loop by a jump (not by the end of the track), so their loop length is NOT measured by the
+  example; the WAVs of 0x00 (14.98 s) and 0x01 (54.46 s) were cut to the D4e lengths by `--seconds`, which is not a check.
+- **Level**: the peaks are low (coin 0.04, 0x01 0.07, 0x00 0.10 of full scale) because OUTPUT_GAIN is still the placeholder 0.25.
+  Tune by ear with the main session before the game audio is judged.

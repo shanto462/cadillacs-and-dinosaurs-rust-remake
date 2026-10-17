@@ -1,5 +1,5 @@
-//! QSound DSP model: the register file, sample playback of 16 voices at 24038 Hz, and mixing to
-//! interleaved f32 stereo (M4-07, part 1 of the mixer; the echo and the pan law come in M4-08).
+//! QSound DSP model: the register file, sample playback of 16 voices at 24038 Hz, the pan law,
+//! the plain echo, and mixing to interleaved f32 stereo (M4-07 and M4-08).
 //!
 //! The DSP internal ROM (pan gains, FIR taps) is not in `dino.zip`, so this is a model built from
 //! the register meaning in `re/specs/sound/SPEC.md` section 8, not a copy of any emulator:
@@ -13,7 +13,10 @@
 //!
 //! Key on restarts the voice at its start address. When the address reaches the end, the loop
 //! length is subtracted once (SPEC 8). A voice with no loop length stops at its end.
-//! Other writes (echo, ADPCM, feedback) are stored but not mixed yet.
+//! Echo (M4-08, assumptions marked in `re/specs/sound/HANDOFF.md`): the send of voice `v` is
+//! register `0xBA+v` (unity at 0x4000), the feedback is register 0x93 (unity at 0x8000), the delay
+//! in samples is register 0xD9 (low 11 bits). The echo return goes to both channels equally.
+//! ADPCM is not used by this ROM and is not modelled.
 
 use crate::driver::RegWrite;
 use crate::map::VOICES;
@@ -30,6 +33,19 @@ const PAN_MAX: u16 = 0x20;
 /// 0.25, so 16 loud voices do not clip. This is a placeholder level, tuned by ear later.
 pub const OUTPUT_GAIN: f32 = 0.25;
 
+/// Echo registers (SPEC 8): feedback, delay length, and the send base (`0xBA + v`).
+const REG_ECHO_FB: usize = 0x93;
+const REG_ECHO_LEN: usize = 0xD9;
+const REG_ECHO_SEND: usize = 0xBA;
+/// Unity values of the echo feedback and the echo send [A: assumed, not checked on hardware].
+const ECHO_FB_FULL: f32 = 0x8000 as f32;
+const ECHO_SEND_FULL: f32 = 0x4000 as f32;
+/// Size of the echo delay line in frames. The delay is at most 0x7FF frames (about 85 ms).
+const ECHO_BUF: usize = 0x800;
+
+/// Pan register value of the centre (0x110 + 0x10). Mono mode forces every voice here.
+const MONO_PAN_REG: u16 = PAN_OFFSET + 0x10;
+
 /// Playback state of one voice that the register file does not hold: the position in 4.12
 /// fixed point (address in the high part) and whether the voice is keyed on.
 #[derive(Clone, Copy, Debug, Default)]
@@ -43,6 +59,11 @@ pub struct Mixer<'a> {
     pcm: &'a [u8],
     regs: [u16; 256],
     voices: [Playback; VOICES as usize],
+    /// Mono output: every voice is panned to the centre (the cabinet setting, SPEC 8).
+    mono: bool,
+    /// Echo delay line (mono) and its write index.
+    echo: Vec<f32>,
+    echo_pos: usize,
 }
 
 impl<'a> Mixer<'a> {
@@ -52,7 +73,16 @@ impl<'a> Mixer<'a> {
             pcm,
             regs: [0; 256],
             voices: [Playback::default(); VOICES as usize],
+            mono: false,
+            echo: vec![0.0; ECHO_BUF],
+            echo_pos: 0,
         }
+    }
+
+    /// Mono mode (cabinet setting, SPEC 8): the pan of every voice is forced to the centre
+    /// (register value 0x110 + 0x10), so the left and right output are equal.
+    pub fn set_mono(&mut self, mono: bool) {
+        self.mono = mono;
     }
 
     /// Applies the DSP writes of the driver (`Driver::take_dsp_writes`), in order.
@@ -100,22 +130,40 @@ impl<'a> Mixer<'a> {
         }
     }
 
-    /// One output frame at [`RATE`]: all 16 voices summed, panned and scaled by [`OUTPUT_GAIN`].
+    /// One output frame at [`RATE`]: all 16 voices summed, panned, sent to the echo, and scaled by
+    /// [`OUTPUT_GAIN`]. The echo return is added to both channels.
     pub fn next_frame(&mut self) -> [f32; 2] {
         let (mut l, mut r) = (0.0f32, 0.0f32);
+        let mut send = 0.0f32;
         for v in 0..VOICES as usize {
             let s = self.voice_sample(v);
             if s == 0.0 {
                 continue;
             }
-            let [gl, gr] = pan_gains(self.regs[PAN_BASE + v]);
+            let pan = if self.mono { MONO_PAN_REG } else { self.regs[PAN_BASE + v] };
+            let [gl, gr] = pan_gains(pan);
             l += s * gl;
             r += s * gr;
+            send += s * self.regs[REG_ECHO_SEND + v] as f32 / ECHO_SEND_FULL;
         }
+        let e = self.echo_step(send);
         [
-            (l * OUTPUT_GAIN).clamp(-1.0, 1.0),
-            (r * OUTPUT_GAIN).clamp(-1.0, 1.0),
+            ((l + e) * OUTPUT_GAIN).clamp(-1.0, 1.0),
+            ((r + e) * OUTPUT_GAIN).clamp(-1.0, 1.0),
         ]
+    }
+
+    /// One frame of the echo: returns the delayed signal and stores `send + feedback * delayed`.
+    /// The delay is register 0xD9 (low 11 bits, at least one frame). Runs every frame, so the
+    /// tail rings on after the voices stop.
+    fn echo_step(&mut self, send: f32) -> f32 {
+        let len = ((self.regs[REG_ECHO_LEN] & 0x7FF) as usize).max(1);
+        let rd = (self.echo_pos + ECHO_BUF - len) % ECHO_BUF;
+        let delayed = self.echo[rd];
+        let fb = (self.regs[REG_ECHO_FB] as f32 / ECHO_FB_FULL).min(0.999);
+        self.echo[self.echo_pos] = send + fb * delayed;
+        self.echo_pos = (self.echo_pos + 1) % ECHO_BUF;
+        delayed
     }
 
     /// Advances voice `v` by one output frame and returns its level before pan, in units of
@@ -148,13 +196,15 @@ impl<'a> Mixer<'a> {
     }
 }
 
-/// Equal power pan over the 33 pan steps of register `0x110 + p` (approximation, SPEC 8 and 17).
-/// p = 0 is full left, p = 0x20 full right, p = 0x10 both at 0.707. Values outside the range are
-/// clamped (a value below 0x110 counts as p = 0).
+/// Equal power pan over the 33 pan steps of register `0x110 + p` (approximation, SPEC 8 [I]).
+/// Gain left = sqrt((32 - p) / 32), gain right = sqrt(p / 32): the power of each voice is
+/// `gl^2 + gr^2 = 1` at every step. p = 0 is full left, p = 0x20 full right, p = 0x10 both at
+/// 0.707. Values outside the range are clamped (a value below 0x110 counts as p = 0).
+/// The true gains live in the DSP internal ROM (not in `dino.zip`), so this law is not checked.
 pub fn pan_gains(reg: u16) -> [f32; 2] {
-    let p = reg.saturating_sub(PAN_OFFSET).min(PAN_MAX);
-    let theta = p as f32 / PAN_MAX as f32 * std::f32::consts::FRAC_PI_2;
-    [theta.cos(), theta.sin()]
+    let p = reg.saturating_sub(PAN_OFFSET).min(PAN_MAX) as f32;
+    let max = PAN_MAX as f32;
+    [((max - p) / max).sqrt(), (p / max).sqrt()]
 }
 
 #[cfg(test)]
@@ -315,6 +365,50 @@ mod tests {
         let mut out = Vec::new();
         m.render(10, &mut out);
         assert_eq!(out.len(), 20);
+    }
+
+    #[test]
+    fn echo_repeats_the_send_after_the_delay() {
+        // Send 1.0 on voice 0, feedback 0, delay 3 frames: the first sample comes back at frame 3.
+        let pcm = vec![100u8, 0, 0, 0, 0, 0, 0, 0];
+        let mut m = Mixer::new(&pcm);
+        m.write(0xBA, 0x4000);
+        m.write(0x93, 0);
+        m.write(0xD9, 3);
+        key_on(&mut m, 0, 0, 0x1000, 8, 0, 0x4000);
+        let f0 = m.next_frame();
+        assert!((f0[0] - expect(100, 1.0)).abs() < EPS, "dry sample at frame 0");
+        assert_eq!(f0[1], 0.0, "pan 0 is full left, the echo is not there yet");
+        for _ in 0..2 {
+            m.next_frame();
+        }
+        let f3 = m.next_frame();
+        assert!((f3[0] - expect(100, 1.0)).abs() < EPS, "echo on the left at frame 3");
+        assert!((f3[1] - expect(100, 1.0)).abs() < EPS, "echo return is on both channels");
+    }
+
+    #[test]
+    fn echo_feedback_makes_a_second_repeat() {
+        let pcm = vec![100u8, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let mut m = Mixer::new(&pcm);
+        m.write(0xBA, 0x4000);
+        m.write(0x93, 0x4000); // feedback 0.5
+        m.write(0xD9, 2);
+        key_on(&mut m, 0, 0, 0x1000, 10, 0, 0x4000);
+        let out: Vec<f32> = (0..7).map(|_| m.next_frame()[0]).collect();
+        assert!((out[2] - expect(100, 1.0)).abs() < EPS, "first repeat at frame 2");
+        assert!((out[4] - 0.5 * expect(100, 1.0)).abs() < EPS, "second repeat at frame 4, half level");
+    }
+
+    #[test]
+    fn mono_mode_centres_every_voice() {
+        let pcm = vec![100u8; 8];
+        let mut m = Mixer::new(&pcm);
+        m.set_mono(true);
+        key_on(&mut m, 0, 0, 0x1000, 4, 0, 0x4000); // pan register 0x110 would be full left
+        let [l, r] = m.next_frame();
+        assert_eq!(l, r, "mono output has equal channels");
+        assert!((l - expect(100, 1.0) * std::f32::consts::FRAC_1_SQRT_2).abs() < EPS);
     }
 
     /// Renders the real code through the driver, the way the game runs it: one 250 Hz tick at a
