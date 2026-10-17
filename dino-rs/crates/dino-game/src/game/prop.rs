@@ -135,6 +135,11 @@ mod b76;
 mod b28_29;
 #[path = "prop/b43.rs"]
 mod b43;
+// Episode 4 scenery: wall panels B0 (0x74FA2) and foundry palettes B59 (0x861E8) (M7-05).
+#[path = "prop/b0.rs"]
+mod b0;
+#[path = "prop/b59.rs"]
+mod b59;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -174,11 +179,13 @@ impl Game {
             let h = self.props.handle(i);
             let mut p = std::mem::take(&mut self.props.slots[i]);
             match p.b.k20 / 4 {
+                0 => self.prop_b0(&mut p, h, i),
                 11 => self.prop_b11(&mut p, i),
                 12 => self.prop_b12(&mut p, i),
                 14 => self.prop_b14(&mut p, i),
                 1 => self.prop_b1(&mut p, h, i),
                 57 => self.prop_b57(&mut p, i),
+                59 => self.prop_b59(&mut p, i),
                 64 => self.prop_b64(&mut p, i),
                 3 => self.prop_b3(&mut p, h, i),
                 15 => self.prop_wave(&mut p, h, i),
