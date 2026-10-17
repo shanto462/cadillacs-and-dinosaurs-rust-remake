@@ -1042,7 +1042,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 16, 17, 18, 20, 27, 34, 41, 43, 49, 50, 54, 55, 56, 57, 60, 81, 90, 92, 93, 96, 97]),
-    ("prop", &[0, 1, 2, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 40, 43, 47, 50, 57, 59, 64, 66, 73, 74, 76, 81, 82, 83, 84, 85, 87, 96]),
+    ("prop", &[0, 1, 2, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 40, 42, 43, 47, 50, 53, 57, 59, 64, 66, 73, 74, 76, 81, 82, 83, 84, 85, 87, 96]),
     (
         "item",
         &[
@@ -1254,6 +1254,7 @@ impl Game {
         f.u8(0x04F8, "dizzy", &mut s.dizzy);
         f.u8(0x04DE, "b4de", &mut s.b4de);
         f.u8(0x07B2, "b7b2", &mut s.b7b2);
+        f.u8(0x07B3, "b7b3", &mut s.b7b3);
         f.u8(0x07B6, "cage_smashed", &mut s.cage_smashed);
         // Spawn interpreter G.$66C: +$04 init, +$08 / +$0C list pointers (indexes in the port).
         f.u8(0x0670, "spawn_init", &mut self.spawn.init);
