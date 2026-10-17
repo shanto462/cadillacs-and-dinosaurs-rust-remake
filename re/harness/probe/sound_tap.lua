@@ -75,11 +75,26 @@ for line in read_file(env("SQ_REQ", "")):gmatch("[^\n]+") do
     for w in line:gmatch("%S+") do tk[#tk + 1] = w end
     if tk[1] and tk[1]:lower() == "sound" then table.remove(tk, 1) end
     local code = num(tk[1] or "")
-    if code ~= nil then
+    -- Optional words: `name=X` names this trace; `at=N` (on a line after a request) queues
+    -- this request N frames into the trace of the request before it (M4-06: a fade over music).
+    local name, at = nil, nil
+    for i = 4, #tk do
+      name = name or tk[i]:match("^name=(.+)$")
+      at = at or tonumber(tk[i]:match("^at=(%d+)$") or "")
+    end
+    if code ~= nil and at ~= nil and #cmds > 0 then
+      cmds[#cmds].extra = {
+        at = at,
+        code = code & 0xFFFF,
+        d1 = (num(tk[2] or "0") or 0) & 0xFFFFFFFF,
+        d2 = (num(tk[3] or "0") or 0) & 0xFFFFFFFF,
+      }
+    elseif code ~= nil then
       cmds[#cmds + 1] = {
         code = code & 0xFFFF,
         d1 = (num(tk[2] or "0") or 0) & 0xFFFFFFFF,
         d2 = (num(tk[3] or "0") or 0) & 0xFFFFFFFF,
+        name = name,
       }
     end
   end
@@ -88,6 +103,7 @@ end
 local function code_file(c)
   -- Four hex digits. d1 and d2 are added only when the request is not 0, 0,
   -- so two pan variants of one code do not overwrite each other.
+  if c.name then return OUT .. "/" .. c.name .. ".qs.trc", c.name end
   local name = string.format("%04x", c.code)
   if c.d1 ~= 0 or c.d2 ~= 0 then
     name = string.format("%s_%08x_%08x", name, c.d1, c.d2)
@@ -378,6 +394,14 @@ local function frame_body()
     hold_demo()
     rec_f = rec_f + 1
     if trace then trace:flush() end
+    local cur = cmds[cmd_i]
+    if cur.extra and rec_f == cur.extra.at then
+      local x = cur.extra
+      if trace then trace:write(string.format("# extra code=%04x d1=%08x d2=%08x at=%d\n", x.code, x.d1, x.d2, x.at)) end
+      guard = false
+      enqueue(x.code, x.d1, x.d2)
+      cur.extra = nil
+    end
     if rec_f >= FRAMES then
       close_code()
       if cmd_i >= #cmds then
