@@ -193,6 +193,16 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x7906E, 42, "B12 window codes, 3 columns of 7 (0x7903A)"),
     (0x79152, 160, "B12 glass shard records, 10 of 16 bytes (0x93362)"),
     (0x79200, 24, "B12 window hit boxes, 2 records of 6 words (0x78FD2)"),
+    // Pool B class 28 (water bands, 0x7F72A): 5 variants of 4 phases.
+    (0x7F7C8, 352, "B28 var 0: 4 phase pointers then 4 pictures of tile codes (0x7F786)"),
+    (0x7F9BE, 688, "B28 var 2: 4 phase pointers then 4 pictures of tile codes (0x7F934)"),
+    (0x7FCF4, 880, "B28 var 4: 4 phase pointers then 4 pictures of tile codes (0x7FC7A)"),
+    (0x800AE, 448, "B28 var 6: 4 phase pointers then 4 pictures of tile codes (0x80070)"),
+    (0x802C4, 448, "B28 var 8: 4 phase pointers then 4 pictures of tile codes (0x8027A)"),
+    // Pool B class 29 (water bands, 0x8048A): 7 records of 3 rows x 16 columns.
+    (0x80518, 2856, "B29 block tables: dest addrs, phase table ptrs, phase ptrs, tile codes (0x804CA)"),
+    // Pool B class 43 (wall torches, 0x83ACA): 7 records of 2 x 2 flames, 4 phases.
+    (0x83B4E, 92, "B43 torch tables: dest addrs, phase ptrs, tile codes (0x83B20)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {

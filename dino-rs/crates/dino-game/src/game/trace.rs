@@ -658,6 +658,14 @@ impl Prop {
                 self.m.sw(off, v);
             }
         }
+        if f.all() || self.b.k20 == 43 * 4 {
+            let mut timer = self.m.b(0xA0);
+            f.u8(0xA0, "torch_timer", &mut timer);
+            self.m.sb(0xA0, timer);
+            let mut frame = self.m.w(0xA2);
+            f.u16(0xA2, "torch_frame", &mut frame);
+            self.m.sw(0xA2, frame);
+        }
         if f.all() || self.b.k20 == 22 * 4 {
             self.trace_boss_controller(f, stage);
         }
@@ -950,7 +958,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 16, 17, 20, 27, 34, 41, 43, 49, 50, 54, 55, 56, 57, 60, 81, 90, 92, 93, 96, 97]),
-    ("prop", &[1, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 31, 35, 47, 66, 73, 74, 81, 82, 83, 84, 85, 87, 96]),
+    ("prop", &[1, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 28, 29, 31, 35, 43, 47, 66, 73, 74, 81, 82, 83, 84, 85, 87, 96]),
     (
         "item",
         &[

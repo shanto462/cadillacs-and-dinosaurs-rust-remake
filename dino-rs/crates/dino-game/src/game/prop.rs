@@ -116,6 +116,11 @@ mod b1;
 // Pool B class 3 (M3-19): mine wall (0x763F6).
 #[path = "prop/b3.rs"]
 mod b3;
+// Episode 8 sewer scenery (M8-21): water bands (28, 29) and torches (43).
+#[path = "prop/b28_29.rs"]
+mod b28_29;
+#[path = "prop/b43.rs"]
+mod b43;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -169,9 +174,12 @@ impl Game {
                 25 => self.prop_class25(&mut p, i),
                 26 => self.prop_class26(&mut p, i),
                 21 => self.prop_b21(&mut p, i),
+                28 => self.prop_b28(&mut p, i),
+                29 => self.prop_b29(&mut p, i),
                 31 => self.prop_clock(&mut p, i),
                 32 => self.prop_class32(&mut p, i),
                 35 => self.prop_b35(&mut p, i),
+                43 => self.prop_b43(&mut p, i),
                 47 => self.prop_b47(&mut p, i),
                 66 => self.prop_class66(&mut p, i),
                 67 => self.prop_class67(&mut p, i),
