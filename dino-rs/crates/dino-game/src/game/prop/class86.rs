@@ -64,7 +64,7 @@ impl Game {
             e.b.dir = p.b.dir;
             e.m.sl(f::OWNER, me as u32);
         }
-        self.sound(0x80); // 0xA49E
+        self.snd_request(0x80, 0x72000, 0x0400_0000); // 0xA49E: move.w #$80,d0; d1 = 0x72000, d2 = 0x4000000
     }
 
     /// 0x8B4FC.
@@ -74,7 +74,7 @@ impl Game {
             let d0 = self.cam.s2.cam_x.wrapping_add(0xA0) as i16;
             if d0 <= p.b.xi() {
                 p.b.sub += 2;
-                self.sound(0x70); // 0xA4B2
+                self.snd_request(0x70, 0x10, 0); // 0xA4B2: move.w #$70,d0; moveq #$10,d1; moveq #0,d2
                 p.b.vx = 0x830;
                 p.m.sb(f::TIMER, 0x3C);
             }
