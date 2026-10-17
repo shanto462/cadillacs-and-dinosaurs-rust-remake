@@ -233,7 +233,8 @@ impl Game {
                 vp.b.hitstop = rec.hit_stop;
                 self.players[ai].b.hitstop = rec.hit_stop;
                 if rec.sound != 0 {
-                    self.snd_hit(rec.sound); // 0x962A
+                    let (ax, vf) = (self.players[ai].b.xi(), self.players[ai].b.facing);
+                    self.snd_hit(rec.sound, ax, vf); // 0x962A
                 }
                 self.players[vi].b.b9a = rec.b7;
                 self.spawn_hit_spark(a, v, ha, hb, rec.spark);
@@ -406,7 +407,8 @@ impl Game {
             self.enemies.slots[ei].m.sb(super::enemy::off::WAIT, 0);
         }
         if rec.sound != 0 {
-            self.snd_hit(rec.sound); // 0x962A
+            let (ax, vf) = (self.players[i].b.xi(), self.players[i].b.facing);
+            self.snd_hit(rec.sound, ax, vf); // 0x962A
         }
         self.player_add_score(i, rec.score);
         self.spawn_hit_spark(me, e, ha, hb, rec.spark);
@@ -496,7 +498,8 @@ impl Game {
         eb.step = 0;
         eb.b9a = rec.spark; // quirk: byte 6 here (byte 7 in the normal hit path)
         if rec.sound != 0 {
-            self.snd_hit(rec.sound); // 0x962A
+            let (ax, vf) = (self.players[i].b.xi(), self.players[i].b.facing);
+            self.snd_hit(rec.sound, ax, vf); // 0x962A
         }
         self.player_add_score(i, rec.score);
     }
@@ -533,7 +536,8 @@ impl Game {
             pl.b75 = 0xFF;
             self.body_mut(e).hitstop = rec.hit_stop;
             if rec.sound != 0 {
-                self.snd_hit(rec.sound); // 0x962A
+                let (ax, vf) = (self.body(e).xi(), self.body(e).facing);
+                self.snd_hit(rec.sound, ax, vf); // 0x962A
             }
             self.players[p].b.b9a = rec.spark;
             if let Some((ha, hb)) = boxes {
@@ -573,7 +577,8 @@ impl Game {
         pl.b.b9a = rec.b7;
         self.body_mut(e).hitstop = rec.hit_stop;
         if rec.sound != 0 {
-            self.snd_hit(rec.sound); // 0x962A
+            let (ax, vf) = (self.body(e).xi(), self.body(e).facing);
+            self.snd_hit(rec.sound, ax, vf); // 0x962A
         }
         if let Some((ha, hb)) = boxes {
             self.spawn_hit_spark(e, me, ha, hb, rec.spark);

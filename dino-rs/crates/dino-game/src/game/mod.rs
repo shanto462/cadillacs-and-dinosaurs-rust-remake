@@ -176,6 +176,8 @@ pub struct World {
     pub snd_hit_toggle: u16,
     /// Sound requests made this frame (sound ids as the original passes them to the sound queue).
     pub sounds: Vec<u16>,
+    /// The same requests with d1 and d2 of the queue entry, in queue order (`sound_ex`, M4-13).
+    pub snd_reqs: Vec<snd::SndRequest>,
 }
 
 pub struct Game {
@@ -245,9 +247,16 @@ impl Game {
         self.w.rng
     }
 
-    /// Queue a sound request (the original's sound queue at $3A, flushed in vblank).
+    /// Queue a sound request with d1 = d2 = 0. Only for a call whose original passes d1 = d2 = 0 (or whose d1 / d2 are
+    /// not yet checked: see `sound_ex`). The original's sound queue at $3A, flushed in vblank.
     pub fn sound(&mut self, id: u16) {
+        self.sound_ex(id, 0, 0);
+    }
+
+    /// 0xA63C with d0 = `id`, d1 and d2 (M4-13): the code goes to the queue and the whole entry is kept for the sound port.
+    pub fn sound_ex(&mut self, id: u16, d1: u32, d2: u32) {
         self.w.sounds.push(id);
+        self.w.snd_reqs.push(snd::SndRequest { code: id, d1, d2 });
     }
 
     /// Common header of any object.
@@ -282,6 +291,7 @@ impl Game {
     /// and the title, as in the original.
     pub fn tick(&mut self) {
         self.w.sounds.clear();
+        self.w.snd_reqs.clear();
         self.flow_frame();
         self.run_fade_task();
         // the video hardware shows the scroll and the sprite list of two frames ago (`camera::VIDEO_LATENCY`)

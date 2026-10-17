@@ -14,21 +14,25 @@ impl Game {
     }
 
     /// 0x9FB6: break / landing thud of a container: 0x6E, or 0xF5 when bit 1 of G.$43B was clear.
-    pub(super) fn item_snd_9fb6(&mut self) {
+    /// d1 = the pan byte of the item's X (`x`), d2 = 0.
+    pub(super) fn item_snd_9fb6(&mut self, x: i16) {
         let old = self.item_snd_toggle(1);
-        self.sound(if old { 0x6E } else { 0xF5 });
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(if old { 0x6E } else { 0xF5 }, pan, 0);
     }
 
-    /// 0x9E60: 0x6F / 0xF6 (bit 0 of G.$43B).
-    pub(super) fn item_snd_9e60(&mut self) {
+    /// 0x9E60: 0x6F / 0xF6 (bit 0 of G.$43B): the break sound with the pan of `x` (the same routine as `snd_break`).
+    pub(super) fn item_snd_9e60(&mut self, x: i16) {
         let old = self.item_snd_toggle(0);
-        self.sound(if old { 0x6F } else { 0xF6 });
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(if old { 0x6F } else { 0xF6 }, pan, 0);
     }
 
-    /// 0x9FF8: 0x74 / 0xFA (bit 2 of G.$43B).
-    pub(super) fn item_snd_9ff8(&mut self) {
+    /// 0x9FF8: 0x74 / 0xFA (bit 2 of G.$43B). d1 = the pan byte of `x`, d2 = 0.
+    pub(super) fn item_snd_9ff8(&mut self, x: i16) {
         let old = self.item_snd_toggle(2);
-        self.sound(if old { 0x74 } else { 0xFA });
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(if old { 0x74 } else { 0xFA }, pan, 0);
     }
 
     /// 0x9C76: the thrower's shot sound; for an item (+$82 != 0) the fixed code 0xEA.
@@ -42,10 +46,13 @@ impl Game {
     }
 
     /// 0x9D44: 0x64 / 0xE3 (bit 7 of G.$43A, shared with the player voices).
-    pub(super) fn item_snd_9d44(&mut self) {
+    /// d1 = (3, or 4 when +$24 is nonzero) << 16 | 0x2000 | the pan byte of `x`, d2 = 0x2400000.
+    pub(super) fn item_snd_9d44(&mut self, x: i16, facing: u8) {
         let old = self.w.snd_toggle >> 7 & 1 != 0;
         self.w.snd_toggle ^= 0x80;
-        self.sound(if old { 0x64 } else { 0xE3 });
+        let mode = if facing != 0 { 4 } else { 3 };
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(if old { 0x64 } else { 0xE3 }, (mode << 16) | 0x2000 | pan, 0x0240_0000);
     }
 
     /// 0x9D9C: 0xDC for an item.
@@ -75,9 +82,10 @@ impl Game {
     }
 
     /// 0xA404: 0x8C / 0x105 (bit 7 of G.$43B).
-    pub(super) fn item_snd_a404(&mut self) {
+    pub(super) fn item_snd_a404(&mut self, x: i16) {
         let old = self.item_snd_toggle(7);
-        self.sound(if old { 0x8C } else { 0x105 });
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(if old { 0x8C } else { 0x105 }, pan, 0);
     }
 }
 

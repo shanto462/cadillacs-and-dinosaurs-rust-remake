@@ -57,9 +57,6 @@ pub struct Globals {
     /// before pool E runs). G.$43B: toggle bits of the item sounds (0x9FB6, 0x9E60, 0x9FF8, 0xA404).
     pub b4fa: u8,
     pub snd_toggle_b: u8,
-    /// The sound queue entries with d1 and d2 not taken by the sound port yet (`snd.rs`).
-    #[allow(dead_code)] // read by the sound port of M4
-    pub snd_ring: Vec<super::snd::SndRequest>,
     /// Harness only (`DINO_STEP_PLAYERS`): MAME's RAM image after the frame being run; the pool E
     /// update loads the players from it before it runs (`Game::trace_load_players`).
     pub step_players: Option<Vec<u8>>,

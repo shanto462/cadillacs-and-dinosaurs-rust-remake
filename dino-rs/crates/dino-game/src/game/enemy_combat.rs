@@ -160,7 +160,7 @@ impl Game {
             let p = ab.partner;
             if p != 0 { self.body_mut(p).hitstop = rec.hit_stop; }
         }
-        if rec.sound != 0 { self.snd_hit(rec.sound); }
+        if rec.sound != 0 { self.snd_hit(rec.sound, self.body(a).xi(), self.body(a).facing); }
         self.enemy_hit_score(ab.who, rec.score);
         self.spawn_hit_spark(a, d, ha, hb, rec.spark);
         if hero && counter {
@@ -297,7 +297,7 @@ impl Game {
                 e.b.step = 0;
                 e.b.hitstop = rec.hit_stop; // the monster's hit-stop is unchanged
                 e.b.b9a = rec.b7;
-                if rec.sound != 0 { self.snd_hit(rec.sound); }
+                if rec.sound != 0 { self.snd_hit(rec.sound, self.body(a).xi(), self.body(a).facing); }
                 self.spawn_hit_spark(a, d, ha, hb, rec.spark);
                 self.body_mut(d).facing = ab.facing ^ 1;
                 self.enemy_monster_part_hit(di);
@@ -368,7 +368,8 @@ impl Game {
         }
         self.players[i].b.hitstop = r.hit_stop;
         if r.sound != 0 {
-            self.snd_hit(r.sound); // 0x962A
+            let (ax, vf) = (self.body(a2).xi(), self.body(a2).facing);
+            self.snd_hit(r.sound, ax, vf); // 0x962A
         }
         self.player_add_score(i, r.score); // 0xFFC8
         self.items.slots[j].b.b9a = r.b7;
@@ -426,7 +427,8 @@ impl Game {
         v.b9a = rec.spark;
         self.body_mut(a2).hitstop = rec.hit_stop;
         if rec.sound != 0 {
-            self.snd_hit(rec.sound); // 0x962A
+            let (ax, vf) = (self.body(a2).xi(), self.body(a2).facing);
+            self.snd_hit(rec.sound, ax, vf); // 0x962A
         }
         self.spawn_hit_spark(a2, a3, ha, hb, 0); // 0x12720 (before the victim turns, 0x11950)
         self.body_mut(a3).facing = (ab.vx < 0) as u8;
@@ -514,7 +516,8 @@ impl Game {
             }
         }
         if r.sound != 0 {
-            self.snd_hit(r.sound); // 0x962A
+            let (ax, vf) = (self.body(a).xi(), self.body(a).facing);
+            self.snd_hit(r.sound, ax, vf); // 0x962A
         }
         if (ab.who as i8) >= 0 {
             self.enemy_hit_score(ab.who, r.score);
@@ -548,7 +551,8 @@ impl Game {
         e.b.step = 0;
         e.b.hitstop = r.hit_stop;
         if r.sound != 0 {
-            self.snd_hit(r.sound); // 0x962A
+            let (ax, vf) = (self.body(a).xi(), self.body(a).facing);
+            self.snd_hit(r.sound, ax, vf); // 0x962A
         }
         if (ab.who as i8) >= 0 {
             self.enemy_hit_score(ab.who, r.score);
@@ -878,7 +882,7 @@ impl Game {
                 self.enemy_launch(e, base);
                 if e.b.hp == 0 {
                     self.enemy_launch(e, base + 8);
-                    self.snd_enemy_death(e.b.b63); // 0x2A748 / 0x2A752 (type 6: 0x2A8D2 / 0x2A8DC)
+                    self.snd_enemy_death(e.b.b63, e.b.xi(), e.b.facing); // 0x2A748 / 0x2A752 (type 6: 0x2A8D2 / 0x2A8DC)
                     self.item_drop_from_enemy(e);
                 }
                 e.b.vz = 0;
@@ -909,7 +913,7 @@ impl Game {
                     let ay = t.i16(a, 2);
                     e.b.ay = ay.wrapping_add(ay);
                     e.b.step += 2;
-                    self.snd_9796(); // 0x2A7E8 (type 6: 0x2A972)
+                    self.snd_9796(e.b.xi()); // 0x2A7E8 (type 6: 0x2A972)
                     self.enemy_step(&mut e.b);
                 }
             }
@@ -926,7 +930,7 @@ impl Game {
                     if e.b.hp == 0 {
                         e.m.sb(T80, 1);
                     }
-                    self.snd_9796(); // 0x2A832
+                    self.snd_9796(e.b.xi()); // 0x2A832
                     e.b.step += 2;
                 }
             }
@@ -971,7 +975,7 @@ impl Game {
                 e.b.vz = 0;
                 e.b.az = 0;
                 if e.b.hp == 0 {
-                    self.snd_enemy_death(e.b.b63); // 0x2AAD6 / 0x2AAE0
+                    self.snd_enemy_death(e.b.b63, e.b.xi(), e.b.facing); // 0x2AAD6 / 0x2AAE0
                 }
                 e.b.step += 2;
                 self.enemy_thrown_fly(e, h);
@@ -991,7 +995,7 @@ impl Game {
                         e.m.sb(T80, 0xA);
                         self.item_drop_from_enemy(e);
                     }
-                    self.snd_9796(); // 0x2ABE4
+                    self.snd_9796(e.b.xi()); // 0x2ABE4
                     e.b.step += 2;
                 }
             }
@@ -1035,7 +1039,7 @@ impl Game {
             e.b.step += 2;
             self.enemy_step(&mut e.b);
             self.enemy_shake_request(e); // 0x2AB8C
-            self.snd_9796(); // 0x2AB7C
+            self.snd_9796(e.b.xi()); // 0x2AB7C
             let b = e.b.clone();
             self.enemy_hud_hit(h, &b, 0);
         }
@@ -1129,7 +1133,7 @@ impl Game {
             let ay = t.i16(a, 2);
             e.b.ay = ay.wrapping_add(ay);
             e.b.step += 2;
-            self.snd_9796(); // 0x2AD74
+            self.snd_9796(e.b.xi()); // 0x2AD74
             self.enemy_step(&mut e.b);
         }
     }
@@ -1336,7 +1340,7 @@ impl Game {
         e.m.sb(T80, 0x1E);
         self.enemy_hit_anim(e, 6);
         e.b.facing = (e.b.vx < 0) as u8;
-        self.snd_9796(); // 0x2B2E0
+        self.snd_9796(e.b.xi()); // 0x2B2E0
         self.enemy_slump(e, h);
     }
 

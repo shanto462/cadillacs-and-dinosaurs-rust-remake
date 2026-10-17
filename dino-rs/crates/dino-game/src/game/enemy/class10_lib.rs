@@ -289,9 +289,11 @@ impl Game {
 
 impl Game {
     /// 0xA062: a thug sound, 0x73 or 0xF9 (`bchg.b #3,$43B(a5)`: 0x73 when the bit was set).
-    pub(super) fn enemy_snd_a062(&mut self) {
+    /// d1 = the pan byte of the thug's X (`x`), d2 = 0.
+    pub(super) fn enemy_snd_a062(&mut self, x: i16) {
         let old = self.spawn.g.snd_toggle_b >> 3 & 1 != 0;
         self.spawn.g.snd_toggle_b ^= 1 << 3;
-        self.sound(if old { 0x73 } else { 0xF9 });
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(if old { 0x73 } else { 0xF9 }, pan, 0);
     }
 }

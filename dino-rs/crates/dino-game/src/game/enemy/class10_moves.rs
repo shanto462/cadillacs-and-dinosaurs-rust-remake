@@ -64,7 +64,7 @@ impl Game {
     fn c10_3c3a2(&mut self, e: &mut Enemy, h: Handle) {
         if e.b.param_b != 0 {
             e.b.param_b = 0;
-            self.enemy_snd_a062();
+            self.enemy_snd_a062(e.b.xi());
         }
         if Self::enemy_stuck_check(e) {
             return self.c10_3c3e6(e, h);
@@ -199,7 +199,7 @@ impl Game {
             self.enemy_step(&mut e.b);
             return;
         }
-        self.snd_9796();
+        self.snd_9796(e.b.xi());
         self.cam.shake_req = 2;
         e.b.airborne = 1;
         e.m.sw(f::SUB, 0xC);
