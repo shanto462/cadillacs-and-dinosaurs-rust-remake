@@ -2986,8 +2986,8 @@ fn in_demo(k: usize) -> bool {
 /// the title 0x88, the profiles, the ranking 0x80 and 0x70, the slides 0x24 and 0x25, the movie) has the code of the recording in
 /// the same frame. The d1 and d2 longs equal the recording for the title, the profiles, the ranking, the dinosaur steps (0x75)
 /// and the join hunter's 0xEA. Known differences, all from register leftovers of the original: the slide music 0x24 and 0x25 are
-/// queued by a script line whose d1 and d2 are what the palette routine left in the registers, the movie handler's 0x61 (0x9C3C6,
-/// `jmp 0xA63C`) and the flock's 0x61 take d1 and d2 from the caller (M10).
+/// queued by a script line whose d1 and d2 are what the palette routine left in the registers, and the movie handler's 0x61 (0x9C3C6,
+/// `jmp 0xA63C`) takes d1 and d2 from the caller (M10).
 #[test]
 fn front_end_sound_args_match_mame() {
     let Some(trace) = Some("../../../re/out/traces/attract3.mame.trc").filter(|p| Path::new(p).exists()) else { return };
@@ -2996,7 +2996,8 @@ fn front_end_sound_args_match_mame() {
     let codes: std::collections::BTreeSet<u16> = outside.iter().flat_map(|(_, m, _)| m.iter().map(|e| e.0)).collect();
     assert_eq!(codes.into_iter().collect::<Vec<_>>(), vec![0x24, 0x25, 0x61], "only the known leftover codes differ");
     let records: Vec<usize> = outside.iter().map(|(k, _, _)| *k).collect();
-    assert_eq!(records, [4670, 6075, 12392, 12478, 12486, 12494, 12502, 12510, 12518, 12526]);
+    // (the flock's 0x61 at 12486 to 12526 equals MAME since M6-16 gave class 46 its d1 / d2)
+    assert_eq!(records, [4670, 6075, 12392, 12478]);
     // the codes of the same records are equal: only d1 or d2 differ
     for (k, m, p) in &outside {
         let (mc, pc): (Vec<u16>, Vec<u16>) = (m.iter().map(|e| e.0).collect(), p.iter().map(|e| e.0).collect());
