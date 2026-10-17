@@ -235,6 +235,11 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x80518, 2856, "B29 block tables: dest addrs, phase table ptrs, phase ptrs, tile codes (0x804CA)"),
     // Pool B class 43 (wall torches, 0x83ACA): 7 records of 2 x 2 flames, 4 phases.
     (0x83B4E, 92, "B43 torch tables: dest addrs, phase ptrs, tile codes (0x83B20)"),
+    // Pool B class 0 (generic breakable wall panel / garage fixtures, 0x74FA2, M7-05).
+    (0x75018, 9, "B0 size records (0x75006)"),
+    (0x750B4, 0x12C, "B0 box tables and patch layouts (0x74FA2)"),
+    // Pool B class 59 (foundry palette cycles, 0x861E8, M7-05).
+    (0x8622A, 0x182, "B59 foundry palette tables (0x861E8)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {
