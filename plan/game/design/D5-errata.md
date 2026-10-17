@@ -206,3 +206,7 @@ MAME wins over the design text; the design documents themselves are not edited.
 - D5 decision 8 (ranking car): the continue code 0xE9E6..0xEE6C does not make the car. It has no call to 0x8B428 or to a pool B spawn; 0x92308 only restores a palette. Pool B 86 stays with the ranking screen (M1-07). M2-21.
 - D4d A15 and A16 frame numbers: the k-1p recording (`flow_k-1p.mame.trc`) has the design time base 1812 frames before its record numbers (mode 0x10 at record 2015 is design 203; mode 0x14 at 3797 is design 1985). M2-21.
 - D3e inventory row 12 and section 3.3 var 4 (class 12, 0x78B52): the hit does not set attribute 0x10 on 12 tiles. 0x79098, called from the break 0x7900E, writes six attribute words (`and #$FFE0 ; or #$10`) at 0x90FE16, 0x90FE1A, 0x90FE52, 0x90FE56, 0x90FE5A and 0x90FE5E. 0x790CE and 0x790F2 sit after that `rts` and are not called. M3-18.
+
+## From M3-22 (Episode 8 sewer waterfall, 2026-10-17)
+
+- D5 M3-22 and D3e part 3 s5.2 ("block tables (0x90C038 and others)"): 0x90C038 and 0x90C438 are scroll2 destinations, not ROM tables. The picture pointer tables are 0x821E8 (B36 var 0, 4 code words), 0x8229C (B36 any other var, 20 code words), 0x823EE destinations and 0x823FA picture tables (B37, two strips of 16), 0x82880 destinations and 0x82898 picture tables (B38, 80 code words; an odd var reads that picture backwards in five columns of 16). B37's spawn var is already the byte offset 0, 4 or 8. B38's spawn var is 0..5. M3-22.
