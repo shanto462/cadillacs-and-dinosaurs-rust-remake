@@ -143,6 +143,15 @@ mod b27;
 // Episode 4 scenery: wall panels B0 (0x74FA2) and foundry palettes B59 (0x861E8) (M7-05).
 #[path = "prop/b0.rs"]
 mod b0;
+// Episode 7 lab and library events (M8-17): B41, B52, B54, B61, B63.
+#[path = "prop/b41.rs"]
+mod b41;
+#[path = "prop/b52.rs"]
+mod b52;
+#[path = "prop/b54.rs"]
+mod b54;
+#[path = "prop/b61_63.rs"]
+mod b61_63;
 #[path = "prop/b59.rs"]
 mod b59;
 // Episode 8 doors, pipes data and fire glow (M8-22): B42 (0x83A0A) and B53 (0x85306).
@@ -222,6 +231,7 @@ impl Game {
                 35 => self.prop_b35(&mut p, i),
                 40 => self.prop_b40(&mut p, h, i),
                 42 => self.prop_b42(&mut p, i),
+                41 => self.prop_b41(&mut p, i),
                 36 => self.prop_b36(&mut p, i),
                 37 => self.prop_b37(&mut p, i),
                 38 => self.prop_b38(&mut p, i),
@@ -229,6 +239,10 @@ impl Game {
                 47 => self.prop_b47(&mut p, i),
                 50 => self.prop_b50(&mut p, h, i),
                 53 => self.prop_b53(&mut p, i),
+                52 => self.prop_b52(&mut p, i),
+                54 => self.prop_b54(&mut p, i),
+                61 => self.prop_b61(&mut p, i),
+                63 => self.prop_b63(&mut p, i),
                 76 => self.prop_b76(&mut p, i),
                 66 => self.prop_class66(&mut p, i),
                 67 => self.prop_class67(&mut p, i),
