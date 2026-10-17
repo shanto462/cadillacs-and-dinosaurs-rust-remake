@@ -27,6 +27,11 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x842F6, 24, "B47 manhole hole patch tile codes (0x84282)"),
     // Pool B class 35 (0x81FDE), manhole cover hero offsets (M3-21).
     (0x820FE, 0x70, "B35 manhole cover hero offsets (0x81FDE)"),
+    // Pool B class 2 (0x7542C), swamp water phase words, records and tile codes (M6-15).
+    (0x754FE, 0xF6, "B2 water phase and records (0x7542C)"),
+    (0x75746, 0xCB0, "B2 water tile codes (0x7542C)"),
+    // Pool B class 27 (0x7EEBA), yard picture pointers and the four pictures (M6-15).
+    (0x7F1D4, 0x550, "B27 yard pictures (0x7EEBA)"),
     // score
     (0x10292, 0x90, "BCD score values (0x10036), indexed by byte offset"),
     (0x325F8, 0x28, "kill score offset by name id (0x325E6)"),

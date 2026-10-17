@@ -634,6 +634,27 @@ impl Prop {
             f.u8(0x5F, "r5f", &mut r5f);
             self.m.sb(0x5F, r5f);
         }
+        if f.all() || self.b.k20 == 2 * 4 {
+            // Swamp water (0x7542C): countdown +$A0, record index +$A2, phase +$A4.
+            let mut t = self.m.b(0xA0);
+            f.u8(0xA0, "water_timer", &mut t);
+            self.m.sb(0xA0, t);
+            let mut ix = self.m.w(0xA2);
+            f.u16(0xA2, "water_index", &mut ix);
+            self.m.sw(0xA2, ix);
+            let mut ph = self.m.w(0xA4);
+            f.u16(0xA4, "water_phase_obj", &mut ph);
+            self.m.sw(0xA4, ph);
+        }
+        if f.all() || self.b.k20 == 27 * 4 {
+            // Yard tiles (0x7EEBA): countdown +$A0, picture index +$A2.
+            let mut t = self.m.b(0xA0);
+            f.u8(0xA0, "yard_timer", &mut t);
+            self.m.sb(0xA0, t);
+            let mut ix = self.m.w(0xA2);
+            f.u16(0xA2, "yard_index", &mut ix);
+            self.m.sw(0xA2, ix);
+        }
         if f.all() || self.b.k20 == 73 * 4 || self.b.k20 == 96 * 4 {
             // The bird spawner's delay (class 73, 0x89AE0) and class 96 music timer sit in the same word.
             let mut t = self.m.w(0x80);
@@ -950,7 +971,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 16, 17, 20, 27, 34, 41, 43, 49, 50, 54, 55, 56, 57, 60, 81, 90, 92, 93, 96, 97]),
-    ("prop", &[1, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 31, 35, 47, 66, 73, 74, 81, 82, 83, 84, 85, 87, 96]),
+    ("prop", &[1, 2, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 27, 31, 35, 47, 66, 73, 74, 81, 82, 83, 84, 85, 87, 96]),
     (
         "item",
         &[
@@ -1095,6 +1116,7 @@ impl Game {
         // World (main session).
         let w = &mut self.w;
         f.u16(0x0000, "frame", &mut w.frame);
+        f.u16(n(0x703C), "water_phase", &mut w.water_phase);
         f.u16(0x0014, "rng", &mut w.rng);
         f.u8(0x0016, "input_p1", &mut w.input[0]);
         f.u8(0x0017, "input_p2", &mut w.input[1]);
