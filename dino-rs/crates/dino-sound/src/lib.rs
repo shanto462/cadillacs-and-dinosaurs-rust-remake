@@ -15,6 +15,7 @@
 
 mod driver;
 mod map;
+pub mod mixer;
 mod pan;
 mod seq;
 mod voice;
@@ -23,4 +24,5 @@ mod voice;
 mod tests;
 
 pub use driver::{Driver, MailEntry, RegWrite, TrackInfo};
+pub use mixer::{Mixer, RATE};
 pub use map::{SFX_TRACKS, MUSIC_TRACKS, VOICES};
