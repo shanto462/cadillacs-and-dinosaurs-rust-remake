@@ -23,7 +23,241 @@ mod th {
 
 impl Game {
     pub fn pass_10dcc(&mut self) {}
-    pub fn pass_1132a(&mut self) {}
+
+    /// 0x1132A / 0x11396: attack objects against the hostile list, without a guard test.
+    pub fn pass_1132a(&mut self) {
+        for a in self.combat.get(0x671A).to_vec() {
+            if self.body(a).kind != 4 { continue; }
+            for d in self.combat.get(0x6B64).to_vec() {
+                let db = self.body(d);
+                if db.live & 2 == 0 && db.serial != self.body(a).serial
+                    && !matches!(db.kind, 8 | 0xA) {
+                    self.enemy_monster_hit(a, d, false);
+                }
+            }
+        }
+    }
+
+    /// 0x11A9E / 0x11AD8: hero attacks against monsters, including specials and frame class 8.
+    pub fn pass_11a9e(&mut self) {
+        for a in self.combat.get(0x6718).to_vec() {
+            if !matches!(self.body(a).kind, 4 | 6 | 8) { continue; }
+            for d in self.combat.get(0x6B64).to_vec() {
+                let db = self.body(d);
+                if db.live & 2 == 0 && db.serial != self.body(a).serial
+                    && matches!(db.kind, 0 | 2 | 4 | 6 | 0xC) {
+                    self.enemy_monster_hit(a, d, true);
+                }
+            }
+        }
+    }
+
+    /// 0x11B36 / 0x11396: one overlapping hero or attack object hits a monster.
+    fn enemy_monster_hit(&mut self, a: Handle, d: Handle, hero: bool) {
+        let (ab, db) = (self.body(a).clone(), self.body(d).clone());
+        if ab.attack_box == 0 || db.body_box == 0 { return; }
+        let Some((ha, hb)) = collide::boxes_hit(&self.assets.sprites, &ab, ab.attack_box, &db, db.body_box) else { return };
+        let Some(Slot::Enemy(di)) = slot_of(d) else { return };
+        self.body_mut(d).serial = ab.serial;
+        self.body_mut(d).who = ab.who;
+        if hero && self.enemies.slots[di].m.b(B87) != 0 && ab.kind != 6
+            && !matches!(self.player_action(a), 0x12 | 0x13)
+            && self.enemy_monster_guard(a, di) {
+            // 0x11CB6 -> 0x96CE: alternate the block sound.
+            let old = self.w.snd_toggle & 2 != 0;
+            self.w.snd_toggle ^= 2;
+            self.sound(if old { 0x65 } else { 0xE4 });
+            self.spawn_hit_spark(a, d, ha, hb, 2);
+            return;
+        }
+        {
+            let e = &mut self.enemies.slots[di];
+            e.b.live = 2;
+            e.b.set_state(0x0202_0000);
+            e.m.sb(WAIT, 0);
+            e.b.attacker = a;
+            e.b.hp_prev = db.hp;
+        }
+        let ch = if hero { (ab.k20 / 4) as usize } else if (ab.who as i8) >= 0 { ab.id as usize } else { 0 };
+        let rec = self.assets.sprites.player_attacks[ch][(ab.atk / 2) as usize];
+        let nonlethal = !hero && matches!(ab.atk, 0x6C | 0x6E);
+        let mut damage = rec.damage as u32;
+        if !hero && !nonlethal && self.player_move_word(a) == 0x203 {
+            damage = self.enemy_charge_scale(a, damage);
+        }
+        let (damage, counter) = self.enemy_monster_damage(damage, a, di, hero);
+        let mapped = self.assets.enemy.t.u16(0x11CC4, rec.reaction as u32) as u8;
+        {
+            let e = &mut self.enemies.slots[di];
+            let hp = (db.hp as i16).wrapping_sub(damage as i16);
+            e.b.hp = if hp > 0 { hp as u16 } else { u16::from(nonlethal) };
+            if !nonlethal { e.b.stun = e.b.stun.saturating_sub(rec.stun); }
+            e.b.reaction = rec.reaction;
+            e.b.act = mapped;
+            e.b.step = 0;
+            e.b.hitstop = rec.hit_stop;
+            e.b.b9a = rec.b7;
+        }
+        self.body_mut(a).hitstop = rec.hit_stop;
+        if !hero && !nonlethal && matches!(self.player_move_word(a), 0x202 | 0x203) {
+            let p = ab.partner;
+            if p != 0 { self.body_mut(p).hitstop = rec.hit_stop; }
+        }
+        if rec.sound != 0 { self.snd_hit(rec.sound); }
+        self.enemy_hit_score(ab.who, rec.score);
+        self.spawn_hit_spark(a, d, ha, hb, rec.spark);
+        if hero && counter {
+            self.fx_spawn_hit_spark_alt(a, d, ha, hb, 5); // 0x127FC
+            self.enemy_hit_score(ab.who, 0x20);
+        }
+        if db.k20 != 0x7C {
+            self.body_mut(d).facing = if hero { ab.facing ^ 1 } else {
+                let owner = if (ab.who as i8) >= 0 { Game::player_handle(ab.who as usize) } else { a };
+                (self.body(owner).xi() > db.xi()) as u8
+            };
+        }
+        if hero && ab.kind == 6 {
+            if db.k20 != 0x7C { self.body_mut(d).facing = (ab.xi() > db.xi()) as u8; }
+            if self.w.scripted == 0 {
+                if let Some(Slot::Player(i)) = slot_of(a) {
+                    let p = &mut self.players[i];
+                    let cost = if p.special_budget == 0x14 { 10 } else { 4 };
+                    p.special_budget = p.special_budget.wrapping_sub(cost);
+                    if (p.special_budget as i16) >= 0 {
+                        let hp = (p.b.hp as i16).wrapping_sub(cost as i16);
+                        p.b.hp = if hp > 0 { hp as u16 } else { 1 };
+                        self.hud_life_bar(i); // 0x16446
+                    }
+                }
+            }
+        }
+    }
+
+    /// 0x11CE4 dispatch and 0x4F3E8: Hopper guard. RNG is drawn only while angry, grounded
+    /// and facing an attacker that faces back. A failed guard clears +$B8.
+    fn enemy_monster_guard(&mut self, a: Handle, di: usize) -> bool {
+        let e = &self.enemies.slots[di];
+        let routine = self.assets.enemy.t.u32(0x11CE4, e.m.b(B87) as u32);
+        if routine != 0x4F3E8 { return false; } // 0x11C8A: carry clear
+        let ab = self.body(a);
+        let left = ab.xi() as u16 <= e.b.xi() as u16;
+        let eligible = e.m.b(0xA4) != 0 && e.b.airborne == 0
+            && if left { e.b.facing == 0 && ab.facing != 0 } else { e.b.facing != 0 && ab.facing == 0 };
+        let blocked = eligible && self.rand() & 0xF >= 14;
+        self.enemies.slots[di].m.sb(0xB8, u8::from(blocked));
+        blocked
+    }
+
+    /// 0x2B904 (hero) / 0x2BA2A (attack object): damage with the direct hero's +$C6 or
+    /// the credited owner's +$C6 respectively, and exactly two RNG calls.
+    fn enemy_monster_damage(&mut self, base: u32, a: Handle, di: usize, hero: bool) -> (u16, bool) {
+        let ab = self.body(a);
+        let e = &self.enemies.slots[di];
+        let t = &self.assets.enemy.t;
+        let mut d = base;
+        let mut counter = false;
+        let shift_word = |p: u32| (p & 0xFFFF_0000) | ((p as u16 >> 5) as u32);
+        if e.b.kind == 4 {
+            let factor = t.u16(0xA320C, 2 * e.b.atk as u32) as u32;
+            if factor != 0 {
+                let product = (d as u16 as u32) * factor;
+                d = if hero { shift_word(product) } else { product >> 5 };
+                counter = true;
+            }
+        }
+        let w84 = e.m.w(W84) as u32;
+        for offset in [0, 2] {
+            if t.u8(0xA32FA, w84 + offset).wrapping_mul(2) == ab.atk {
+                d = shift_word((d as u16 as u32) * t.u8(0xA32FA, w84 + offset + 1) as u32);
+                counter = true; // G.$4F5 also makes the word G.$4F4 nonzero
+                break;
+            }
+        }
+        let power = if hero {
+            match slot_of(a) { Some(Slot::Player(i)) => Some(self.players[i].power), _ => None }
+        } else if (ab.who as i8) >= 0 {
+            Some(self.players[((ab.who & 3) % 3) as usize].power)
+        } else { None };
+        if let Some(power) = power { d = (d as u16 as u32) * power as u32; }
+        let index = (w84 as u16).wrapping_shl(3).wrapping_add(self.w.level) as u32;
+        d = ((d as u16 as u32) * t.u8(0x2BECE, index) as u32) >> 10;
+        if d == 0 { d = 1; }
+        let mut hp = e.b.hp;
+        let mut row = 0u16;
+        while hp > 100 { hp -= 100; row = row.wrapping_add(0x40); }
+        let r = self.rand() & 0x3E;
+        d = (d as u16 as u32) * self.assets.enemy.t.u16(0x2BC4E, row.wrapping_add(r) as u32) as u32;
+        let row: u16 = if hp >= 75 { 0 } else if hp >= 50 { 0x40 } else if hp >= 25 { 0x80 } else { 0xC0 };
+        let r = self.rand() & 0x3E;
+        d = (d as u16 as u32) * self.assets.enemy.t.u16(0x2BB4E, row.wrapping_add(r) as u32) as u32;
+        let damage = (d as u16) >> 10; // lsr.w, including the minimum after truncation
+        (damage.max(1), counter)
+    }
+
+    /// 0x11CEC / 0x11D32: monster attacks against heroes. Unlike 0x115B0 there is no
+    /// attacker hit-stop test. The reaction, damage, drop and power RNG service is shared.
+    pub fn pass_11cec(&mut self) {
+        for a in self.combat.get(0x6B64).to_vec() {
+            if self.body(a).kind != 4 { continue; }
+            for d in self.combat.get(0x6718).to_vec() {
+                let (ab, db) = (self.body(a), self.body(d));
+                if db.live & 2 != 0 || ab.attack_box == 0 || db.body_box == 0 { continue; }
+                if matches!(db.kind, 6 | 8 | 0xA) { return; } // clr.l d7, both loops
+                let Some(Slot::Player(i)) = slot_of(d) else { continue };
+                if ab.serial == self.players[i].hit_serial && db.attacker == a { continue; }
+                if collide::boxes_hit(&self.assets.sprites, ab, ab.attack_box, db, db.body_box).is_some() {
+                    self.player_hit_by_enemy(i, a);
+                }
+            }
+        }
+    }
+
+    /// 0x11E56 / 0x11E9C / 0x11EDC: raw monster damage against ordinary enemies.
+    /// Negative +$7D keeps one HP; +$02 = 0xFF prevents score and kill credit.
+    pub fn pass_11e56(&mut self) {
+        for a in self.combat.get(0x6B64).to_vec() {
+            if self.body(a).kind != 4 { return; } // 0x11E6E ends the entire pass
+            for d in self.combat.get(0x671E).to_vec() {
+                let (ab, db) = (self.body(a).clone(), self.body(d).clone());
+                if db.live & 2 != 0 || db.serial == ab.serial || ab.attack_box == 0 || db.body_box == 0
+                    || !matches!(db.kind, 0 | 2 | 4 | 6 | 0xC) { continue; }
+                let Some((ha, hb)) = collide::boxes_hit(&self.assets.sprites, &ab, ab.attack_box, &db, db.body_box) else { continue };
+                let Some(Slot::Enemy(di)) = slot_of(d) else { continue };
+                let rec = self.assets.player.enemy_attacks[ab.atk as usize];
+                let e = &mut self.enemies.slots[di];
+                e.b.serial = ab.serial;
+                e.b.live = 2;
+                e.b.who = 0xFF;
+                e.b.set_state(0x0202_0000);
+                e.m.sb(WAIT, 0);
+                e.b.attacker = a;
+                e.b.hp_prev = db.hp;
+                let hp = (db.hp as i16).wrapping_sub(rec.damage as i16);
+                e.b.hp = if hp > 0 { hp as u16 } else { u16::from((e.m.b(ATTACKING) as i8) < 0) };
+                e.b.stun = e.b.stun.saturating_sub(rec.stun);
+                e.b.reaction = rec.reaction;
+                e.b.act = rec.reaction;
+                e.b.step = 0;
+                e.b.hitstop = rec.hit_stop; // the monster's hit-stop is unchanged
+                e.b.b9a = rec.b7;
+                if rec.sound != 0 { self.snd_hit(rec.sound); }
+                self.spawn_hit_spark(a, d, ha, hb, rec.spark);
+                self.body_mut(d).facing = ab.facing ^ 1;
+                self.enemy_monster_part_hit(di);
+            }
+        }
+    }
+
+    /// 0x1128E: a hit on a multipart Tyrog piece makes each matching sibling unhittable.
+    fn enemy_monster_part_hit(&mut self, di: usize) {
+        let e = &self.enemies.slots[di];
+        if e.b.b63 != 4 || !matches!(e.b.k20, 0x158 | 0x15C | 0x160 | 0x164) { return; }
+        let parent = self.enemy_index(e.m.w(0xB0));
+        for (offset, class) in [(0xB0, 0x158), (0xB2, 0x15C), (0xB4, 0x160), (0xB6, 0x164)] {
+            let h = self.enemies.slots[parent].m.w(offset);
+            if self.body(h).k20 == class { self.body_mut(h).live = 2; }
+        }
+    }
 
     /// 0x11962: player attacks (frame class 4 or 6) against the objects of the attacker list 0x671A that
     /// are alive (+$00 bit 0): containers, and weapons lying about, whose frame class can be hit
@@ -85,9 +319,9 @@ impl Game {
         let px = ab.xi();
         self.items.slots[j].b.facing = (px > self.items.slots[j].b.xi()) as u8;
     }
-    pub fn pass_11a9e(&mut self) {}
-    pub fn pass_11e56(&mut self) {}
-    pub fn pass_11cec(&mut self) {}
+
+
+
 
     /// 0x1185A: a thrown or knocked down enemy body (list 0x6B30, registered by its flight and fall
     /// states) against the other hurtable enemies (list 0x671E) that are not in a reaction yet.
@@ -1426,5 +1660,308 @@ mod tests {
         g.players[0].b.kind = 0;
         g.pass_11962();
         assert_eq!(g.items.slots[3].b.hp, 4);
+    }
+}
+
+#[cfg(test)]
+mod monster_tests {
+    use super::*;
+    use dino_assets::{AssetPack, AttackRecord, HitBoxBank};
+
+    fn game() -> Game {
+        // Synthetic tables deliberately use different values from the game data.
+        let mut a = AssetPack::default();
+        a.sprites.hitboxes = HitBoxBank { base: 0x100000, words: vec![0; 12] };
+        a.player.enemy_attacks = vec![AttackRecord {
+            damage: 7, stun: 3, reaction: 4, hit_stop: 5, b7: 9, ..Default::default()
+        }];
+        let words = |value: u16, count| (0..count).flat_map(|_| value.to_be_bytes()).collect();
+        a.enemy.t.blobs = vec![
+            (0xA320C, vec![0; 8]), (0xA32FA, vec![0x7F; 8]),
+            (0x2BECE, vec![32; 64]), (0x2BC4E, words(32, 64)),
+            (0x2BB4E, words(32, 128)),
+            (0x11CC4, words(2, 16)), (0x10292, vec![0; 8]),
+            (0x11CE4, [vec![0; 4], 0x4F3E8u32.to_be_bytes().to_vec()].concat()),
+        ];
+        let mut attacks = [AttackRecord::default(); 1];
+        attacks[0] = AttackRecord { damage: 9, stun: 2, reaction: 4, hit_stop: 5, ..Default::default() };
+        a.sprites.player_attacks = std::array::from_fn(|_| attacks.to_vec());
+        Game::new(Box::leak(Box::new(a)))
+    }
+
+    fn pair(g: &mut Game) -> (Handle, Handle) {
+        let a = g.enemies.handle(0);
+        let d = g.enemies.handle(1);
+        for h in [a, d] {
+            let b = g.body_mut(h);
+            b.live = 1;
+            b.body_box = 1;
+            b.attack_box = 1;
+            b.box_table = 0x100000;
+            b.hp = 20;
+            b.stun = 10;
+        }
+        g.body_mut(a).kind = 4;
+        g.body_mut(a).serial = 3;
+        g.enemy_monster_register(a);
+        g.combat.push(0x671E, d);
+        (a, d)
+    }
+
+    #[test]
+    fn monster_raw_damage_has_no_score_or_rng_and_does_not_stop_attacker() {
+        let mut g = game();
+        let (a, d) = pair(&mut g);
+        g.body_mut(a).hitstop = 11;
+        let rng = g.w.rng;
+        let score = g.players.iter().map(|p| p.score).collect::<Vec<_>>();
+        g.pass_11e56();
+        let b = g.body(d);
+        assert_eq!((b.hp, b.hp_prev, b.stun, b.who, b.attacker), (13, 20, 7, 0xFF, a));
+        assert_eq!((b.state(), b.hitstop, b.b9a, b.facing), (0x0202_0400, 5, 9, 1));
+        assert_eq!(g.body(a).hitstop, 11);
+        assert_eq!(g.w.rng, rng);
+        assert_eq!(g.players.iter().map(|p| p.score).collect::<Vec<_>>(), score);
+        g.pass_11e56();
+        assert_eq!(g.body(d).hp, 13, "one hit per serial / live bit");
+    }
+
+    #[test]
+    fn monster_damage_floors_negative_census_tag_at_one_hp_only() {
+        for tag in [0, 1, 0x7F, 0x80, 0xFF] {
+            let mut g = game();
+            let (_, d) = pair(&mut g);
+            let di = g.enemy_index(d);
+            g.enemies.slots[di].m.sb(ATTACKING, tag);
+            g.body_mut(d).hp = 7;
+            g.pass_11e56();
+            assert_eq!(g.body(d).hp, u16::from((tag as i8) < 0), "tag {tag}");
+        }
+    }
+
+    #[test]
+    fn first_nonattacking_monster_ends_raw_pass() {
+        let mut g = game();
+        let (_, d) = pair(&mut g);
+        let idle = g.enemies.handle(2);
+        g.body_mut(idle).kind = 0;
+        g.enemy_monster_register(idle);
+        g.pass_11e56();
+        assert_eq!(g.body(d).hp, 20);
+    }
+
+    #[test]
+    fn attack_object_damage_uses_credited_owner_power_and_two_rng_calls() {
+        let mut g = game();
+        let (a, d) = pair(&mut g);
+        let di = g.enemy_index(d);
+        g.body_mut(a).who = 1;
+        g.players[0].power = 3;
+        g.players[1].power = 48;
+        g.w.rng = 123;
+        g.rand(); g.rand();
+        let expected_rng = g.w.rng;
+        g.w.rng = 123;
+        assert_eq!(g.enemy_monster_damage(10, a, di, false).0, 15);
+        assert_eq!(g.w.rng, expected_rng);
+        g.body_mut(a).who = 0xFF;
+        assert_eq!(g.enemy_monster_damage(10, a, di, false).0, 1);
+    }
+
+    #[test]
+    fn both_monster_passes_share_the_serial_and_map_reactions() {
+        let mut g = game();
+        let (_, d) = pair(&mut g);
+        g.combat.clear(0x6B64);
+        g.enemy_monster_register(d);
+        let a = Game::player_handle(0);
+        let b = &mut g.players[0].b;
+        b.live = 1; b.kind = 4; b.attack_box = 1; b.box_table = 0x100000; b.serial = 5;
+        g.players[0].power = 32;
+        g.combat.push(0x671A, a);
+        g.combat.push(0x6718, a);
+        g.pass_1132a();
+        assert_eq!((g.body(d).hp, g.body(d).reaction, g.body(d).act), (11, 4, 2));
+        let rng = g.w.rng;
+        g.pass_11a9e();
+        assert_eq!((g.body(d).hp, g.w.rng), (11, rng));
+    }
+
+    #[test]
+    fn hopper_guard_skips_rng_until_angry_grounded_and_facing_attacker() {
+        let mut g = game();
+        let (a, d) = pair(&mut g);
+        let di = g.enemy_index(d);
+        g.enemies.slots[di].m.sb(B87, 4);
+        let rng = g.w.rng;
+        assert!(!g.enemy_monster_guard(a, di));
+        assert_eq!(g.w.rng, rng);
+        g.enemies.slots[di].m.sb(0xA4, 1);
+        g.body_mut(a).facing = 1;
+        g.body_mut(d).airborne = 1;
+        assert!(!g.enemy_monster_guard(a, di));
+        assert_eq!(g.w.rng, rng);
+        g.body_mut(d).airborne = 0;
+        g.rand(); let next = g.w.rng; g.w.rng = rng;
+        g.enemy_monster_guard(a, di);
+        assert_eq!(g.w.rng, next);
+    }
+
+    #[test]
+    fn freeing_a_slot_keeps_name_scale_and_leave_x() {
+        let mut g = game();
+        let i = g.enemies.alloc().unwrap();
+        let mut e = std::mem::take(&mut g.enemies.slots[i]);
+        e.m.sw(W84, 0x24); e.m.sw(W5C, 0x1234);
+        e.b.live = 1; e.m.sb(B87, 4);
+        g.enemy_free_pool_a(&mut e, i);
+        g.enemies.slots[i] = e;
+        assert_eq!(g.enemies.alloc(), Some(i));
+        let e = &g.enemies.slots[i];
+        assert_eq!((e.m.w(W84), e.m.w(W5C), e.m.b(B87), e.b.live), (0x24, 0x1234, 0, 0));
+    }
+
+    #[test]
+    fn sleeping_z_spawn_keeps_fractions_and_saves_the_owner_state() {
+        let mut g = game();
+        let i = g.effects.slots.len() - 1;
+        let b = &mut g.effects.slots[i].b;
+        b.x = 0x1234; b.y = 0x5678; b.z = 0x4321; b.var26 = 0xABCD;
+        let mut e = Enemy::default();
+        e.b.set_xi(17); e.b.set_yi(23); e.b.set_zi(31);
+        e.b.set_state(0x0200_0406);
+        let h = g.enemies.handle(3);
+        let rng = g.w.rng;
+        g.enemy_monster_spawn_z(&e, h, 3);
+        let b = &g.effects.slots[i].b;
+        assert_eq!((b.x, b.y, b.z), (0x111234, 0x175678, 0x1F4321));
+        assert_eq!((b.k20, b.var26, b.attacker, b.hp_bar, b.hp, b.hp_prev),
+            (0x78, 0x03CD, 0xFFFF, h, 0x0200, 0x0406));
+        assert_eq!(g.w.rng, rng);
+    }
+
+    #[test]
+    fn hunter_poke_preserves_hp_presence_and_rng() {
+        let mut g = game();
+        let (a, d) = pair(&mut g);
+        let mut hunter = Enemy::default();
+        hunter.m.sw(TARGET, d);
+        let rng = g.w.rng;
+        g.enemy_hunter_poke(&hunter, a);
+        let b = g.body(d);
+        assert_eq!((b.hp, b.live, b.state(), b.who, b.hitstop, b.attacker), (20, 1, 0x0202_0000, 0xFF, 8, a));
+        assert_eq!(g.w.rng, rng);
+    }
+}
+
+#[cfg(test)]
+mod monster_mame_tests {
+    use super::*;
+    use crate::harness::TraceReader;
+    use dino_assets::AssetPack;
+
+    fn assets() -> Option<&'static AssetPack> {
+        static A: std::sync::OnceLock<Option<&'static AssetPack>> = std::sync::OnceLock::new();
+        *A.get_or_init(|| {
+            let path = std::path::Path::new("../../../dino.zip");
+            path.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(path).expect("ROM loads"))))
+        })
+    }
+
+    fn word(ram: &[u8], o: usize) -> u16 { u16::from_be_bytes([ram[o], ram[o + 1]]) }
+    fn enemy(ram: &[u8], o: usize) -> Enemy {
+        let mut e = Enemy::default();
+        e.m.0.copy_from_slice(&ram[o..o + 0xE0]);
+        e.b.k20 = word(ram, o + 0x20);
+        e.b.set_state(u32::from_be_bytes(ram[o + 4..o + 8].try_into().unwrap()));
+        e.b.palette_override = ram[o + 0x23];
+        e
+    }
+
+    /// The flash helper alone, frame by frame from recorded inputs. The dinosaur AI is
+    /// deliberately outside this service test and remains the later class task's gate.
+    #[test]
+    fn monster_flash_services_match_mame_recordings() {
+        let Some(a) = assets() else { return };
+        let mut checked = 0;
+        for (name, class, mode_offset, mode) in [
+            ("m700_a13_h3_hit_replay", 29, 0xA8, 0xC),
+            ("m600_a17_s3_hunter_replay", 24, 0xA8, 8),
+            ("m600_a10_m_kill_replay", 38, 0xA0, 4),
+        ] {
+            let path = format!("../../../re/out/traces/{name}.mame.trc");
+            if !std::path::Path::new(&path).exists() { eprintln!("missing {path}, skipped"); continue; }
+            let mut rd = TraceReader::open(&path).unwrap();
+            let mut previous: Option<Vec<u8>> = None;
+            let mut n = 0;
+            let mut g = Game::new(a);
+            while let Some(frame) = rd.next() {
+                let ram = &rd.region("ram").unwrap().data;
+                if let Some(prev) = &previous {
+                    g.w.stage = ram[0x84D9];
+                    for o in (0xC8F4..0xDDF4).step_by(0xE0) {
+                        if ram[o] == 0 || word(ram, o + 0x20) / 4 != class
+                            || word(prev, o + mode_offset) != mode || word(ram, o + mode_offset) != mode
+                            || prev[o + 5] != 0 || ram[o + 5] != 0
+                            || (class == 29 && (prev[o + 0x59] != 0 || prev[o + 6] != 2 || ram[o + 6] != 2)) { continue; }
+                        let mut e = enemy(prev, o);
+                        g.enemy_monster_flash_tick(&mut e);
+                        assert_eq!((e.b.palette_override, &e.m.0[0xA5..0xA8]),
+                            (ram[o + 0x23], &ram[o + 0xA5..o + 0xA8]), "{name} frame {frame}, slot {o:X}");
+                        n += 1;
+                    }
+                }
+                previous = Some(ram.clone());
+            }
+            assert!(n > 50, "{name}: actually exercises flashing");
+            eprintln!("{name}: flash equal for {n} frames");
+            checked += n;
+        }
+        assert!(checked > 0, "needs monster recordings");
+    }
+
+    /// Replay the raw hit service at every measured hit, using the recorded collision
+    /// frame's boxes and the HP saved by MAME before subtraction. No AI or RNG injection.
+    #[test]
+    fn monster_raw_hits_match_mame_recordings() {
+        let Some(a) = assets() else { return };
+        for name in ["m600_a11_m_vs_thug", "m600_a17_s3_hunter_replay", "m600_a21_s3_vs_enemy"] {
+            let path = format!("../../../re/out/traces/{name}.mame.trc");
+            if !std::path::Path::new(&path).exists() { eprintln!("missing {path}, skipped"); continue; }
+            let mut rd = TraceReader::open(&path).unwrap();
+            let mut previous: Option<Vec<u8>> = None;
+            let mut n = 0;
+            let mut g = Game::new(a);
+            while let Some(frame) = rd.next() {
+                let ram = &rd.region("ram").unwrap().data;
+                if let Some(prev) = &previous {
+                    for o in (0xC8F4..0xDDF4).step_by(0xE0) {
+                        let attacker = word(ram, o + 0x68) as usize;
+                        if ram[o] != 2 || ram[o + 2] != 0xFF || word(prev, o + 0x6C) == word(ram, o + 0x6C)
+                            || !(0xC8F4..0xDDF4).contains(&attacker)
+                            || !matches!(word(ram, attacker + 0x20) / 4, 22 | 24 | 29 | 38 | 82) { continue; }
+                        g.trace_load(ram, &rd.region("gfx").unwrap().data);
+                        g.combat_lists_reset();
+                        g.enemy_monster_register(attacker as u16);
+                        g.combat.push(0x671E, o as u16);
+                        let b = g.body_mut(o as u16);
+                        b.live = 1;
+                        b.hp = word(ram, o + 0x6E);
+                        b.serial = prev[o + 0x5E];
+                        b.stun = prev[o + 0x78];
+                        g.pass_11e56();
+                        let b = g.body(o as u16);
+                        assert_eq!((b.hp, b.hp_prev, b.stun, b.who, b.reaction, b.act, b.hitstop, b.facing, b.b9a),
+                            (word(ram, o + 0x6C), word(ram, o + 0x6E), ram[o + 0x78], ram[o + 2],
+                             ram[o + 0x7B], ram[o + 6], ram[o + 0x59], ram[o + 0x24], ram[o + 0x9A]),
+                            "{name} frame {frame}, slot {o:X}");
+                        n += 1;
+                    }
+                }
+                previous = Some(ram.clone());
+            }
+            assert!(n > 0, "{name}: actually exercises raw damage");
+            eprintln!("{name}: all {n} raw hits equal MAME");
+        }
     }
 }

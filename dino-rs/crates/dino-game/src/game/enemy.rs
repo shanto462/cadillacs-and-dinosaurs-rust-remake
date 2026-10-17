@@ -244,8 +244,104 @@ impl Game {
         }
     }
 
+    /// 0x4C0A: push one monster into the hostile hit list (0x6B64 / 0x6B66).
+    /// Drawing remains the caller's 0x49CA / 0x49C0 call, in the original order.
+    pub fn enemy_monster_register(&mut self, h: Handle) {
+        self.combat.push(0x6B64, h);
+    }
+
+    /// 0x533FA: the hunter pokes its target without changing HP, presence or RNG.
+    pub fn enemy_hunter_poke(&mut self, hunter: &Enemy, h: Handle) {
+        let target = hunter.m.w(TARGET);
+        let i = self.enemy_index(target);
+        let e = &mut self.enemies.slots[i];
+        e.b.set_state(0x0202_0000);
+        e.m.sb(WAIT, 0);
+        e.b.attacker = h;
+        e.b.who = 0xFF;
+        e.b.hitstop = 8;
+    }
+
+    /// 0x4F450 (Hopper), 0x493EC (Shivat), 0x53900 (Mack): start colour flashing.
+    /// Hopper applies its first palette and consumes one toggle in this same call.
+    pub fn enemy_monster_flash_start(&mut self, e: &mut Enemy) {
+        match e.b.k20 / 4 {
+            29 => {
+                e.m.sb(0xA7, 0x10);
+                e.m.sb(0xA5, 8);
+                e.m.sb(0xA6, e.m.b(0xA4));
+                self.enemy_monster_flash_colour(e, 0);
+                e.m.sb(0xA7, e.m.b(0xA7).wrapping_sub(1));
+            }
+            24 => {
+                e.m.sb(0xA7, 0xF);
+                e.m.sb(0xA5, 8);
+                e.m.sb(0xA6, e.m.b(0xA4));
+            }
+            38 => {
+                e.m.sb(0xA5, 0xF);
+                e.m.sb(0xA6, 8);
+                e.m.sb(0xA7, e.m.b(0xA4));
+            }
+            _ => unreachable!("monster flash class"),
+        }
+    }
+
+    /// 0x4F468 / 0x49400 / 0x53914: a byte countdown underflows before the next toggle.
+    /// Returns the original carry flag (true only on the last toggle).
+    pub fn enemy_monster_flash_tick(&mut self, e: &mut Enemy) -> bool {
+        let (timer, count, colour, table) = match e.b.k20 / 4 {
+            29 => (0xA5, 0xA7, 0xA6, 0x4F4C8),
+            24 => (0xA5, 0xA7, 0xA6, 0x49448),
+            38 => (0xA6, 0xA5, 0xA7, 0x53956),
+            _ => unreachable!("monster flash class"),
+        };
+        let old = e.m.b(timer);
+        e.m.sb(timer, old.wrapping_sub(1));
+        if old != 0 { return false; }
+        e.m.sb(timer, self.assets.enemy.t.u8(table, e.m.b(count) as u32));
+        let next = e.m.b(colour).wrapping_add(1) & 1;
+        e.m.sb(colour, next);
+        self.enemy_monster_flash_colour(e, next);
+        let left = e.m.b(count).wrapping_sub(1);
+        e.m.sb(count, left);
+        (left as i8) < 0
+    }
+
+    /// 0x4F488 / 0x49420 / 0x53934: stage-dependent palette pair and saved colour.
+    fn enemy_monster_flash_colour(&self, e: &mut Enemy, colour: u8) {
+        let (table, stage_offset, save) = match e.b.k20 / 4 {
+            29 => (0x4F4DC, match self.w.stage { 1 => 2, 4 => 4, 7 => 6, _ => 0 }, Some(0xBB)),
+            24 => (0x4945C, if self.w.stage == 4 { 2 } else { 0 }, Some(0xBD)),
+            38 => (0x5396A, if self.w.stage == 4 { 2 } else { 0 }, None),
+            _ => unreachable!("monster flash class"),
+        };
+        let palette = self.assets.enemy.t.u8(table, stage_offset + colour as u32);
+        e.b.palette_override = palette;
+        if let Some(offset) = save { e.m.sb(offset, palette); }
+    }
+
+    /// 0x9667E: allocate pool C class 30, the sleeping dinosaur's Z mark. Only the
+    /// integer positions are copied; stale fractions and the low variant byte survive.
+    /// The class handler 0x966B4 belongs to the pool C effects port.
+    pub fn enemy_monster_spawn_z(&mut self, e: &Enemy, h: Handle, variant: u8) {
+        let Some(i) = self.effects.alloc() else { return };
+        let b = &mut self.effects.slots[i].b;
+        b.live = 1;
+        b.k20 = 0x78;
+        b.set_xi_keep(e.b.xi());
+        b.set_yi_keep(e.b.yi());
+        b.set_zi_keep(e.b.zi());
+        b.attacker = 0xFFFF; // high word of the sign-extended owner long at +$68
+        b.hp_bar = h; // low word of that long, +$6A
+        b.hp = (e.b.state() >> 16) as u16;
+        b.hp_prev = e.b.state() as u16;
+        b.var26 = ((variant as u16) << 8) | (b.var26 & 0xFF);
+    }
+
     /// 0x48FC pool A free: clears +$00..+$27 and the bytes +$59 +$63 +$7D +$87 +$96.
     pub fn enemy_free_pool_a(&mut self, e: &mut Enemy, i: usize) {
+        // HT1: +$84 and +$5C deliberately survive free and slot reuse.
         super::spawn::clear_header(&mut e.b);
         e.b.hitstop = 0;
         e.b.b63 = 0;

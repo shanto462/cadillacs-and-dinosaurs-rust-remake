@@ -16,6 +16,15 @@ const SENTINEL: u16 = 0x9FFF;
 
 /// Small tables copied as byte blobs: (ROM address, length, user).
 const TABLES: &[(u32, u32, &str)] = &[
+    // M5-01 monster services: dispatch, reaction mapping and colour flashes.
+    (0x11CC4, 0x20, "monster hit reaction mapping"),
+    (0x11CE4, 8, "monster guard dispatch"),
+    (0x4F4C8, 0x14, "Hopper colour flash delays"),
+    (0x4F4DC, 8, "Hopper colour pairs by stage"),
+    (0x49448, 0x14, "Shivat colour flash delays"),
+    (0x4945C, 4, "Shivat colour pairs"),
+    (0x53956, 0x14, "Mack colour flash delays"),
+    (0x5396A, 4, "Mack colour pairs"),
     // Scene actors (M3-20): the Cadillac's rider rows (0x42350) and offsets (0x42374); the crouching men's variants (0x4D992).
     (0x42350, 0x3C, "Cadillac rider rows and offsets (class 16)"),
     (0x4D992, 0x1C, "crouching men variants: name, +$84, animation (class 27)"),
