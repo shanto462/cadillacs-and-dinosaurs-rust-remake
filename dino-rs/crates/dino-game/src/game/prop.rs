@@ -110,6 +110,9 @@ mod b82_85;
 mod b87;
 #[path = "prop/b81.rs"]
 mod b81;
+// Pool B classes 57 and 64 (M3-14): the floor labels and the cage posts of the lift of Episode 7.
+#[path = "prop/b57.rs"]
+mod b57;
 // Pool B class 1 (M3-19): chain-link fence / gate (0x75238).
 #[path = "prop/b1.rs"]
 mod b1;
@@ -159,6 +162,8 @@ impl Game {
                 12 => self.prop_b12(&mut p, i),
                 14 => self.prop_b14(&mut p, i),
                 1 => self.prop_b1(&mut p, h, i),
+                57 => self.prop_b57(&mut p, i),
+                64 => self.prop_b64(&mut p, i),
                 3 => self.prop_b3(&mut p, h, i),
                 15 => self.prop_wave(&mut p, h, i),
                 22 => self.boss_controller(&mut p, i),

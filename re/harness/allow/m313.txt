@@ -1,0 +1,17 @@
+# Approved known differences of the lift recordings of M3-13 / M3-14 (Episode 7 area 1): `ep7_3p` (the lift is records 12306 to 17850), `m800_a14_n_e7a1_full` and
+# `m328_l_e7a0_k16` (re/harness/m313_check.sh). The camera, the cage (scroll1), the labels (scroll2), the posts (pool B 64) and the by-Y spawns equal MAME in every record
+# of the lift; what is listed here is the harness and the unported classes, not the lift.
+#
+# 1. G.$868 (and G.$860) is the main loop's copy of the camera Y at the start of a pass (0x6C0 .. 0x71C: `move.l $748(a5), $868(a5)` after the scroll register is written
+#    from the old copy): one frame behind the camera. The port derives it from the camera of the same frame (`trace.rs` display_y2), so it is one step ahead while the
+#    camera moves in Y, as it does for the whole ride (3000 frames of the lift). Static cameras (every other scenario) have no difference.
+global.display_y2
+# 2. The fade task of the snapshot is not taken over ("task slot 0x40 (fade) is active"): the first frames of a recording that starts in a fade differ in the fade
+#    step, the mask and the palette brightness (`m800_a14_n_e7a1_full` 0 to 45: the fade in of the area start).
+global.fade_steps 0-45
+global.fade_mask 0-45
+palette 0-45
+# 3. The same fade in `ep7_3p`, from the area start (record 12306) to its end.
+global.fade_steps 12300-12330
+global.fade_mask 12300-12330
+palette 12300-12330

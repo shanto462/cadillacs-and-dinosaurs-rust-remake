@@ -629,13 +629,75 @@ impl Game {
         self.w.layer_ctrl = 0x12D6;
         if self.w.stage == 6 && self.cam.s2.area == 1 {
             self.w.vertical_scene = 1;
+            self.spawn.g.cage_smashed = 0; // 0x20786 clr.b $7B6(a5)
             self.w.layer_ctrl = 0x06D6;
-            // 0x205C6 fills the scroll1 elevator background: not ported yet.
+            // The cage: two pages of the scroll1 table, the left half (X 0) and the right half (X 0x100).
+            self.lift_background(0, 0x100, 1); // 0x20790 .. 0x2079C
+            self.lift_background(0x100, 0x100, 2); // 0x2079C .. 0x207AE
         }
         if self.w.stage == 6 && self.cam.s2.area == 2 {
             // 0xB52 clear scroll1, 0x162AE: not ported yet.
         }
         self.reinit_map();
+    }
+
+    /// 0x205C6 (with 0x20614, 0x20650, 0x206A8): draws one page of the scroll1 table 0x138C48 (page `page`, the d5 of the
+    /// original) as the cage of the lift: 8 block columns of 4 cell columns. `x0` and `y0` are the world X and Y of the first block
+    /// (d0, d1: 0 / 0x100 for the left page and 0x100 / 0x100 for the right one). The Y of a block is the world Y of its top edge and
+    /// the address counts the rows from the top (0x1E0 - y), so a step of -0x20 is 4 rows down. The page of the table is 8 columns
+    /// of 8 words (column by column, top block first). Every block column draws up to 9 blocks of 4 x 4 cells (blocks 0x15CFE8):
+    /// the first column of a page starts with the bottom block of the page (y = 0x100 wraps to the word 7) at the scroll1 rows 28 to
+    /// 31, then the eight words of the column from the top at the rows 32 to 63 (the second half of the 64 row map, +0x2000).
+    /// a0 and a1 are looked up once, before the first column: the first block of every later column is drawn where the end of
+    /// the column before left a0 (one cell column to the right of the column before, row 32) with the word the column before left
+    /// in a1 (the word 0 of this column), and then, after the lookup of 0x20602, again at its own place. So the cells 4 k + 1 to
+    /// 4 k + 3 of the rows 32 to 35 show the left three cell columns of the top block of the next block column: the MAME
+    /// cells of `m328_l_e7a0_k16` have it.
+    pub(crate) fn lift_background(&mut self, x0: u16, y0: u16, page: usize) {
+        // 0x20650: the VRAM address of the block at (d0, d1).
+        let addr = |d0: u16, d1: u16| -> u32 {
+            let d3 = (d0 & 0x1E0) << 4;
+            let d2 = 0x1E0u16.wrapping_sub(d1 & 0x1E0);
+            let d4 = ((d2 & 0x100) << 5).wrapping_add((d2 & 0xE0) >> 1);
+            0x908000 + d3.wrapping_add(d4) as u32
+        };
+        // 0x206A8: the word of the page table (a1) of the block at (d0, d1): the column (d0 & 0xE0) / 2 bytes, the word 0xE - (d1 & 0xE0) / 16 bytes.
+        let word = |d0: u16, d1: u16| -> usize {
+            let bytes = (page as u16) * 128 + ((d0 & 0xE0) >> 1) + 0xE - ((d1 & 0xE0) >> 4);
+            (bytes / 2) as usize
+        };
+        let (mut d0, mut d1) = (x0, y0);
+        // a0 and a1 are looked up once (0x205C6); the later columns carry them on from the end of the column before.
+        let (mut a0, mut a1) = (addr(d0, d1), word(d0, d1));
+        for _ in 0..8 {
+            let mut d4 = 8i32;
+            loop {
+                // 0x20614: one block, 4 columns of 4 cells (the cells go down by +4, the next column is +0x80)
+                let id = self.assets.frontend.scroll1_pages[a1 / 64][a1 % 64] as usize;
+                let block = self.assets.frontend.scroll1_blocks[id];
+                for (i, c) in block.iter().enumerate() {
+                    self.hud_put(a0 + (i as u32 / 4) * 0x80 + (i as u32 % 4) * 4, c.code, c.attr);
+                }
+                a1 += 1; // lea 2(a1), a1
+                a0 += 0x10; // lea -0x180(a0), a0: four rows down
+                let d6 = d1;
+                if d1 == 0 {
+                    break; // 0x205F4
+                }
+                d1 -= 0x20;
+                if d6 & 0xE0 == 0 {
+                    // 0x20602: the block was at a multiple of 0x100: the address and the table word are looked up again
+                    a0 = addr(d0, d1);
+                    a1 = word(d0, d1);
+                }
+                d4 -= 1; // dbra d4
+                if d4 < 0 {
+                    break;
+                }
+            }
+            d0 = d0.wrapping_add(0x20); // 0x205D6
+            d1 = 0x100; // 0x205DA
+        }
     }
 
     /// 0x207CA: load the area's scroll2 header, reset the camera and draw the first screen.
@@ -1876,5 +1938,79 @@ mod stage2_tests {
         g.cam.s2.go = 1;
         g.mode_stage_end_stage2();
         assert_eq!(g.w.stage_clear, 1);
+    }
+}
+
+#[cfg(test)]
+mod lift_tests {
+    use super::*;
+    use crate::game::vram::Vram;
+    use dino_assets::AssetPack;
+
+    /// A pack with pages 0 to 2 (the page `p` lists the ids 64 p + 1 .. 64 p + 64, column by column, top block first) and blocks
+    /// whose cells carry their id and their place: code = 100 id + n, attribute = n (n = 0 .. 15, column by column).
+    fn game() -> Game {
+        let mut pack = AssetPack::default();
+        for p in 0..3u16 {
+            let mut page = [0u16; 64];
+            for (k, w) in page.iter_mut().enumerate() {
+                *w = 64 * p + k as u16 + 1;
+            }
+            pack.frontend.scroll1_pages.push(page);
+        }
+        for id in 0..=192u16 {
+            let mut b = [Cell::default(); 16];
+            for (n, c) in b.iter_mut().enumerate() {
+                *c = Cell { code: 100 * id + n as u16, attr: n as u16 };
+            }
+            pack.frontend.scroll1_blocks.push(b);
+        }
+        Game::new(Box::leak(Box::new(pack)))
+    }
+
+    fn block_at(g: &Game, col: usize, row: usize) -> u16 {
+        let c = g.vram.scroll1[Vram::index1(col, row)];
+        c.code / 100
+    }
+
+    /// The cage (0x205C6, called twice by the area setup 0x20766 for the pages 1 and 2): per block column 9 blocks from the bottom
+    /// block of the page at the rows 28 to 31 (first column of a page only), then the eight blocks of the column from the top at the
+    /// rows 32 to 63. a0 and a1 carry on from the end of the column before, so the first block of a later column is first drawn
+    /// one cell column to the right of the end of the column before (cells 4 k + 1 .. 4 k + 4 of the rows 32 to 35) and again at its
+    /// place: the cells 4 k + 1 .. 4 k + 3 of the top block of the column k show the left three columns of the top block of the
+    /// column k + 1 (MAME: scroll1 of `m328_l_e7a0_k16`).
+    #[test]
+    fn the_cage_background_fills_the_rows_28_to_63_of_two_pages() {
+        let mut g = game();
+        g.lift_background(0, 0x100, 1);
+        g.lift_background(0x100, 0x100, 2);
+        // page 1 (ids 65 .. 128): column c of the page, word r of the column = id 65 + 8 c + r
+        for c in 0..8usize {
+            for r in 1..8usize {
+                let id = 65 + 8 * c + r;
+                for (dc, dr) in [(0, 0), (3, 3)] {
+                    let cell = g.vram.scroll1[Vram::index1(4 * c + dc, 32 + 4 * r + dr)];
+                    assert_eq!(cell.code, 100 * id as u16 + (4 * dc + dr) as u16, "column {c} block {r}");
+                }
+            }
+            // the top block: its own first column, the next three columns come from the stray block of the next column
+            let own = 65 + 8 * c;
+            assert_eq!(g.vram.scroll1[Vram::index1(4 * c, 33)].code, 100 * own as u16 + 1);
+            for j in 0..3usize {
+                let (id, n) = if c < 7 { (own + 8, 4 * j + 2) } else { (own, 4 * (j + 1) + 2) };
+                assert_eq!(g.vram.scroll1[Vram::index1(4 * c + 1 + j, 34)].code, 100 * id as u16 + n as u16, "column {c} stray {j}");
+            }
+        }
+        // the extra block: the bottom block (word 7) of the first column of each page at the rows 28 to 31, the other columns stay empty
+        assert_eq!(block_at(&g, 0, 28), 65 + 7);
+        assert_eq!(block_at(&g, 3, 31), 65 + 7);
+        assert_eq!(block_at(&g, 4, 28), 0, "the second column has no block above the row 32");
+        assert_eq!(block_at(&g, 32, 28), 129 + 7, "the second page: its first column too");
+        assert_eq!(block_at(&g, 36, 30), 0);
+        // the second page is the columns 32 to 63
+        assert_eq!(block_at(&g, 32, 35), 129);
+        assert_eq!(block_at(&g, 63, 63), 129 + 63);
+        // nothing above the row 28
+        assert_eq!(block_at(&g, 0, 27), 0);
     }
 }

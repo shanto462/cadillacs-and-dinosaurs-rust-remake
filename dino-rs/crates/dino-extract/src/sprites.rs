@@ -112,6 +112,9 @@ pub const OBJECT_FRAMES: &[u32] = &[
     0x82172,
 ];
 
+/// Single frame records the 12-byte loader 0x143E reads: pool B class 64, the four cage posts of the lift (pointer table 0x86BD4).
+pub const OBJECT_FRAMES_12: &[u32] = &[0x86BE4, 0x86BF0, 0x86BFC, 0x86C08];
+
 pub fn extract(rom: &Rom, extra: &crate::ExtraFrames) -> SpriteData {
     let mut data = SpriteData { compositions: compositions(rom), ..Default::default() };
     let mut walker = FrameWalker { rom, data: &mut data };
@@ -128,6 +131,9 @@ pub fn extract(rom: &Rom, extra: &crate::ExtraFrames) -> SpriteData {
     }
     for &frame in OBJECT_FRAMES {
         walker.walk(frame, 10);
+    }
+    for &frame in OBJECT_FRAMES_12 {
+        walker.walk(frame, 12);
     }
     // On demand (harness): frame records of objects whose animation table is not registered yet.
     for &addr in &extra.sprite {

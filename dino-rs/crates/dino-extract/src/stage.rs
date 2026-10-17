@@ -21,8 +21,9 @@ fn area_map(rom: &Rom, hdr: u32) -> AreaMap {
     let ptr = rom.u32(hdr + 2);
     // The streaming code indexes the screen ids by (x >> 8) * h + (y >> 8) without a range check, and
     // asks for rows above the map (camera Y small, the column starts 0x180 above the camera): it
-    // reads the ROM words that follow the array. Keep some of them so the port reads the same ids.
-    const PAST_END: u32 = 32;
+    // reads the ROM words that follow the array. Keep some of them so the port reads the same ids (the lift of Episode 7, a map of 2 x 56
+    // screens, streams columns up to X 0x340, index 223: 0x100 words are more than any stream reaches).
+    const PAST_END: u32 = 0x100;
     let screens = if w == 0 { Vec::new() } else { (0..w as u32 * h as u32 + PAST_END).map(|i| rom.u16(ptr + 2 * i)).collect() };
     AreaMap { rom_addr: hdr, screens_addr: ptr, w, h, screens, init_x: rom.u16(hdr + 6), init_y: rom.u16(hdr + 8) }
 }

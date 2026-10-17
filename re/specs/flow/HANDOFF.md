@@ -649,3 +649,11 @@ Tools: `re/harness/link_check.sh [NAME ...]` (`STORY_ONLY=1` stops at the first 
 * **Not done.** The pool B 50 dialogue of the boss (variant 7) and the pool C 39 aura are made by the stand ins but not ported (unported classes: freed or held); the join state 0xC is the minimal stand in of `flow_join_game_over`
   (the GAME OVER HUD text of the continue path is M2-21's `cont.rs`); the 2 player layout of the ending was not recorded.
 
+### M3-13 and M3-14: the lift of Episode 7 area 1 (green)
+
+* **What.** `camera.rs` `lift_background` (0x205C6, the cage on scroll1, called by the area setup 0x20766), `prop/b57.rs` (pool B 57 the floor labels 0x85B64, pool B 64 the cage posts 0x86B64), tables through `dino-extract` (0x85BF6, 0x85D6C, 0x86BBE, 0x86BD4, four 12 byte frame records), `PAST_END` 0x100
+  for the scroll2 map streams that read past the end of an array (the lift is 2 x 56 screens wide streamed to X 0x340), G.$7B6 `spawn.g.cage_smashed` (cleared at the area setup, B54 will set it). Details and the one quirk (the cage's a0 / a1 carry over from column to column) are in `re/specs/stage/HANDOFF.md`, the corrections in `D5-errata.md`.
+* **Checks.** `re/harness/m313_check.sh`: `m800_a14_n_e7a1_full` (4900 records) and the lift of `ep7_3p` (12306 to 17850) in step mode equal MAME in the camera, the labels, the posts and the cage in every record (the rest is unported classes and the lag records); `m328_l_e7a0_k16` (the area change into the lift, free run) has scroll1 equal in every record but the first. Free run: `--episode 7 --area 1 --autoplay` rides the lift to area 2 at tick 5395.
+* **Review aid.** `debug::next_area` (F6, `--area`) enters the lift through the fade path (mode 1) and clears the fade mask of a direct start: the hard cut (mode 0x12) left the cage over the HUD.
+* Gates: `cargo build`, `cargo test` (369 in dino-game, 10 ignored) green, `regress.sh` 49 of 52 at 0, `mp_join` 3, `armed` 4, `c14c_mustapha` 8 (the baseline).
+

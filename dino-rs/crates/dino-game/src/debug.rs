@@ -87,7 +87,7 @@ impl Debug {
 }
 
 /// Next area: the camera's area change without a fade (`area_end_next_area(false)`, 0x20D3A at sub 4), which takes the next
-/// area of the camera events. Mode 1 sub 4 would wait for the end of a fade that was never started. The standard controller
+/// area of the camera events (the lift of Episode 7 uses the mode 1 path, see below). The standard controller
 /// (0x206D4) calls that code mode 0x12; the controller of Episode 3 (0x22398, stage 2) has no mode 0x12, its mode 6 (0x22864)
 /// is the same routine.
 ///
@@ -104,7 +104,13 @@ pub fn next_area(g: &mut Game) {
     if g.w.stage != 2 && !events.is_empty() && !has_start {
         return;
     }
-    g.cam.s2.mode = if g.w.stage == 2 { 6 } else { 0x12 };
+    // The lift (Episode 7 area 0 to 1) is entered through the area change with the fade (mode 1): its sub 6 redraws the HUD over the
+    // cage that the area setup has drawn (0x20CC0 -> 0x162AE). The hard cut (mode 0x12) would leave the cage on top of the HUD.
+    let lift = g.w.stage == 6 && g.cam.s2.area == 0;
+    if lift {
+        g.fade.mask = 0; // a direct start (`--episode`) leaves the mask of its palette load: mode 1 sub 4 waits for it to be 0
+    }
+    g.cam.s2.mode = if g.w.stage == 2 { 6 } else if lift { 1 } else { 0x12 };
     g.cam.s2.sub = 4;
 }
 
@@ -127,8 +133,9 @@ mod tests {
     #[test]
     fn the_area_change_key_uses_the_mode_of_the_stage_controller() {
         let mut g = Game::new(Box::leak(Box::new(AssetPack::default())));
-        for (stage, mode) in [(0, 0x12), (1, 0x12), (2, 6), (3, 0x12), (7, 0x12)] {
+        for (stage, mode) in [(0, 0x12), (1, 0x12), (2, 6), (3, 0x12), (6, 1), (7, 0x12)] {
             g.w.stage = stage;
+            g.cam.s2.area = 0;
             next_area(&mut g);
             assert_eq!((g.cam.s2.mode, g.cam.s2.sub), (mode, 4), "stage {stage}");
         }

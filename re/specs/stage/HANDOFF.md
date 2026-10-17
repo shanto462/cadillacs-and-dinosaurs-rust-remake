@@ -1,5 +1,27 @@
 # Background / camera port - handoff
 
+## M3-13 and M3-14: the lift of Episode 7 area 1 (2026-10-17)
+
+Done: the cage (scroll1 background of the area setup), the floor labels (pool B 57) and the cage posts (pool B 64). Camera mode 5, the stops by Y and the by-Y spawn triggers were
+already ported (M3-08 era) and equal MAME. Files: `game/camera.rs` (`lift_background`, called by `area_setup` for stage 6 area 1), `game/prop/b57.rs` (B57 and B64), `dino-extract/src/enemy.rs`
+(`TABLES`: 0x85BF6, 0x85D6C, 0x86BBE, 0x86BD4), `dino-extract/src/sprites.rs` (`OBJECT_FRAMES_12`: the four 12 byte frame records of the posts), `dino-extract/src/stage.rs` (`PAST_END` 0x100).
+
+| original | port | notes |
+| --- | --- | --- |
+| 0x205C6 (+ 0x20614, 0x20650, 0x206A8), called twice by 0x20766 with d5 = 1 and 2 | `Game::lift_background(x0, y0, page)` | scroll1 table 0x138C48 pages 1 and 2 (`frontend.scroll1_pages`, blocks 0x15CFE8, the same data as the loader 0x20454) as 2 x 8 block columns of 4 x 4 cells at the rows 32 to 63, and the bottom block of the first column of each page at the rows 28 to 31. **Quirk kept:** a0 / a1 are looked up once and carry on from column to column, so the first block of every later column is drawn one cell column to the right of the end of the column before and again at its place (3 cells of the top block of each column show the left cells of the next column's top block; MAME has them). G.$7B6 (`spawn.g.cage_smashed`, trace `cage_smashed`) is cleared there (0x20786). |
+| 0x85B64 pool B 57 (+ 0x85BA8, 0x85D46) | `prop_b57` | `+$A0` ring address (0x90C268, +0x1000 a label, back at 0x910000), `+$C` height (0x3760, -0x100 a label), `+$A4` label counter (by 2). A label is painted when its height is not below the camera Y (signed word), one a frame at most. Tables 0x85BF6 (3 glyph words a label, -1 = blank) and 0x85D6C (2 x 2 cells a glyph); the dash cells 0x618F / 0x6180 (attribute 0x13) are in the code (0x85BC2). The labels are written into scroll2 by video address; the stream of the map writes over them later, as in the original. |
+| 0x86B64 pool B 64 | `prop_b64` | `+$26` = 0, 4, 8, 0xC: frame record (pointer table 0x86BD4, loader 0x143E = stride 12) and the offsets (0x86BBE: (24, 184), (96, 56), (288, 56), (360, 184)) from the scroll1 scroll (`cam1_x`, `shake_scroll1_y` = G.$6C4 / G.$7B8); draw flags 0x10, in the draw list every frame (0x49C0). |
+| scroll2 stream in the lift | `PAST_END` 0x100 | the map is 2 x 56 screens, the stream reads columns up to X 0x340 (index 223): the ids come from the ROM words after the array, as in the original (the extractor kept only 32). |
+
+Checks (`re/harness/m313_check.sh`, allow rules `re/harness/allow/m313.txt`): in step mode the camera, the labels (scroll2), the posts (B64 fields) and the cage equal MAME in every record of `m800_a14_n_e7a1_full` (4900) and of the lift of `ep7_3p`
+(records 12306 to 17850, three heroes: stops at 12840, 14270, 15752, 16685, end lock 17531); the run from the snapshot `m328_l_e7a0_k16` (the area change to the lift) has the cage equal in every record but the first of the area. Left, with causes:
+* The area start (record 382 of `m328_l_e7a0_k16`, 12306 of `ep7_3p`): MAME does sub 4 and sub 6 of the area change in one record (the area setup overruns the video frame, G.$0 + 2), the port one frame later. The labels, the camera and the map stream follow one frame late in that run (13 scroll2 cells in record 383, one row of the map stream in 21 records). This is the lag of every area change (`TODO(M10)` in `mode_area_change`; M3-29 lists it).
+* MAME lag records inside the ride (13522: G.$0 + 40, the camera 188 pixels in one record): in step mode the port runs one frame, so that record differs (B57 height, 73 scroll2 cells).
+* B54 (the cage smash, `prop class 0x36`, scroll1 45 cells from record 614 of `m800_a14_n_e7a1_full`) is not ported; `global.display_y2` (a trace artifact, the allow file).
+* The free run (`--episode 7 --area 1 --autoplay`) rides the lift to area 2 with the placeholders (5395 ticks). `debug::next_area` enters the lift through mode 1 (the fade path) so that the HUD is redrawn over the cage (0x20CC0 -> 0x162AE).
+* Pictures (`re/out/shots/m313/`, one `--headless --screenshots` run each): the cage, the label ("L-14" at the start, "B-21" at the third stop), the posts and the HUD look like the MAME snapshots of `re/out/probe/d3e3-r1/e7a1-nat/snap` (t = 180, 420, 1860, 3060); the sprites of the heroes and the enemies and a one pixel shake phase of the cage and the posts differ (a state loaded in the middle of the ride shows the video latency of the loaded state, so these pictures are not pixel equal).
+
+
 ## M3-08 to M3-12: the Episode 3 camera, the car drive camera and the row scroll (2026-10-17)
 
 Done: stage 2 (Episode 3) runs its own scroll2 controller and the row scroll task, as `0x2042E` does (`background_update`: stage 2 = 0x2335A, 0x22398,
