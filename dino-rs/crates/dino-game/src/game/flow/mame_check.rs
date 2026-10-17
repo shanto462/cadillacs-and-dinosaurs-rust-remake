@@ -2942,3 +2942,76 @@ fn episode_eight_reaches_the_ending() {
     }
     panic!("the ending was not reached or did not end: mode {:#x} sub {:#x}", g.flow.mode, g.flow.sub);
 }
+
+/// M4-14: every sound request of the power on run (code, d1, d2) against the ring of `trace`, per record from power on to
+/// `last`. Returns the records where the requests differ, as text. `extra` sets the inputs of the run (coins, system bits).
+fn sound_args_diffs(trace: &str, last: i32, input: impl Fn(i32) -> [u8; 3], mut extra: impl FnMut(i32, &mut Game)) -> Vec<(usize, Vec<(u16, u32, u32)>, Vec<(u16, u32, u32)>)> {
+    let Some(a) = assets() else { return Vec::new() };
+    let prev_cell: std::cell::RefCell<Vec<u8>> = std::cell::RefCell::new(Vec::new());
+    let mut out = Vec::new();
+    let _ = compare_power_on_with(
+        a,
+        trace,
+        last,
+        input,
+        |k, g, prev| {
+            // the demo stub plays none of its random numbers (as in `opening_movie_runs_like_the_original`)
+            if [4668, 11239, 17773, 24344].contains(&k) {
+                g.w.rng = ram16(prev, 0xFF8014);
+            }
+            extra(k, g);
+            let mut b = prev_cell.borrow_mut();
+            b.clear();
+            b.extend_from_slice(prev);
+        },
+        |k, g, ram, _| {
+            let prev = prev_cell.borrow();
+            let m: Vec<(u16, u32, u32)> = mame_sound_args(&prev, ram).into_iter().filter(|e| e.0 != 0).collect();
+            let p: Vec<(u16, u32, u32)> = g.w.snd_reqs.iter().filter(|r| r.code != 0).map(|r| (r.code, r.d1, r.d2)).collect();
+            if m != p {
+                out.push((k as usize, m, p));
+            }
+        },
+    );
+    out
+}
+
+/// The demo runs of `attract3.mame.trc` (the records of `LOOP_DEMOS`, with their demo returns): the in-level sounds there are
+/// not complete yet (M10).
+fn in_demo(k: usize) -> bool {
+    LOOP_DEMOS.iter().any(|&(a, b)| (a..=b).contains(&k))
+}
+
+/// M4-14 (the sound lines of the front end, from power on): outside the demos every sound request of the attract loop (the boot,
+/// the title 0x88, the profiles, the ranking 0x80 and 0x70, the slides 0x24 and 0x25, the movie) has the code of the recording in
+/// the same frame. The d1 and d2 longs equal the recording for the title, the profiles, the ranking, the dinosaur steps (0x75)
+/// and the join hunter's 0xEA. Known differences, all from register leftovers of the original: the slide music 0x24 and 0x25 are
+/// queued by a script line whose d1 and d2 are what the palette routine left in the registers, the movie handler's 0x61 (0x9C3C6,
+/// `jmp 0xA63C`) and the flock's 0x61 take d1 and d2 from the caller (M10).
+#[test]
+fn front_end_sound_args_match_mame() {
+    let Some(trace) = Some("../../../re/out/traces/attract3.mame.trc").filter(|p| Path::new(p).exists()) else { return };
+    let diffs = sound_args_diffs(trace, 13500, |_| [0; 3], |_, _| {});
+    let outside: Vec<_> = diffs.iter().filter(|(k, _, _)| !in_demo(*k)).collect();
+    let codes: std::collections::BTreeSet<u16> = outside.iter().flat_map(|(_, m, _)| m.iter().map(|e| e.0)).collect();
+    assert_eq!(codes.into_iter().collect::<Vec<_>>(), vec![0x24, 0x25, 0x61], "only the known leftover codes differ");
+    let records: Vec<usize> = outside.iter().map(|(k, _, _)| *k).collect();
+    assert_eq!(records, [4670, 6075, 12392, 12478, 12486, 12494, 12502, 12510, 12518, 12526]);
+    // the codes of the same records are equal: only d1 or d2 differ
+    for (k, m, p) in &outside {
+        let (mc, pc): (Vec<u16>, Vec<u16>) = (m.iter().map(|e| e.0).collect(), p.iter().map(|e| e.0).collect());
+        assert_eq!(mc, pc, "record {k}: the codes differ");
+    }
+}
+
+/// M4-14: the coin (0x30 with d1 = 0x70010, d2 = 0x3800000) and the start (0x31 with d1 = 0x10) of `flow_c-title` (the coin at 450
+/// to 457, the start at 600 to 605) equal the recording in every request, with d1 and d2, from power on to record 621.
+#[test]
+fn coin_and_start_sound_args_match_mame() {
+    let Some(trace) = flow_trace("c-title") else { return };
+    let diffs = sound_args_diffs(&trace, 621, |_| [0; 3], |k, g| {
+        g.w.coins = (449..=456).contains(&k) as u8;
+        g.w.system = 8 | (599..=604).contains(&k) as u8;
+    });
+    assert!(diffs.is_empty(), "{diffs:?}");
+}

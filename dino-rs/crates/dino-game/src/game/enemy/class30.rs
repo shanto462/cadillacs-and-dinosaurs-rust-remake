@@ -62,7 +62,9 @@ impl Game {
     fn enemy_c30_frame(&mut self, e: &mut Enemy, h: Handle) {
         let mut d0 = e.m.w(f::COUNT) as i16;
         if d0 < 0xBE && d0 & 0x3F == 0 {
-            self.sound(0x75); // jsr 0xA31C
+            // jsr 0xA31C: d1 = 0x71000 with the pan byte of the object's X (table 0xA66A), d2 = 0x3000200
+            let pan = self.snd_pan_x(e.b.xi());
+            self.snd_request(0x75, 0x71000 | pan as u32, 0x0300_0200);
             self.cam_shake(4); // move.b #4,$755C(a5)
         }
         d0 = e.m.w(f::COUNT) as i16;

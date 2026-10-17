@@ -85,7 +85,11 @@ impl Game {
                 }
                 let t = e.m.w(f::TIMER);
                 if t == 0x46 {
-                    self.sound(0xEA); // jsr 0x9C76: +$82 is the pool tag (4), so the fixed code
+                    // jsr 0x9C76: d1 = (mode << 16) | 0x2000 | pan (mode 3, or 4 when +$24 (facing) is set), d2 = 0x15000000;
+                    // the pool tag +$82 is 4, so the code is the fixed 0xEA
+                    let mode: u32 = if e.b.facing == 0 { 3 } else { 4 };
+                    let pan = self.snd_pan_x(e.b.xi());
+                    self.snd_request(0xEA, (mode << 16) | 0x2000 | pan as u32, 0x1500_0000);
                 }
                 if e.b.param_b != 0 {
                     self.enemy_c11_puff(e); // 0x3DA48
