@@ -361,7 +361,7 @@ impl Game {
             // 0x10B50[enemy +$84]: guard handler; carry = blocked (sound 0x9732, spark type 2).
             // Ported: BLADE / RAZOR (0x404CA). TODO(enemy port): the entries 0x3DFC6 (names 8, 0x48, 0x4C).
             if self.enemy_has_guard_c14(e) && self.enemy_guard_c14(e) {
-                self.snd_9732();
+                self.snd_9732(self.body(e).xi());
                 self.spawn_hit_spark(me, e, ha, hb, 2); // 0x10B42 -> 0x12720 with d5 = 2
                 return;
             }
@@ -407,7 +407,7 @@ impl Game {
             self.enemies.slots[ei].m.sb(super::enemy::off::WAIT, 0);
         }
         if rec.sound != 0 {
-            let (ax, vf) = (self.players[i].b.xi(), self.players[i].b.facing);
+            let (ax, vf) = (self.players[i].b.xi(), self.body(e).facing); // a6 = a3 = the enemy (movea.l a3,a6 at 0x10A12)
             self.snd_hit(rec.sound, ax, vf); // 0x962A
         }
         self.player_add_score(i, rec.score);

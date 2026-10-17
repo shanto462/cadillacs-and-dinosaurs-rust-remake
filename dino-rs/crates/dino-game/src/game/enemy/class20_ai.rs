@@ -301,7 +301,7 @@ impl Game {
             self.enemy_step(&mut e.b);
             return;
         }
-        self.snd_9c20();
+        self.snd_9c20(e.b.xi());
         e.b.step = 4;
         self.enemy_anim(&mut e.b, 0xF);
         self.c20_45fc2(e, h);
@@ -347,7 +347,7 @@ impl Game {
             e.b.motion();
             if e.b.airborne == 0 {
                 // 0x46034
-                self.snd_9c20();
+                self.snd_9c20(e.b.xi());
                 self.c20_46a80(e);
                 e.b.step = 0xA;
                 self.enemy_anim(&mut e.b, 0xF);
