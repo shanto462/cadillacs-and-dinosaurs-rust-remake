@@ -22,7 +22,64 @@ mod th {
 }
 
 impl Game {
-    pub fn pass_10dcc(&mut self) {}
+    /// 0x10DCC / 0x10E34: list 0x671A attack objects against heroes.
+    pub fn pass_10dcc(&mut self) {
+        for a in self.combat.get(0x671A).to_vec() {
+            if self.body(a).kind != 4 { continue; }
+            for d in self.combat.get(0x6718).to_vec() {
+                let (ab, db) = (self.body(a), self.body(d));
+                // This pass compares +$5E, not the last-hit serial at +$E9.
+                if db.live & 2 != 0 || ab.who == db.who || ab.serial == db.serial
+                    || matches!(db.kind, 8 | 0xA) { continue; }
+                self.enemy_attack_object_hits_hero(a, d);
+            }
+        }
+    }
+
+    /// 0x10E4A: raw object record damage, unconditional weapon drop, then 0x11738.
+    fn enemy_attack_object_hits_hero(&mut self, a: Handle, d: Handle) {
+        let (ab, db) = (self.body(a).clone(), self.body(d).clone());
+        if ab.attack_box == 0 || db.body_box == 0 { return; }
+        let Some((ha, hb)) = collide::boxes_hit(&self.assets.sprites, &ab, ab.attack_box, &db, db.body_box) else { return };
+        let friendly = (ab.who as i8) >= 0;
+        if (friendly && ab.zi() != db.zi()) || matches!(ab.atk, 0x6E | 0x6C) { return; }
+        let Some(Slot::Player(i)) = slot_of(d) else { return };
+        let ch = if friendly { ab.id as usize } else { 0 };
+        let rec = self.assets.sprites.player_attacks[ch][ab.atk as usize / 2];
+        let p = &mut self.players[i];
+        p.b.live = 2;
+        p.b.set_state(0x0202_0000);
+        p.b7a = 0;
+        p.item_type = 0;
+        p.drop = 1;
+        p.b.attacker = a;
+        p.hits_t = 0x3C;
+        p.hits = p.hits.wrapping_add(1);
+        p.slow = 0;
+        p.hit_serial = ab.serial;
+        p.b.hp_prev = db.hp;
+        let damage = if friendly { 1 } else { rec.damage as u16 };
+        // SUB.W followed by BGT uses N == V, including signed subtraction overflow.
+        p.b.hp = if (db.hp as i16) > damage as i16 {
+            db.hp.wrapping_sub(damage)
+        } else { u16::from(friendly) };
+        p.stun_refill = 0x78;
+        p.b.stun = p.b.stun.saturating_sub(rec.stun);
+        p.b.knock = ab.knock;
+        let reaction = if p.action == 0x22 { 0x22 } else { rec.reaction };
+        p.b.reaction = reaction;
+        p.b.act = reaction;
+        p.b.step = 0;
+        p.b.hitstop = rec.hit_stop;
+        p.b.b9a = rec.b7;
+        self.body_mut(a).hitstop = rec.hit_stop;
+        if matches!(self.player_move_word(a), 0x202 | 0x203) {
+            self.body_mut(ab.partner).hitstop = rec.hit_stop;
+        }
+        if rec.sound != 0 { self.snd_hit(rec.sound); } // 0x962A
+        self.spawn_hit_spark(a, d, ha, hb, rec.spark); // 0x12720
+        self.player_power_factor(i); // 0x11738, the only RNG call in this pass
+    }
 
     /// 0x1132A / 0x11396: attack objects against the hostile list, without a guard test.
     pub fn pass_1132a(&mut self) {
@@ -1963,5 +2020,184 @@ mod monster_mame_tests {
             assert!(n > 0, "{name}: actually exercises raw damage");
             eprintln!("{name}: all {n} raw hits equal MAME");
         }
+    }
+}
+
+#[cfg(test)]
+mod attack_object_hero_tests {
+    use super::*;
+    use dino_assets::{AssetPack, AttackRecord, HitBoxBank};
+
+    fn pair() -> (Game, Handle, Handle) {
+        let mut assets = AssetPack::default();
+        // Synthetic boxes and records, unrelated to the ROM's contents.
+        assets.sprites.hitboxes = HitBoxBank { base: 0x100000, words: vec![0, 0, 0, 0, 0, 0, -2, 4, 0, 0, 0, 0] };
+        assets.player.power = vec![37; 128];
+        assets.sprites.player_attacks = std::array::from_fn(|_| vec![AttackRecord {
+            damage: 7, stun: 3, reaction: 4, hit_stop: 5, b7: 9, ..Default::default()
+        }; 0x38]);
+        let mut g = Game::new(Box::leak(Box::new(assets)));
+        let a = g.items.handle(0);
+        let d = Game::player_handle(1);
+        for h in [a, d] {
+            let b = g.body_mut(h);
+            b.live = 1;
+            b.box_table = 0x100000;
+            b.body_box = 1;
+            b.attack_box = 1;
+            b.hp = 10;
+            b.stun = 2;
+        }
+        g.body_mut(a).kind = 4;
+        g.body_mut(a).serial = 3;
+        g.body_mut(a).knock = 6;
+        g.body_mut(d).who = 1;
+        g.players[1].item_type = 0x204;
+        g.players[1].combo = 8;
+        g.combat.push(0x671A, a);
+        g.combat.push(0x6718, d);
+        (g, a, d)
+    }
+
+    #[test]
+    fn friendly_objects_floor_hp_drop_every_heros_weapon_and_use_one_rng_call() {
+        for id in 0..4 {
+            for hp in [0, 1, 2, 100, 0x8000] {
+                let (mut g, a, d) = pair();
+                g.players[1].b.id = id;
+                g.players[1].hits = 255;
+                g.body_mut(d).hp = hp;
+                let rng = g.w.rng;
+                g.rand();
+                let expected_rng = g.w.rng;
+                g.w.rng = rng;
+                g.pass_10dcc();
+                let p = &g.players[1];
+                assert_eq!((p.b.hp, p.b.hp_prev), (if (hp as i16) > 1 { hp - 1 } else { 1 }, hp));
+                assert_eq!((p.b.state(), p.b.live, p.b.stun, p.b.knock), (0x0202_0400, 2, 0, 6));
+                assert_eq!((p.item_type, p.drop, p.hits, p.hits_t, p.stun_refill), (0, 1, 0, 60, 120));
+                assert_eq!((p.hit_serial, p.b.serial, p.b.attacker, p.combo), (3, 0, a, 8));
+                assert_eq!((p.b.hitstop, p.b.b9a, g.body(a).hitstop), (5, 9, 5));
+                assert_eq!(g.w.rng, expected_rng);
+            }
+        }
+    }
+
+    #[test]
+    fn owner_serial_immunity_and_air_strikes_skip_without_rng() {
+        for case in 0..7 {
+            let (mut g, a, d) = pair();
+            match case {
+                0 => g.body_mut(a).who = 1,
+                1 => g.body_mut(d).serial = 3,
+                2 => g.body_mut(d).live = 2,
+                3 => g.body_mut(d).kind = 8,
+                4 => g.body_mut(d).kind = 0xA,
+                5 => g.body_mut(a).atk = 0x6C,
+                _ => { g.body_mut(a).atk = 0x6E; g.body_mut(a).who = 0xFF; }
+            }
+            let rng = g.w.rng;
+            g.pass_10dcc();
+            assert_eq!((g.body(d).hp, g.w.rng), (10, rng), "case {case}");
+        }
+        // +$E9 is deliberately not the serial filter for this pass.
+        let (mut g, _, d) = pair();
+        g.players[1].hit_serial = 3;
+        g.body_mut(d).kind = 6;
+        g.pass_10dcc();
+        assert_eq!(g.body(d).hp, 9);
+    }
+
+    #[test]
+    fn enemy_objects_use_full_damage_and_ignore_exact_depth_and_hero_defense() {
+        for hp in [6, 7, 8] {
+            let (mut g, a, d) = pair();
+            g.body_mut(a).who = 0xFF;
+            g.body_mut(d).set_zi(1);
+            g.body_mut(d).hp = hp;
+            g.players[1].action = 0x22;
+            g.pass_10dcc();
+            assert_eq!(g.body(d).hp, hp.saturating_sub(7));
+            assert_eq!(g.body(d).reaction, 0x22);
+        }
+    }
+    #[test]
+    fn friendly_depth_is_exact_at_any_census_and_swung_weapons_stop_the_holder() {
+        for alive in [0, 4] {
+            for dz in [-1, 0, 1] {
+                let (mut g, a, d) = pair();
+                g.spawn.g.alive = alive;
+                g.body_mut(d).set_zi(dz);
+                let holder = Game::player_handle(0);
+                g.body_mut(a).partner = holder;
+                g.items.slots[0].m.sw(0xA0, 0x203);
+                let rng = g.w.rng;
+                g.pass_10dcc();
+                assert_eq!(g.body(d).hp, if dz == 0 { 9 } else { 10 });
+                assert_eq!(g.body(holder).hitstop, if dz == 0 { 5 } else { 0 });
+                if dz != 0 { assert_eq!(g.w.rng, rng); }
+            }
+        }
+    }
+
+}
+
+
+#[cfg(test)]
+mod attack_object_mame_tests {
+    use super::*;
+    use crate::harness::TraceReader;
+
+    fn word(ram: &[u8], o: usize) -> u16 { u16::from_be_bytes([ram[o], ram[o + 1]]) }
+
+    /// 0x10E4A: replay every recorded attack-object hit with the measured collision boxes.
+    /// Whole-frame step comparisons remain the gate for update order and RNG timing.
+    #[test]
+    fn attack_object_hits_match_recorded_mame_frames() {
+        let root = std::path::Path::new("../../..");
+        if !root.join("dino.zip").exists() { return; }
+        let assets = dino_extract::extract(&root.join("dino.zip")).expect("ROM loads");
+        let mut g = Game::new(Box::leak(Box::new(assets)));
+        let dir = root.join("re/out/traces");
+        let mut paths: Vec<_> = std::fs::read_dir(&dir).unwrap().filter_map(Result::ok)
+            .map(|e| e.path()).filter(|p| {
+                let n = p.file_name().unwrap().to_string_lossy();
+                n.ends_with(".mame.trc") && (n.starts_with("ffi_") || n.starts_with("m516_") || n.starts_with("boss_vice_"))
+            }).collect();
+        paths.sort();
+        let mut hits = 0;
+        for path in paths {
+            let mut rd = TraceReader::open(path.to_str().unwrap()).unwrap();
+            let mut previous: Option<Vec<u8>> = None;
+            let mut n = 0;
+            while let Some(frame) = rd.next() {
+                let ram = &rd.region("ram").unwrap().data;
+                if let Some(prev) = &previous {
+                    for i in 0..3 {
+                        let o = Game::player_handle(i) as usize;
+                        let a = word(ram, o + 0x68);
+                        if ram[o] != 2 || word(ram, o + 0x6C) == word(prev, o + 0x6C)
+                            || !matches!(slot_of(a), Some(Slot::Item(_)))
+                            || ram[a as usize + 0x2E] != 4 { continue; }
+                        g.trace_load(ram, &rd.region("gfx").unwrap().data);
+                        let p = &mut g.players[i];
+                        p.b.hp = word(ram, o + 0x6E);
+                        p.b.stun = prev[o + 0x78];
+                        g.enemy_attack_object_hits_hero(a, o as u16);
+                        let p = &g.players[i];
+                        assert_eq!((p.b.hp, p.b.stun, p.b.reaction, p.b.act, p.b.hitstop, p.b.knock, p.b.b9a),
+                            (word(ram, o + 0x6C), ram[o + 0x78], ram[o + 0x7B], ram[o + 6], ram[o + 0x59], ram[o + 0x5A], ram[o + 0x9A]),
+                            "{} frame {frame}, player {i}", path.display());
+                        assert_eq!((p.item_type, p.drop), (word(ram, o + 0xB6), ram[o + 0xC5]));
+                        n += 1;
+                    }
+                }
+                previous = Some(ram.clone());
+            }
+            if n > 0 { eprintln!("{}: all {n} object hits equal MAME", path.file_name().unwrap().to_string_lossy()); }
+            hits += n;
+        }
+        assert!(hits > 0, "requires weapon friendly-fire recordings");
+        eprintln!("attack objects: {hits} recorded hits equal MAME");
     }
 }
