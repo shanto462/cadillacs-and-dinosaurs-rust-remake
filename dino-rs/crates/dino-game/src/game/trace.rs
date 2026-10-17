@@ -717,6 +717,15 @@ impl Prop {
             f.u16(0xA2, "yard_index", &mut ix);
             self.m.sw(0xA2, ix);
         }
+        if f.all() || self.b.k20 == 5 * 4 || self.b.k20 == 6 * 4 {
+            // Chimney smoke (0x769E2) and interior flames (0x76A70): countdown +$A0, picture index +$A2.
+            let mut t = self.m.b(0xA0);
+            f.u8(0xA0, "far_timer", &mut t);
+            self.m.sb(0xA0, t);
+            let mut ix = self.m.w(0xA2);
+            f.u16(0xA2, "far_index", &mut ix);
+            self.m.sw(0xA2, ix);
+        }
         if f.all() || self.b.k20 == 73 * 4 || self.b.k20 == 96 * 4 {
             // The bird spawner's delay (class 73, 0x89AE0) and class 96 music timer sit in the same word.
             let mut t = self.m.w(0x80);
@@ -1042,7 +1051,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 16, 17, 18, 20, 27, 34, 41, 43, 49, 50, 54, 55, 56, 57, 60, 81, 90, 92, 93, 96, 97]),
-    ("prop", &[0, 1, 2, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 40, 42, 43, 47, 50, 53, 57, 59, 64, 66, 73, 74, 76, 81, 82, 83, 84, 85, 87, 96]),
+    ("prop", &[0, 1, 2, 3, 5, 6, 10, 11, 12, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 40, 42, 43, 47, 50, 53, 57, 59, 64, 66, 73, 74, 76, 81, 82, 83, 84, 85, 87, 96]),
     (
         "item",
         &[

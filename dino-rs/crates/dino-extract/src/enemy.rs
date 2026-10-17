@@ -52,6 +52,16 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x75746, 0xCB0, "B2 water tile codes (0x7542C)"),
     // Pool B class 27 (0x7EEBA), yard picture pointers and the four pictures (M6-15).
     (0x7F1D4, 0x550, "B27 yard pictures (0x7EEBA)"),
+    // Pool B class 5 (0x769E2), chimney smoke: four pictures of two scroll3 code words (0x76A3E).
+    (0x76A5A, 16, "B5 chimney smoke pictures (0x769E2)"),
+    // Pool B class 6 (0x76A70), interior flames. Destinations and picture bases, then the pictures
+    // (0x76B4C through 0x76CCC, three variants of four pictures of 16 code words).
+    (0x76AE6, 12, "B6 flame destinations, vars 0/4/8 (0x76A70)"),
+    (0x76AF2, 12, "B6 flame picture bases (0x76A70)"),
+    (0x76B4C, 0x180, "B6 flame pictures (0x76A70)"),
+    // Pool B class 10 (0x785F0), foreground fire strips. Pointers and every word the writers read.
+    (0x78664, 0x15A, "B10 var 0 fire pictures (0x7863E)"),
+    (0x78898, 0x128, "B10 var 4 fire pictures (0x787F4)"),
     // score
     (0x10292, 0x90, "BCD score values (0x10036), indexed by byte offset"),
     (0x325F8, 0x28, "kill score offset by name id (0x325E6)"),
