@@ -885,6 +885,7 @@ impl Effect {
         f.u16(0x58, "owner58", &mut self.owner58);
         f.u16(0x5A, "owner_class", &mut self.owner_class);
         f.u16(0x5C, "w5c", &mut self.w5c);
+        f.u8(0x5E, "b5e", &mut self.b5e);
         f.u16(0x60, "owner60", &mut self.owner60);
         f.i16(0x62, "off_x", &mut self.off_x);
         if self.b.k20 == 0x44 {
@@ -1041,7 +1042,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 16, 17, 18, 20, 27, 34, 41, 43, 49, 50, 54, 55, 56, 57, 60, 81, 90, 92, 93, 96, 97]),
-    ("prop", &[0, 1, 2, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 40, 43, 47, 50, 57, 59, 64, 66, 73, 74, 76, 81, 82, 83, 84, 85, 87, 96]),
+    ("prop", &[0, 1, 2, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 40, 42, 43, 47, 50, 53, 57, 59, 64, 66, 73, 74, 76, 81, 82, 83, 84, 85, 87, 96]),
     (
         "item",
         &[
@@ -1058,7 +1059,7 @@ pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
             class::ATTACK_BOX,
         ],
     ),
-    ("effect", &[0x04 / 4, 0x10 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x38 / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x88 / 4]),
+    ("effect", &[0x04 / 4, 0x10 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x2C / 4, 0x38 / 4, 0x54 / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x88 / 4]),
     // a pool D slot has no class word: the diff tool reads +$20 of the slot, which is 0 for the clock's slot (a sprite word)
     ("special", &[0]),
 ];
@@ -1253,6 +1254,7 @@ impl Game {
         f.u8(0x04F8, "dizzy", &mut s.dizzy);
         f.u8(0x04DE, "b4de", &mut s.b4de);
         f.u8(0x07B2, "b7b2", &mut s.b7b2);
+        f.u8(0x07B3, "b7b3", &mut s.b7b3);
         f.u8(0x07B6, "cage_smashed", &mut s.cage_smashed);
         // Spawn interpreter G.$66C: +$04 init, +$08 / +$0C list pointers (indexes in the port).
         f.u8(0x0670, "spawn_init", &mut self.spawn.init);

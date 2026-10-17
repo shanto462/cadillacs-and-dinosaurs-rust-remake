@@ -76,7 +76,8 @@ impl Game {
         match p.m.b(0x80) {
             35 => {
                 self.prop_go_picture(true);
-                self.sound(0x3E);
+                // 0x7BC52..0x7BC56 / 0x7BD76..0x7BD7A: prop_go_picture left d1 = 0xA (moveq #$a,d1); d2 is a leftover register (0 here)
+                self.sound_ex(0x3E, 0xA, 0);
             }
             5 => self.prop_go_picture(false),
             _ => {}

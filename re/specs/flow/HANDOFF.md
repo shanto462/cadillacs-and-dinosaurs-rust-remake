@@ -721,3 +721,25 @@ Tools: `re/harness/link_check.sh [NAME ...]` (`STORY_ONLY=1` stops at the first 
   reaches mode 0x1C and the attract loop (frame 299778 / 305330 now, the later episodes are slower than in the M3-29 list because of the merges of M5-02 and the others, not of this change: the same
   numbers come out of HEAD without it).
 
+
+### M5-04: container debris (pool C class 11) and puffs (pool C class 21) (green)
+
+* **Class 11** (`effect/fx11.rs`, handler 0x934F6, `+$20 = 0x2C`): the init by variant (0x9350A: var 0 a bat piece with its own speeds and the list 0x937D0, var 2 and 4 the two pieces of a
+  thrown container, the lists 0x93872 / 0x9387E; every variant from 6 an animation of the table 0x937AA by variant / 2, a life of `(rand() & 0x3F) + 0x1E` updates in +$58) and four run states by +$05:
+  0 (var 0 / 2 / 4: 60 updates, full bounce, drawn when bit 0 of +$58 is clear), 2 (variants 6 to 0xA: half bounce, the animation ends it, a counting blink by +$5A / +$5C), 4 (from 0xC: half bounce, drawn
+  on odd frames), 6 (a piece with +$5C set by the spawn site: like 4, but when it lies on the floor with its life at 0 it makes a stone weapon, 0x93770: pool E class 0, variant 0x1C, +$5C = 0 for the variant 0x20,
+  1 for 0x22 and above 0x1A, 2 below; `item_spawn_stone`, no `act` so the stone lies at the piece). The floor snap and the bounce run only in the updates where `G.$0 + d7` is odd, **d7 = 0x2F - slot** (the
+  loop counter of the pool update 0x237B2; this is the first handler that reads it). The spawn sites were in the item code already (`container_debris`, `container_two_pieces`, `weapon_break_into_stick`).
+* **Class 21** (`effect/fx21.rs`, handler 0x94672, `+$20 = 0x54`): one handler, two kinds of object. The **maker** (made by 0x94640: `prop_c21_spawn`, `fx_spawn_class21`, the item breaks) reads the block of its
+  variant in the table 0x9484A (word offsets by variant, then `ay`, a word for +$60 and 12 byte records: delay, animation, dx, dy, dz, -, vx, vy, vz, ended by a byte of 0x80 or more; extracted as
+  `TABLES` 0x9484A / 0x962 bytes) and makes one **piece** per record (a new class 21 object in mode 0, sub 4: the maker's position plus the offsets, the maker's `ay` and +$60, vx negated when the maker faces
+  left, the maker variant 2 colours the pieces 0x8B); a delay of 0 makes the next piece in the same frame, the maker frees itself after the last record. A piece (animation table 0x951AC) lives
+  `(rand() & 0x1F) + the maker's +$60` updates (+$5E, new trace field `b5e`), moves by 0x189C, snaps to the floor by 0x12DAC, bounces at half speed (and sets its Y to +$54), is drawn every update while the two
+  counters +$62 / +$63 (8 or 9 by the parity of d7) run down (the pause between drawings grows by one each time), then every second update. The long +$58 of a maker is the record pointer
+  (`owner58` : `owner_class`), +$5C the delay byte (the high byte of `w5c`).
+* **0x12DAC** (`terrain_effect_floor`) does one floor lookup, not five: the code has no loop and no wall test (the earlier comment was wrong, the result is the same). First use here.
+* **Check.** Step mode against all 256 `m516_*` scenarios (`re/out/m5fx/runset.sh`): the seven `cj_*` container jabs (A06: pail, drum, barrel, stone, boulder, statue, tires), `knife_hits_barrel`, `stone_items`
+  (2106 records with the stones made from bonus pieces, A11) and every other container scenario have **0 differences in effect classes 11 and 21**. What is left in those classes comes from unported classes:
+  `gun_hits_barrel` (the muzzle flash 0x96800 and the ricochet spark 0x96B78 take pool C slots, so the pieces sit 3 slots lower in MAME: M5-08), `barrel65_drop` and `biker70_drop` (the enemy classes 65 and 70
+  that break the barrel are frozen). The stones scenarios differ only in the container that MAME's spawn command makes (a MAME-only mutation frame). Pictures: `re/out/shots/m504/*_sheet.png` (rubble of the
+  stone, splinters and dust of the barrel). regress.sh 50 of 52 at 0 (`mp_join` 3, `c14c_mustapha` 8); autoplay reaches mode 0x1C (frame 292578).

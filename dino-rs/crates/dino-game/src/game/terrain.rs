@@ -685,13 +685,10 @@ impl Game {
         floor_snap(b);
     }
 
-    /// 0x12DAC (effects): 5 floor lookups (no wall test) and the snap (effect classes of phase 5).
-    #[allow(dead_code)]
+    /// 0x12DAC (effects): one floor lookup 0x12FE4 (the code has no loop and no wall test 0x1309C; G.$6B4 is counted down once) and the snap.
     pub fn terrain_effect_floor(&mut self, b: &mut Body) {
         b.wall = 0;
-        for _ in 0..5 {
-            self.terrain_floor_lookup(b);
-        }
+        self.terrain_floor_lookup(b);
         floor_snap(b);
     }
 

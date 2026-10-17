@@ -494,6 +494,22 @@ impl Game {
         put_hi(&mut e.b.z, pos.2);
         Some(j)
     }
+
+    /// 0x93770 (the end of a debris piece of pool C class 11 that carries a bonus): a stone weapon (pool E class 0, variant 0x1C, size `size` in
+    /// +$5C: 0 small, 1 medium, 2 large) at the piece. 0x4818 and the three position words only: no `act`, so the stone lies where the piece is
+    /// (the weapon init counts it in G.$4F1). `false` = pool E empty (the carry, nothing is made).
+    pub(crate) fn item_spawn_stone(&mut self, pos: (i16, i16, i16), size: u16) -> bool {
+        let Some(j) = self.items.alloc() else { return false };
+        let n = &mut self.items.slots[j];
+        n.b.live = 1;
+        n.b.k20 = 0;
+        put_hi(&mut n.b.x, pos.0);
+        put_hi(&mut n.b.y, pos.1);
+        put_hi(&mut n.b.z, pos.2);
+        n.b.var26 = 0x1C;
+        n.m.sw(o::W5C, size);
+        true
+    }
 }
 
 #[cfg(test)]

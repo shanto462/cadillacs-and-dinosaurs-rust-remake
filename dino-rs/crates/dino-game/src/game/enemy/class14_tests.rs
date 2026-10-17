@@ -193,11 +193,16 @@ fn the_guard_blocks_by_its_tables() {
 /// 0x9D44 alternates 0xE3 / 0x64 with the toggle bit 7 of G.$43A, 0x9732 0xFC / 0x7B with bit 2.
 #[test]
 fn the_knife_sounds_toggle() {
-    let mut g = game_with(Vec::new());
-    g.snd_9d44();
-    g.snd_9d44();
-    g.snd_9d44();
-    g.snd_9732();
-    g.snd_9732();
+    // the pan table 0xA66A (synthetic: counts 0, 1, 2 ...), read for the pan byte of the object's X
+    let mut g = game_with(vec![(0xA66A, (0..0x30).collect())]);
+    g.cam.s2.cam_x = 0x300;
+    g.snd_9d44(0x300 + 0x18, 0);
+    g.snd_9d44(0x300 + 0x18, 1);
+    g.snd_9d44(0x300 + 0x18, 0);
+    g.snd_9732(0x300 + 0x18);
+    g.snd_9732(0x300 + 0x18);
     assert_eq!(g.w.sounds, vec![0xE3, 0x64, 0xE3, 0xFC, 0x7B]);
+    // d1 = (3 or 4 by facing) << 16 | 0x2000 | pan (3 at X + 0x18), d2 = 0x2400000; 0x9732 d1 = pan, d2 = 0
+    let got: Vec<(u32, u32)> = g.w.snd_reqs.iter().map(|r| (r.d1, r.d2)).collect();
+    assert_eq!(got, vec![(0x3_2003, 0x0240_0000), (0x4_2003, 0x0240_0000), (0x3_2003, 0x0240_0000), (3, 0), (3, 0)]);
 }

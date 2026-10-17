@@ -51,6 +51,8 @@ pub struct Globals {
     pub b4de: u8,
     /// G.$7B2 a burning enemy exists (2).
     pub b7b2: u8,
+    /// G.$7B3 previous G.$7B2 value seen by B53 (0x85346).
+    pub b7b3: u8,
     /// G.$7B6 the cage of the lift was smashed (set by pool B 54, cleared by the area setup 0x20786).
     pub cage_smashed: u8,
     /// G.$4FA rifles seen by the item update this frame (cleared by `objects_update` 0xE934,

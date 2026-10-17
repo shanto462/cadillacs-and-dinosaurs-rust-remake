@@ -241,7 +241,7 @@ impl Game {
             e.b.vx = e.b.vx.wrapping_neg();
         }
         self.enemy_anim(&mut e.b, 0x20);
-        self.snd_96ce();
+        self.snd_96ce(e.b.xi());
         e.b.sub = 8;
     }
 

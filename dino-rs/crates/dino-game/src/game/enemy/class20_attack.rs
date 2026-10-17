@@ -216,7 +216,7 @@ impl Game {
             return;
         }
         e.m.sw(f::SUB, 4);
-        self.snd_9c20();
+        self.snd_9c20(e.b.xi());
         self.enemy_anim(&mut e.b, 0xF);
         self.c20_465e4(e);
     }
@@ -346,7 +346,7 @@ impl Game {
             return;
         }
         e.m.sw(f::SUB, e.m.w(f::SUB).wrapping_add(2));
-        self.snd_9c20();
+        self.snd_9c20(e.b.xi());
         self.enemy_anim(&mut e.b, 0xF);
         self.c20_467b6(e);
     }

@@ -180,26 +180,31 @@ impl Game {
         d4
     }
 
-    /// 0x9D44: the sound of a thrown knife or blade, with a pan from the object's X (the pan and
-    /// volume longs are not compared yet, only the code): 0xE3 / 0x64 by the toggle bit 7 of G.$43A.
-    pub(super) fn snd_9d44(&mut self) {
+    /// 0x9D44: the sound of a thrown knife or blade: 0xE3 / 0x64 by the toggle bit 7 of G.$43A.
+    /// d1 = (3, or 4 when a6's +$24 is nonzero) << 16 | 0x2000 | the pan byte of `x` (a6's +$08), d2 = 0x2400000.
+    pub(super) fn snd_9d44(&mut self, x: i16, facing: u8) {
         let old = self.w.snd_toggle >> 7 & 1 != 0;
         self.w.snd_toggle ^= 1 << 7;
-        self.sound(if old { 0x64 } else { 0xE3 });
+        let mode = if facing != 0 { 4 } else { 3 };
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(if old { 0x64 } else { 0xE3 }, (mode << 16) | 0x2000 | pan, 0x0240_0000);
     }
 
     /// 0x9732: the sound of a blocked hit (0xFC / 0x7B by the toggle bit 2 of G.$43A).
-    pub fn snd_9732(&mut self) {
+    /// d1 = the pan byte of `x` (a6's +$08, mode 0), d2 = 0.
+    pub fn snd_9732(&mut self, x: i16) {
         let old = self.w.snd_toggle >> 2 & 1 != 0;
         self.w.snd_toggle ^= 1 << 2;
-        self.sound(if old { 0x7B } else { 0xFC });
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(if old { 0x7B } else { 0xFC }, pan, 0);
     }
 
-    /// 0x96CE: 0xE4 / 0x65 by the toggle bit 1 of G.$43A.
-    pub(super) fn snd_96ce(&mut self) {
+    /// 0x96CE: 0xE4 / 0x65 by the toggle bit 1 of G.$43A. d1 = the pan byte of `x` (a6's +$08), d2 = 0.
+    pub(super) fn snd_96ce(&mut self, x: i16) {
         let old = self.w.snd_toggle >> 1 & 1 != 0;
         self.w.snd_toggle ^= 1 << 1;
-        self.sound(if old { 0x65 } else { 0xE4 });
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(if old { 0x65 } else { 0xE4 }, pan, 0);
     }
 }
 

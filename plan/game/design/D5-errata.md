@@ -268,3 +268,10 @@ MAME wins over the design text; the design documents themselves are not edited.
   inline). G.$786 is inside the third sweep: MAME shows the word write of 0 at pc 0x4D26 in the first frame of every game task (`re/harness/scripts/flow_g786.txt`, `DINO_WATCH_WRITE=FF8786`: the second game after a
   game over in Episode 1 area 1 starts with G.$786 = 0 and the normal opening). There is no stale start script, and the "quirk kept" of M3-29 does not exist.
 
+
+## From M5-04 (effects class 11 and 21, 2026-10-17)
+
+- D3f class 11 / D5 M5-04 ("9 rubble pieces from a stone break", "chances 2/16, 8/16, 3/16 per piece while `G.$4F1 < 3`"): the piece lists and the chance masks are in the item code 0x294AA (ported before); the pool C handler only decides the end of a piece. A piece with +$5C set (the spawn site's bonus flag) ends as a stone weapon (0x93770: pool E class 0, variant 0x1C, +$5C = size 0 / 1 / 2 by the piece's variant 0x20 / 0x22 and above 0x1A / below) when it lies on the floor after its life of 30 to 93 updates; the size is not rolled there.
+- D3f class 21 ("60 animations: barrel 10 puffs, tires 5, statue 8"): class 21 is a maker plus pieces. The maker reads a list of 12 byte records by variant (22 variants, table 0x9484A), makes one piece per record (the delay is the first byte) and frees itself; the pieces (animation table 0x951AC, 0x30 draw flags) are what the picture shows. There is no sound in the handler.
+- The pool C handlers that alternate by `G.$0 + d7` (class 11 and 21) use d7 = 0x2F - slot, the `dbra` counter of 0x237B2.
+- 0x12DAC (the effects' floor snap) has one floor lookup and no loop (the code between 0x12DB6 and 0x12DC8 counts G.$6B4 down once); 0x12CB4 loops with the wall test.
