@@ -20,10 +20,7 @@ impl Game {
                 _ => unreachable!(),
             }
         } else if e.b.mode == 2 && e.b.sub == 0 && e.m.w(0xA8) == 0xA {
-            self.enemy_hopper_leave(e, i);
-            self.enemy_hopper_position(e);
-            self.enemy_draw_check(&mut e.b, h);
-            self.enemy_monster_register(h);
+            self.enemy_hopper_tail_leave(e, h, i);
         } else {
             // M7 owns other entrances, reactions and hostile AI. Keep the registry
             // until those modes are ported. Snapshot mode holds them as before.
@@ -44,7 +41,7 @@ impl Game {
         e.b.multi_box = true;
         e.b.stun = 10;
         e.b.reaction = 0;
-        for o in [0x79, 0x7A, 0x7D, 0xA4, 0xB8, 0xB9, 0xBA, 0xC1, 0xAC, 0xAD, 0xBB] {
+        for o in [0x79, 0x7A, 0x7B, 0x7D, 0xA4, 0xB8, 0xB9, 0xBA, 0xC1, 0xAC, 0xAD, 0xBB] {
             e.m.sb(o, 0);
         }
         e.b.b72 = 0xC8;
@@ -71,7 +68,7 @@ impl Game {
             let fx = &mut self.effects.slots[i];
             fx.b.live = 1;
             fx.b.k20 = 20 * 4;
-            fx.owner58 = 0xFFFF;
+            fx.owner58 = 0xFFFF; // move.l a6,$58(a0) = 0xFFFF0000 | handle (high word, then $5A)
             fx.owner_class = h;
             fx.b.set_xi_keep(e.b.xi());
             fx.b.set_yi_keep(e.b.yi());
@@ -177,6 +174,30 @@ impl Game {
         e.b.set_xi_keep((e.m.w(0xAE) as i16).wrapping_add(dx));
     }
 
+    /// 0x4E064..0x4E0AE: the mode 2 sub 0 tail for $A8 = 0xA (the leave). The hit flag $B8
+    /// (0x4ECFC, M7 hostile code) is not ported; a leaving Hopper is not hit by this code.
+    fn enemy_hopper_tail_leave(&mut self, e: &mut Enemy, h: Handle, i: usize) {
+        // 0x4E070: $79 counts down; at zero the stun is reset to 10 (move.b #$A,$78).
+        let t = e.m.b(0x79);
+        if t != 0 {
+            e.m.sb(0x79, t.wrapping_sub(1));
+            if t == 1 {
+                e.b.stun = 10;
+            }
+        }
+        // 0x4E082: $7A counts down and skips the dispatch, the position and the floor walk.
+        if e.m.b(0x7A) != 0 {
+            e.m.sb(0x7A, e.m.b(0x7A).wrapping_sub(1));
+        } else {
+            self.enemy_hopper_leave(e, i); // 0x4EC06 through the $A8 dispatch
+            self.enemy_hopper_position(e); // 0x4F3B4
+            self.terrain_collide_free(&mut e.b); // 0x12E20
+        }
+        self.enemy_draw_check(&mut e.b, h); // 0x49CA
+        self.enemy_monster_register(h); // 0x4C0A (jmp)
+        e.m.sb(0xB8, 0); // 0x4E04E: clr.b $b8 after the sub handler
+    }
+
     /// 0x4EC06..0x4EC9E: satisfied roar, restore colour, hop off screen.
     fn enemy_hopper_leave(&mut self, e: &mut Enemy, i: usize) {
         self.enemy_despawn_if_far(e, i);
@@ -262,7 +283,7 @@ mod tests {
                         let h = g.enemies.handle(i);
                         let a = h as usize;
                         let e = &g.enemies.slots[i];
-                        if e.b.live == 0 || !(e.b.k20 == 29 * 4 && e.b.mode == 0 && e.b.sub <= 4 && e.b.var26 >> 8 == 0) {
+                        if e.b.live == 0 || !(e.b.k20 == 29 * 4 && e.b.var26 >> 8 == 0 && ((e.b.mode == 0 && e.b.sub <= 4) || (e.b.mode == 2 && e.b.sub == 0 && e.m.w(0xA8) == 0xA))) {
                             continue;
                         }
                         let mut e = std::mem::take(&mut g.enemies.slots[i]);
