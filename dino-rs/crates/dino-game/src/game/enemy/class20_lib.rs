@@ -5,11 +5,13 @@ use super::{Enemy, off::*};
 use crate::game::{Game, Handle};
 
 impl Game {
-    /// 0xA062-like sound 0x9C20 for an object that is no player: 0xE0 / 0xE1 (toggle bit 6 of G.$43A).
-    pub(super) fn snd_9c20(&mut self) {
+    /// 0x9C20 for an object that is no player: 0xE0 / 0xE1 (toggle bit 6 of G.$43A), d1 = the pan byte of `x`
+    /// (a6's +$08, mode 0). d2 is not set by the routine: it is whatever register d2 held (not modelled yet, 0 here).
+    pub(super) fn snd_9c20(&mut self, x: i16) {
         let old = self.w.snd_toggle >> 6 & 1 != 0;
         self.w.snd_toggle ^= 1 << 6;
-        self.sound(if old { 0xE0 } else { 0xE1 });
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(if old { 0xE0 } else { 0xE1 }, pan, 0);
     }
 
     // ------------------------------------------------------------------ action 4: the choice machine
@@ -85,7 +87,7 @@ impl Game {
             self.enemy_step(&mut e.b);
             return;
         }
-        self.snd_9c20();
+        self.snd_9c20(e.b.xi());
         e.b.step = 4;
         self.enemy_anim(&mut e.b, 9);
         self.c20_46184(e);
@@ -216,7 +218,7 @@ impl Game {
         e.b.step += 2;
         self.c20_46a80(e);
         self.c20_46d42(e);
-        self.snd_9c20();
+        self.snd_9c20(e.b.xi());
         self.enemy_anim(&mut e.b, 0xF);
         self.c20_46310(e);
     }

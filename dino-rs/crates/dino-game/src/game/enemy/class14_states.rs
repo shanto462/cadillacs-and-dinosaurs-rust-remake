@@ -385,7 +385,7 @@ impl Game {
         if e.b.param_b != 0x2F {
             return;
         }
-        self.snd_9d44();
+        self.snd_9d44(e.b.xi(), e.b.facing);
         let Some(j) = self.enemies.alloc() else { return };
         let n = &mut self.enemies.slots[j];
         n.b.set_state(0);
