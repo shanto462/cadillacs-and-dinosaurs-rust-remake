@@ -230,6 +230,13 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x80518, 2856, "B29 block tables: dest addrs, phase table ptrs, phase ptrs, tile codes (0x804CA)"),
     // Pool B class 43 (wall torches, 0x83ACA): 7 records of 2 x 2 flames, 4 phases.
     (0x83B4E, 92, "B43 torch tables: dest addrs, phase ptrs, tile codes (0x83B20)"),
+    // Pool B class 42 (red sewer door burst, 0x83A0A, M8-22)
+    (0x83A76, 48, "prop B42: tile codes (0x83A76)"),
+    (0x83AA6, 20, "prop B42: scroll2 destination addresses (0x83AA6)"),
+    // Pool B class 53 (fire glow, 0x85306, M8-22)
+    (0x8534C, 8, "prop B53: G.$7B2 offset table (0x8534C)"),
+    (0x8537A, 216, "prop B53: 27 palette table pointers and destinations (0x8537A)"),
+    (0x85458, 336, "prop B53: 27 pointer tables (0x85458)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {
@@ -280,6 +287,14 @@ pub fn extract(rom: &Rom) -> EnemyData {
     for k in 0..8u32 {
         let p = rom.u32(0x45C6E + 4 * k);
         extra.push((p, (p..p + 32).map(|x| rom.u8(x)).collect()));
+    }
+    // Pool B class 53: 27 palette sets x 3 variants (16 colours each = 32 bytes).
+    for i in 0..27u32 {
+        let tbl_ptr = rom.u32(0x8537A + 8 * i);
+        for j in 0..3u32 {
+            let p = rom.u32(tbl_ptr + 4 * j);
+            extra.push((p, (p..p + 32).map(|x| rom.u8(x)).collect()));
+        }
     }
     d.t.blobs.extend(extra);
     d

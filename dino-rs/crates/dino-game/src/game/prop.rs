@@ -135,6 +135,11 @@ mod b76;
 mod b28_29;
 #[path = "prop/b43.rs"]
 mod b43;
+// Episode 8 doors, pipes data and fire glow (M8-22): B42 (0x83A0A) and B53 (0x85306).
+#[path = "prop/b42.rs"]
+mod b42;
+#[path = "prop/b53.rs"]
+mod b53;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -196,12 +201,14 @@ impl Game {
                 32 => self.prop_class32(&mut p, i),
                 35 => self.prop_b35(&mut p, i),
                 40 => self.prop_b40(&mut p, h, i),
+                42 => self.prop_b42(&mut p, i),
                 36 => self.prop_b36(&mut p, i),
                 37 => self.prop_b37(&mut p, i),
                 38 => self.prop_b38(&mut p, i),
                 43 => self.prop_b43(&mut p, i),
                 47 => self.prop_b47(&mut p, i),
                 50 => self.prop_b50(&mut p, h, i),
+                53 => self.prop_b53(&mut p, i),
                 76 => self.prop_b76(&mut p, i),
                 66 => self.prop_class66(&mut p, i),
                 67 => self.prop_class67(&mut p, i),
