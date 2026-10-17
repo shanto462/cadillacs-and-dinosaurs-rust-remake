@@ -23,6 +23,8 @@ const HITBOX_REGION: (u32, u32) = (0x100000, 0x11D220);
 /// object's init code (stored into obj+$40); the comment names that code.
 pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x438F2, // Vice T. intro, 0x425B6 (M5-09)
+    0x2FBE2, // Vice T. hit reactions (table 0x2E68C, +$84 = 0x30)
+    0x30FB0, // Vice T. held by a player (table 0x2E724, +$84 = 0x30)
     0x34892, // enemy family init 0x3388A, variant 0 (palette 13)
     0x34B90, // same family, palette 14
     0x34E7C, // same family, palette 26
