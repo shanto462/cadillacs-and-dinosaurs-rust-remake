@@ -657,3 +657,16 @@ Tools: `re/harness/link_check.sh [NAME ...]` (`STORY_ONLY=1` stops at the first 
 * **Review aid.** `debug::next_area` (F6, `--area`) enters the lift through the fade path (mode 1) and clears the fade mask of a direct start: the hard cut (mode 0x12) left the cage over the HUD.
 * Gates: `cargo build`, `cargo test` (369 in dino-game, 10 ignored) green, `regress.sh` 49 of 52 at 0, `mp_join` 3, `armed` 4, `c14c_mustapha` 8 (the baseline).
 
+### M2-23: the rank events (green; most of the wiring was already in, now checked)
+
+* **Wired, each checked against the 68000 code and its callers.** 0x18410 (join, speed + 3 only in mode 0xC: `join.rs` 0x6E98 and `select.rs` 0x6E92), 0x18566 with -2 (continue 0x7468, `cont.rs`), +2 (0xACE0 / 0xACD0), +1 (0xACEE, boss defeated), 0x184E2 with 0x1843C
+  (0x1BFF0, 0x1C020) and 0x1842C (0x1C026), 0x1843C (0x6BDC, extra life), 0x183E4 (0x1C0F4 / 0x1F276), 0x17F8A (0xA9B8 game start, 0x99F92 demo), 0x1800E, 0x18048, 0x182A2 (spawn command, kill all, the calm period), 0x1827A (system task). Every caller of the original has its call. G.$602 is
+  written only by the demo (0x9A0BC, ported) and by the debug mode object (0x88BA4, B69, not ported): there is no freeze in normal play. G.$4DD is the script flag (`script.rs`, read by `rank_tick`).
+* **The TEMP of `rank_tick` is gone** (it started the rank system on its own when nothing had: `Rank::started`). The flow does it (0xA978 and the demo setup); a snapshot load takes the rank fields as they are.
+* **G.$4F6.** `m223_free_wait` (new MAME recording, `re/harness/scripts/m223_free_wait.txt`: free play, start at record 2600 in the profile cards, counter 2490): MAME clears G.$4F6 in the pass that creates the game task (record 2618) and
+  0x17F8A runs two records later (rank 13, speed 2, the first band), so a long wait never lowers the start rank. The port equals MAME for G.$4F6, rank, speed, rng and aggression from record 2590 to 2640 (`a_long_wait_does_not_change_the_starting_rank`).
+* **Natural play.** The whole-episode recordings have the rank events of deaths, continues and joins without a rank hold: `ep7_3p` (38,000 records), `ep1_3p`, `ep4_3p` in step mode: every difference of the rank fields (G.$5F0, G.$5EE, G.$5F6, G.$5F8, G.$604, G.$606, G.$608, aggression) is in a MAME lag record (2303, 2560, 4401, 8161 ...) or follows the
+  boss death of an unported placeholder (`ep4_3p` 26636: the +1 comes a record later). The m515 respawn probes (`s1`, `s8`, `s9`, `s10`) hold the rank, so they say nothing about it.
+* Unit tests (`rank.rs`): speed clamps and the countdown restart, join in modes 4 and 0xC, the drop by difficulty 7 to 0 and the 3 of a second miss within 600 frames, the calm period, a miss with a life left, the game over, the hit lockout, the wait counter (pool, free play, wrap), the start rank by difficulty and the speed bits.
+* Gates: `cargo build`, `cargo test` (392 in dino-game, 10 ignored) green, `regress.sh` 50 of 52 at 0, `mp_join` 3, `c14c_mustapha` 8.
+

@@ -423,7 +423,6 @@ impl Game {
         self.sprites.clear();
         self.rank.dip = self.flow.dip.dip_b;
         self.rank_game_start(); // 0x17F8A
-        self.rank.started = true;
         self.load_all_palettes(); // 0x8A44
         self.brightness_full(); // 0x892C
         self.flow.sub2 = 1;
@@ -441,7 +440,6 @@ impl Game {
         self.sprites.clear();
         self.rank.dip = self.flow.dip.dip_b;
         self.rank_game_start(); // 0x17F8A
-        self.rank.started = true;
         self.flow_stage_setup(); // 0xA9BE, sets mode 4
     }
 

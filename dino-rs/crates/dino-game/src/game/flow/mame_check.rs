@@ -1531,6 +1531,57 @@ fn wait_counter_matches_mame() {
     assert!(bad.is_empty(), "{} records differ, first {:?}", bad.len(), &bad[..bad.len().min(3)]);
 }
 
+/// M2-23, the wait counter G.$4F6 and the starting rank (0x17F8A, D4b s2): `m223_free_wait` is free play (G.$46B poked to 1 at power frame 100) with a start
+/// pressed at record 2600, 2490 counts into the wait (the second band of table 0x180B4, 720 to 3599: a rank two lower). The system task clears the counter
+/// (0x1827A with G.$4CC set) in the pass that creates the game task, 18 records before the game task runs 0x17F8A, so the band is always the first one: MAME
+/// shows G.$4F6 = 0 at record 2618 and the rank 13 (a roll of the first band) at 2620. The port equals it in every record from the start to the select: the
+/// counter, the rank, the rank speed, the random number and the mode (the three layers and the sprites are those of the press start in the profile cards).
+/// Recording: `DINO_CLOCK=video DINO_BOOT=re/harness/scripts/attract.txt DINO_SYNC=vblank:1 DINO_POKES=re/harness/pokes/freeplay_power.txt
+/// re/harness/record.sh re/harness/scripts/m223_free_wait.txt m223_free_wait 3000`.
+#[test]
+fn a_long_wait_does_not_change_the_starting_rank() {
+    let Some(a) = assets() else { return };
+    let trace = "../../../re/out/traces/m223_free_wait.mame.trc";
+    if !Path::new(trace).exists() {
+        eprintln!("mame_check: {trace} is missing (see the doc of this test), skipped");
+        return;
+    }
+    let mut bad: Vec<(i32, &'static str, u16, u16)> = Vec::new();
+    let mut seen = Vec::new();
+    let (g, _) = compare_power_on_with(
+        a,
+        trace,
+        2640,
+        |_| [0; 3],
+        |k, g, _| {
+            if k == 99 {
+                g.flow.front.sys.free_play = true; // the poke
+            }
+            g.w.system = 8 | (2600..=2605).contains(&k) as u8;
+        },
+        |k, g, ram, _| {
+            let w = |a: u32| ram16(ram, a);
+            for (name, m, p) in [
+                ("G.$4F6 wait", w(0xFF84F6), g.rank.w4f6),
+                ("G.$5F0 rank", w(0xFF85F0), g.w.rank),
+                ("G.$5F6 speed", w(0xFF85F6), g.rank.speed),
+                ("G.$14 rng", w(0xFF8014), g.w.rng),
+                ("G.$5EC aggression", w(0xFF85EC), g.rank.aggression),
+            ] {
+                if k >= 2590 && m != p {
+                    bad.push((k, name, m, p));
+                }
+            }
+            if k == 2599 {
+                seen.push(g.rank.w4f6);
+            }
+        },
+    );
+    assert_eq!(seen, [2490], "the counter was 2490 when the start was pressed");
+    assert!(bad.is_empty(), "{} differences, first {:?}", bad.len(), &bad[..bad.len().min(4)]);
+    assert_eq!((g.w.rank, g.rank.speed, g.rank.w4f6), (13, 2, 0));
+}
+
 /// F25, the attract state is kept across games (D4d s3.1, probe `d4d-b16/go-attract`, no recording
 /// here): a game over in state 0 (the profile cards are up) restarts the attract task, which shows the
 /// ranking once (0x97C94), then runs the routine of the same state 0 again (title, profile cards,

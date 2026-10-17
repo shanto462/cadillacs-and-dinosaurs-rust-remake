@@ -234,3 +234,10 @@ MAME wins over the design text; the design documents themselves are not edited.
 ## From M3-22 (Episode 8 sewer waterfall, 2026-10-17)
 
 - D5 M3-22 and D3e part 3 s5.2 ("block tables (0x90C038 and others)"): 0x90C038 and 0x90C438 are scroll2 destinations, not ROM tables. The picture pointer tables are 0x821E8 (B36 var 0, 4 code words), 0x8229C (B36 any other var, 20 code words), 0x823EE destinations and 0x823FA picture tables (B37, two strips of 16), 0x82880 destinations and 0x82898 picture tables (B38, 80 code words; an odd var reads that picture backwards in five columns of 16). B37's spawn var is already the byte offset 0, 4 or 8. B38's spawn var is 0..5. M3-22.
+
+## From M2-23 (the rank events, 2026-10-17)
+
+- X-rank-crosscheck "Missing from rank.rs" 1 to 5 (no writer of G.$4F6, no death, join and continue calls, G.$602, G.$4DD): all of them are wired by now (see `re/specs/flow/HANDOFF.md`, M2-23). G.$602 has two writers in the whole ROM, the demo setup (0x9A0BC) and the debug mode object (0x88BA4); normal play never freezes the rank system.
+- D4b s2 and X-rank-crosscheck row 1 (G.$4F6 band): measured with `m223_free_wait` (free play, a start after a wait of 2490 in the profile cards): the rank at the start is a roll of the first band (13), because the system task clears G.$4F6 before 0x17F8A reads it. The three bands of 0x180B4 are never used.
+- D2b s2.2 ("M: rank_death, rank 13 to 10 at the first death, which is minus 3"): the factory difficulty drops 4, a second miss within 600 frames (G.$606) 3; the first death of a recording that already had a miss shows the 3. Natural play in `ep7_3p` equals MAME for every death, continue and join of the 3 player run (differences only in MAME lag records).
+

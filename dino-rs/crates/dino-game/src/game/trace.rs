@@ -1165,9 +1165,6 @@ impl Game {
         f.u8(0x04E9, "time_sec", &mut r.time_sec);
         f.u8(0x04EA, "time_div", &mut r.time_div);
         f.u8(0x04EB, "time_lock", &mut r.time_lock);
-        if f.loading() {
-            r.started = true;
-        }
         // Enemy-side globals (spawn.rs).
         let s = &mut self.spawn.g;
         f.u8(0x043A, "snd_toggle", &mut self.w.snd_toggle);

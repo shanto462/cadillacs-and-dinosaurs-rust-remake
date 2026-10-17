@@ -1,0 +1,4 @@
+# M2-23: free play (G.$46B = 1 at power frame 100, re/harness/pokes/freeplay_power.txt), the machine waits 2600 frames in the attract loop (G.$4F6 counts, the third
+# band of table 0x180B4 starts at 3600 and the second at 720), then player 1 presses start in the profile cards.
+# Video clock, power-on recording: record k = video frame k + 2, a line f reaches the game at record f.
+2600-2605:S

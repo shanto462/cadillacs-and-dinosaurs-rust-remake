@@ -408,7 +408,6 @@ impl Game {
             // 0xFF2E, 0xA836: the HUD score flags, G.$755A .., the scroll controller structs are zero in a fresh game
             self.rank.dip = self.flow.dip.dip_b; // 0x17F8A reads G.$777B
             self.rank_game_start(); // 0x17F8A (one rand())
-            self.rank.started = true;
             self.flow.b4e5 = self.flow.extend_sel(); // 0x6B88
             self.flow.b4d7 = 1; // 0x99F9E: no continue
             for i in 0..3 {

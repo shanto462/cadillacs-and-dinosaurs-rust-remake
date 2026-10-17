@@ -39,8 +39,6 @@ pub struct Rank {
     pub time_sec: u8,
     pub time_div: u8,
     pub time_lock: u8,
-    /// Set once the game-start / stage-start rank setup ran (see `rank_tick`).
-    pub started: bool,
 }
 
 /// 0x187B8: frames between automatic rank-ups, by rank speed.
@@ -159,14 +157,6 @@ impl Game {
 
     /// 0x186CC rank tick (first call of the game frame).
     pub fn rank_tick(&mut self) {
-        if !self.rank.started {
-            // TEMP until the flow port calls these at game start / stage start (0x17F8A, 0x1800E).
-            self.rank.started = true;
-            self.rank.dip = self.flow.dip.dip_b;
-            self.rank_game_start();
-            self.rank_stage_start();
-            self.rank_time_area_start();
-        }
         if self.rank.freeze != 0 || self.w.scripted != 0 || self.spawn.g.b4d5 != 0 {
             return;
         }
@@ -515,6 +505,182 @@ mod tests {
         g.rank.time_sec = 0x20;
         g.rank_respawn_time();
         assert_eq!((g.rank.time_min, g.rank.time_sec), (3, 0x50));
+    }
+
+    /// The tables are read from the ROM set (the tests skip without `dino.zip`).
+    fn rom_game() -> Option<Game> {
+        static A: std::sync::OnceLock<Option<&'static AssetPack>> = std::sync::OnceLock::new();
+        let a = *A.get_or_init(|| {
+            let path = std::path::Path::new("../../../dino.zip");
+            let path = if path.exists() { path } else { std::path::Path::new("../../dino.zip") };
+            path.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(path).expect("the ROM set loads"))))
+        });
+        a.map(Game::new).or_else(|| {
+            eprintln!("test skipped: dino.zip is absent");
+            None
+        })
+    }
+
+    /// 0x18566 (every rank event ends in it): the speed moves by d and stays in 0 to 15, a change restarts the rank-up
+    /// countdown (G.$5F8 = 0), a result below 0 clears the speed and leaves the countdown, and a frozen rank system (G.$602)
+    /// ignores the call.
+    #[test]
+    fn the_rank_speed_stays_between_0_and_15() {
+        let mut g = game();
+        g.rank.speed = 14;
+        g.rank.timer = 77;
+        g.rank_speed_add(3);
+        assert_eq!((g.rank.speed, g.rank.timer), (15, 0), "capped at 15, the countdown restarts");
+        g.rank.timer = 77;
+        g.rank_speed_add(-2);
+        assert_eq!((g.rank.speed, g.rank.timer), (13, 0));
+        g.rank.speed = 1;
+        g.rank.timer = 77;
+        g.rank_speed_add(-2);
+        assert_eq!((g.rank.speed, g.rank.timer), (0, 77), "below 0: cleared, the countdown is left alone (0x18576)");
+        g.rank.freeze = 1;
+        g.rank.speed = 5;
+        g.rank_speed_add(3);
+        assert_eq!(g.rank.speed, 5, "G.$602 freezes the rank system");
+    }
+
+    /// 0x18410, the join: the speed + 3 only in the play mode 0xC (G.$4D0), not in the character select (mode 4); frozen: nothing.
+    /// The join task (0x6E98) and the in-level quick select (0x6E92) call it with the mode of the game task.
+    #[test]
+    fn a_join_raises_the_rank_speed_only_in_play() {
+        let Some(mut g) = rom_game() else { return };
+        g.rank.speed = 4;
+        g.rank_event_18410(4);
+        assert_eq!(g.rank.speed, 4, "the character select");
+        g.rank_event_18410(0xC);
+        assert_eq!(g.rank.speed, 7);
+        g.rank.freeze = 1;
+        g.rank_event_18410(0xC);
+        assert_eq!(g.rank.speed, 7);
+    }
+
+    /// 0x184E2 (a miss, D2b S1): the rank falls by 7, 6, 5, 4, 3, 2, 1, 0 for the difficulties 0 to 7, then 0x1843C adds its
+    /// part (the heroes' lives decide; a table entry of 0 takes 3 more), a second miss within the 600 frames of G.$606 falls by 3 instead,
+    /// the window and the calm period (G.$608 = 0x4B0, the aggression held at 0) start, and the rank never goes below 0.
+    #[test]
+    fn a_miss_drops_the_rank_by_the_difficulty() {
+        let Some(mut g) = rom_game() else { return };
+        for (dip, drop) in (0u8..8).zip([7u16, 6, 5, 4, 3, 2, 1, 0]) {
+            g.rank.dip = dip;
+            g.w.rank = 20;
+            g.rank.w606 = 0;
+            g.rank_event_continue(0, 3, 1, 0);
+            let mut want = Game::new(g.assets);
+            want.w.rank = 20 - drop;
+            want.rank_event_1843c(3, 1, 0);
+            assert_eq!(g.w.rank, want.w.rank, "difficulty {dip}: the drop {drop}, then 0x1843C");
+            assert_eq!((g.rank.w606, g.rank.calm), (600, 0x4B0), "the window and the calm period start");
+        }
+        // the second miss within the window: 3 instead of the 4 of difficulty 3
+        g.rank.dip = 3;
+        g.w.rank = 20;
+        g.rank.w606 = 0;
+        g.rank_event_continue(0, 3, 1, 0);
+        let first = g.w.rank;
+        g.w.rank = 20;
+        g.rank_event_continue(0, 3, 1, 0);
+        assert_eq!(g.w.rank, first + 1, "the second miss within 10 seconds drops by 3, the first by 4");
+        g.rank.w606 = 0;
+        g.rank.dip = 0;
+        g.w.rank = 2;
+        g.rank_event_continue(0, 3, 1, 0);
+        assert!(g.w.rank < 0x20, "the word does not wrap below 0: {}", g.w.rank);
+    }
+
+    /// 0x1842C, the game over: the rank speed - 1 (the call stops at a frozen rank system).
+    #[test]
+    fn a_game_over_lowers_the_rank_speed_by_one() {
+        let Some(mut g) = rom_game() else { return };
+        g.rank.speed = 6;
+        g.rank_event_1842c();
+        assert_eq!(g.rank.speed, 5);
+        g.rank.freeze = 1;
+        g.rank_event_1842c();
+        assert_eq!(g.rank.speed, 5);
+    }
+
+    /// 0x184E2 lowers the rank speed too when the dying hero still had a life (+$A3 not 0), by the row of the difficulty and the number of players
+    /// (0x187F4, a random pick between two columns with three players).
+    #[test]
+    fn a_miss_with_a_life_left_lowers_the_rank_speed() {
+        let Some(mut g) = rom_game() else { return };
+        g.rank.dip = 3;
+        g.rank.speed = 8;
+        g.w.players_minus_one = 0;
+        g.rank_event_continue(0, 3, 1, 0);
+        assert_eq!(g.rank.speed, 8, "no life left: no change of the speed");
+        g.rank_event_continue(1, 3, 1, 0);
+        assert!(g.rank.speed < 8, "a life left: the speed falls");
+        let one = g.rank.speed;
+        g.rank.speed = 8;
+        g.w.players_minus_one = 1;
+        g.rank_event_continue(1, 3, 1, 0);
+        assert!(g.rank.speed >= one && g.rank.speed < 8, "two players: a smaller drop than one player");
+    }
+
+    /// 0x183E4, a hit that the hero recovers from: the rank - 1 (not below 0) and a lockout of 600 frames in G.$604 in which another hit
+    /// changes nothing; the lockout counts down in the rank tick.
+    #[test]
+    fn a_hit_lowers_the_rank_once_every_ten_seconds() {
+        let Some(mut g) = rom_game() else { return };
+        g.w.rank = 10;
+        g.rank_event_183e4();
+        assert_eq!((g.w.rank, g.rank.w604), (9, 600));
+        g.rank_event_183e4();
+        assert_eq!(g.w.rank, 9, "locked out");
+        g.rank.w604 = 0;
+        g.w.rank = 0;
+        g.rank_event_183e4();
+        assert_eq!(g.w.rank, 0);
+    }
+
+    /// 0x1827A: G.$4F6 counts the frames the machine waits with credits in the common pool or in free play, a game clears it, and
+    /// the count wraps from 0xFFFF to 0x8000. The factory settings (separate chutes) leave the pool at 0: the counter stays 0.
+    #[test]
+    fn the_wait_counter_counts_only_with_a_pool_credit_or_free_play() {
+        let mut g = game();
+        for _ in 0..5 {
+            g.rank_waited_tick(false, 0);
+        }
+        assert_eq!(g.rank.w4f6, 0, "nothing in the pool");
+        for _ in 0..5 {
+            g.rank_waited_tick(false, 0x0100);
+        }
+        assert_eq!(g.rank.w4f6, 5);
+        g.rank_waited_tick(true, 0x0100);
+        assert_eq!(g.rank.w4f6, 0, "a game clears it");
+        g.rank.w4f6 = 0xFFFF;
+        g.rank_waited_tick(false, 1);
+        assert_eq!(g.rank.w4f6, 0x8000, "the wrap");
+    }
+
+    /// 0x17F8A: the start rank of the first stage by difficulty (the first band: 6, 8, 10, 12, 14, 16, 18, 18, plus a roll of +1 or +2) and
+    /// the rank speed from the settings (bits 3 and 4, plus 1); the pending rank-ups and rank-downs and the freeze are cleared.
+    #[test]
+    fn the_game_start_rank_follows_the_difficulty_and_the_speed_bits() {
+        let Some(mut g) = rom_game() else { return };
+        let mut start = Vec::new();
+        for dip in 0u8..8 {
+            g.rank.dip = dip | 0x08; // timer level 1
+            g.rank.ups = 3;
+            g.rank.downs = 2;
+            g.rank.freeze = 1;
+            g.rank.w4f6 = 0;
+            g.rank_game_start();
+            assert_eq!((g.rank.ups, g.rank.downs, g.rank.freeze), (0, 0, 0));
+            assert_eq!(g.rank.speed, 2, "timer level 1 starts at speed 2");
+            start.push(g.w.rank);
+        }
+        let first = [6u16, 8, 10, 12, 14, 16, 18, 18];
+        for (d, (&s, &f)) in start.iter().zip(first.iter()).enumerate() {
+            assert!(s >= f.saturating_sub(2) && s <= f + 2, "difficulty {d}: rank {s} from {f}");
+        }
+        assert!(start[0] < start[7], "easy starts lower than hard");
     }
 
     #[test]
