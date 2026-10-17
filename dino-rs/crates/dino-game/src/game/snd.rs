@@ -174,8 +174,17 @@ impl Game {
             }
             r => panic!("unknown player sound routine {r:#x}"),
         };
+        // d1: the mode (the object's +$24 facing picks the second value) in the high word, then the word of the
+        // routine (the low byte is replaced by the pan byte): 0x986C 0x20xx, 0x98CC 0x06xx, 0x992C 0x7 (no word).
+        let facing_right = self.players[i].b.facing != 0;
+        let hi = match routine {
+            0x986C => (if facing_right { 4 } else { 3 }) << 16 | 0x2000,
+            0x98CC => (if facing_right { 6 } else { 5 }) << 16 | 0x600,
+            0x992C => 7 << 16,
+            _ => 0,
+        };
         let pan = self.snd_pan_x(x) as u32;
-        self.sound_ex(code as u16, pan, d2);
+        self.sound_ex(code as u16, hi | pan, d2);
     }
 
     /// 0x9796 (knockdown / landing thud of players and enemies): 0x72 / 0xF8, toggle bit 3. The code
@@ -187,22 +196,34 @@ impl Game {
         self.sound_ex(code, pan, 0);
     }
 
-    /// 0xA354 (code 0x79) / 0x97D2 (code 0x58): an enemy's death voice. The hit library picks
-    /// 0x97D2 when `+$63` is positive (`tst.b $63(a6) ; bgt`), 0xA354 otherwise.
-    pub fn snd_enemy_death(&mut self, b63: u8) {
-        self.sound(if (b63 as i8) > 0 { 0x58 } else { 0x79 });
+    /// 0xA354 (code 0x79, d1 = (3, or 4 when +$24 is nonzero) << 16 | 0x2000 | pan, d2 = 0x2400000) and 0x97D2 (code
+    /// 0x58, d1 = (5, or 6) << 16 | 0xA00 | pan, d2 = 0x5608D0): an enemy's death voice. The hit library picks
+    /// 0x97D2 when `+$63` is positive (`tst.b $63(a6) ; bgt`), 0xA354 otherwise. `x` and `facing` are a6's +$08 and +$24.
+    pub fn snd_enemy_death(&mut self, b63: u8, x: i16, facing: u8) {
+        let pan = self.snd_pan_x(x) as u32;
+        if (b63 as i8) > 0 {
+            let mode = if facing != 0 { 6 } else { 5 };
+            self.sound_ex(0x58, (mode << 16) | 0xA00 | pan, 0x0056_08D0);
+        } else {
+            let mode = if facing != 0 { 4 } else { 3 };
+            self.sound_ex(0x79, (mode << 16) | 0x2000 | pan, 0x0240_0000);
+        }
     }
 
     /// 0x962A: the hit sound of an attack record (`sound` = record byte 4, a byte offset into
     /// the table 0x96AA of 3-byte entries: toggle bit number, code, code). The original toggles
     /// the bit in a register copy of G.$43C only, so G.$43C decides and never changes.
-    pub fn snd_hit(&mut self, sound: u8) {
+    /// d1 = (3, or 4 when the object at a6 faces right: +$24 nonzero) << 16 | 0x2000 | the pan byte of the
+    /// attacker's X (a2, +$08), d2 = 0x15000000. `ax` is a2's X, `victim_facing` is a6's +$24.
+    pub fn snd_hit(&mut self, sound: u8, ax: i16, victim_facing: u8) {
         let off = sound as i8 as i32 as u32; // ext.w d0 (then used as a word offset)
         let t = &self.assets.text;
         let bit = t.u8(0x96AA, off) as u32;
         let set = (self.w.snd_hit_toggle as u32 >> bit) & 1 != 0;
         let code = t.u8(0x96AA, off + 1 + set as u32);
-        self.sound(code as u16);
+        let mode = if victim_facing != 0 { 4 } else { 3 };
+        let pan = self.snd_pan_x(ax) as u32;
+        self.sound_ex(code as u16, (mode << 16) | 0x2000 | pan, 0x1500_0000);
     }
 
     /// 0xA4CA: extra life jingle.
@@ -280,12 +301,17 @@ mod tests {
     #[test]
     fn hit_sound_picks_the_code_by_the_toggle_word() {
         let t = vec![0, 0, 0, 1, 0x11, 0x22, 2, 0x33, 0x44];
-        let mut g = game_with_tables(vec![(0x96AA, t)]);
-        g.snd_hit(3);
+        let mut a = AssetPack::default();
+        a.text = TextData { blobs: vec![(0x96AA, t)] };
+        a.enemy.t = dino_assets::enemy::ByteTables { blobs: vec![(0xA66A, (0..0x30).collect())] };
+        let mut g = Game::new(Box::leak(Box::new(a)));
+        g.snd_hit(3, 0, 0);
         g.w.snd_hit_toggle = 0b10;
-        g.snd_hit(3);
-        g.snd_hit(6);
+        g.snd_hit(3, 0, 0);
+        g.snd_hit(6, 0, 0);
         assert_eq!(g.w.sounds, vec![0x11, 0x22, 0x33]);
+        // d1 = (3 or 4) << 16 | 0x2000 | pan, d2 = 0x15000000 (the facing of the victim picks 3 or 4)
+        assert_eq!(g.w.snd_reqs.iter().map(|r| (r.d1, r.d2)).collect::<Vec<_>>(), vec![(0x3_2000, 0x1500_0000); 3]);
     }
 
     /// 0xA502: the voice bank of each player from the players present (4, 8, 0x10 per player).

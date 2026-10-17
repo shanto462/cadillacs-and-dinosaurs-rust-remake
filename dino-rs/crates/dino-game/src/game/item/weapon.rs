@@ -428,7 +428,7 @@ impl Game {
     /// `atk`, 8 frames without floor test (+$B2), the thrower lets go (+$B6 = 0), animation `anim`
     /// and flight state `sub`. Types 12..14 also clear +$25 (`clear_draw`).
     fn weapon_throw(&mut self, it: &mut Item, h: Handle, p: usize, table: u32, atk: u8, anim: u16, sub: u8, clear_draw: bool) {
-        self.item_snd_9d44();
+        self.item_snd_9d44(it.b.xi(), it.b.facing);
         self.weapon_throw_origin(it, p);
         let t = &self.assets.enemy.t;
         let row = table + if it.m.b(A8) != 0 { 8 } else { 0 };
@@ -873,7 +873,7 @@ impl Game {
         let pos = (it.b.xi().wrapping_add(dx), it.b.yi(), it.b.zi());
         if let Some(j) = self.item_spawn_effect(0x2C, pos) {
             self.effects.slots[j].b.var26 = 0;
-            self.item_snd_9e60();
+            self.item_snd_9e60(it.b.xi());
         }
         it.b.anim_table = 0x273FE;
         it.m.sw(KIND, 0x202);

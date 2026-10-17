@@ -64,7 +64,7 @@ impl Game {
     fn c10_3c3a2(&mut self, e: &mut Enemy, h: Handle) {
         if e.b.param_b != 0 {
             e.b.param_b = 0;
-            self.enemy_snd_a062();
+            self.enemy_snd_a062(e.b.xi());
         }
         if Self::enemy_stuck_check(e) {
             return self.c10_3c3e6(e, h);

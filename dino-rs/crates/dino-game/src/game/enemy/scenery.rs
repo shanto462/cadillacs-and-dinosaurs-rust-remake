@@ -656,7 +656,7 @@ impl Game {
             e.m.sw(o::SOUND_T, t);
             if t == 0 {
                 e.m.sw(o::SOUND_DONE, 1);
-                self.snd_enemy_death(0); // 0xA354
+                self.snd_enemy_death(0, e.b.xi(), e.b.facing); // 0xA354
             }
         }
         // 0x57B6E

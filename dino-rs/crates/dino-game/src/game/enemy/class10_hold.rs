@@ -357,7 +357,8 @@ impl Game {
         e.b.hitstop = rec.hit_stop;
         p.b.b9a = rec.b7;
         if rec.sound != 0 {
-            self.snd_hit(rec.sound);
+            let (ax, vf) = (e.b.xi(), e.b.facing);
+            self.snd_hit(rec.sound, ax, vf);
         }
         self.player_drop_check(pi);
         self.player_power_factor(pi);

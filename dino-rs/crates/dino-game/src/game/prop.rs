@@ -314,7 +314,8 @@ impl Game {
         }
         self.players[i].b.hitstop = r.hit_stop;
         if r.sound != 0 {
-            self.snd_hit(r.sound); // 0x962A
+            let (ax, vf) = (self.body(a2).xi(), self.body(a2).facing);
+            self.snd_hit(r.sound, ax, vf); // 0x962A
         }
         self.player_add_score(i, r.score); // 0xFFC8
         self.spawn_hit_spark(a2, a3, ha, hb, r.spark); // 0x12720 (bra)

@@ -362,7 +362,7 @@ impl Game {
                 it.b.vy = it.b.vy.wrapping_neg();
                 it.m.sb(B9, 5);
                 it.b.wall = 0;
-                self.item_snd_9fb6();
+                self.item_snd_9fb6(it.b.xi());
                 brk = true;
             }
         }
@@ -431,7 +431,7 @@ impl Game {
         if it.b.wall != 0 {
             it.b.vx = it.b.vx.wrapping_neg();
             it.b.facing ^= 1;
-            self.item_snd_9fb6();
+            self.item_snd_9fb6(it.b.xi());
             it.m.sb(B9, 5);
             it.b.wall = 0;
             if explosive {
@@ -439,7 +439,7 @@ impl Game {
             }
         }
         if it.b.airborne == 0 {
-            self.item_snd_9fb6();
+            self.item_snd_9fb6(it.b.xi());
             self.cam.shake_req = 2;
             if explosive {
                 return self.container_explode(it, h, i);
@@ -483,7 +483,7 @@ impl Game {
     fn container_thrown_4(&mut self, it: &mut Item, h: Handle, _i: usize) {
         self.item_terrain(it, h);
         if it.b.wall != 0 || it.b.airborne == 0 {
-            self.item_snd_9e60();
+            self.item_snd_9e60(it.b.xi());
             self.cam.shake_req = 2;
             if it.m.w(W5C) != 0 {
                 self.item_explosion(it, h, 0);
@@ -531,7 +531,7 @@ impl Game {
     /// (masks 0x29552, G.$4F1 = the number of explosive weapons on the field). The `rand()` call
     /// happens for every piece while that number is below 3.
     fn container_debris(&mut self, it: &Item, table: u32) {
-        self.item_snd_9ff8();
+        self.item_snd_9ff8(it.b.xi());
         let mut d5 = self.spawn.g.b4f1 as u32;
         let mut a = 0u32;
         for _ in 0..16 {
@@ -572,7 +572,7 @@ impl Game {
             0 => self.container_break_0(it, h, i),
             2 => {
                 self.item_score_500(it.b.who);
-                self.item_snd_9fb6();
+                self.item_snd_9fb6(it.b.xi());
                 let vx = if it.b.facing != 0 { -0x380 } else { 0x380 };
                 it.b.vx = vx;
                 self.container_two_pieces(it);
@@ -584,7 +584,7 @@ impl Game {
             }
             4 => {
                 self.item_score_500(it.b.who);
-                self.item_snd_9e60();
+                self.item_snd_9e60(it.b.xi());
                 self.container_puff(it, 0x1A, it.b.facing);
                 self.item_drop_from_container(it);
                 if it.m.w(W5C) != 0 {
@@ -607,7 +607,7 @@ impl Game {
             }
             0xC => {
                 self.item_score_500(it.b.who);
-                self.item_snd_a404();
+                self.item_snd_a404(it.b.xi());
                 self.container_puff(it, 0x22, it.b.facing ^ 1);
                 self.item_drop_from_container(it);
                 self.item_free(it, i);
@@ -628,7 +628,7 @@ impl Game {
             it.b.vx = if it.b.facing != 0 { -0x300 } else { 0x300 };
             it.b.airborne = 1;
             it.m.sb(B1, 0x28);
-            self.item_snd_9fb6();
+            self.item_snd_9fb6(it.b.xi());
             if it.m.w(W5C) != 0 {
                 self.item_explosion(it, h, 0);
                 self.item_drop_from_container(it);
@@ -647,7 +647,7 @@ impl Game {
         if it.b.airborne == 0 {
             it.b.airborne = 1;
             it.b.vy = it.b.vy.wrapping_neg() >> 1;
-            self.item_snd_9fb6();
+            self.item_snd_9fb6(it.b.xi());
         }
         it.b.motion();
         if it.m.b(B1) & 1 != 0 {
