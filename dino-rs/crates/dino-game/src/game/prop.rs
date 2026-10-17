@@ -119,6 +119,9 @@ mod b1;
 // Pool B class 3 (M3-19): mine wall (0x763F6).
 #[path = "prop/b3.rs"]
 mod b3;
+// Pool B class 40 (M5-14): steam pipes (0x836A4).
+#[path = "prop/b40.rs"]
+mod b40;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -177,6 +180,7 @@ impl Game {
                 31 => self.prop_clock(&mut p, i),
                 32 => self.prop_class32(&mut p, i),
                 35 => self.prop_b35(&mut p, i),
+                40 => self.prop_b40(&mut p, h, i),
                 47 => self.prop_b47(&mut p, i),
                 66 => self.prop_class66(&mut p, i),
                 67 => self.prop_class67(&mut p, i),
