@@ -852,7 +852,7 @@ impl Game {
                     let ay = t.i16(a, 2);
                     e.b.ay = ay.wrapping_add(ay);
                     e.b.step += 2;
-                    self.snd_9796(); // 0x2A7E8 (type 6: 0x2A972)
+                    self.snd_9796(e.b.xi()); // 0x2A7E8 (type 6: 0x2A972)
                     self.enemy_step(&mut e.b);
                 }
             }
@@ -869,7 +869,7 @@ impl Game {
                     if e.b.hp == 0 {
                         e.m.sb(T80, 1);
                     }
-                    self.snd_9796(); // 0x2A832
+                    self.snd_9796(e.b.xi()); // 0x2A832
                     e.b.step += 2;
                 }
             }
@@ -934,7 +934,7 @@ impl Game {
                         e.m.sb(T80, 0xA);
                         self.item_drop_from_enemy(e);
                     }
-                    self.snd_9796(); // 0x2ABE4
+                    self.snd_9796(e.b.xi()); // 0x2ABE4
                     e.b.step += 2;
                 }
             }
@@ -978,7 +978,7 @@ impl Game {
             e.b.step += 2;
             self.enemy_step(&mut e.b);
             self.enemy_shake_request(e); // 0x2AB8C
-            self.snd_9796(); // 0x2AB7C
+            self.snd_9796(e.b.xi()); // 0x2AB7C
             let b = e.b.clone();
             self.enemy_hud_hit(h, &b, 0);
         }
@@ -1072,7 +1072,7 @@ impl Game {
             let ay = t.i16(a, 2);
             e.b.ay = ay.wrapping_add(ay);
             e.b.step += 2;
-            self.snd_9796(); // 0x2AD74
+            self.snd_9796(e.b.xi()); // 0x2AD74
             self.enemy_step(&mut e.b);
         }
     }
@@ -1279,7 +1279,7 @@ impl Game {
         e.m.sb(T80, 0x1E);
         self.enemy_hit_anim(e, 6);
         e.b.facing = (e.b.vx < 0) as u8;
-        self.snd_9796(); // 0x2B2E0
+        self.snd_9796(e.b.xi()); // 0x2B2E0
         self.enemy_slump(e, h);
     }
 

@@ -214,7 +214,7 @@ impl Game {
             if self.flow.in_game == 0 {
                 self.sound(0xFF00); // 0xA5D2
             }
-            self.sound(0x30); // the coin sound (d1 = 0x70010, d2 = 0x3800000)
+            self.sound_ex(0x30, 0x70010, 0x3800000); // the coin sound at 0x9D348 / 0x9D598 (checked)
             self.flow.front.sys.slots[i].timer = 0;
             return;
         }
@@ -227,7 +227,7 @@ impl Game {
     fn flow_sys_service(&mut self) {
         let pressed = self.w.system & (self.w.system ^ self.flow.front.prev_system) & 0x80; // G.$1A, G.$1F
         if pressed != 0 {
-            self.sound(0x30); // d1 = 0x70010, d2 = 0x3800000
+            self.sound_ex(0x30, 0x70010, 0x3800000); // 0x9D348 / 0x9D598 (checked)
             let s = &mut self.flow.front.sys;
             if s.common {
                 s.credits = credit_add(s.credits, 1); // 0x9D3C4
@@ -451,7 +451,7 @@ impl Game {
         self.flow_kill_front_tasks();
         self.flow.in_game = 1;
         self.flow.game_pending = true; // the game task does not exist for the next 18 frames
-        self.sound(0x31); // d1 = 0x10
+        self.sound_ex(0x31, 0x10, 0); // 0x9D168 (checked)
         self.fade.mask = 0x0F;
         self.start_fade_task(false); // 16 steps, the first one now
         self.flow.front.sys_task.wait(16, sst::CLEAR);

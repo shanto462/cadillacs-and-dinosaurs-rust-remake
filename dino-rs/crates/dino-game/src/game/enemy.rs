@@ -1128,7 +1128,7 @@ impl Game {
                     e.b.vy = e.b.vy.wrapping_neg();
                     e.b.ay = e.b.ay.wrapping_add(e.b.ay);
                     e.b.act += 2;
-                    self.snd_9796(); // 0x33DCE
+                    self.snd_9796(e.b.xi()); // 0x33DCE
                     self.enemy_step(&mut e.b);
                 }
             }
@@ -1141,7 +1141,7 @@ impl Game {
                 self.enemy_floor_collision(e);
                 if e.b.airborne == 0 {
                     e.m.sb(T80, if e.b.hp == 0 { 0xA } else { 0x14 });
-                    self.snd_9796(); // 0x33E16
+                    self.snd_9796(e.b.xi()); // 0x33E16
                     e.b.act += 2;
                 }
             }

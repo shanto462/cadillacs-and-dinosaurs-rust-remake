@@ -192,6 +192,8 @@ def main():
 
     pool_list = [(p["kind"], p["base"] - RAM, p["stride"], p["count"]) for p in hdr["pools"]]
     sound_kinds = {"mame_only": [0, None], "other": [0, None]}
+    sound_codes = {}  # code -> [count, last example] for the d1 / d2 differences
+    sound_args = [0, None, 0]  # frames where the codes agree but d1 or d2 differ (first frame, text); requests compared
     unported_diff_frames = set()  # frames with a difference in an object of an unported class
     sprite_cats = defaultdict(int)    # category -> differing entries (all frames)
     sprite_frames = defaultdict(int)  # category -> frames
@@ -376,6 +378,19 @@ def main():
         if f >= 0:
             cm = [c for c, _, _ in sounds_m]
             cp = list(rp.extra.get("snd", []))
+            cpd = [tuple(x) for x in rp.extra.get("snd_d", [])]
+            if cm == cp and cpd:
+                sound_args[2] += len(cm)
+                md = [(d1, d2) for _, d1, d2 in sounds_m]
+                if md != cpd:
+                    sound_args[0] += 1
+                    if sound_args[1] is None:
+                        sound_args[1] = (f, "MAME " + " ".join(f"{c:X}:{a:X}/{b:X}" for c, (a, b) in zip(cm, md)) + " port " + " ".join(f"{c:X}:{a:X}/{b:X}" for c, (a, b) in zip(cp, cpd)))
+                    for c, (a, b), (pa, pb) in zip(cm, md, cpd):
+                        if (a, b) != (pa, pb):
+                            sound_codes.setdefault(c, [0, 0])
+                            sound_codes[c][0] += 1
+                            sound_codes[c][1] = f"MAME {a:X}/{b:X} port {pa:X}/{pb:X}"
             if cm != cp:
                 if allow.ok("sounds", f):
                     allowed["sounds"] += 1
@@ -448,6 +463,11 @@ def main():
         print(f"  from ported classes whose fields differ too (a consequence of that): {sprite_cats['ported_same']} entries in {sprite_frames['ported_same']} frames")
         print(f"  from ported classes whose fields do not differ, or no object (draw bug?): {sprite_cats['ported']} entries in {sprite_frames['ported']} frames")
         print(f"  only in MAME (the port drew fewer): {sprite_cats['mame_only']} entries in {sprite_frames['mame_only']} frames")
+    for c, (n, ex) in sorted(sound_codes.items()):
+        print(f"  sound code {c:04X}: {n} requests with other d1 / d2, e.g. {ex}")
+    if sound_args[0] or sound_args[2]:
+        fr, desc = sound_args[1] if sound_args[1] else (-1, "")
+        print(f"\nSOUND ARGUMENTS (d1, d2) differing where the codes agree: {sound_args[0]} frames of {sound_args[2]} requests compared, first {fr}: {desc}")
     if sound_kinds["mame_only"][0]:
         n, (fr, desc) = sound_kinds["mame_only"]
         print(f"\nSOUND REQUESTS only MAME has (every request of the port is there; callers the port lacks): {n} frames, first {fr}: {desc}")

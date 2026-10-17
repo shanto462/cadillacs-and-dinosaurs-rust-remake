@@ -9,20 +9,14 @@
 use super::Game;
 
 /// 0xA63C: one entry of the sound queue, the code word and the two longs the sound port reads: d1 (the pan mode in the
-/// high word, the pan byte in the low byte, 0x10 = no pan) and d2 (volume and the like). `Game::sound` records the
-/// code only; `Game::snd_request` records the whole entry. Interim record until `sound_ex` of M4-13 carries d1 and d2
-/// on every request.
+/// high word, the pan byte in the low byte, 0x10 = no pan) and d2 (volume and the like). Every request is recorded
+/// with its d1 and d2 (`Game::sound_ex`, `W.snd_reqs`).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct SndRequest {
     pub code: u16,
     pub d1: u32,
     pub d2: u32,
 }
-
-/// The ring of the original has 64 entries of 16 bytes (0xA650: `andi #$3F0`) and is full at 63 (0xA658 does not move
-/// the write index when it would meet the read index, so the new entry is lost).
-#[allow(dead_code)] // the break sound helper is used by the scenery props of M3, the ring by the sound port of M4
-const SND_RING: usize = 63;
 
 /// 0x610..0x69E: does the sound flush send this queued code to the sound chip? A code whose high
 /// byte is 0xFF (0xFF00 stop, 0xFF05, 0xFF07 fade, 0xFF0B reset) always goes. Any other code goes
@@ -61,44 +55,22 @@ impl Game {
         old
     }
 
-    /// 0xA63C with its three registers: queue the code and keep the entry (code, d1, d2) for the sound port. A full
-    /// ring loses the new entry (see `SND_RING`).
-    #[allow(dead_code)] // used by the scenery props of M3
+    /// 0xA63C with its three registers (d0 = code, d1, d2): the same as `sound_ex`.
     pub fn snd_request(&mut self, code: u16, d1: u32, d2: u32) {
-        self.sound(code);
-        if self.spawn.g.snd_ring.len() < SND_RING {
-            self.spawn.g.snd_ring.push(SndRequest { code, d1, d2 });
-        }
+        self.sound_ex(code, d1, d2);
     }
 
-    /// The entries queued with `snd_request` since the last call, oldest first (the sound port takes them each frame).
-    #[allow(dead_code)] // read by the sound port of M4
+    /// The requests of this frame, oldest first, and empties the list (the tests take them; the frame clears them too).
+    #[allow(dead_code)] // used by the tests of the scenery props
     pub fn snd_take_requests(&mut self) -> Vec<SndRequest> {
-        std::mem::take(&mut self.spawn.g.snd_ring)
+        std::mem::take(&mut self.w.snd_reqs)
     }
 
-    /// The requests of this frame for the audio side (M4-12, `crate::audio`): every code of the queue (`w.sounds`) that the
-    /// attract filter of 0x610 lets through, in queue order, each with the d1 and d2 of its ring entry. A code queued with
-    /// `sound()` alone has d1 = d2 = 0. The ring entries are matched in order (`snd_request` queues the code first), so a
-    /// plain `sound()` of the same code just before a `snd_request` is not told apart (M4-13 removes this). Drains the ring.
-    pub fn snd_feed_requests(&mut self) -> Vec<SndRequest> {
-        let ring = self.snd_take_requests();
+    /// The requests of this frame for the audio side (M4-12, `crate::audio`): every request (`W.snd_reqs`) that the
+    /// attract filter of 0x610 lets through, in queue order, each with its d1 and d2 (M4-13: no pairing needed).
+    pub fn snd_feed_requests(&self) -> Vec<SndRequest> {
         let (in_game, demo) = (self.flow.in_game != 0, self.flow.dip.demo_sound());
-        let mut out = Vec::new();
-        let mut k = 0;
-        for &code in &self.w.sounds {
-            let entry = match ring.get(k) {
-                Some(e) if e.code == code => {
-                    k += 1;
-                    *e
-                }
-                _ => SndRequest { code, d1: 0, d2: 0 },
-            };
-            if snd_passes(code, in_game, demo) {
-                out.push(entry);
-            }
-        }
-        out
+        self.w.snd_reqs.iter().filter(|r| snd_passes(r.code, in_game, demo)).copied().collect()
     }
 
     /// 0x9E64..0x9E84 (the same lines are in 0x9EA2, 0x9EDC and 0x9F12): the pan byte of an object at world X `x`.
@@ -107,6 +79,11 @@ impl Game {
     /// right edge, 0x10 in the middle).
     #[allow(dead_code)] // used by the scenery props of M3
     pub fn snd_pan_x(&self, x: i16) -> u8 {
+        self.assets.enemy.t.u8(0xA66A, self.snd_pan_index(x))
+    }
+
+    /// The index into 0xA66A of the pan of world X `x` (`(pos & 0x1F8) >> 3`, 0 .. 0x2F), as the routines leave it in d2.
+    pub fn snd_pan_index(&self, x: i16) -> u32 {
         let mut d = x.wrapping_sub(self.cam.s2.cam_x as i16); // sub.w $744(a5),d0
         if d < 0 {
             d = 0; // bpl
@@ -114,7 +91,7 @@ impl Game {
         if d as u16 >= 0x180 {
             d = 0x17F;
         }
-        self.assets.enemy.t.u8(0xA66A, ((d as u16 & 0x1F8) >> 3) as u32)
+        ((d as u16 & 0x1F8) >> 3) as u32
     }
 
     /// 0x9E60: the break sound of walls, doors and weapons with the pan of the object at world X `x` (+$08): code 0x6F, or
@@ -142,72 +119,72 @@ impl Game {
         }
     }
 
-    /// The player voice and effect routines 0x95CE..0x9C0C, called with a6 = player `i`.
+    /// The player voice and effect routines 0x95CE..0x9C0C, called with a6 = player `i`. Each request carries the pan
+    /// byte of the player's X as d1 (`snd_pan_x`) and the constant d2 of its routine (`move.l #..,d2` before the call).
     pub fn snd_player(&mut self, i: usize, routine: u32) {
-        let (id, k20, voice, wading, y, tag) = {
+        let (id, k20, voice, wading, y, x, tag) = {
             let p = &self.players[i];
-            (p.b.id, p.b.k20 as u32, p.voice as u32, p.b.wading, p.b.yi(), 0u8)
+            (p.b.id, p.b.k20 as u32, p.voice as u32, p.b.wading, p.b.yi(), p.b.xi(), 0u8)
         };
         let t = &self.assets.text;
-        let code: u8 = match routine {
+        // (code, d2)
+        let (code, d2): (u8, u32) = match routine {
             // 0x95CE: 0x38 / 0xA8 (toggle bit 0; the first request after a reset is 0xA8).
-            0x95CE => {
-                if self.snd_toggle(0) { 0x38 } else { 0xA8 }
-            }
+            0x95CE => (if self.snd_toggle(0) { 0x38 } else { 0xA8 }, 0),
             // 0x9796: 0x72 / 0xF8 (toggle bit 3).
-            0x9796 => return self.snd_9796(),
-            // 0x986C / 0x98CC: id 2 uses the second row of three.
-            0x986C => t.u8(0x98C6, if id == 2 { 3 } else { 0 } + voice),
-            0x98CC => t.u8(0x9926, if id == 2 { 3 } else { 0 } + voice),
-            // 0x992C / 0x99E8 / 0x9A36: +$20 (character * 4) selects the row of four.
-            0x992C => t.u8(0x9974, k20 + voice),
-            0x99E8 => t.u8(0x9A26, k20 + voice),
-            0x9A36 => t.u8(0x9A74, k20 + voice),
-            // 0x9984: rows of three by id (0, 1, 2).
-            0x9984 => t.u8(0x99DE, if id == 2 { 6 } else if id == 1 { 3 } else { 0 } + voice),
-            // 0x9AF4: players (+$82 == 0) use the voice table; other objects toggle bit 4.
+            0x9796 => return self.snd_9796(x),
+            // 0x986C / 0x98CC: id 2 uses the second row of three. d2 = 0x2000000 / 0x5608D0.
+            0x986C => (t.u8(0x98C6, if id == 2 { 3 } else { 0 } + voice), 0x0200_0000),
+            0x98CC => (t.u8(0x9926, if id == 2 { 3 } else { 0 } + voice), 0x0056_08D0),
+            // 0x992C / 0x99E8 / 0x9A36: +$20 (character * 4) selects the row of four. d2 = 0xD000000, the pan index
+            // (the word d2 keeps after the table lookup), 0.
+            0x992C => (t.u8(0x9974, k20 + voice), 0x0D00_0000),
+            0x99E8 => (t.u8(0x9A26, k20 + voice), self.snd_pan_index(x)),
+            0x9A36 => (t.u8(0x9A74, k20 + voice), 0),
+            // 0x9984: rows of three by id (0, 1, 2). d2 = 0xD000000.
+            0x9984 => (t.u8(0x99DE, if id == 2 { 6 } else if id == 1 { 3 } else { 0 } + voice), 0x0D00_0000),
+            // 0x9AF4: players (+$82 == 0) use the voice table; other objects toggle bit 4. d2 = 0xC41240.
             0x9AF4 => {
                 if tag == 0 {
-                    t.u8(0x9B5C, voice)
+                    (t.u8(0x9B5C, voice), 0x00C4_1240)
                 } else if self.snd_toggle(4) {
-                    0xEF
+                    (0xEF, 0x00C4_1240)
                 } else {
-                    0xF0
+                    (0xF0, 0x00C4_1240)
                 }
             }
-            // 0x9B60: 0x6C / 0xF2 (toggle bit 5, shared with 0x9BCE). 0x9B9E: 0x75.
-            0x9B60 => {
-                if self.snd_toggle(5) { 0x6C } else { 0xF2 }
-            }
-            0x9B9E => 0x75,
+            // 0x9B60: 0x6C / 0xF2 (toggle bit 5, shared with 0x9BCE). 0x9B9E: 0x75. d2 = 0.
+            0x9B60 => (if self.snd_toggle(5) { 0x6C } else { 0xF2 }, 0),
+            0x9B9E => (0x75, 0),
             // 0x9BCE: 0x71 / 0xF7 (toggle bit 5).
-            0x9BCE => {
-                if self.snd_toggle(5) { 0x71 } else { 0xF7 }
-            }
+            0x9BCE => (if self.snd_toggle(5) { 0x71 } else { 0xF7 }, 0),
             // 0x9C0C: no sound while wading (+$53 negative) below height 0x20; players use the
-            // voice table, other objects toggle bit 6 (0xE0 / 0xE1).
+            // voice table, other objects toggle bit 6 (0xE0 / 0xE1). d2 not checked yet (M4-13 open item).
             0x9C0C => {
                 if (wading as i8) < 0 && y < 0x20 {
                     return;
                 }
                 if tag == 0 {
-                    t.u8(0x9C72, voice)
+                    (t.u8(0x9C72, voice), 0)
                 } else if self.snd_toggle(6) {
-                    0xE0
+                    (0xE0, 0)
                 } else {
-                    0xE1
+                    (0xE1, 0)
                 }
             }
             r => panic!("unknown player sound routine {r:#x}"),
         };
-        self.sound(code as u16);
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(code as u16, pan, d2);
     }
 
     /// 0x9796 (knockdown / landing thud of players and enemies): 0x72 / 0xF8, toggle bit 3. The code
     /// does not depend on the object.
-    pub fn snd_9796(&mut self) {
+    /// d1 = the pan byte of the object's X (`x`, from the caller's a6), d2 = 0.
+    pub fn snd_9796(&mut self, x: i16) {
         let code = if self.snd_toggle(3) { 0x72 } else { 0xF8 };
-        self.sound(code);
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(code, pan, 0);
     }
 
     /// 0xA354 (code 0x79) / 0x97D2 (code 0x58): an enemy's death voice. The hit library picks
@@ -257,7 +234,7 @@ mod tests {
     /// code, and the toggle bits are shared per bit, not per routine (0x9B60 and 0x9BCE share bit 5).
     #[test]
     fn alternating_codes_follow_the_toggle_byte() {
-        let mut g = game_with_tables(Vec::new());
+        let mut g = game_with_pan_table(); // the players' d1 is a pan byte (0xA66A)
         g.snd_player(0, 0x95CE);
         g.snd_player(0, 0x95CE);
         g.snd_player(0, 0x9BCE);
@@ -265,6 +242,8 @@ mod tests {
         g.snd_player(0, 0x9BCE);
         assert_eq!(g.w.sounds, vec![0xA8, 0x38, 0xF7, 0x6C, 0xF7]);
         assert_eq!(g.w.snd_toggle, 0b0010_0000);
+        // d1 is the pan byte of player 0's X (0 here, the table counts 0, 1, 2 ...), d2 is the routine's constant
+        assert_eq!(g.w.snd_reqs.iter().map(|r| (r.d1, r.d2)).collect::<Vec<_>>(), vec![(0, 0); 5]);
     }
 
     /// The attract filter (0x610): control codes and the coin sound always pass, everything else
@@ -364,13 +343,13 @@ mod tests {
         assert_eq!(g.snd_pan_x(0x300 + 0x7000), 0x2F);
     }
 
-    /// A full ring (63 entries) loses new entries; the codes are still recorded for the harness.
+    /// Every request keeps its d1 and d2 (the original's ring of 63 entries is drained by the Z80 flush, not here).
     #[test]
-    fn a_full_ring_drops_new_entries() {
+    fn every_request_keeps_its_d1_and_d2() {
         let mut g = game_with_tables(Vec::new());
         for k in 0..70 {
-            g.snd_request(k, 0, 0);
+            g.snd_request(k, k as u32, 1);
         }
-        assert_eq!((g.snd_take_requests().len(), g.w.sounds.len()), (63, 70));
+        assert_eq!((g.snd_take_requests().len(), g.w.sounds.len()), (70, 70));
     }
 }

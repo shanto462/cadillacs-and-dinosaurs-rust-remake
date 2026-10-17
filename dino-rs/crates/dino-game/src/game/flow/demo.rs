@@ -237,6 +237,7 @@ impl Game {
         fresh.w.layer_ctrl = self.w.layer_ctrl;
         fresh.w.priority_masks = self.w.priority_masks;
         fresh.w.sounds = std::mem::take(&mut self.w.sounds);
+        fresh.w.snd_reqs = std::mem::take(&mut self.w.snd_reqs);
         // video memory, the palettes, the sprite buffers and the fade state are not cleared by the sweeps
         fresh.vram = std::mem::take(&mut self.vram);
         fresh.pal = std::mem::take(&mut self.pal);

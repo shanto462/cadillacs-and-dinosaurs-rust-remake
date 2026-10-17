@@ -199,7 +199,7 @@ impl Game {
             self.enemy_step(&mut e.b);
             return;
         }
-        self.snd_9796();
+        self.snd_9796(e.b.xi());
         self.cam.shake_req = 2;
         e.b.airborne = 1;
         e.m.sw(f::SUB, 0xC);

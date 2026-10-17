@@ -12,7 +12,7 @@
 //! Trace format: see `re/harness/trace.py` (same container as the MAME trace). Port regions:
 //! `ram` / `ram_mask` (every modeled field at its original address, and which bytes those are),
 //! `gfx` / `gfx_mask` (tilemaps and palettes), `obj` (the sprite list built this frame). Each
-//! record also carries `{"snd": [...]}`, the sound requests of the frame.
+//! record also carries `{"snd": [...], "snd_d": [[d1, d2], ...]}`, the sound requests of the frame (codes, and d1 and d2 of each).
 
 use crate::game::Game;
 use crate::game::trace::{POOLS, PORTED_CLASSES};
@@ -461,7 +461,8 @@ impl TraceWriter {
             }
         }
         let snd: Vec<String> = game.w.sounds.iter().map(|s| s.to_string()).collect();
-        let extra = format!("{{\"snd\":[{}]}}", snd.join(","));
+        let snd_d: Vec<String> = game.w.snd_reqs.iter().map(|r| format!("[{},{}]", r.d1, r.d2)).collect();
+        let extra = format!("{{\"snd\":[{}],\"snd_d\":[{}]}}", snd.join(","), snd_d.join(","));
         buf.extend_from_slice(&(extra.len() as u32).to_le_bytes());
         buf.extend_from_slice(extra.as_bytes());
         self.out.write_all(&buf).map_err(|e| e.to_string())?;
