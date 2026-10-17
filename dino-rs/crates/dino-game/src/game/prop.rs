@@ -130,6 +130,11 @@ mod b40;
 mod b50;
 #[path = "prop/b76.rs"]
 mod b76;
+// Episode 8 sewer scenery (M8-21): water bands (28, 29) and torches (43).
+#[path = "prop/b28_29.rs"]
+mod b28_29;
+#[path = "prop/b43.rs"]
+mod b43;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -185,6 +190,8 @@ impl Game {
                 25 => self.prop_class25(&mut p, i),
                 26 => self.prop_class26(&mut p, i),
                 21 => self.prop_b21(&mut p, i),
+                28 => self.prop_b28(&mut p, i),
+                29 => self.prop_b29(&mut p, i),
                 31 => self.prop_clock(&mut p, i),
                 32 => self.prop_class32(&mut p, i),
                 35 => self.prop_b35(&mut p, i),
@@ -192,6 +199,7 @@ impl Game {
                 36 => self.prop_b36(&mut p, i),
                 37 => self.prop_b37(&mut p, i),
                 38 => self.prop_b38(&mut p, i),
+                43 => self.prop_b43(&mut p, i),
                 47 => self.prop_b47(&mut p, i),
                 50 => self.prop_b50(&mut p, h, i),
                 76 => self.prop_b76(&mut p, i),
