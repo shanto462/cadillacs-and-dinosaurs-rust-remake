@@ -33,6 +33,11 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x86BD4, 0x10, "B64 cage post frame record pointers (0x86B64)"),
     // Pool B class 35 (0x81FDE), manhole cover hero offsets (M3-21).
     (0x820FE, 0x70, "B35 manhole cover hero offsets (0x81FDE)"),
+    // Waterfall pictures (M3-22). 0x90C038 and 0x90C438 are scroll2 destinations, not tables.
+    (0x821E8, 0x3C, "B36 var 0 picture pointers and 4 pictures of 4 code words (0x821C0)"),
+    (0x8229C, 0xC8, "B36 var 4 picture pointers and 4 pictures of 20 code words (0x82228)"),
+    (0x823EE, 0x3A0, "B37 destinations, picture tables and 12 pictures of 32 code words (0x823AE)"),
+    (0x82880, 0x838, "B38 destinations, picture tables and 12 pictures of 80 code words (0x827D8)"),
     // score
     (0x10292, 0x90, "BCD score values (0x10036), indexed by byte offset"),
     (0x325F8, 0x28, "kill score offset by name id (0x325E6)"),

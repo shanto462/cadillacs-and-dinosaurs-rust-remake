@@ -88,6 +88,9 @@ mod b31;
 mod b35;
 #[path = "prop/b47.rs"]
 mod b47;
+// Episode 8 sewer end (M3-22): the waterfall over the edge and the shaft (classes 36, 37, 38).
+#[path = "prop/b36_38.rs"]
+mod b36_38;
 // Pool B class 18 (M2-16): the respawn air strike (five bombs from the record list 0x7B7A6).
 #[path = "prop/b18.rs"]
 mod b18;
@@ -181,6 +184,9 @@ impl Game {
                 32 => self.prop_class32(&mut p, i),
                 35 => self.prop_b35(&mut p, i),
                 40 => self.prop_b40(&mut p, h, i),
+                36 => self.prop_b36(&mut p, i),
+                37 => self.prop_b37(&mut p, i),
+                38 => self.prop_b38(&mut p, i),
                 47 => self.prop_b47(&mut p, i),
                 66 => self.prop_class66(&mut p, i),
                 67 => self.prop_class67(&mut p, i),

@@ -231,3 +231,6 @@ MAME wins over the design text; the design documents themselves are not edited.
 - The scroll2 map of the lift (2 x 56 screens) is streamed beyond its width: the stream reads columns up to X 0x340 and the ids past the end of the array come from the ROM words that follow it (index up to 223). The extractor now keeps 0x100 words after every array (`PAST_END`), 32 were enough for the other areas.
 - D4c A12 ("stops at gf offsets 532, 2330, 3398, 4838, 5788"): the stops are by camera Y and depend on the waves; with three heroes of `ep7_3p` the first lock is 534 records after the area start (12840), the end lock at 17531 (5225), and the camera equals MAME in every record in step mode.
 
+## From M3-22 (Episode 8 sewer waterfall, 2026-10-17)
+
+- D5 M3-22 and D3e part 3 s5.2 ("block tables (0x90C038 and others)"): 0x90C038 and 0x90C438 are scroll2 destinations, not ROM tables. The picture pointer tables are 0x821E8 (B36 var 0, 4 code words), 0x8229C (B36 any other var, 20 code words), 0x823EE destinations and 0x823FA picture tables (B37, two strips of 16), 0x82880 destinations and 0x82898 picture tables (B38, 80 code words; an odd var reads that picture backwards in five columns of 16). B37's spawn var is already the byte offset 0, 4 or 8. B38's spawn var is 0..5. M3-22.
