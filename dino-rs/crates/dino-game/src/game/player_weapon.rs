@@ -26,7 +26,6 @@
 //! the drawing is `draw.rs` `draw_split` (0x14136).
 //!
 //! # Not ported here
-//! * The dust of the recoil (0x92E5E, pool C class 0x1C): effects port.
 //! * The score extra life pose (states 0x18 / 0x1A, `+$10E`), the two-player tie-up (0x6866,
 //!   state 0x1A, run state 4) and the second half of the heavy object code (0x1B0F6..): not weapons.
 
@@ -508,7 +507,11 @@ impl Game {
         if (self.players[i].b.vx.wrapping_add(0x20) as u16) < 0x40 {
             return; // too slow: the player stands still
         }
-        // 0x19DC0: every other frame (bit 0 of G.$1) the dust 0x92E5E (d0 = 2): TODO(effects port).
+        // 0x19DC0 (and its copies 0x26A6, ...): every other frame (bit 0 of G.$1) the dust 0x92E5E with d0 = 2, then 0x189C.
+        if self.w.frame & 1 != 0 {
+            let b = self.players[i].b.clone();
+            self.fx_spawn_dust(&b, 2);
+        }
         self.player_pmove(i);
     }
 

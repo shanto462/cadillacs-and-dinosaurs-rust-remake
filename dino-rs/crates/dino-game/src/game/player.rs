@@ -3224,7 +3224,11 @@ impl Game {
             }
             return self.player_recover(i);
         }
-        // every other frame: dust (0x92E5E). TODO(effects port).
+        // 0x1CA0E / 0x1CB60 (and the copies 0x1FB56 / 0x1FCA4): every other frame (bit 0 of G.$1) the dust 0x92E5E with d0 = 2, then 0x189C.
+        if self.w.frame & 1 != 0 {
+            let b = self.players[i].b.clone();
+            self.fx_spawn_dust(&b, 2);
+        }
         self.player_pmove(i);
     }
 
@@ -3358,7 +3362,9 @@ impl Game {
             p.w80 = time;
             p.dizzy_cd = time.wrapping_add(0x708);
             p.b.live = 1; // a dizzy player can be hit
-            // 0x94338: dizzy stars effect / voice. TODO(effects port).
+            // 0x1CE7E: d0 = +$80, then 0x94338: the stars over the hero.
+            let (b, w80) = (self.players[i].b.clone(), self.players[i].w80);
+            self.fx_spawn_dizzy(Game::player_handle(i), &b, w80);
         }
         // 0x1CE88
         let before = self.players[i].mash;

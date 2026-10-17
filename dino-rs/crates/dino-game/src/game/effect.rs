@@ -8,6 +8,8 @@
 //! * `0x04` hit spark / impact picture, 0x924AA: plays animation +$26 of table 0x924F6 once.
 //! * `0x10` water splash when landing in water, 0x92A48 (spawned by the player code 0x606E).
 //! * `0x20` burning flames attached to a body, 0x92FB4 (player 0x1C86E, enemy 0x2AD98).
+//! * `0x0C` the shockwave picture of a thug holding a hero, 0x929B8 (`effect/fx03.rs`).
+//! * `0x1C` ground dust, 0x92ECC (`effect/fx07.rs`), `0x4C` dizzy stars, 0x94462 (`effect/fx19.rs`).
 //! * `0x2C` debris of a broken container or weapon, 0x934F6 (`effect/fx11.rs`).
 //! * `0x54` puff and shower of pieces, 0x94672 (`effect/fx21.rs`).
 //! * `0x38` respawn speech bubble / player marker and 1UP text, 0x93B28 / 0x93BF8.
@@ -42,6 +44,13 @@ mod fx_tally;
 // Pool C class 28 (M2-14): the words TIME and OVER.
 #[path = "effect/fx_time_over.rs"]
 mod fx_time_over;
+// Pool C classes 3, 7 and 19 (M5-05): the hammer shockwave, the ground dust and the dizzy stars.
+#[path = "effect/fx03.rs"]
+mod fx03;
+#[path = "effect/fx07.rs"]
+mod fx07;
+#[path = "effect/fx19.rs"]
+mod fx19;
 // Pool C class 11 (M5-04): the debris of broken containers and weapons.
 #[path = "effect/fx11.rs"]
 mod fx11;
@@ -55,6 +64,9 @@ use dino_assets::{FrameId, HitBox};
 pub const FX_SPARK: u16 = 0x04;
 pub const FX_WATER_SPLASH: u16 = 0x10;
 pub const FX_FLAMES: u16 = 0x20;
+pub const FX_SHOCKWAVE: u16 = 0x0C;
+pub const FX_DUST: u16 = 0x1C;
+pub const FX_DIZZY: u16 = 0x4C;
 pub const FX_DEBRIS: u16 = 0x2C;
 pub const FX_PUFF: u16 = 0x54;
 pub const FX_RIPPLE: u16 = 0x68;
@@ -83,8 +95,9 @@ pub struct Effect {
     /// +$5C index of the effect in its spawn loop (flames: start frame = index & 3). Class 21 uses the high byte (+$5C) as the delay
     /// to the next piece, class 11 the whole word as the "can become a stone" flag.
     pub w5c: u16,
-    /// +$5E life counter of a puff piece (class 21).
+    /// +$5E life counter of a puff piece (class 21); +$5E / +$5F are the act and step bytes of the owner's saved state (class 19).
     pub b5e: u8,
+    pub b5f: u8,
     /// +$60 owner of an attached effect (flames); the words TIME and OVER (class 0x70) keep their hold counter in this word.
     pub owner60: Handle,
     /// +$62 / +$64 offset from the owner (X mirrored by the owner's facing).
@@ -506,6 +519,9 @@ impl Game {
                 0x5C => self.fx_respawn_sparkle(i),
                 FX_WATER_SPLASH => self.fx_water_splash(i),
                 FX_FLAMES => self.fx_flames(i),
+                FX_SHOCKWAVE => self.fx_shockwave(i),
+                FX_DUST => self.fx_dust(i),
+                FX_DIZZY => self.fx_dizzy(i),
                 FX_DEBRIS => self.fx_debris(i),
                 FX_PUFF => self.fx_puff(i),
                 FX_RIPPLE => self.fx_ripple(i),
@@ -514,10 +530,10 @@ impl Game {
                 FX_TALLY_FLASH => self.fx_tally_flash(i),
                 FX_TALLY_WINNER => self.fx_tally_winner(i),
                 // TODO(port): remaining classes (handler addresses from the table at 0x237E6):
-                // 0x00 0x923E0, 0x08 0x92808, 0x0C 0x929B8, 0x14 0x92B7A, 0x18 0x92C9A,
-                // 0x1C 0x92ECC, 0x24 0x93184, 0x28 0x932D2,
+                // 0x00 0x923E0, 0x08 0x92808, 0x14 0x92B7A, 0x18 0x92C9A,
+                // 0x24 0x93184, 0x28 0x932D2,
                 // 0x30 0x939D6, 0x34 0x93A7A, 0x3C 0x93E54, 0x40 0x93FFC,
-                // 0x44 0x94100, 0x48 0x942C6, 0x4C 0x94462, 0x50 0x9454E,
+                // 0x44 0x94100, 0x48 0x942C6, 0x50 0x9454E,
                 // 0x58 0x95840, 0x60 0x959E6, 0x64 0x96296, 0x6C 0x963D6,
                 // 0x70 0x96488, 0x74 0x965CE, 0x78 0x966B4, 0x7C 0x96800, 0x80 0x96A7E,
                 // 0x84 0x96B78, 0x88 0x96DC4, 0x8C 0x96E56, 0x90 0x96FF4, 0x94 0x9720A,

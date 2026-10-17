@@ -1204,7 +1204,7 @@ impl Game {
             return self.enemy_recover(e, h);
         }
         if self.w.frame & 1 != 0 {
-            // 0x92E5E dust (d0 = 2): effects port.
+            self.fx_spawn_dust(&e.b, 2); // 0x2AE8E / 0x2AF62: dust 0x92E5E with d0 = 2
         }
         self.enemy_floor_collision(e);
         if e.b.wall != 0 && e.b.wall & 1 != 0 {
@@ -1337,7 +1337,9 @@ impl Game {
         e.m.sb(T80, 0x5A);
         e.m.sb(0x81, 8);
         e.b.live = 1;
-        // 0x94338 dizzy stars (pool C class 0x4C): effects port.
+        // 0x2B23A: d0 = the word +$80 (0x5A08), then 0x94338: the stars over the enemy.
+        let b = e.b.clone();
+        self.fx_spawn_dizzy(h, &b, (0x5A << 8) | 8);
         self.enemy_getup(e, h);
     }
 
