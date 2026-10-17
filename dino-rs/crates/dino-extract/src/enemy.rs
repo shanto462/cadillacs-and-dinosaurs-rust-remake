@@ -268,6 +268,7 @@ pub fn extract(rom: &Rom) -> EnemyData {
     d.reverse_frames = reverse_frames(rom);
     d.t.blobs = TABLES
         .iter()
+        .chain(crate::boss::TABLES.iter())
         .map(|&(a, n, _)| (a, (a..a + n).map(|x| rom.u8(x)).collect()))
         .collect();
     // Palette blocks pointed to by the entrance 6 fade table (16 colours each).

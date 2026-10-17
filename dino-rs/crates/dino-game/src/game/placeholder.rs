@@ -408,7 +408,7 @@ impl Game {
         let mut hide = Vec::new();
         for i in 0..self.enemies.slots.len() {
             let e = &self.enemies.slots[i];
-            if e.b.live != 0 && spec_of(e.b.k20 / 4).is_some() {
+            if e.b.live != 0 && spec_of(e.b.k20 / 4).is_some() && !Game::enemy_vice_intro_active(&e.b) {
                 hide.push(self.enemies.handle(i) as u16);
             }
         }
@@ -439,7 +439,7 @@ pub fn draw_boxes(g: &Game, gpu: &mut impl DrawTarget) {
     let fill = Color::new(0.95, 0.75, 0.2, 0.9);
     for e in &g.enemies.slots {
         let b = &e.b;
-        if b.live == 0 || b.visible == 0 || spec_of(b.k20 / 4).is_none() {
+        if b.live == 0 || b.visible == 0 || spec_of(b.k20 / 4).is_none() || Game::enemy_vice_intro_active(b) {
             continue;
         }
         let x0 = b.xi().wrapping_sub(cx) as i32 - 0x40 - 12;
