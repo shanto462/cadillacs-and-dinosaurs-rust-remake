@@ -682,8 +682,7 @@ Tools: `re/harness/link_check.sh [NAME ...]` (`STORY_ONLY=1` stops at the first 
 * **The bot** (`autoplay.rs`): holds right; punches every 12th frame only when something is alive to hit (a swing is about ten frames, a hero who always swings never walks: that was
   the stop of Episode 4 area 1) and every 60th otherwise; jumps in pulses; kill all every 600 frames; god mode and a clock topped up to 5:00 below 0:20 (`DINO_AUTO_MORTAL=1` turns both
   off to run the death, continue and game over paths); a hero who has made no progress (a new best X in the area) for 60 ticks walks up and down by turns, a longer way each time (the
-  walls of Episode 2 area 1); after a game over it waits for a demo (at most 40,000 ticks) before it starts a new game, because the area byte G.$786 of the game before is not cleared by
-  the game start (see below). A `stuck since frame N` line with the state of the game comes after 3000 ticks without progress; `DINO_AUTO_DIAG=1` prints it every 500 ticks and
+  walls of Episode 2 area 1); after a game over it starts the next game at once (it waited for a demo until the G.$786 fix, see the end of this file). A `stuck since frame N` line with the state of the game comes after 3000 ticks without progress; `DINO_AUTO_DIAG=1` prints it every 500 ticks and
   `DINO_AUTO_RANGE=A-B` every tick (with the flow line: mode, fade, G.$4D5 / G.$4E2 / G.$4E3, the intro task, the hero's script).
 * **Port bugs the autoplay found and fixed.** (1) Camera mode 0xC (0x20F78) did not call the follow (`bsr 0x20A22`): the camera of Episode 2 area 1 stood still while the hero walked on
   (the 5 px a frame of `ep2_3p` in MAME). (2) The game start did not clear what 0xA870 / 0xA804 / 0xFF2E / 0xA836 clear (`flow_game_clear_ram`: G.$4CC .. G.$4EB, the HUD score flags,
@@ -696,13 +695,29 @@ Tools: `re/harness/link_check.sh [NAME ...]` (`STORY_ONLY=1` stops at the first 
   over the vertical blank, in the first thing of the next frame before the game task (`IntroAfter::SlideOutEnd`, estimated from the items alive: `SLIDE_OUT_BUSY_ITEMS`); `link-ep4` is
   equal until 890 now (it was 561). (7) The area setup of Episode 7 area 2 (0x207B6) did not clear scroll1 and draw the HUD again (`jsr 0xB52`, `jsr 0x162AE`): the cage of the lift stood
   in the library and the computer room (seen in a picture of the autoplay).
-* **Quirk kept:** G.$786 (the area byte of the scroll2 controller struct) is not cleared by the game start, so a new game right after a game over uses the start script of the area the last
-  game ended in. In Episode 1 area 2 it is the script of that area (id 6), which never sets G.$4E3 and leaves the opening's HUD slide waiting: the game is playable but the HUD and the clock
-  never come. From the code (the cleared ranges and the writers of G.$786 listed in the errata), not measured in MAME. The bot avoids it.
+* **Quirk NOT kept (corrected below, task 0 of the effects round):** the first version of this list kept G.$786 across the game start. MAME clears it: see "G.$786 and the real sizes of the game start sweeps" at the end of this file.
 * **Known stops of the mortal bot** (`DINO_AUTO_MORTAL=1`, one in about a million ticks): Episode 1 area 2, the Vice placeholder in its death state (mode 4) forever with a hero at 1 HP and
   the stage end camera mode 6 waiting; the first one at tick 963,995 of the 4,000,000 tick run. The defeat call (0xACEE) did not run (`flow.sub` 0), the area end script did. Not solved.
 * **Compare with MAME** (`re/harness/m329_check.sh`, notes in `allow/m3.txt`): the seven link scenes (panel, card, walk in) equal MAME in the records of the mode changes and of G.$4E3,
   and in every record up to the first unported class (links 2, 6, 8: all 1100 records; 3 and 7 at 915 and 991 the HUD score digits; 4 at 890; 5 at 442); the area changes: the end mode,
   the area load and the clock reload equal MAME in the four scenarios the port reaches, the control release is one record later where the original's area start lags (not modeled).
 * Gates: `cargo build`, `cargo test` (419 in dino-game + the others, 10 ignored) green, `regress.sh` 50 of 52 at 0, `mp_join` 3, `c14c_mustapha` 8.
+
+### G.$786 and the real sizes of the game start sweeps (task 0 of the effects round, 2026-10-17; green)
+
+* **MAME clears G.$786 in the game start.** One headless probe run (`re/harness/scripts/flow_g786.txt`, `DINO_WATCH_WRITE=FF8786 PR_INPUT=... re/harness/probe/probe.sh g786`): a jump to Episode 1 area 1
+  (G.$786 = 1), last life and 0 HP (continue, game over), then a coin, start and pick in the attract loop. The watch log (`re/out/probe/g786/mame.log`) shows the byte at 1 until the new game
+  task's first frame (MAME frame 4531), where `pc 0x4D26` writes the word 0 with mask FFFF (the sweep 0x4D1A), and 0 in every later write (the rest are 0x89E6's save and restore of the byte, which
+  uses it as a scratch, and the camera events). Before the game over the same watch shows the first game's write at frame 717. So the quirk the last worker kept was a misreading.
+* **The cause: 0x4D1A clears 8 longs (32 bytes) a pass and `d1` + 1 passes.** The earlier notes read `d1` as the number of longs. The real sizes: 0xA804 (`d1` 7) G.$4CC .. G.$5CB (256 bytes, G.$4CD kept
+  in d2), 0xA836: G.$755A 8 longs inline, G.$6BC (`d1` 3) 128 bytes, G.$73C (`d1` 4) 160 bytes G.$73C .. G.$7DB, G.$7DC (`d1` 3) 128 bytes G.$7DC .. G.$85B.
+* **Port fix** (`flow.rs` `flow_game_clear_ram`): the whole of both camera structs (`cam.s2 = Scroll2::default()`, `cam.s3 = Scroll3::default()`, so G.$786 and the event, lock and area fields),
+  and every modeled field of G.$4CC .. G.$5CB that was not cleared before (the script bytes G.$4EC .. G.$4EE, G.$4FD, G.$503, G.$514, G.$516, G.$4EF, G.$4F0, G.$506, G.$4F1, G.$4F3, G.$4F8 .. G.$4FC,
+  G.$4FE .. G.$505, G.$507, G.$508, G.$50A, G.$50B, G.$50C, G.$50E, G.$510 .. G.$513, G.$518, G.$51A, G.$4F6) plus G.$7B2, G.$7B6, G.$7B8. Test `a_second_game_starts_from_cleared_game_variables`.
+  The bot of `autoplay.rs` no longer waits for a demo after a game over (`DEMO_WAIT` is gone).
+* **Checks.** Port run from power on with `--poke 400:FF8786:1:1` (a stale area byte in the title) and the coin / start script `coinstart.txt`, 2000 frames: the trace differs from the unpoked run only in
+  the records 399 to 716 (before the game task starts, G.$786 and the two spawn list pointers G.$676 / G.$67A that follow it); from 717 on every byte of RAM and video RAM is equal. `DINO_AUTO_MORTAL=1`
+  `--autoplay`: game over in Episode 2 area 1 or 2, then Episode 1 area 0 starts at once, the opening ends and the next areas come (the old build stopped in the opening). `--headless --autoplay` still
+  reaches mode 0x1C and the attract loop (frame 299778 / 305330 now, the later episodes are slower than in the M3-29 list because of the merges of M5-02 and the others, not of this change: the same
+  numbers come out of HEAD without it).
 

@@ -1,0 +1,13 @@
+# G.$786 (the camera area byte): is it cleared between a game over and the next game?
+# Game 1: Episode 1 area 1 (G.$786 = 1), last life, killed: continue screen, game over, attract.
+# Game 2: a coin and start in the attract loop, Jack picked. DINO_WATCH_WRITE=FF8786 logs every writer.
+
+segment g786
+frames 4400
+jump 1 1
+0 lives 0
+0 hp 0
+2600-2605:C
+2700-2705:S
+2850-2855:A
+watch 1 G mode sub stage area camx camy cammode lock go time scripted @0xFF84E2.b @0xFF84E3.b @0xFF84D4.b @0xFF84D5.b @0xFF8506.b @0xFF84FE.w @0xFF8786.b

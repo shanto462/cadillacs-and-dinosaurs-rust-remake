@@ -58,6 +58,7 @@ pub mod text;
 
 pub use config::{Config, Settings};
 
+use super::camera::{Scroll2, Scroll3};
 use super::Game;
 use super::Handle;
 
@@ -364,29 +365,49 @@ impl Game {
         self.flow.sub2 = 0;
     }
 
-    /// 0xA870 .. 0xA896: what the game task clears before it starts: the sweep 0xA804 of G.$4CC .. G.$4EB (8 longs by 0x4D1A; G.$4CD, the players that
-    /// pressed start, is kept in d2), the HUD score flags 0xFF2E (G.-$7134 .. G.-$7131) and 0xA836: G.$755A (8 longs, the screen shake), G.$6BC (4 longs,
-    /// the scroll1 camera), G.$73C (5 longs, the scroll2 controller up to the camera Z) and G.$7DC (4 longs, the scroll3 controller header). A second game
-    /// in the same run starts from what these leave: the walk bits G.$4DF, the script flag G.$4DD, G.$4E2 / G.$4E3 of the opening, the clock and the
-    /// cameras of the game before.
+    /// 0xA870 .. 0xA896: what the game task clears before it starts. Every sweep is the routine 0x4D1A: it clears 8 longs (32 bytes) a pass and `d1` + 1 passes,
+    /// so the sizes are `32 * (d1 + 1)`:
+    /// * 0xA804 (`d1` = 7): G.$4CC .. G.$5CB (256 bytes; G.$4CD, the players that pressed start, is kept in d2), the game mode, the walk bits, the script flag, the
+    ///   clock, the wave and census counters, the car mode and everything the opening and the story panels set;
+    /// * 0xFF2E: the HUD score flags (G.-$7134 .. G.-$7131);
+    /// * 0xA836: G.$755A (8 longs, the screen shake), G.$6BC (`d1` = 3, 128 bytes: the scroll1 camera), G.$73C (`d1` = 4, 160 bytes: the scroll2 controller
+    ///   struct with its area byte G.$786, the event, the lock state G.$7B4 and G.$7B2 / G.$7B6 / G.$7B8) and G.$7DC (`d1` = 3, 128 bytes: the scroll3
+    ///   controller struct).
+    /// A second game in the same run starts from what these leave. The area byte G.$786 is in the third sweep (MAME, `re/harness/scripts/flow_g786.txt`
+    /// with `DINO_WATCH_WRITE=FF8786`: a game over in Episode 1 area 1, a coin and a start, and the write of 0 at pc 0x4D26 in the first frame of the new game
+    /// task), so the start script of 0xA9BE (0x1DA10 reads it) is that of the area 0 of the stage. Before 2026-10-17 the port read the sizes as the number of
+    /// longs and kept G.$786 (and the fields listed below that are not in the first lines) from the game before.
     fn flow_game_clear_ram(&mut self) {
         let f = &mut self.flow;
         (f.in_game, f.b4cf, f.mode, f.sub, f.sub2, f.speed, f.b4d7, f.b4db) = (0, 0, 0, 0, 0, 0, 0, 0);
         (f.frame, f.b4e2, f.b4e3, f.chosen, f.b4e5, f.b4e6) = (0, 0, 0, 0, 0, 0);
+        // G.$507 and G.$508, the saved modes G.$510 .. G.$513 (G.$4CC .. G.$5CB)
+        (f.b507, f.timer508, f.saved_mode) = (0, 0, [0; 4]);
         self.script_game_clear();
+        let sg = &mut self.flow.script;
+        (sg.taken, sg.b4fd, sg.b503, sg.b514, sg.b516) = ([0; 3], 0, 0, 0, 0); // G.$4EC .. G.$4EE, G.$4FD, G.$503, G.$514, G.$516
         let (w, g) = (&mut self.w, &mut self.spawn.g);
         (w.stage_clear, g.b4d5, w.stage, w.vertical_scene, w.scripted, g.b4de, g.killer) = (0, 0, 0, 0, 0, 0, 0);
+        (w.players_minus_one, w.floor_only, w.no_clamp) = (0, 0, 0); // G.$4EF, G.$4F0, G.$506
+        (g.b4f1, g.alive, g.dizzy, g.dizzy_prev, g.b4fa, g.alive_run, g.b4fc) = (0, 0, 0, 0, 0, 0, 0); // G.$4F1, $4F3, $4F8, $4F9, $4FA, $4FB, $4FC
+        (g.go_timer, g.go_camera_x, g.b502, g.b504, g.b505) = (0, 0, 0, 0, 0); // G.$4FE, G.$500, G.$502, G.$504, G.$505
+        (g.wave_timer, g.kill_all, g.car_mode) = (0, 0, 0); // G.$50C, G.$50E, G.$518
+        (g.b7b2, g.cage_smashed) = (0, 0); // G.$7B2, G.$7B6 (inside the 0x73C sweep)
+        self.cam.car = 0; // G.$51A
+        self.rank.w4f6 = 0; // G.$4F6
         let r = &mut self.rank;
         (r.time_min, r.time_sec, r.time_div, r.time_lock) = (0, 0, 0, 0);
+        (self.hud.blink_phase, self.hud.blink_timer) = (0, 0); // G.$50A, G.$50B
         self.hud.score_dirty = false; // 0xFF2E
         self.hud.score_dirty_p = [false; 3];
         let c = &mut self.cam;
         (c.shake_state, c.shake_req, c.shake_strength, c.shake_timer, c.shake_sign, c.shake_amp) = (0, 0, 0, 0, 0, 0); // 0xA836
         (c.cam1_x, c.cam1_y, c.cam1_y_frac) = (0, 0, 0);
-        let s = &mut c.s2;
-        (s.state, s.mode, s.sub, s.cam_x, s.cam_x_frac, s.cam_y, s.cam_y_frac, s.cam_z, s.cam_z_frac) = (0, 0, 0, 0, 0, 0, 0, 0, 0);
-        let t = &mut c.s3;
-        (t.state, t.b5, t.cam_x, t.cam_x_frac, t.cam_y) = (0, 0, 0, 0, 0);
+        // The two controller structs, every byte of them (G.$73C .. G.$7DB, G.$7DC .. G.$85B); `map_area` and `own_map` are the port's own and are set by the
+        // area setup that follows.
+        c.s2 = Scroll2::default();
+        c.s3 = Scroll3::default();
+        c.shake_scroll1_y = 0; // G.$7B8
     }
 
     /// The flow-owned part of the player init 0x4D46 / 0x4D5E / 0x4D76 (0x4D8E clears the
@@ -1111,8 +1132,9 @@ mod tests {
         assert!(p96.is_some(), "class 96 object spawned");
     }
 
-    /// 0xA870: the game task clears G.$4CC .. G.$4EB, the HUD score flags and the camera structs before it starts, so a second game of the same run
-    /// does not start with the walk bits G.$4DF, the opening's G.$4E3, the script flag G.$4DD, the clock or the cameras of the game before.
+    /// 0xA870: the game task clears G.$4CC .. G.$5CB, the HUD score flags and the camera structs G.$6BC .. G.$85B before it starts, so a second game of
+    /// the same run does not start with the walk bits G.$4DF, the opening's G.$4E3, the script flag G.$4DD, the clock, the cameras or the area byte G.$786
+    /// of the game before (MAME: the write of 0 to G.$786 by the sweep 0x4D1A in the first frame of the game task, `flow_g786`).
     #[test]
     fn a_second_game_starts_from_cleared_game_variables() {
         let mut g = Game::new(Box::leak(Box::new(AssetPack::default())));
@@ -1135,10 +1157,30 @@ mod tests {
         g.cam.cam1_x = 0x120;
         g.cam.shake_state = 2;
         g.cam.s2.area = 2;
+        g.cam.s2.lock78 = 1;
+        g.cam.s2.event_idx = 5;
+        g.cam.s2.x4c = 0x580;
+        g.cam.s3.cam_x = 0x80;
+        g.spawn.g.b4f1 = 3; // G.$4F1 .. G.$518 are all inside the 0xA804 sweep
+        g.spawn.g.alive = 4;
+        g.spawn.g.kill_all = 1;
+        g.spawn.g.wave_timer = 7200;
+        g.spawn.g.car_mode = 1;
+        g.spawn.g.go_timer = 99;
+        g.spawn.g.b7b2 = 2;
+        g.w.floor_only = 1;
+        g.w.no_clamp = 1;
+        g.w.players_minus_one = 2;
+        g.flow.script.b503 = 1;
+        g.flow.script.taken = [1, 2, 3];
+        g.hud.blink_phase = 1;
         g.flow_game_clear_ram();
         assert_eq!((g.flow.script.b4df, g.flow.script.b4d8, g.flow.b4e3, g.flow.b4e2, g.flow.chosen, g.flow.frame), (0, 0, 0, 0, 0, 0));
         assert_eq!((g.w.scripted, g.w.stage, g.w.vertical_scene, g.spawn.g.b4d5, g.spawn.g.b4de, g.rank.time_min, g.rank.time_lock), (0, 0, 0, 0, 0, 0, 0));
         assert_eq!((g.cam.s2.mode, g.cam.s2.cam_y, g.cam.s3.cam_y, g.cam.cam1_x, g.cam.shake_state), (0, 0, 0, 0, 0));
-        assert_eq!(g.cam.s2.area, 2, "the area byte G.$786 is not in the cleared ranges");
+        assert_eq!(g.cam.s2.area, 0, "G.$786 is in the sweep of G.$73C (0xA858: d1 = 4, 5 passes of 32 bytes)");
+        assert_eq!((g.cam.s2.lock78, g.cam.s2.event_idx, g.cam.s2.x4c, g.cam.s3.cam_x), (0, 0, 0, 0));
+        assert_eq!((g.spawn.g.b4f1, g.spawn.g.alive, g.spawn.g.kill_all, g.spawn.g.wave_timer, g.spawn.g.car_mode, g.spawn.g.go_timer, g.spawn.g.b7b2), (0, 0, 0, 0, 0, 0, 0));
+        assert_eq!((g.w.floor_only, g.w.no_clamp, g.w.players_minus_one, g.flow.script.b503, g.flow.script.taken, g.hud.blink_phase), (0, 0, 0, 0, [0; 3], 0));
     }
 }

@@ -250,7 +250,7 @@ MAME wins over the design text; the design documents themselves are not edited.
   4044 to 4337: camera X 0x731 to 0x7BF).
 - D4d s6 / D2b (game start): 0xA870 clears G.$4CC .. G.$4EB (8 longs, G.$4CD kept), the HUD score flags G.-$7134 .. G.-$7131, G.$755A (8 longs), G.$6BC (4), G.$73C (5, up to the camera Z) and
   G.$7DC (4) before anything else. The area byte G.$786 (+$4A of G.$73C) is NOT in them and its only writers are 0xA992 (the debug start), 0xABC8 / 0xABF2 (the stage change and the ending)
-  and the camera events: a new game after a game over in a later area starts with that area's start script (0x1DA10 reads G.$786 in 0xA9BE, before the camera init resets it).
+  and the camera events: a new game after a game over in a later area starts with that area's start script (0x1DA10 reads G.$786 in 0xA9BE, before the camera init resets it). **WRONG, see the next section.**
 - D4d s9.2 (the card): the last slide out step of the card takes the CPU past the vertical blank when the frame is busy: in the recordings with ten items alive (Episodes 4 and 5) the two
   instructions after the clear of scroll1 (sub + 2, G.$4E2 = 0) are the first thing of the next frame, before the game task, so the heroes' script sees G.$4E2 clear in the same record
   (`link-ep4` 562: the random number of the walk in, `sc_timer`). 8 items is the port's estimate of "busy" (0 to 4 items: no spill).
@@ -260,4 +260,11 @@ MAME wins over the design text; the design documents themselves are not edited.
 - D2d / name entry (0x15EE8): the attack key enters the glyph under the cursor even when the cursor has left END after the third letter; the name has 4 bytes and the original stores on into
   the block (+$A the frames per second, +$10 the glyph pictures). The glyph picture table is read for any glyph byte.
 - D3e part 3 s4.3 / D4c s7.2 (the library): the area setup of Episode 7 area 2 (0x207B6) clears scroll1 (0xB52) and redraws the HUD (0x162AE): that is what takes the cage of the lift away. The port had the two calls as a comment.
+
+## From the G.$786 check (2026-10-17)
+
+- M3-29 note above (0xA870 clears "G.$4CC .. G.$4EB (8 longs ...)" and "G.$73C (5, up to the camera Z)"): the sweep 0x4D1A clears **8 longs a pass, `d1` + 1 passes** (0x4D1E .. 0x4D2E, `dbra d1, 0x4D1E`), so
+  0xA804 (`d1` = 7) clears 256 bytes G.$4CC .. G.$5CB, 0xA858 (`d1` = 3) G.$6BC .. G.$73B, 0xA85E (`d1` = 4) 160 bytes G.$73C .. G.$7DB and 0xA866 (`d1` = 3) G.$7DC .. G.$85B (the shake struct G.$755A is 8 longs
+  inline). G.$786 is inside the third sweep: MAME shows the word write of 0 at pc 0x4D26 in the first frame of every game task (`re/harness/scripts/flow_g786.txt`, `DINO_WATCH_WRITE=FF8786`: the second game after a
+  game over in Episode 1 area 1 starts with G.$786 = 0 and the normal opening). There is no stale start script, and the "quirk kept" of M3-29 does not exist.
 

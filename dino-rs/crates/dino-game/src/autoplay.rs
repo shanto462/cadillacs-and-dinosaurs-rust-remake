@@ -17,8 +17,6 @@ const KILL_EVERY: u32 = 600;
 /// Frames of the attract cycle (coin at 10, start at 100, attack at 200).
 const CYCLE: u32 = 300;
 
-/// Ticks the bot waits in the attract loop for a demo after a game that ended in a later area.
-const DEMO_WAIT: u32 = 40000;
 /// Ticks without a new best X before the bot walks the hero up and down, and the pixels that count as progress.
 const STALL: u32 = 60;
 const PROGRESS: u16 = 4;
@@ -35,8 +33,6 @@ pub struct Bot {
     progress: Option<([u16; 3], u32)>,
     /// The tick of the last `stuck` line.
     stuck_said: u32,
-    /// The tick the attract loop began after a game.
-    attract_from: Option<u32>,
     /// The tick the ending (mode 0x1C) began and the tick the game was back in the attract loop after it.
     ending: Option<u32>,
     finished: Option<u32>,
@@ -51,15 +47,6 @@ impl Bot {
     pub fn frame(&mut self, g: &mut Game, tick: u32, debug: &mut Debug) -> Frame {
         let mut f = Frame::default();
         if g.flow.in_game == 0 {
-            // A new game right after a game over starts with the area byte G.$786 of the game before (the original clears it at a stage change
-            // and in the demo's RAM clear only), so the start script of that area plays in area 0 and the opening never ends. A human would
-            // wait for the title: the bot waits for a demo to clear the byte (at most `DEMO_WAIT` ticks).
-            if self.attract_from.is_none() {
-                self.attract_from = Some(tick);
-            }
-            if g.cam.s2.area != 0 && tick - self.attract_from.unwrap_or(tick) < DEMO_WAIT {
-                return f;
-            }
             let t = tick % CYCLE;
             match t {
                 10..=13 => f.coins = 1,
@@ -69,7 +56,6 @@ impl Bot {
             }
             return f;
         }
-        self.attract_from = None;
         // The bot is a flow test, not a player: the heroes keep their HP (`DINO_AUTO_MORTAL=1` lets them die, to run the continue and
         // game over paths) and the clock is topped up to 5:00 before it runs out.
         if std::env::var_os("DINO_AUTO_MORTAL").is_none() {
