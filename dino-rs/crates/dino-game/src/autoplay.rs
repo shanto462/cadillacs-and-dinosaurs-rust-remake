@@ -10,7 +10,7 @@
 
 use crate::debug::Debug;
 use crate::game::Game;
-use crate::input::{Frame, ATTACK, DOWN, JUMP, RIGHT, UP};
+use crate::input::{Frame, ATTACK, DOWN, JUMP, LEFT, RIGHT, UP};
 
 /// Frames between kill-all presses in a game.
 const KILL_EVERY: u32 = 600;
@@ -22,11 +22,33 @@ const STALL: u32 = 60;
 const PROGRESS: u16 = 4;
 /// Ticks without progress after which `report` says `stuck`.
 const STUCK: u32 = 3000;
+/// Stall retreat (no camera lock): after `STALL` ticks without progress the hero walks left in steps of `STEP` pixels. At each
+/// stop he sweeps the depth (Z) up, then down, for `SWEEP_LEN` ticks, so a ramp or a lower lane behind him is found. After
+/// `MAX_STOPS` stops, or when the walk is blocked for `WALK_MAX` ticks, he walks right for `REST` ticks before the next retreat.
+const STEP: u16 = 0x30;
+/// Ticks without progress before the first retreat (the walk up and down of `STALL` comes first).
+const RETREAT_AFTER: u32 = 2400;
+const WALK_MAX: u32 = 240;
+const SWEEP_LEN: u32 = 360;
+const MAX_STOPS: u32 = 14;
+const REST: u32 = 600;
 /// Ticks between the state lines of `DINO_AUTO_DIAG`.
 const DIAG_EVERY: u32 = 500;
 
+/// One retreat: the goal X of the next stop, the stops made, when the walk began and when the depth sweep began.
+#[derive(Clone, Copy)]
+struct Back {
+    goal: u16,
+    stops: u32,
+    walk_from: u32,
+    sweep: Option<u32>,
+}
+
 #[derive(Default)]
 pub struct Bot {
+    /// The stall retreat in progress, and the tick until which the hero walks right after one (`REST`).
+    back: Option<Back>,
+    rest_until: u32,
     /// The last (episode, area, mode) reported.
     last: Option<(u8, u8, u8)>,
     /// The last state that counted as progress (camera X and Y, hero X, mode, sub) and the tick it was first seen.
@@ -69,7 +91,18 @@ impl Bot {
         // when something is alive to hit (enemies, a locked camera) and otherwise once in a while (a gate, a barrel, a wall).
         let fight = g.spawn.g.alive != 0 || g.cam.s2.lock78 != 0;
         let swing = if fight { tick % 12 < 4 } else { tick % 60 < 4 };
-        f.players[0] = RIGHT | if swing { ATTACK } else { 0 } | if tick % 180 < 8 { JUMP } else { 0 };
+        // A stall without a camera lock sends the hero left to retreat (see `STEP`); otherwise he walks right.
+        let stalled = tick - self.best_tick;
+        if stalled < RETREAT_AFTER {
+            self.back = None;
+        }
+        let retreat = if stalled >= RETREAT_AFTER && g.cam.s2.lock78 == 0 && tick >= self.rest_until { self.retreat(g.players[0].b.xi() as u16, tick) } else { None };
+        let (run, depth) = match retreat {
+            Some(LEFT) => (LEFT, 0),
+            Some(d) => (0, d),
+            None => (RIGHT, 0),
+        };
+        f.players[0] = run | depth | if swing { ATTACK } else { 0 } | if tick % 180 < 8 { JUMP } else { 0 };
         // Progress is a new best X (the areas run left to right). A hero who has made none for `STALL` ticks walks up and down by
         // turns, a longer way each time (60, 120, 180, 240 ticks), to find the way round a wall or a ledge.
         let x = g.players[0].b.xi() as u16;
@@ -78,8 +111,7 @@ impl Bot {
             self.best_x = x;
             self.best_tick = tick;
         }
-        let stalled = tick - self.best_tick;
-        if stalled >= STALL {
+        if retreat.is_none() && stalled >= STALL {
             let mut t = stalled - STALL;
             let mut leg = 0u32;
             while t >= (60 * (leg + 1)).min(240) {
@@ -92,6 +124,32 @@ impl Bot {
             debug.kill_all();
         }
         f
+    }
+
+    /// The input of a stall retreat this tick (LEFT while walking, UP and DOWN while sweeping), or `None` when the hero walks right.
+    fn retreat(&mut self, x: u16, tick: u32) -> Option<u8> {
+        let b = self.back.get_or_insert(Back { goal: x.wrapping_sub(STEP), stops: 0, walk_from: tick, sweep: None });
+        if let Some(s) = b.sweep {
+            let t = tick - s;
+            if t < SWEEP_LEN {
+                return Some(if t < SWEEP_LEN / 3 { UP } else { DOWN });
+            }
+            b.sweep = None;
+            b.stops += 1;
+            if b.stops >= MAX_STOPS {
+                self.back = None;
+                self.rest_until = tick + REST;
+                return None;
+            }
+            b.goal = b.goal.wrapping_sub(STEP);
+            b.walk_from = tick;
+            return Some(LEFT);
+        }
+        if x <= b.goal || tick - b.walk_from > WALK_MAX {
+            b.sweep = Some(tick);
+            return Some(UP);
+        }
+        Some(LEFT)
     }
 
     /// The game was played from the first stage through the ending and is back in the attract loop (a headless run without `--frames` stops there).
