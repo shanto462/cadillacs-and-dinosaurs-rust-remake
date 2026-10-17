@@ -10,6 +10,7 @@ publish = false
 [workspace.dependencies]
 dino-assets = { path = "crates/dino-assets" }
 dino-extract = { path = "crates/dino-extract" }
+dino-sound = { path = "crates/dino-sound" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 macroquad = "0.4"
