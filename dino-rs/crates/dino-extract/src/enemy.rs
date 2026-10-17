@@ -16,6 +16,8 @@ const SENTINEL: u16 = 0x9FFF;
 
 /// Small tables copied as byte blobs: (ROM address, length, user).
 const TABLES: &[(u32, u32, &str)] = &[
+    (0x4FA30, 0xC0, "Hopper direction steps (0x4F374)"),
+    (0x4F3DA, 0xE, "Hopper frame X offsets (0x4F3B4)"),
     // M5-01 monster services: dispatch, reaction mapping and colour flashes.
     (0x11CC4, 0x20, "monster hit reaction mapping"),
     (0x11CE4, 8, "monster guard dispatch"),
