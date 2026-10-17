@@ -8,6 +8,7 @@
 //! * `0x04` hit spark / impact picture, 0x924AA: plays animation +$26 of table 0x924F6 once.
 //! * `0x10` water splash when landing in water, 0x92A48 (spawned by the player code 0x606E).
 //! * `0x20` burning flames attached to a body, 0x92FB4 (player 0x1C86E, enemy 0x2AD98).
+//! * `0x60` the maker of the pieces of a wall panel, 0x959E6 (`effect/fx24.rs`), `0x64` the spark on a TNT fuse, 0x96296 (`effect/fx25.rs`).
 //! * `0x0C` the shockwave picture of a thug holding a hero, 0x929B8 (`effect/fx03.rs`).
 //! * `0x1C` ground dust, 0x92ECC (`effect/fx07.rs`), `0x4C` dizzy stars, 0x94462 (`effect/fx19.rs`).
 //! * `0x2C` debris of a broken container or weapon, 0x934F6 (`effect/fx11.rs`).
@@ -51,6 +52,11 @@ mod fx03;
 mod fx07;
 #[path = "effect/fx19.rs"]
 mod fx19;
+// Pool C classes 24 and 25 (M5-06): the maker of the wall panel pieces and the spark of a TNT fuse.
+#[path = "effect/fx24.rs"]
+mod fx24;
+#[path = "effect/fx25.rs"]
+mod fx25;
 // Pool C class 11 (M5-04): the debris of broken containers and weapons.
 #[path = "effect/fx11.rs"]
 mod fx11;
@@ -64,6 +70,8 @@ use dino_assets::{FrameId, HitBox};
 pub const FX_SPARK: u16 = 0x04;
 pub const FX_WATER_SPLASH: u16 = 0x10;
 pub const FX_FLAMES: u16 = 0x20;
+pub const FX_BLAST: u16 = 0x60;
+pub const FX_FUSE_SPARK: u16 = 0x64;
 pub const FX_SHOCKWAVE: u16 = 0x0C;
 pub const FX_DUST: u16 = 0x1C;
 pub const FX_DIZZY: u16 = 0x4C;
@@ -519,6 +527,8 @@ impl Game {
                 0x5C => self.fx_respawn_sparkle(i),
                 FX_WATER_SPLASH => self.fx_water_splash(i),
                 FX_FLAMES => self.fx_flames(i),
+                FX_BLAST => self.fx_blast(i),
+                FX_FUSE_SPARK => self.fx_fuse_spark(i),
                 FX_SHOCKWAVE => self.fx_shockwave(i),
                 FX_DUST => self.fx_dust(i),
                 FX_DIZZY => self.fx_dizzy(i),
@@ -534,7 +544,7 @@ impl Game {
                 // 0x24 0x93184, 0x28 0x932D2,
                 // 0x30 0x939D6, 0x34 0x93A7A, 0x3C 0x93E54, 0x40 0x93FFC,
                 // 0x44 0x94100, 0x48 0x942C6, 0x50 0x9454E,
-                // 0x58 0x95840, 0x60 0x959E6, 0x64 0x96296, 0x6C 0x963D6,
+                // 0x58 0x95840, 0x6C 0x963D6,
                 // 0x70 0x96488, 0x74 0x965CE, 0x78 0x966B4, 0x7C 0x96800, 0x80 0x96A7E,
                 // 0x84 0x96B78, 0x88 0x96DC4, 0x8C 0x96E56, 0x90 0x96FF4, 0x94 0x9720A,
                 // 0x98 (null entry), 0x9C 0x97530, 0xA0 0x97674, 0xA4 0x97800.

@@ -22,21 +22,21 @@ const PUFF_ANIMS: u32 = 0x951AC;
 
 impl Effect {
     /// The long +$58 (the record pointer of a maker): +$58 / +$5A as one big-endian long.
-    fn p58(&self) -> u32 {
+    pub(super) fn p58(&self) -> u32 {
         ((self.owner58 as u32) << 16) | self.owner_class as u32
     }
 
-    fn set_p58(&mut self, a: u32) {
+    pub(super) fn set_p58(&mut self, a: u32) {
         self.owner58 = (a >> 16) as u16;
         self.owner_class = a as u16;
     }
 
     /// The byte +$5C (the high byte of the word).
-    fn b5c(&self) -> u8 {
+    pub(super) fn b5c(&self) -> u8 {
         (self.w5c >> 8) as u8
     }
 
-    fn set_b5c(&mut self, v: u8) {
+    pub(super) fn set_b5c(&mut self, v: u8) {
         self.w5c = (self.w5c & 0x00FF) | ((v as u16) << 8);
     }
 }

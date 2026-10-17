@@ -16,6 +16,7 @@ const EFFECT_TABLES: &[u32] = &[
     0x937AA, // debris, effect $20 = 0x2C (0x93590)
     0x951AC, // puff pieces, effect $20 = 0x54 (0x94776)
     0x944DC, // dizzy stars, effect $20 = 0x4C (0x94476)
+    0x28904, // fuse spark of a TNT barrel, effect $20 = 0x64 (0x962AA)
 ];
 
 /// Frame lists loaded directly with 0x160A (10-byte records, no table).

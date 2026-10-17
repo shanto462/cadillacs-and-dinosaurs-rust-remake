@@ -190,6 +190,8 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x29552, 0x15A, "container debris: chance masks, then the piece lists 0x295F4 / 0x29650"),
     // M5-04 pool C class 21 (0x94672): the puff lists by variant, a word offset table then (ay, +$60, 12 byte records) per variant.
     (0x9484A, 0x962, "pool C class 21 puff lists by variant (0x94698)"),
+    // M5-06 pool C class 24 (0x959E6): the piece lists by variant, a word offset table then (ay, +$60, 8 byte records) per variant.
+    (0x95B80, 0x2A8, "pool C class 24 piece lists by variant (0x95A0C)"),
     // M5-05 pool C class 19 (0x94338): the height of the dizzy stars over a head by the owner's class (a word per class).
     (0x94398, 0xCA, "pool C class 19 star height by owner class (0x94376)"),
     (0x24CC6, 0x20, "gun flag by weapon variant (0x24C3A)"),
