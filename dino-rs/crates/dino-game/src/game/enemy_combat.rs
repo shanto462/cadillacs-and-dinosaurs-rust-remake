@@ -73,10 +73,17 @@ impl Game {
         p.b.hitstop = rec.hit_stop;
         p.b.b9a = rec.b7;
         self.body_mut(a).hitstop = rec.hit_stop;
-        if matches!(self.player_move_word(a), 0x202 | 0x203) {
-            self.body_mut(ab.partner).hitstop = rec.hit_stop;
+        let paired = matches!(self.player_move_word(a), 0x202 | 0x203);
+        if paired {
+            self.body_mut(ab.partner).hitstop = rec.hit_stop; // 0x10F6E: a6 = the partner (+$70)
         }
-        if rec.sound != 0 { self.snd_hit(rec.sound); } // 0x962A
+        if rec.sound != 0 {
+            // 0x10F7C jsr 0x962A: the pan from a2 (the attack object), the mode from +$24 of a6, which is the partner after
+            // 0x10F6E and otherwise a register left from before the pass (the attack object's facing stands in, as at the other sites)
+            let ax = self.body(a).xi();
+            let facing = if paired { self.body(ab.partner).facing } else { self.body(a).facing };
+            self.snd_hit(rec.sound, ax, facing);
+        }
         self.spawn_hit_spark(a, d, ha, hb, rec.spark); // 0x12720
         self.player_power_factor(i); // 0x11738, the only RNG call in this pass
     }
