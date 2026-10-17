@@ -1065,7 +1065,13 @@ impl Game {
         match e.b.step {
             0 => {
                 if e.b.hp == 0 && (e.m.b(ATTACKING) as i8) >= 0 && e.b.reaction == 0xC {
-                    // Charred death (0x93D48 effect, frame list 0x2AC1C, 0x9A84): effects port.
+                    // Charred death 0x2AC42: the pieces (0x93D48), the body is not drawn any more (clr.b $25) and shows the charred frame 0x2AC1C (0x1236),
+                    // then 0x9A84 (the voice of the killer: sound port, M4-13 part 3, not called here yet).
+                    let b = e.b.clone();
+                    self.fx_spawn_burn_pieces(&b);
+                    e.b.draw_flags = 0;
+                    let id = self.assets.sprites.frame_at(0x2AC1C);
+                    e.b.load_frame(&self.assets.sprites, id);
                     let b = e.b.clone();
                     self.enemy_hud_hit(h, &b, 0);
                     self.item_drop_from_enemy(e);
@@ -1146,9 +1152,18 @@ impl Game {
     }
 
     /// 0x2AD98: flames on a burning enemy (pool C class 0x20, list 0x2CA36 by +$84 / 2).
-    fn enemy_burn_flames(&mut self, h: Handle, e: &Enemy) {
-        // The effects port spawns one flame per call; the list length and entries live in its data.
-        let _ = (h, e);
+    /// 0x2AD98 / 0x2ADAE: the list of the enemy (a word offset table 0x2CA36 indexed by +$84 / 2 bytes = the name id): a count, then (X, Y, variant) of each flame; one
+    /// pool C class 8 object per entry (owner +$60, +$62 / +$64 the offset, +$26 the variant, +$5C its index). Stops when pool C is full.
+    pub(crate) fn enemy_burn_flames(&mut self, h: Handle, e: &Enemy) {
+        let t = &self.assets.enemy.t;
+        let a = 0x2CA36u32.wrapping_add(t.u16(0x2CA36, (e.m.w(W84) >> 1) as u32) as i16 as i32 as u32);
+        let count = t.u16(a, 0);
+        for k in 0..count {
+            let (x, y, var) = (t.i16(a, 2 + 6 * k as u32), t.i16(a, 4 + 6 * k as u32), t.u16(a, 6 + 6 * k as u32));
+            if !self.fx_spawn_flame(h, x, y, var, k) {
+                return;
+            }
+        }
     }
 
     /// 0x2ADDE (types 0xE..0x12) / 0x2AEB2 (types 0x14..0x18): slide back without lift.

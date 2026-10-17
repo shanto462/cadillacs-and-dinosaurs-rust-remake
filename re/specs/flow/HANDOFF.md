@@ -778,3 +778,24 @@ Tools: `re/harness/link_check.sh [NAME ...]` (`STORY_ONLY=1` stops at the first 
   `m516_tntbarrel_jack` and the `m700_a224_*` / `a216_*` TNT hit scenarios (class 25 on the barrels) have no ported-class difference (`m516_tnt_2` had a first difference at frame 10 before). The dynamite, grenade and TNT
   explosions are pool E items (class 1, `item/blast.rs`), not pool C; what is left in `m516_dynamite_*`, `grenade_jack` and `torch_*` is the flames on enemies (M5-07). regress.sh 51 of 52 at 0, `mp_join` 3. The new
   pairs of `m516_e2_start` (enemy classes 46 and 48) are the Episode 2 birds merged from M6-16, not this change.
+
+### M5-07: burn death pieces (pool C class 15), the torch glow (pool E class 6), flames on enemies (green)
+
+* **Class 15** (`effect/fx15.rs`, handler 0x93E54, `+$20 = 0x3C`): one piece of a body that burned to death. `fx_spawn_burn_pieces(&Body)` = 0x93D48 makes 16 of them (15 when the region word G.$32 is 0) from the table 0x93DB4
+  (`dy, vy, vz, vx, variant`, `ay` -0x60, vx negated for a left facing owner). A piece is drawn with the **sprite** frame loader 0x120E / 0x121E (the table 0x93F42 is in `OBJECT_ANIM_TABLES`, the trace loads class 15 frames as
+  sprite frames) and has a life of `(rand() & 0x3F) + 0x1E` updates in +$58 (the draw of the random number is after the picture). Each update sets +$51 = 1 and, when `G.$0 + d7` is odd, runs the floor snap 0x12DAC. Sub 0
+  is the first flight (a landed piece makes a half bounce `vy = -vy >> 1` and goes to sub 2), sub 2 the rest (a full bounce `vy = -vy`, drawn on odd updates only). Draw flags 0x10, 0x30 in Episode 8 (G.$4D9 = 7).
+* **The charred death** (`enemy_burn` 0x2AC28..0x2AC6A): hp 0, not a boss mark and the reaction 0xC: the pieces, `+$25 = 0`, the charred frame 0x2AC1C (`OBJECT_FRAMES`, loader 0x1236), **0x9A84 (the voice of the killer,
+  a sound call site: not called, M4-13 part 3 has it)**, the HUD message, the item drop, 0x2AF86. The boss site 0x49EE6 is for a class that is not ported.
+* **Flames on enemies** (`enemy_burn_flames`, 0x2AD98 / 0x2ADAE): the list of the enemy by name id (`+$84 / 2` into the word table 0x2CA36, `TABLES` 0x2CA36 / 0xE8 bytes): a count, then (X, Y, variant) per flame; one
+  class 8 object per entry (`fx_spawn_flame`, owner +$60, index +$5C), stop when pool C is full. The other callers (0x4EE24, 0x1F9E4, 0x4A052: bosses) are not ported classes.
+* **The torch glow** (`item_overlay` in `item/blast.rs`, 0x29B06, pool E class 6, in `PORTED_CLASSES`): made by the torch (`weapon_spawn_overlay`: +$58 the kind word 0x203, +$5A the torch). It shows the effect frame lists 0x29CB6
+  (idle flame) and 0x29CF4 (swing flame) with the effect loader 0x160A / 0x15F4 at the torch: X, Y by the torch's frame byte (+$2D: a long `dx, dy` of the table 0x29C26, `TABLES` 0x90 bytes, dx negated for a left facing
+  torch), Z + 2 or Z - 1 in the frames with bit 0 of G.$1 set, visible byte of the torch. A held torch (sub 8) whose holder's act (+$06) is 2 loads the swing list when the flame flag +$2C is 0 and the act was not 2 in the
+  frame before (+$5C / +$5D); in every other case the idle list comes back when +$2C is not 0. It ends when the torch is gone, no longer class 0 or another weapon (+$A0). Two traps found: **the glow must be put into the draw list with
+  `draw_list_add_visible_item(it, h)`** (an item taken out of its slot is not seen by `draw_list_add_if_visible`), and the trace loads the frame of a class 6 item as an effect frame (`Item::trace_visit`). The bytes +$58 .. +$5A of the
+  glow are also the attack id, hit stop and knock fields of the shared header (`weapon_spawn_overlay` sets both).
+* **Check.** `m516_torch_*` (4 heroes), `m516_dynamite_*` (4 heroes + `run`), `m516_grenade_jack`, `m516_bazooka_*`: the ported-class pairs go from 1 (7 for `dynamite_run_jack`) to 0, and the sprite lists of
+  `m516_torch_jack` equal MAME in all 374 records (before: 2 sprites missing in every record: the glow). `m800_a21_c_flame_*`, `m800_a22_c_flame_enemy` have no class 8 or class 15 difference. Of the 69 scenarios with flames or pieces
+  `cmp_fx.py` finds a difference in 13: flames whose owner is a frozen unported class (Episode 3: the flame sits where its owner stood), lag records and first frames of objects an unported class made. What is left in the torch rows is the
+  sound 0x72 call that MAME makes at record 107 (the burn thud, not called: sound call site). regress.sh 51 of 52 at 0, `mp_join` 3; autoplay reaches mode 0x1C (frame 203774).

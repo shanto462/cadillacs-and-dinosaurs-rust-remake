@@ -8,6 +8,7 @@
 //! * `0x04` hit spark / impact picture, 0x924AA: plays animation +$26 of table 0x924F6 once.
 //! * `0x10` water splash when landing in water, 0x92A48 (spawned by the player code 0x606E).
 //! * `0x20` burning flames attached to a body, 0x92FB4 (player 0x1C86E, enemy 0x2AD98).
+//! * `0x3C` a piece of a body that burned to death, 0x93E54 (`effect/fx15.rs`).
 //! * `0x60` the maker of the pieces of a wall panel, 0x959E6 (`effect/fx24.rs`), `0x64` the spark on a TNT fuse, 0x96296 (`effect/fx25.rs`).
 //! * `0x0C` the shockwave picture of a thug holding a hero, 0x929B8 (`effect/fx03.rs`).
 //! * `0x1C` ground dust, 0x92ECC (`effect/fx07.rs`), `0x4C` dizzy stars, 0x94462 (`effect/fx19.rs`).
@@ -52,6 +53,9 @@ mod fx03;
 mod fx07;
 #[path = "effect/fx19.rs"]
 mod fx19;
+// Pool C class 15 (M5-07): the pieces of a body that burned to death.
+#[path = "effect/fx15.rs"]
+mod fx15;
 // Pool C classes 24 and 25 (M5-06): the maker of the wall panel pieces and the spark of a TNT fuse.
 #[path = "effect/fx24.rs"]
 mod fx24;
@@ -70,6 +74,7 @@ use dino_assets::{FrameId, HitBox};
 pub const FX_SPARK: u16 = 0x04;
 pub const FX_WATER_SPLASH: u16 = 0x10;
 pub const FX_FLAMES: u16 = 0x20;
+pub const FX_BURN_PIECE: u16 = 0x3C;
 pub const FX_BLAST: u16 = 0x60;
 pub const FX_FUSE_SPARK: u16 = 0x64;
 pub const FX_SHOCKWAVE: u16 = 0x0C;
@@ -527,6 +532,7 @@ impl Game {
                 0x5C => self.fx_respawn_sparkle(i),
                 FX_WATER_SPLASH => self.fx_water_splash(i),
                 FX_FLAMES => self.fx_flames(i),
+                FX_BURN_PIECE => self.fx_burn_piece(i),
                 FX_BLAST => self.fx_blast(i),
                 FX_FUSE_SPARK => self.fx_fuse_spark(i),
                 FX_SHOCKWAVE => self.fx_shockwave(i),

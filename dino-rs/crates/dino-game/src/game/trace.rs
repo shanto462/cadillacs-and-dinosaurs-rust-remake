@@ -297,6 +297,8 @@ impl Body {
         f.u8(0x25, "draw_flags", &mut self.draw_flags);
         f.u16(0x26, "var26", &mut self.var26);
         let raw = self.draw_flags & 0x40 != 0;
+        // The pieces of a burned body (pool C class 15, 0x3C) are drawn with the sprite frame loader 0x120E: sprite frames, not effect frames.
+        let effects = effects && self.k20 != 0x3C;
         f.frame(0x28, "frame", &mut self.frame, effects, raw, self.live != 0);
         f.u8(0x2C, "param_a", &mut self.param_a);
         f.u8(0x2D, "param_b", &mut self.param_b);
@@ -590,7 +592,9 @@ impl Item {
     /// shared fields +$40..+$9A and the raw bytes `ITEM_RAW`. When loading, all raw bytes first.
     pub fn trace_visit(&mut self, f: &mut F) {
         self.m.trace_load_all(f, 0xC0);
-        self.b.trace_header(f, false);
+        // The torch glow (class 6, 0x18) shows effect frames (the lists 0x29CB6 / 0x29CF4 loaded by 0x160A), every other item sprite frames.
+        let class = if f.loading() { self.m.w(0x20) } else { self.b.k20 };
+        self.b.trace_header(f, class == 0x18);
         let live = self.b.live != 0;
         f.frame(0x30, "frame2", &mut self.b.frame2, false, false, live);
         self.b.trace_rest(f);
@@ -1077,6 +1081,7 @@ pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
             class::BULLET,
             class::FOOD,
             class::CONTAINER,
+            class::OVERLAY,
             class::SHELL,
             class::PROJECTILE,
             class::TREASURE,
@@ -1084,7 +1089,7 @@ pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
             class::ATTACK_BOX,
         ],
     ),
-    ("effect", &[0x04 / 4, 0x10 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x2C / 4, 0x38 / 4, 0x54 / 4, 0x0C / 4, 0x1C / 4, 0x4C / 4, 0x60 / 4, 0x64 / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x88 / 4]),
+    ("effect", &[0x04 / 4, 0x10 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x2C / 4, 0x38 / 4, 0x54 / 4, 0x0C / 4, 0x1C / 4, 0x4C / 4, 0x60 / 4, 0x64 / 4, 0x3C / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x88 / 4]),
     // a pool D slot has no class word: the diff tool reads +$20 of the slot, which is 0 for the clock's slot (a sprite word)
     ("special", &[0]),
 ];

@@ -33,6 +33,8 @@ const EFFECT_LISTS: &[u32] = &[
     0x930F4, // same, var != 0 (0x92FE0)
     0x930D4, // flames dying out after landing, var 0 (0x93054)
     0x9313C, // same, var != 0 (0x93060)
+    0x29CB6, // torch glow, idle flame, item class 6 (0x29B1A)
+    0x29CF4, // torch glow, swing flame (0x29C10)
     0x92A30, // hammer shockwave, effect $20 = 0xC, var 0 (0x929CC)
     0x92A3C, // same, var != 0 (0x929D6)
     0x937D0, // debris piece of a broken bat, var 0 (0x9353A)

@@ -366,10 +366,63 @@ impl Game {
 
     // ------------------------------------------------------------------ class 6: overlay
 
-    /// 0x29B06 overlay of weapon type 11: not ported (it only draws a glow with effect frames of
-    /// 0x29CB6 / 0x29CF4, needed from stage 4 on).
+    /// 0x29B06 the glow of a torch (the overlay of weapon type 11, made by `weapon_spawn_overlay`: +$58 the kind word of the torch, +$5A the torch). It draws the flame
+    /// (effect frame lists 0x29CB6 idle, 0x29CF4 swing, 0x160A / 0x15F4) at the torch: X and Y by the frame byte of the torch (+$2D, the table 0x29C26: a long
+    /// `dx, dy`, dx negated when the torch faces left), Z + 2 (Z - 1 in the frames with bit 0 of G.$1 set: the flame flickers behind and in front of the head), and its
+    /// visible byte. A torch that is held by a hero in the swing act (+$06 of the holder is 2) shows the swing flame from the frame the act began (the list is
+    /// loaded when the frame flag +$2C is 0); in every other case the idle flame comes back when the swing frame's flag +$2C is not 0. It ends when the torch is gone
+    /// or no longer the same weapon (class word +$20, kind +$A0).
     pub(super) fn item_overlay(&mut self, it: &mut Item, h: Handle, i: usize) {
-        self.item_unported(it, h, i);
+        let fx = &self.assets.effects;
+        match it.b.mode {
+            0 => {
+                // 0x29B1A
+                crate::game::effect::fx_load(&mut it.b, fx, fx.frame_at(0x29CB6));
+                it.b.draw_flags = 0x30;
+                it.m.sb(0x5C, 0);
+                it.m.sb(0x5D, 0);
+                it.b.mode += 2;
+            }
+            2 => {}
+            _ => return self.item_free(it, i), // 0x29CAA
+        }
+        // 0x29B38
+        let owner = it.m.w(0x5A);
+        let Some(Slot::Item(j)) = slot_of(owner) else { return self.item_free(it, i) };
+        let o = &self.items.slots[j];
+        if o.b.live == 0 || o.b.k20 != 0 || it.m.w(0x58) != o.m.w(KIND) {
+            return self.item_free(it, i);
+        }
+        it.b.visible = o.b.visible;
+        let t = &self.assets.enemy.t;
+        let (dx, dy) = (t.i16(0x29C26, o.b.param_b as u32), t.i16(0x29C26, o.b.param_b as u32 + 2));
+        let y = o.b.yi().wrapping_add(dy);
+        let dx = if o.b.facing != 0 { dx.wrapping_neg() } else { dx };
+        let x = o.b.xi().wrapping_add(dx);
+        let z = o.b.zi().wrapping_add(if self.w.frame & 1 != 0 { -1 } else { 2 });
+        it.b.facing = o.b.facing;
+        put_hi(&mut it.b.y, y);
+        put_hi(&mut it.b.x, x);
+        put_hi(&mut it.b.z, z);
+        let flame = it.b.param_a != 0; // tst.b $2C(a6): the swing list is playing
+        if o.b.sub == 8 {
+            // 0x29BCE: held: the act of the holder
+            let holder = o.b.partner;
+            let act = self.body(holder).act;
+            it.m.sb(0x5D, it.m.b(0x5C));
+            it.m.sb(0x5C, act);
+            if act == 2 {
+                if it.m.b(0x5D) != 2 && !flame {
+                    crate::game::effect::fx_load(&mut it.b, fx, fx.frame_at(0x29CF4)); // 0x29C10
+                }
+            } else if flame {
+                crate::game::effect::fx_load(&mut it.b, fx, fx.frame_at(0x29CB6)); // 0x29BF0
+            }
+        } else if flame {
+            crate::game::effect::fx_load(&mut it.b, fx, fx.frame_at(0x29CB6)); // 0x29BC0
+        }
+        crate::game::effect::fx_tick(&mut it.b, fx); // jsr 0x15F4
+        self.draw_list_add_visible_item(it, h); // jmp 0x49C0
     }
 
     // ------------------------------------------------------------------ class 7: shell
@@ -610,5 +663,65 @@ impl Game {
             }
             _ => self.item_free(it, i),
         }
+    }
+}
+
+#[cfg(test)]
+mod overlay_tests {
+    use super::*;
+
+    fn rom() -> Option<&'static dino_assets::AssetPack> {
+        static A: std::sync::OnceLock<Option<&'static dino_assets::AssetPack>> = std::sync::OnceLock::new();
+        *A.get_or_init(|| {
+            let path = std::path::Path::new("../../../dino.zip");
+            path.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(path).expect("ROM loads"))))
+        })
+    }
+
+    /// The glow of a torch (0x29B06): at the torch by the table 0x29C26, Z + 2 or - 1 by the frame parity, the swing flame while the holder swings, gone with the torch.
+    #[test]
+    fn the_torch_glow_follows_the_torch_and_ends_with_it() {
+        let Some(a) = rom() else { return };
+        let mut g = Game::new(a);
+        let torch = g.items.handle(3);
+        {
+            let t = &mut g.items.slots[3];
+            t.b.live = 1;
+            t.b.k20 = 0;
+            t.b.mode = 2;
+            t.b.sub = 0;
+            t.b.visible = 1;
+            t.b.set_xi(0x200);
+            t.b.set_yi(0x10);
+            t.b.set_zi(0x50);
+            t.b.param_b = 0;
+            t.m.sw(KIND, 0x203);
+        }
+        let glow = g.items.handle(5);
+        {
+            let o = &mut g.items.slots[5];
+            o.b.live = 1;
+            o.b.k20 = class::OVERLAY * 4;
+            o.m.sw(0x58, 0x203);
+            o.m.sw(0x5A, torch);
+        }
+        g.cam.s2.cam_x = 0x140; // near the torch: it is not removed for being far from the screen
+        g.w.frame = 2;
+        g.pool_e_update();
+        let o = &g.items.slots[5];
+        // frame byte 0: (dx, dy) = (-35, 10); the torch faces right (0): X - 35, Y + 10, Z + 2
+        assert_eq!((o.b.mode, o.b.xi(), o.b.yi(), o.b.zi(), o.b.visible), (2, 0x200 - 35, 0x10 + 10, 0x52, 1));
+        assert!(g.draw_list.iter().any(|k| *k as u16 == glow), "the glow is in the draw list");
+        g.w.frame = 3;
+        g.pool_e_update();
+        assert_eq!(g.items.slots[5].b.zi(), 0x4F, "Z - 1 in the frames with bit 0 of G.$1 set");
+        g.items.slots[3].b.facing = 1;
+        g.pool_e_update();
+        assert_eq!(g.items.slots[5].b.xi(), 0x200 + 35, "dx is negated for a torch that faces left");
+        let _ = glow;
+        g.items.slots[3].m.sw(KIND, 0x202); // another weapon in the slot: the glow ends
+        g.pool_e_update();
+        g.pool_e_update();
+        assert_eq!(g.items.slots[5].b.live, 0);
     }
 }

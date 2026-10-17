@@ -22,6 +22,7 @@ const HITBOX_REGION: (u32, u32) = (0x100000, 0x11D220);
 /// 10-byte animation tables used by non-player objects. Each address is a constant in the
 /// object's init code (stored into obj+$40); the comment names that code.
 pub const OBJECT_ANIM_TABLES: &[u32] = &[
+    0x93F42, // burn death pieces, pool C class 15, 0x93E68 (M5-07)
     0x4F4E4, // Rock Hopper init 0x4DD2A (M5-10)
     0x438F2, // Vice T. intro, 0x425B6 (M5-09)
     0x2FBE2, // Vice T. hit reactions (table 0x2E68C, +$84 = 0x30)
@@ -107,6 +108,7 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
 /// Single frame records items load directly (0x1236): the ammo box picture.
 pub const OBJECT_FRAMES: &[u32] = &[
     0x285DC,
+    0x2AC1C, // the charred body of a thug that burned to death, 0x2AC4C (M5-07)
     // Pool B class 67 (the golden man and the others of the select screen, 0x8881A, pointers at 0x88872) and class 68 (the player
     // tags 1P, 2P, 3P, 0x888B2, pointers at 0x88A54).
     0x88882, 0x8888E, 0x8889A, 0x888A6, 0x88A60, 0x88A6C, 0x88A78,

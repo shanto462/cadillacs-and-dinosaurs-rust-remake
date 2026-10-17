@@ -162,6 +162,10 @@ impl Game {
         put_hi(&mut n.b.z, pos.2);
         n.m.sw(0x58, it.m.w(KIND)); // move.w $a0(a6),$58(a0): +$58 / +$59 of the overlay
         n.m.sw(0x5A, h);
+        // The trace shows +$58 .. +$5A through the shared fields (attack id, hit stop, knock): the same bytes.
+        n.b.atk = (it.m.w(KIND) >> 8) as u8;
+        n.b.hitstop = it.m.w(KIND) as u8;
+        n.b.knock = (h >> 8) as u8;
     }
 
     /// 0x25060: box table, floor, scratch fields, then the lying (act 0) or hopping (act != 0)
