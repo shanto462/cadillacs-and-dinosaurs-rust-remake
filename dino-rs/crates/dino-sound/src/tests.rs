@@ -546,8 +546,8 @@ fn rom_music_start_writes_match_mame_trace() {
 
 /// Frame-by-frame run of one request: `frames` video frames (59.6374 Hz) with the 250 Hz tick
 /// spread over them. Returns the DSP writes of each frame. Used to compare with MAME (M4-04).
-fn run_frames(d: &mut Driver, code: u16, frames: usize) -> Vec<(usize, u8, u16)> {
-    d.command(code, 0, 0);
+fn run_frames(d: &mut Driver, code: u16, d1: u32, d2: u32, frames: usize) -> Vec<(usize, u8, u16)> {
+    d.command(code, d1, d2);
     let per_frame = 250.0 / 59.6374;
     let mut out = Vec::new();
     let mut ticks_done = 0usize;
@@ -588,7 +588,7 @@ fn check_sequencer_writes(code: &str, frames: usize) {
     settle(&mut d);
     d.take_dsp_writes();
     let code_n = u16::from_str_radix(code, 16).expect("hex code");
-    let mine: Vec<(u8, u16)> = run_frames(&mut d, code_n, frames)
+    let mine: Vec<(u8, u16)> = run_frames(&mut d, code_n, 0, 0, frames)
         .into_iter()
         .filter(|(_, r, _)| sequencer_owned(*r, 0))
         .map(|(_, r, v)| (r, v))
@@ -647,6 +647,12 @@ fn rom_coin_0030_sequencer_writes_match_mame_trace() {
 /// Compares every DSP register write of one request with the MAME trace (no filter: volume,
 /// pitch, pan, key-on and echo). Frames are compared through the write order only.
 fn check_full_writes(code: &str, frames: usize) {
+    check_full_writes_req(code, 0, 0, frames);
+}
+
+/// As [`check_full_writes`] for a request with its two longs. `code` is the trace name
+/// (the recorder adds d1 and d2 to the name when they are not 0).
+fn check_full_writes_req(code: &str, d1: u32, d2: u32, frames: usize) {
     let Some(expected) = mame_frame_writes(code) else {
         eprintln!("skipped: no MAME trace of code {code} (set DINO_SOUND_TRACE_DIR)");
         return;
@@ -655,10 +661,10 @@ fn check_full_writes(code: &str, frames: usize) {
     let mut d = Driver::new(&pack.sound, true);
     settle(&mut d);
     d.take_dsp_writes();
-    let code_n = u16::from_str_radix(code, 16).expect("hex code");
+    let code_n = u16::from_str_radix(&code[..4], 16).expect("hex code");
     // One extra frame is run: the 250 Hz ticks are spread over the frames by rounding, so the
     // last tick of MAME's final frame can fall into our next frame. Writes are compared by frame.
-    let mine: Vec<(u8, u16)> = run_frames(&mut d, code_n, frames + 1)
+    let mine: Vec<(u8, u16)> = run_frames(&mut d, code_n, d1, d2, frames + 1)
         .into_iter()
         .map(|(_, r, v)| (r, v))
         .collect();
@@ -710,4 +716,103 @@ fn rom_effect_002c_full_writes_match_mame_trace() {
 #[test]
 fn rom_effect_00ca_full_writes_match_mame_trace() {
     check_full_writes("00ca", 600);
+}
+
+/// Hit 0x38 and jab 0xA8 (both sample 73, no pan motion): every register write equals MAME.
+#[test]
+fn rom_effect_0038_full_writes_match_mame_trace() {
+    check_full_writes("0038", 600);
+}
+
+#[test]
+fn rom_effect_00a8_full_writes_match_mame_trace() {
+    check_full_writes("00a8", 600);
+}
+
+/// Break 0x6F and GO 0x3E: every register write equals MAME.
+#[test]
+fn rom_effect_006f_full_writes_match_mame_trace() {
+    check_full_writes("006f", 600);
+}
+
+#[test]
+fn rom_effect_003e_full_writes_match_mame_trace() {
+    check_full_writes("003e", 600);
+}
+
+/// Clock beep 0x34 with d1 = 0x10 (no position pan): every register write equals MAME.
+#[test]
+fn rom_effect_0034_full_writes_match_mame_trace() {
+    check_full_writes_req("0034_00000010_00000000", 0x0000_0010, 0, 600);
+}
+
+/// Explosion 0x66 (mode 5, spread 0x12, pan 0x10, speeds 0x0156 and 0x1080): every write equals MAME.
+#[test]
+fn rom_effect_0066_full_writes_match_mame_trace() {
+    check_full_writes_req("0066_00051210_01561080", 0x0005_1210, 0x0156_1080, 600);
+}
+
+/// Voice bank 0xCC: every register write equals MAME.
+#[test]
+fn rom_effect_00cc_full_writes_match_mame_trace() {
+    check_full_writes("00cc", 600);
+}
+
+/// Shotgun 0x81 (mode 3, spread 0x20, pan 0x10, speed 0x1500) and bazooka 0x69 (mode 5, speed2
+/// 0x0124 in d2 low word): every register write equals MAME.
+#[test]
+fn rom_effect_0081_full_writes_match_mame_trace() {
+    check_full_writes_req("0081_00032010_15000000", 0x0003_2010, 0x1500_0000, 600);
+}
+
+#[test]
+fn rom_effect_0069_full_writes_match_mame_trace() {
+    check_full_writes_req("0069_00051210_00c41240", 0x0005_1210, 0x00C4_1240, 600);
+}
+
+/// Music 0x01 with fade 0xFF07 (speed 0x0444) queued at frame 300 (recorder label) into the running music:
+/// every register write of 600 frames equals MAME (trace `0001_fade`, recorded with `at=300`).
+#[test]
+fn rom_music_0001_fade_full_writes_match_mame_trace() {
+    // The recorder labels a frame one more than this loop does: its `at=300` is queued after
+    // label 300, which is loop frame 299. The request is then flushed in the vblank of frame 300.
+    const AT: usize = 299;
+    let Some(expected) = mame_frame_writes("0001_fade") else {
+        eprintln!("skipped: no MAME trace of the fade (set DINO_SOUND_TRACE_DIR)");
+        return;
+    };
+    let pack = dino_extract::extract(&rom_path()).expect("dino.zip reads");
+    let mut d = Driver::new(&pack.sound, true);
+    settle(&mut d);
+    d.take_dsp_writes();
+    d.command(0x0001, 0, 0);
+    let per_frame = 250.0 / 59.6374;
+    let mut mine: Vec<(u8, u16)> = Vec::new();
+    let mut ticks_done = 0usize;
+    for f in 0..601 {
+        d.vblank();
+        if f == AT {
+            d.command(0xFF07, 0x0444_0000, 0);
+        }
+        let want = ((f + 1) as f64 * per_frame).floor() as usize;
+        while ticks_done < want {
+            d.tick();
+            ticks_done += 1;
+        }
+        mine.extend(d.take_dsp_writes().iter().map(|w| (w.reg, w.value)));
+    }
+    let want: Vec<(u8, u16)> = expected
+        .into_iter()
+        .filter(|(f, _, _)| *f < 600)
+        .map(|(_, r, v)| (r, v))
+        .collect();
+    let n = want.len();
+    let first = (0..n.min(mine.len())).find(|&i| mine[i] != want[i]);
+    eprintln!("fade 0x01 + 0xFF07: ours {} writes, MAME {} writes, first difference {:?}", mine.len(), want.len(), first);
+    if let Some(i) = first {
+        eprintln!("ours {:?}", &mine[i.saturating_sub(3)..(i + 4).min(mine.len())]);
+        eprintln!("MAME {:?}", &want[i.saturating_sub(3)..(i + 4).min(want.len())]);
+    }
+    assert!(first.is_none());
+    assert!(mine.len() >= n, "ours has fewer writes than MAME");
 }
