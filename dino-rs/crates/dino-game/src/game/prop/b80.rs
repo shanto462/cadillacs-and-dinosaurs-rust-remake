@@ -51,7 +51,7 @@ mod tests {
         g.props.slots[i].m.sw(0xA0, 1);
         g.w.rng = rng;
         g.w.sounds.clear();
-        g.spawn.g.snd_ring.clear();
+        g.w.snd_reqs.clear();
     }
 
     /// Mode 0 falls into the countdown, so one update leaves the word at 0x77 and plays nothing.
@@ -76,7 +76,7 @@ mod tests {
         arm(&mut g, 1);
         g.pool_b_update();
         assert_eq!(g.w.sounds, vec![0x78]);
-        assert_eq!(g.spawn.g.snd_ring, vec![SndRequest { code: 0x78, d1: 0, d2: 0 }]);
+        assert_eq!(g.w.snd_reqs, vec![SndRequest { code: 0x78, d1: 0, d2: 0 }]);
         assert_eq!(live(&g).unwrap().m.w(0xA0), 0x78);
         assert_eq!(g.w.rng, 1);
 
