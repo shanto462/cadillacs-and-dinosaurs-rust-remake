@@ -52,6 +52,15 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x75746, 0xCB0, "B2 water tile codes (0x7542C)"),
     // Pool B class 27 (0x7EEBA), yard picture pointers and the four pictures (M6-15).
     (0x7F1D4, 0x550, "B27 yard pictures (0x7EEBA)"),
+    // Pool B classes 61, 63, 41, 52, 54 (M8-17): Episode 7 lab and library events.
+    (0x865BA, 0x36, "B61 lab lights A step pointers (0x864DA)"),
+    (0x86AD8, 0x64, "B63 lab lights B step pointers (0x869E6)"),
+    (0xBF292, 0x360, "B61/B63 lab lights palette colors (0x864DA, 0x869E6)"),
+    (0x83944, 0xC0, "B41 console blinking lights picture tables and tile codes (0x8383A)"),
+    (0x851DE, 0x8C, "B52 bookshelf burst tile codes (0x85178)"),
+    (0x8526A, 0x8C, "B52 bookshelf burst tile attributes (0x85178)"),
+    (0x8562E, 0x80, "B54 cage wall smash scroll1 block 1 tile codes (0x855A8)"),
+    (0x856B2, 0x80, "B54 cage wall smash scroll1 block 2 tile codes (0x855A8)"),
     // score
     (0x10292, 0x90, "BCD score values (0x10036), indexed by byte offset"),
     (0x325F8, 0x28, "kill score offset by name id (0x325E6)"),
