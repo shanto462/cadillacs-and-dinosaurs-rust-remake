@@ -11,6 +11,15 @@ const BOSS_GROUP_TABLE: u32 = 0x7BF56;
 /// The three timed list limits by players - 1 (0x7BFEE, bytes).
 const ALIVE_LIMIT: u32 = 0x7BFEE;
 
+/// Vice tables used by 0x425B6 (target selection) and the later AI tasks.
+/// Copied only from the user's ROM at extraction time into EnemyData::t.
+pub const TABLES: &[(u32, u32, &str)] = &[
+    (0x442E0, 0x36, "Vice initial target weights"),
+    (0x44B84, 0x40, "Vice attack chance"),
+    (0x44C8C, 0x40, "Vice combo choice"),
+    (0x43004, 13 * 8, "Vice combo scripts"),
+];
+
 pub fn extract(rom: &Rom) -> BossData {
     BossData {
         stages: (0..8u32)

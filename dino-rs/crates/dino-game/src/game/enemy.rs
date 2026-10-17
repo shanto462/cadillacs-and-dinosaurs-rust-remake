@@ -36,6 +36,7 @@ mod class46;
 mod class48;
 mod class57;
 mod class17;
+mod class18;
 // The opening scene actors (M3-20): the Cadillac (16), the Episode 4 men (27) and leader (43).
 mod scene_actors;
 mod class20;
@@ -193,6 +194,7 @@ impl Game {
                 15 => self.enemy_class15(&mut e, h),
                 16 => self.enemy_class16(&mut e, h),
                 17 => self.enemy_class17(&mut e, h),
+                18 => self.enemy_class18(&mut e, h, i),
                 20 => self.enemy_class20(&mut e, h),
                 27 => self.enemy_class27(&mut e, h),
                 30 => self.enemy_class30(&mut e, h),

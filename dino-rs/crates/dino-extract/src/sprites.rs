@@ -22,6 +22,7 @@ const HITBOX_REGION: (u32, u32) = (0x100000, 0x11D220);
 /// 10-byte animation tables used by non-player objects. Each address is a constant in the
 /// object's init code (stored into obj+$40); the comment names that code.
 pub const OBJECT_ANIM_TABLES: &[u32] = &[
+    0x438F2, // Vice T. intro, 0x425B6 (M5-09)
     0x34892, // enemy family init 0x3388A, variant 0 (palette 13)
     0x34B90, // same family, palette 14
     0x34E7C, // same family, palette 26
