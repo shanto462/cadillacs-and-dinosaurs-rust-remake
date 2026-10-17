@@ -885,6 +885,7 @@ impl Effect {
         f.u16(0x58, "owner58", &mut self.owner58);
         f.u16(0x5A, "owner_class", &mut self.owner_class);
         f.u16(0x5C, "w5c", &mut self.w5c);
+        f.u8(0x5E, "b5e", &mut self.b5e);
         f.u16(0x60, "owner60", &mut self.owner60);
         f.i16(0x62, "off_x", &mut self.off_x);
         if self.b.k20 == 0x44 {
@@ -1058,7 +1059,7 @@ pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
             class::ATTACK_BOX,
         ],
     ),
-    ("effect", &[0x04 / 4, 0x10 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x38 / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x88 / 4]),
+    ("effect", &[0x04 / 4, 0x10 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x2C / 4, 0x38 / 4, 0x54 / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x88 / 4]),
     // a pool D slot has no class word: the diff tool reads +$20 of the slot, which is 0 for the clock's slot (a sprite word)
     ("special", &[0]),
 ];

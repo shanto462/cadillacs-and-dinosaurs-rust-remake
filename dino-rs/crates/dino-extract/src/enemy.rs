@@ -183,6 +183,8 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x2986E, 0xF0, "container throw velocities: table of 4 pointers, then 4 x 7 records (vx, ax, vy, ay)"),
     (0x28F24, 8, "container fuse: blink count, blink period by stage"),
     (0x29552, 0x15A, "container debris: chance masks, then the piece lists 0x295F4 / 0x29650"),
+    // M5-04 pool C class 21 (0x94672): the puff lists by variant, a word offset table then (ay, +$60, 12 byte records) per variant.
+    (0x9484A, 0x962, "pool C class 21 puff lists by variant (0x94698)"),
     (0x24CC6, 0x20, "gun flag by weapon variant (0x24C3A)"),
     (0x2494A, 0x10, "gun-kind flag by item kind low nibble (0x248F6)"),
     (0x2CBA0, 0x20, "weapon attack tables (0x259C8)"),

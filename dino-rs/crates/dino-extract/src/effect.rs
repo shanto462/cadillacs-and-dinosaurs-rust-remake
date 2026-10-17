@@ -14,6 +14,7 @@ const EFFECT_TABLES: &[u32] = &[
     0x924F6, // hit spark, effect $20 = 4 (0x924BE)
     0x92AC0, // water splash, effect $20 = 0x10 (0x92A72)
     0x937AA, // debris, effect $20 = 0x2C (0x93590)
+    0x951AC, // puff pieces, effect $20 = 0x54 (0x94776)
 ];
 
 /// Frame lists loaded directly with 0x160A (10-byte records, no table).
@@ -30,6 +31,7 @@ const EFFECT_LISTS: &[u32] = &[
     0x930F4, // same, var != 0 (0x92FE0)
     0x930D4, // flames dying out after landing, var 0 (0x93054)
     0x9313C, // same, var != 0 (0x93060)
+    0x937D0, // debris piece of a broken bat, var 0 (0x9353A)
     0x93872, // debris piece (0x93564)
     0x9387E, // debris piece (0x9356C)
     0x96B10, // cloud of the ranking screen, effect $20 = 0x80, var 0 (0x96AB6)
