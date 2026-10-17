@@ -4,7 +4,7 @@
 //!         [--config FILE] [--print-config]
 //!         [--input SCRIPT | --input-file PATH] [--viewer] [--view char,set,anim]
 //!         [--screenshot out.png --frames N] [--screenshots F1,F2 --shot-dir DIR]
-//!         [--headless | --windowed] [--load-state FILE] [--trace FILE --frames N]
+//!         [--headless | --windowed] [--mute] [--load-state FILE] [--trace FILE --frames N]
 //!         [--step-from MAME.trc] [--follow-rng MAME.trc]
 //!         [--poke FRAME:ADDR:SIZE:VALUE]... [--poke-file FILE]... [--poke-clock power|game]
 //!         [--episode 1..8 | --stage 0..7] [--area 0..3] [--camx X] [--autoplay] [--debug-keys] [--list-placeholders]`
@@ -14,12 +14,14 @@
 //! it gets, mode changes on stderr); `--debug-keys` turns on the debug keys of `debug.rs` in windowed runs.
 //! `--config FILE` reads the settings file (`key = value` lines: difficulty, coin mode, free play ...; without the
 //! option `dino.cfg` next to the ROM is read, see `game/flow/config.rs`), `--print-config` prints the factory settings file.
+//! `--mute` (windowed runs) opens no audio device: the game runs silent, the same as `sound = off` in `dino.cfg`.
 //! `--poke` / `--poke-file` write RAM values into the running game at a frame (the lines of MAME's
 //! `DINO_POKES`: `frame hexaddr size value`, power frames unless `--poke-clock game`; see
 //! `harness.rs`, `PokeSet`). An address the port has no field for is an error.
 //! See `input.rs` for keys and the input script format, `harness.rs` and `re/harness/README.md`
 //! for `--load-state` (start from a MAME snapshot) and `--trace` (headless run for the diff).
 
+mod audio;
 mod autoplay;
 mod debug;
 mod game;
@@ -71,6 +73,8 @@ struct Args {
     step_from: Option<String>,
     follow_rng: Option<String>,
     pokes: harness::PokeSet,
+    /// `--mute`: no audio device (windowed runs only).
+    mute: bool,
 }
 
 fn args() -> Args {
@@ -146,6 +150,7 @@ fn args() -> Args {
         step_from: value("--step-from"),
         follow_rng: value("--follow-rng"),
         pokes: pokes(&a),
+        mute: a.iter().any(|x| x == "--mute"),
     }
 }
 
@@ -281,7 +286,7 @@ fn start_game(assets: &'static dino_assets::AssetPack, args: &mut Args, config: 
     game
 }
 
-fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Frame) {
+fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Frame, audio: &mut Option<audio::Audio>) {
     // `--area`: the game's own end of area (camera mode 1 sub 4, the debug key F6) once the hero has control, area after
     // area like the probe `jump`, then `--camx`. Episode 3 has one area (`--area` above 0 is refused at the start).
     if let Some((area, camx)) = args.goto {
@@ -311,6 +316,9 @@ fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Fr
     args.pokes.apply(game, tick as i32, false).unwrap_or_else(|e| fail(&e));
     args.debug.before_tick(game);
     game.tick();
+    if let Some(a) = audio {
+        a.frame(game); // reads the requests of this frame; the game does not see the sound side
+    }
     args.debug.after_tick(game);
     if let Some(bot) = &mut args.autoplay {
         bot.report(game, tick);
@@ -323,7 +331,7 @@ fn run_headless(mut args: Args, config: game::flow::Config) {
     let mut game = start_game(assets, &mut args, config);
     let mut cpu = headless::Cpu::new(assets);
     for tick in 0..args.frames {
-        tick_game(&mut game, &mut args, tick, input::Frame::default());
+        tick_game(&mut game, &mut args, tick, input::Frame::default(), &mut None);
         if args.shots.iter().any(|s| s.0 == tick + 1) {
             cpu.draw(&mut game);
             for (_, path) in args.shots.iter().filter(|s| s.0 == tick + 1) {
@@ -336,6 +344,8 @@ fn run_headless(mut args: Args, config: game::flow::Config) {
 async fn windowed(mut args: Args, config: game::flow::Config) {
     let assets = load_assets(args.load_state.as_deref(), None);
     let mut gpu = Gpu::new(assets);
+    // The audio device opens only here, in a windowed run (never headless, harness or tests).
+    let mut audio = audio::Audio::start(&assets.sound, config.qsound, args.mute || !config.sound);
 
     let mut viewer = args.viewer.then(|| viewer::Viewer::new(assets, args.view));
     let mut inputs = input::Inputs::new();
@@ -366,7 +376,7 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
                 Some(v) => v.update(assets),
                 None => {
                     let f = if screenshot_run { input::Frame::default() } else { inputs.poll() };
-                    tick_game(&mut game, &mut args, tick_no, f);
+                    tick_game(&mut game, &mut args, tick_no, f, &mut audio);
                     tick_no += 1;
                 }
             }

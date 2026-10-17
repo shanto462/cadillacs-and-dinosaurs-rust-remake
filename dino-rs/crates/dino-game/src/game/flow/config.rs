@@ -11,7 +11,7 @@
 //! edits these bytes in the original is not ported: the file is the only way to change them.
 //!
 //! The options: `coin_mode`, `chute_mode`, `free_play`, `continue_allowed`, `demo_sound`, `stereo`,
-//! `difficulty`, `timer_level`, `bonus_life`, `start_lives` (`dino-game --print-config` prints the
+//! `difficulty`, `timer_level`, `bonus_life`, `start_lives`, `sound` (`dino-game --print-config` prints the
 //! factory file with the meaning of each). A flag is `on` / `off` (also `true` / `false`, `yes` /
 //! `no`, `1` / `0`).
 //!
@@ -123,6 +123,9 @@ pub struct Config {
     pub extra_life: u8,
     /// `start_lives` 0..3: extra lives at the start of a game (factory 1, so 2 lives in all).
     pub lives: u8,
+    /// `sound` (M4-12): play the sound through the audio device in a windowed run. Off is the same as `--mute`. Not a
+    /// cooked byte: the game never reads it, only the audio side in `audio.rs` does.
+    pub sound: bool,
 }
 
 impl Default for Config {
@@ -140,6 +143,7 @@ impl Default for Config {
             timer_level: 1,
             extra_life: 2,
             lives: 1,
+            sound: true,
         }
     }
 }
@@ -156,6 +160,7 @@ const OPTIONS: &[(&str, u8, &str)] = &[
     ("timer_level", 3, "0 = easy, 1 = normal, 2 = hard, 3 = very hard (how fast the rank grows)"),
     ("bonus_life", 3, "0 = none, 1 = 300000 and 700000, 2 = 500000 and 1000000, 3 = 1000000 only"),
     ("start_lives", 3, "extra lives at the start of a game (1 = 2 lives in all)"),
+    ("sound", 1, "on = sound through the audio device (windowed runs), off = silent (the same as --mute)"),
 ];
 
 impl Config {
@@ -179,7 +184,7 @@ impl Config {
     }
 
     /// The value of an option as a number (flags 0 / 1), in the order of [`OPTIONS`].
-    fn values(&self) -> [u8; 10] {
+    fn values(&self) -> [u8; 11] {
         [
             self.coin_mode,
             self.chute_mode,
@@ -191,6 +196,7 @@ impl Config {
             self.timer_level,
             self.extra_life,
             self.lives,
+            self.sound as u8,
         ]
     }
 
@@ -206,6 +212,7 @@ impl Config {
             "timer_level" => self.timer_level = v,
             "bonus_life" => self.extra_life = v,
             "start_lives" => self.lives = v,
+            "sound" => self.sound = v != 0,
             _ => unreachable!("{key} is in OPTIONS"),
         }
     }
@@ -341,6 +348,7 @@ mod tests {
             ("timer_level", "1"),
             ("bonus_life", "2"),
             ("start_lives", "1"),
+            ("sound", "on"),
         ] {
             assert!(text.lines().any(|l| l == format!("{key} = {value}")), "{key} = {value} is missing from the factory file");
         }
@@ -352,7 +360,7 @@ mod tests {
     /// Each option lands in its bit (0xAC7BC to 0xAC868).
     #[test]
     fn options_set_their_bits() {
-        let c = Config { coin_mode: 5, chute_mode: 2, qsound: false, difficulty: 7, timer_level: 3, extra_life: 1, lives: 3, free_play: true, demo_sound: true, continue_allowed: false };
+        let c = Config { coin_mode: 5, chute_mode: 2, qsound: false, difficulty: 7, timer_level: 3, extra_life: 1, lives: 3, free_play: true, demo_sound: true, continue_allowed: false, sound: true };
         let s = c.cook();
         assert_eq!(s.dip_a, 5 | (2 << 3));
         assert_eq!(s.dip_b, 7 | (3 << 3) | (1 << 5));
@@ -379,6 +387,15 @@ mod tests {
         for (word, on) in [("on", true), ("true", true), ("yes", true), ("1", true), ("off", false), ("false", false), ("no", false), ("0", false)] {
             assert_eq!(Config::from_text(&format!("demo_sound = {word}")).unwrap().demo_sound, on, "{word}");
         }
+    }
+
+    /// `sound` (M4-12) is read from the file and is on by default; it does not change the cooked bytes.
+    #[test]
+    fn sound_line_is_read_and_is_not_a_cooked_byte() {
+        assert!(Config::from_text("").unwrap().sound);
+        let off = Config::from_text("sound = off").unwrap();
+        assert!(!off.sound);
+        assert_eq!(off.cook(), Config::default().cook());
     }
 
     #[test]

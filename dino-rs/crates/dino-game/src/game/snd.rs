@@ -77,6 +77,30 @@ impl Game {
         std::mem::take(&mut self.spawn.g.snd_ring)
     }
 
+    /// The requests of this frame for the audio side (M4-12, `crate::audio`): every code of the queue (`w.sounds`) that the
+    /// attract filter of 0x610 lets through, in queue order, each with the d1 and d2 of its ring entry. A code queued with
+    /// `sound()` alone has d1 = d2 = 0. The ring entries are matched in order (`snd_request` queues the code first), so a
+    /// plain `sound()` of the same code just before a `snd_request` is not told apart (M4-13 removes this). Drains the ring.
+    pub fn snd_feed_requests(&mut self) -> Vec<SndRequest> {
+        let ring = self.snd_take_requests();
+        let (in_game, demo) = (self.flow.in_game != 0, self.flow.dip.demo_sound());
+        let mut out = Vec::new();
+        let mut k = 0;
+        for &code in &self.w.sounds {
+            let entry = match ring.get(k) {
+                Some(e) if e.code == code => {
+                    k += 1;
+                    *e
+                }
+                _ => SndRequest { code, d1: 0, d2: 0 },
+            };
+            if snd_passes(code, in_game, demo) {
+                out.push(entry);
+            }
+        }
+        out
+    }
+
     /// 0x9E64..0x9E84 (the same lines are in 0x9EA2, 0x9EDC and 0x9F12): the pan byte of an object at world X `x`.
     /// The screen position `x - camera X` (G.$744) is 0 when it is negative and 0x17F at 0x180 or more (`bcs`,
     /// unsigned), then `(pos & 0x1F8) >> 3` indexes the table 0xA66A of 48 bytes (0 at the left edge to 0x20 at the

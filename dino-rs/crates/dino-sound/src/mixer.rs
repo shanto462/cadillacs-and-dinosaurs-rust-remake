@@ -29,9 +29,11 @@ const PAN_BASE: usize = 0x80;
 const PAN_OFFSET: u16 = 0x110;
 const PAN_MAX: u16 = 0x20;
 
-/// Headroom applied to the sum of the voices. One voice at unity volume and full scale peaks at
-/// 0.25, so 16 loud voices do not clip. This is a placeholder level, tuned by ear later.
-pub const OUTPUT_GAIN: f32 = 0.25;
+/// Output level applied to the sum of the voices. M4-12: raised from 0.25 so the loudest music code
+/// peaks near 0.5 (codes 0x00 to 0x26, 20 s renders: the peak was 0.109 at 0.25, so 0.25 * 0.5 / 0.109
+/// = 1.15). At this level the loudest sound effect peaks near 0.57, and a sum above 1.0 is clipped by
+/// the clamp. Tuned by the peaks of the renders, not by ear (the main session listens).
+pub const OUTPUT_GAIN: f32 = 1.15;
 
 /// Echo registers (SPEC 8): feedback, delay length, and the send base (`0xBA + v`).
 const REG_ECHO_FB: usize = 0x93;
