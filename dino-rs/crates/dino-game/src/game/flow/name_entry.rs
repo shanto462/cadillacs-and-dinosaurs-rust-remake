@@ -58,6 +58,62 @@ pub struct Block {
     pub flashes: u8,
 }
 
+impl Block {
+    /// The byte at the offset `o` of the block (the fields have their original offsets; past +$19 the bytes are not modeled).
+    fn peek(&self, o: u16) -> u8 {
+        match o {
+            0 => (self.secs >> 8) as u8,
+            1 => self.secs as u8,
+            2 => (self.idle >> 8) as u8,
+            3 => self.idle as u8,
+            4 => self.rank,
+            5 => self.count,
+            6..=9 => self.name[o as usize - 6],
+            0xA => (self.fps >> 8) as u8,
+            0xB => self.fps as u8,
+            0xC => self.cur,
+            0xD => self.prev,
+            0xE => self.rep,
+            0xF => self.glyph,
+            0x10..=0x13 => self.shown[o as usize - 0x10],
+            0x14 => (self.blink >> 8) as u8,
+            0x15 => self.blink as u8,
+            0x16 => self.lock,
+            0x17 => self.done,
+            0x18 => self.finish,
+            0x19 => self.flashes,
+            _ => 0,
+        }
+    }
+
+    /// A byte store at the offset `o` of the block (see `peek`).
+    fn poke(&mut self, o: u16, v: u8) {
+        match o {
+            0 => self.secs = (self.secs & 0xFF) | (v as u16) << 8,
+            1 => self.secs = (self.secs & 0xFF00) | v as u16,
+            2 => self.idle = (self.idle & 0xFF) | (v as u16) << 8,
+            3 => self.idle = (self.idle & 0xFF00) | v as u16,
+            4 => self.rank = v,
+            5 => self.count = v,
+            6..=9 => self.name[o as usize - 6] = v,
+            0xA => self.fps = (self.fps & 0xFF) | (v as u16) << 8,
+            0xB => self.fps = (self.fps & 0xFF00) | v as u16,
+            0xC => self.cur = v,
+            0xD => self.prev = v,
+            0xE => self.rep = v,
+            0xF => self.glyph = v,
+            0x10..=0x13 => self.shown[o as usize - 0x10] = v,
+            0x14 => self.blink = (self.blink & 0xFF) | (v as u16) << 8,
+            0x15 => self.blink = (self.blink & 0xFF00) | v as u16,
+            0x16 => self.lock = v,
+            0x17 => self.done = v,
+            0x18 => self.finish = v,
+            0x19 => self.flashes = v,
+            _ => {}
+        }
+    }
+}
+
 /// The name entry globals of the flow (all blocks and the shared blink state).
 #[derive(Clone, Copy, Debug, Default)]
 pub struct NameEntry {
@@ -296,20 +352,22 @@ impl Game {
         if d2 == GLYPH_RUB {
             // 0x15F5A: erase the last letter, the cursor goes to its glyph.
             if b.count != 0 {
-                let c = b.count as usize;
-                b.shown[c] = 0x20;
-                b.name[c] = 0x20;
+                let c = b.count as u16;
+                b.poke(0x10 + c, 0x20);
+                b.poke(6 + c, 0x20);
                 b.count -= 1;
-                b.glyph = b.shown[c - 1];
+                b.glyph = b.peek(0x10 + c - 1);
             }
             return;
         }
         let letter = self.assets.text.u8(0x15F34, d2 as u32);
         let b = &mut self.flow.name.blocks[i];
-        let c = b.count as usize;
-        b.name[c] = letter;
-        b.shown[c] = d2;
-        b.count += 1;
+        let c = b.count;
+        // 0x15F10 / 0x15F18: the letter at +6 + count and its glyph at +$10 + count. A fourth letter and more (the cursor can leave END and
+        // the attack key still enters) write on into the block: +$A is the high byte of the frame count of a second, +$14 the blink timer.
+        b.poke(6u16 + c as u16, letter);
+        b.poke(0x10 + c as u16, d2);
+        b.count = c.wrapping_add(1);
         b.glyph = if b.count >= 3 { GLYPH_END } else { 0 };
     }
 
@@ -581,5 +639,29 @@ mod tests {
         assert!(checked > 0);
         eprintln!("{name}: equal for {checked} frames; state 0xA from frame {state_a:?}, back to 0 at {state_c:?}");
         eprintln!("{name}: MAME sounds (frame, code) {sounds:x?}");
+    }
+
+    /// The attack key enters the glyph under the cursor even when the cursor has left END after the third letter (the name is only
+    /// 4 bytes long): the fourth letter and every one after it are stored on into the block (+$A is the high byte of the frames per
+    /// second, +$10 on the glyph pictures), as the original's 0x15F10 / 0x15F18 do, and drawing the pictures never reads outside the ROM
+    /// (the bot of `--autoplay` presses attack and right all the time).
+    #[test]
+    fn letters_past_the_third_are_stored_on_into_the_block() {
+        let Some(a) = assets() else { return };
+        let mut g = Game::new(a);
+        g.flow.name.blocks[0].glyph = 3; // D
+        for k in 0..40 {
+            g.name_enter(0);
+            g.flow.name.blocks[0].glyph = (k % 26) as u8;
+            g.name_draw_letters(0);
+        }
+        let b = &g.flow.name.blocks[0];
+        assert_eq!(b.count, 40);
+        assert_eq!(b.peek(6), 0x44, "the first letter D");
+        let mut c = Block::default();
+        c.poke(0x13, 7);
+        c.poke(0xA, 0x41);
+        assert_eq!((c.shown[3], c.fps), (7, 0x4100));
+        assert_eq!((c.peek(0x13), c.peek(0xA), c.peek(0x40)), (7, 0x41, 0), "past the block: not modeled");
     }
 }

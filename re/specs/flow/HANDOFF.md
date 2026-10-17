@@ -670,3 +670,39 @@ Tools: `re/harness/link_check.sh [NAME ...]` (`STORY_ONLY=1` stops at the first 
 * Unit tests (`rank.rs`): speed clamps and the countdown restart, join in modes 4 and 0xC, the drop by difficulty 7 to 0 and the 3 of a second miss within 600 frames, the calm period, a miss with a life left, the game over, the hit lockout, the wait counter (pool, free play, wrap), the start rank by difficulty and the speed bits.
 * Gates: `cargo build`, `cargo test` (392 in dino-game, 10 ignored) green, `regress.sh` 50 of 52 at 0, `mp_join` 3, `c14c_mustapha` 8.
 
+### M3-29: the autoplay from power on to the ending, and the flow compare (green)
+
+* **Autoplay.** `dino-game --headless --autoplay` (no `--frames`) plays from power on through all eight episodes to the ending and back to the attract loop and stops there
+  ("the ending began at frame 239770; back in the attract loop at frame 245322", under a second). Where it gets to, per episode (frame of the first record in play, god mode,
+  kill all every 600 frames): Episode 1 603, area 1 at 3606, area 2 at 6642; Episode 2 at 11523 (panel), in play 11830, areas at 15314 and 17922; Episode 3 at 31936 (the whole foot road
+  is 32,700 frames: a wave group waits up to 7200 frames each); Episode 4 at 64924, areas 68064, 74124; Episode 5 at 78481, area 1 at 87757; Episode 6 at 104537, areas 112019, 118974;
+  Episode 7 at 125530, the lift at 135545 (5200 frames), areas 140724, 146424; Episode 8 at 151944, areas 156762, 226046 (the sewer takes 69,000 frames), 232972; ending 239770.
+  It repeats the whole game: 12 passes in 3,000,000 ticks, then a rare stop in Episode 8 area 1 (the 13th pass, six class 21 objects that kill all does not reach). Test:
+  `autoplay::tests::the_bot_plays_from_power_on_through_all_eight_episodes_to_the_ending` (every stage and area in order, 0.6 s).
+* **The bot** (`autoplay.rs`): holds right; punches every 12th frame only when something is alive to hit (a swing is about ten frames, a hero who always swings never walks: that was
+  the stop of Episode 4 area 1) and every 60th otherwise; jumps in pulses; kill all every 600 frames; god mode and a clock topped up to 5:00 below 0:20 (`DINO_AUTO_MORTAL=1` turns both
+  off to run the death, continue and game over paths); a hero who has made no progress (a new best X in the area) for 60 ticks walks up and down by turns, a longer way each time (the
+  walls of Episode 2 area 1); after a game over it waits for a demo (at most 40,000 ticks) before it starts a new game, because the area byte G.$786 of the game before is not cleared by
+  the game start (see below). A `stuck since frame N` line with the state of the game comes after 3000 ticks without progress; `DINO_AUTO_DIAG=1` prints it every 500 ticks and
+  `DINO_AUTO_RANGE=A-B` every tick (with the flow line: mode, fade, G.$4D5 / G.$4E2 / G.$4E3, the intro task, the hero's script).
+* **Port bugs the autoplay found and fixed.** (1) Camera mode 0xC (0x20F78) did not call the follow (`bsr 0x20A22`): the camera of Episode 2 area 1 stood still while the hero walked on
+  (the 5 px a frame of `ep2_3p` in MAME). (2) The game start did not clear what 0xA870 / 0xA804 / 0xFF2E / 0xA836 clear (`flow_game_clear_ram`: G.$4CC .. G.$4EB, the HUD score flags,
+  the shake struct, the cameras): a second game of the same run started with the walk bits G.$4DF, G.$4E3, the clock and the cameras of the game before, so the Episode 1 opening never ended
+  (G.$4D5 stayed 1: no HUD slide, no clock). (3) The name entry wrote the fourth and later letters past its 4 byte name (the cursor can leave END): `Block::poke` stores on into the block
+  as the original does and the glyph table of `dino-assets/src/text.rs` is extracted to 0x808 bytes (a glyph byte up to 255 is read, the code after the table). (4) Class 20's attack chance
+  table 0x46D98 is read up to 0x100 bytes (a variant or a level that runs past the 4 x 16 table reads the code after it) and the offset index of 0x46DD8 is sign extended as `lea (pc, d0.w)`.
+  (5) `dino-extract/src/effect.rs`: a chain of effect frames that runs on into data ends there (a snapshot object with a closing record the walk does not know panicked the step runs
+  of `ep2_3p`). (6) The slide out of the map card (0xCBBE): in the recordings of Episodes 4 and 5 (ten items on the floor) its last two instructions (`addq.b #2, sub`, `clr.b $4E2`) run
+  over the vertical blank, in the first thing of the next frame before the game task (`IntroAfter::SlideOutEnd`, estimated from the items alive: `SLIDE_OUT_BUSY_ITEMS`); `link-ep4` is
+  equal until 890 now (it was 561). (7) The area setup of Episode 7 area 2 (0x207B6) did not clear scroll1 and draw the HUD again (`jsr 0xB52`, `jsr 0x162AE`): the cage of the lift stood
+  in the library and the computer room (seen in a picture of the autoplay).
+* **Quirk kept:** G.$786 (the area byte of the scroll2 controller struct) is not cleared by the game start, so a new game right after a game over uses the start script of the area the last
+  game ended in. In Episode 1 area 2 it is the script of that area (id 6), which never sets G.$4E3 and leaves the opening's HUD slide waiting: the game is playable but the HUD and the clock
+  never come. From the code (the cleared ranges and the writers of G.$786 listed in the errata), not measured in MAME. The bot avoids it.
+* **Known stops of the mortal bot** (`DINO_AUTO_MORTAL=1`, one in about a million ticks): Episode 1 area 2, the Vice placeholder in its death state (mode 4) forever with a hero at 1 HP and
+  the stage end camera mode 6 waiting; the first one at tick 963,995 of the 4,000,000 tick run. The defeat call (0xACEE) did not run (`flow.sub` 0), the area end script did. Not solved.
+* **Compare with MAME** (`re/harness/m329_check.sh`, notes in `allow/m3.txt`): the seven link scenes (panel, card, walk in) equal MAME in the records of the mode changes and of G.$4E3,
+  and in every record up to the first unported class (links 2, 6, 8: all 1100 records; 3 and 7 at 915 and 991 the HUD score digits; 4 at 890; 5 at 442); the area changes: the end mode,
+  the area load and the clock reload equal MAME in the four scenarios the port reaches, the control release is one record later where the original's area start lags (not modeled).
+* Gates: `cargo build`, `cargo test` (419 in dino-game + the others, 10 ignored) green, `regress.sh` 50 of 52 at 0, `mp_join` 3, `c14c_mustapha` 8.
+

@@ -86,6 +86,9 @@ pub enum IntroAfter {
     Wait60,
     /// 0xCC7C: the HUD redraw 0x162AE after the sleep inside 0xCC58.
     Redraw,
+    /// The last two instructions of 0xCBBE (`addq.b #2, sub`, `clr.b $4E2`) in the next frame, before its tasks: the frame that cleared scroll1
+    /// with ten items alive (pool E) is busy enough to carry them over the vertical blank (`flow_frame`, `cards.rs` `intro_slide_out`).
+    SlideOutEnd,
 }
 
 /// Stage intro task 0xB9BE (struct G.$735E).
@@ -295,6 +298,14 @@ impl Game {
     pub fn flow_frame(&mut self) {
         self.flow_coin_isr(); // the interrupt: 0x9D4BE reads the coin inputs before the tasks
         self.flow.lag_tick = false;
+        if self.flow.intro.after == IntroAfter::SlideOutEnd {
+            // The last two instructions of the card's slide out (0xCC4C: `addq.b #2, sub`, `clr.b $4E2`) ran over the vertical blank: they are
+            // the first thing of this frame, before the system task and the game task (which sees G.$4E2 clear), and the task's sleep follows.
+            self.flow.intro.after = IntroAfter::Loop;
+            self.flow.intro.sub = self.flow.intro.sub.wrapping_add(2);
+            self.flow.b4e2 = 0;
+            self.flow.intro.sleep = 2;
+        }
         if self.flow.lag > 0 {
             self.flow.lag_tick = true;
             // a task keeps the CPU through this video frame: no task runs (the next vertical blank only runs the interrupts)
@@ -327,6 +338,7 @@ impl Game {
     /// 0xA870 entry: game start. Players that pressed start get +$00 = 1 (their init is the
     /// player port's `player_join`, called by the character select).
     pub fn flow_game_task_start(&mut self) {
+        self.flow_game_clear_ram();
         // 0xA804: DIP decode
         self.flow.b4cf = (self.flow.dip.dip_a & 0x10 != 0) as u8;
         if self.flow.dip.dip_c & 0x40 == 0 {
@@ -350,6 +362,31 @@ impl Game {
         self.flow.mode = 0;
         self.flow.sub = 0;
         self.flow.sub2 = 0;
+    }
+
+    /// 0xA870 .. 0xA896: what the game task clears before it starts: the sweep 0xA804 of G.$4CC .. G.$4EB (8 longs by 0x4D1A; G.$4CD, the players that
+    /// pressed start, is kept in d2), the HUD score flags 0xFF2E (G.-$7134 .. G.-$7131) and 0xA836: G.$755A (8 longs, the screen shake), G.$6BC (4 longs,
+    /// the scroll1 camera), G.$73C (5 longs, the scroll2 controller up to the camera Z) and G.$7DC (4 longs, the scroll3 controller header). A second game
+    /// in the same run starts from what these leave: the walk bits G.$4DF, the script flag G.$4DD, G.$4E2 / G.$4E3 of the opening, the clock and the
+    /// cameras of the game before.
+    fn flow_game_clear_ram(&mut self) {
+        let f = &mut self.flow;
+        (f.in_game, f.b4cf, f.mode, f.sub, f.sub2, f.speed, f.b4d7, f.b4db) = (0, 0, 0, 0, 0, 0, 0, 0);
+        (f.frame, f.b4e2, f.b4e3, f.chosen, f.b4e5, f.b4e6) = (0, 0, 0, 0, 0, 0);
+        self.script_game_clear();
+        let (w, g) = (&mut self.w, &mut self.spawn.g);
+        (w.stage_clear, g.b4d5, w.stage, w.vertical_scene, w.scripted, g.b4de, g.killer) = (0, 0, 0, 0, 0, 0, 0);
+        let r = &mut self.rank;
+        (r.time_min, r.time_sec, r.time_div, r.time_lock) = (0, 0, 0, 0);
+        self.hud.score_dirty = false; // 0xFF2E
+        self.hud.score_dirty_p = [false; 3];
+        let c = &mut self.cam;
+        (c.shake_state, c.shake_req, c.shake_strength, c.shake_timer, c.shake_sign, c.shake_amp) = (0, 0, 0, 0, 0, 0); // 0xA836
+        (c.cam1_x, c.cam1_y, c.cam1_y_frac) = (0, 0, 0);
+        let s = &mut c.s2;
+        (s.state, s.mode, s.sub, s.cam_x, s.cam_x_frac, s.cam_y, s.cam_y_frac, s.cam_z, s.cam_z_frac) = (0, 0, 0, 0, 0, 0, 0, 0, 0);
+        let t = &mut c.s3;
+        (t.state, t.b5, t.cam_x, t.cam_x_frac, t.cam_y) = (0, 0, 0, 0, 0);
     }
 
     /// The flow-owned part of the player init 0x4D46 / 0x4D5E / 0x4D76 (0x4D8E clears the
@@ -825,6 +862,7 @@ impl Game {
             IntroAfter::State0 => return self.intro_state0(),
             IntroAfter::Title => return self.intro_title(),
             IntroAfter::Wait60 => return self.intro_after_wait(),
+            IntroAfter::SlideOutEnd => unreachable!("handled at the top of the frame"),
             IntroAfter::Redraw => {
                 // 0xCC7C: the code after the sleep inside 0xCC58, then the loop's sleep
                 self.hud_redraw(); // 0x162AE
@@ -1071,5 +1109,36 @@ mod tests {
         g.hook_9236c(); // 0x9236C: allocate class 96 in pool B
         let p96 = g.props.slots.iter().find(|p| p.b.live != 0 && p.b.k20 == 0x180);
         assert!(p96.is_some(), "class 96 object spawned");
+    }
+
+    /// 0xA870: the game task clears G.$4CC .. G.$4EB, the HUD score flags and the camera structs before it starts, so a second game of the same run
+    /// does not start with the walk bits G.$4DF, the opening's G.$4E3, the script flag G.$4DD, the clock or the cameras of the game before.
+    #[test]
+    fn a_second_game_starts_from_cleared_game_variables() {
+        let mut g = Game::new(Box::leak(Box::new(AssetPack::default())));
+        g.flow.script.b4df = 7;
+        g.flow.script.b4d8 = 1;
+        g.flow.b4e3 = 1;
+        g.flow.b4e2 = 1;
+        g.flow.chosen = 3;
+        g.flow.frame = 9;
+        g.w.scripted = 5;
+        g.w.stage = 6;
+        g.w.vertical_scene = 1;
+        g.spawn.g.b4d5 = 1;
+        g.spawn.g.b4de = 11;
+        g.rank.time_min = 3;
+        g.rank.time_lock = 1;
+        g.cam.s2.mode = 5;
+        g.cam.s2.cam_y = 0x3000;
+        g.cam.s3.cam_y = 0x40;
+        g.cam.cam1_x = 0x120;
+        g.cam.shake_state = 2;
+        g.cam.s2.area = 2;
+        g.flow_game_clear_ram();
+        assert_eq!((g.flow.script.b4df, g.flow.script.b4d8, g.flow.b4e3, g.flow.b4e2, g.flow.chosen, g.flow.frame), (0, 0, 0, 0, 0, 0));
+        assert_eq!((g.w.scripted, g.w.stage, g.w.vertical_scene, g.spawn.g.b4d5, g.spawn.g.b4de, g.rank.time_min, g.rank.time_lock), (0, 0, 0, 0, 0, 0, 0));
+        assert_eq!((g.cam.s2.mode, g.cam.s2.cam_y, g.cam.s3.cam_y, g.cam.cam1_x, g.cam.shake_state), (0, 0, 0, 0, 0));
+        assert_eq!(g.cam.s2.area, 2, "the area byte G.$786 is not in the cleared ranges");
     }
 }

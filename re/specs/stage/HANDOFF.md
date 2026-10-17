@@ -82,6 +82,12 @@ Open points for the main session:
 * DONE: F6 (`debug::next_area`) sets mode 6 sub 4 in stage 2 (mode 0x12 elsewhere); `--area` above 0 with Episode 3 is refused (one area).
 * `--camx` (`flow_jump_camera`) moves the camera but not the event index; the events load one per frame afterwards, so a jump to X 0x1000 ends in the lock of its event.
 
+## Camera mode 0xC (M3-29, 2026-10-17)
+
+`scroll2_run` mode 0x0C (0x20F78) calls `follow_x` (0x20A22, the first instruction `bsr`) before the camera Y rule: Episode 2 area 1's camera follows the hero in X (MAME `ep2_3p`, records 4044 to
+4337). The port had left the call out, so the camera stood still there and `--autoplay` stopped at the screen edge. Test `camera::mode_c_tests`; `ep2_3p` in step mode (22,200 records) now equals MAME
+in the camera, the hero's X, Y, Z through the whole episode but the lag records (4033 to 4045, 8298, 13125, 22195).
+
 # Older notes (before M3)
 
 Owner files: `dino-game/src/game/camera.rs`, `game/vram.rs`, `src/present.rs`,

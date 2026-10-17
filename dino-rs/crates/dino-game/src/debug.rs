@@ -50,6 +50,11 @@ impl Debug {
         }
     }
 
+    /// God mode on (the autoplay bot): every present player keeps 100 HP.
+    pub fn god_on(&mut self) {
+        self.god = Some([100; 3]);
+    }
+
     /// Kill all on the next tick (G.$50E = 2).
     pub fn kill_all(&mut self) {
         self.kill = true;

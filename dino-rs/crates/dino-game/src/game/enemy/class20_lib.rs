@@ -426,7 +426,7 @@ impl Game {
     pub(super) fn c20_46dd8(&mut self, e: &mut Enemy) {
         let tp = self.c20_target(e);
         let t = self.players[tp].b.clone();
-        let idx = e.m.w(f::ROW).wrapping_mul(4) as u32;
+        let idx = e.m.w(f::ROW).wrapping_mul(4) as i16 as i32 as u32; // lea 0x46E22(pc, d0.w): the word index is sign extended
         let (mut d1, d2) = (self.assets.enemy.t.i16(t::OFFS, idx), self.assets.enemy.t.i16(t::OFFS, idx + 2));
         if (t.xi().wrapping_sub(e.b.xi())) >= 0 {
             d1 = -d1;

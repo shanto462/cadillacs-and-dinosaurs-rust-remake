@@ -34,3 +34,25 @@ global.cam2_sub 502-502
 global.cam2_w14 360-360   # the velocity word: mode 0 (the port, follow X) or the value mode 8 keeps (MAME) in the frame the car sets G.$518
 global.cam2_w14 502-502   # the same frame in m308_car_time: the integrated velocity of the port against the end of the drive (w14 = 0) in MAME
 global.car_mode 502-502
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------------
+# M3-29: the flow compare (re/harness/m329_check.sh). No rule lines here: these are the differences between the port and the MAME flow recordings, with their
+# causes. The story panel and card links (flow_links, 1100 records from the poke of the mode 8, re/harness/link_check.sh):
+#   link-ep2, link-ep6, link-ep8: equal in every record. link-ep3: first difference at 915 and link-ep7 at 991 (two scroll1 cells of the HUD score digits: a kill
+#   that an unported class makes in MAME). link-ep4: 890 (pool C 21, an effect class that is not ported; the slide out of the card, 561, is equal since M3-29).
+#   link-ep5: 442 (an item of an unported class). The records of the game mode changes (re/harness/link_lengths.py) and of G.$4E3 equal MAME in all seven:
+#   mode 4 at 305, 249, 307, 367, 367, 312 (Episode 5 goes to 0xC at 438), mode 0xC one record later (the panel lengths of D4c 306, 250, 308, 439, 368, 368, 313),
+#   G.$4E3 at 875, 568, -, 756, 685, 685, 630 (Episode 4's script waits for scripted actors the port does not have: G.$4E3 never comes in the 1100 records of
+#   either side).
+# The 13 area changes of m328_areas (re/harness/area_events.py, free run of the port from the snapshot with DINO_GAME_CLOCK=1):
+#   reached by the port (the wave of the area ends by itself): m328_e1a0 (end mode 716, area load 717, clock 717: equal to MAME; control released at 805 against
+#   804), m328_l_e7a0_k16 (381 / 382 / 382 equal; control 384 against 383), m328_e4a0n and m328_e4a1n (508 / 509 and 884 / 885 equal), m328_n1a1 (the port gets to
+#   the area change 131 records later than MAME: a different wave).
+#   The control release of the port is one record later than MAME's wherever MAME's record of the area load is a lag record (the area start is a blocking code of
+#   the original: the game frame counter G.$0 jumps by 2 in the record of the load of m328_e1a0 and m328_l_e7a0_k16, by 3, 26, 37 ... in m328_e4a0n, by up to 226
+#   in m328_e2a0n, e8a0n, n1a1). The port does what the original does in that code but has no CPU time (TODO M10, `mode_area_change` in camera.rs): the first
+#   records after an area load differ in the video latency (palette steps, the fade, the first map stream) and everything that follows is one frame later.
+#   Not reached by the port in the scenario (the snapshot holds unported classes frozen that the wave waits for): m328_e2a0n, e2a1n, e5a0n, e6a0n, e6a1n, e8a0n, e8a2n.
+# The autoplay (`dino-game --headless --autoplay`): from power on through the eight episodes to the ending (mode 0x1C) and the attract loop in one pass, frames
+# 0, 639 (Episode 1 in play), 11523 (Episode 2), 31936 (3), 64924 (4), 78481 (5), 104537 (6), 125530 (7), 151944 (8), 239770 (ending), 245322 (attract loop).
+

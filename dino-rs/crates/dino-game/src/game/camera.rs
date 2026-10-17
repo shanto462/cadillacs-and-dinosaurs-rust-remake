@@ -636,7 +636,9 @@ impl Game {
             self.lift_background(0x100, 0x100, 2); // 0x2079C .. 0x207AE
         }
         if self.w.stage == 6 && self.cam.s2.area == 2 {
-            // 0xB52 clear scroll1, 0x162AE: not ported yet.
+            // The library takes the cage of the lift off scroll1 (0x207BE: jsr 0xB52, the clear) and draws the HUD again (jsr 0x162AE).
+            self.flow_clear_scroll1();
+            self.hook_162ae();
         }
         self.reinit_map();
     }
@@ -803,6 +805,7 @@ impl Game {
                 self.stream2();
             }
             0x0C => {
+                self.follow_x(); // 0x20F78: bsr 0x20A22
                 let s = &mut self.cam.s2;
                 if (s.max_x60 as i16) >= 0x750 {
                     s.cam_y = s.cam_y.wrapping_sub(1);
@@ -2012,5 +2015,60 @@ mod lift_tests {
         assert_eq!(block_at(&g, 63, 63), 129 + 63);
         // nothing above the row 28
         assert_eq!(block_at(&g, 0, 27), 0);
+    }
+}
+
+#[cfg(test)]
+mod mode_c_tests {
+    use super::*;
+
+    fn rom() -> Option<&'static dino_assets::AssetPack> {
+        static A: std::sync::OnceLock<Option<&'static dino_assets::AssetPack>> = std::sync::OnceLock::new();
+        *A.get_or_init(|| {
+            let path = std::path::Path::new("../../../dino.zip");
+            path.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(path).expect("the ROM set loads"))))
+        })
+    }
+
+    /// Mode 0xC (0x20F78, the slope of Episode 2 area 1) is the follow of mode 0 (`bsr 0x20A22`) plus a camera Y that falls by 1 while the
+    /// heroes are right of X 0x750 (the port had left out the follow: the camera stood still and the bot of `--autoplay` stood at the
+    /// edge of the screen for ever).
+    #[test]
+    fn mode_0c_follows_the_heroes_in_x() {
+        let Some(a) = rom() else { return };
+        let mut g = Game::new(a);
+        g.start_stage_at(1, 0, 0, &[0]);
+        g.cam.s2.mode = 0x0C;
+        g.cam.s2.cam_x = 0x600;
+        g.cam.s2.cam_y = 0x20;
+        g.cam.s2.event_idx = 0;
+        // no event of the stage fires: the next one is the terminator (X 0xFFFF)
+        g.cam.s2.next_event = g.assets.stages.stages[1].camera_events.iter().position(|e| e.x == 0xFFFF).expect("the list ends with the terminator");
+        g.players[0].b.set_state(0x0200_0000); // in play (the extents skip a hero in mode 0)
+        g.players[0].b.set_xi(0x780);
+        g.scroll2_run();
+        assert_eq!(g.cam.s2.cam_x, 0x606, "the camera follows the hero at 6 pixels a frame");
+        assert_eq!(g.cam.s2.cam_y, 0x1F, "and the camera Y falls by 1 with the heroes right of 0x750");
+        g.players[0].b.set_xi(0x700);
+        g.scroll2_run();
+        assert_eq!((g.cam.s2.cam_x, g.cam.s2.cam_y), (0x60C, 0x1F), "the Y stays left of 0x750");
+    }
+
+    /// 0x207B6: the area setup of Episode 7 area 2 (the library) clears scroll1 (the cage of the lift is on it) and draws the HUD again; area 1
+    /// draws the cage and the other areas of the stage leave scroll1 alone. (The autoplay showed the cage over the computer room.)
+    #[test]
+    fn the_library_takes_the_cage_off_scroll1() {
+        let Some(a) = rom() else { return };
+        let mut g = Game::new(a);
+        g.start_stage_at(6, 0, 0, &[0]);
+        g.w.stage = 6;
+        g.cam.s2.area = 1;
+        g.area_setup();
+        let cage = g.vram.scroll1.iter().filter(|c| c.code != 0x20).count();
+        assert!(cage > 400, "the lift draws its cage ({cage} cells)");
+        g.cam.s2.area = 2;
+        g.area_setup();
+        let left = g.vram.scroll1.iter().filter(|c| c.code != 0x20 && c.code != 0).count();
+        assert!(left < 100, "the library has cleared scroll1 ({left} cells are not blank, the HUD is drawn again)");
     }
 }

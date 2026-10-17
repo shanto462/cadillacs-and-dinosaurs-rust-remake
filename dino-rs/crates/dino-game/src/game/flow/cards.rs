@@ -273,11 +273,21 @@ impl Game {
         self.fade.mask = 2;
         self.brightness_full_current(); // jsr 0x8932
         self.flow_clear_scroll1(); // jsr 0xB52
+        // The last two instructions (sub + 2, G.$4E2 = 0) come after the clear: in the recordings of Episodes 4 and 5 (ten items on the floor,
+        // pool E) they are in the next record, in the others (0 to 4 items, 4 enemies at most) in the record of the step (`link-ep3` .. `ep8`).
+        // The frame is estimated busy from the items alive, as the tally's panel is (`tally.rs`).
+        if self.items.slots.iter().filter(|i| i.b.live != 0).count() >= SLIDE_OUT_BUSY_ITEMS {
+            self.flow.intro.after = IntroAfter::SlideOutEnd;
+            return;
+        }
         let it = &mut self.flow.intro;
         it.sub = it.sub.wrapping_add(2);
         self.flow.b4e2 = 0;
     }
 }
+
+/// Items alive (pool E) from which the frame of the card's last slide out step is estimated to run over the vertical blank.
+const SLIDE_OUT_BUSY_ITEMS: usize = 8;
 
 // ------------------------------------------------------------------------------------------------------------------ the story panels
 

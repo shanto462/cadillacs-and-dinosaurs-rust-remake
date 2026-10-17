@@ -165,6 +165,18 @@ impl Walker<'_> {
         true
     }
 
+    /// One 10 byte record looks like frame data: a compound frame with a short part list, or one or two composition numbers.
+    fn record_ok(&self, p: u32) -> bool {
+        let (w0, w1) = (self.rom.u16(p), self.rom.u16(p + 2));
+        let comp = |w: u16| w % 4 == 0 && ((w / 4) as u32) < self.n_comps;
+        if w0 & 0x8000 != 0 {
+            let q = (p + 2).wrapping_add(self.rom.i16(p + 2) as i32 as u32);
+            (q as usize) + 2 < self.rom.program.len() && self.rom.u16(q) < 64
+        } else {
+            comp(w0) && (w1 & 0x8000 != 0 || comp(w1))
+        }
+    }
+
     fn table(&mut self, table: u32) {
         let mut first = u32::MAX;
         let mut offs = Vec::new();
@@ -195,6 +207,11 @@ impl Walker<'_> {
         let mut q = VecDeque::from([start]);
         while let Some(p) = q.pop_front() {
             if self.d.frame_by_addr.contains_key(&p) || order.contains(&p) {
+                continue;
+            }
+            // A chain that runs on into data that is not a frame record ends there (a snapshot object whose animation has no
+            // closing record the walk knows: the harness registers such addresses on demand).
+            if p != start && !self.record_ok(p) {
                 continue;
             }
             order.push(p);
@@ -254,7 +271,8 @@ impl Walker<'_> {
             attack_box: rom.u8(p + 9),
             attach: 0,
             extra: rom.u32(COMP_EXTRA.wrapping_add(ci as i16 as i32 as u32)).to_be_bytes(),
-            next: self.d.frame_by_addr[&self.next_addr(p, 10)],
+            // a link into data that is not a frame record (the chain was cut in `walk`) points back at the frame itself
+            next: self.d.frame_by_addr.get(&self.next_addr(p, 10)).copied().unwrap_or(self.d.frame_by_addr[&p]),
         }
     }
 

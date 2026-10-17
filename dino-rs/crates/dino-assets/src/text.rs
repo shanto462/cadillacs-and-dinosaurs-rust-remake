@@ -83,7 +83,7 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x159F8, 0x08, "rank suffixes ST ND RD TH (0x15974)"),
     (0x15D9E, 0x24, "name entry rank tiles: 10 words by rank, then 4 suffix word pairs (0x15D3C)"),
     (0x15F34, 0x1E, "name entry glyph letters, 30 glyphs: A to Z, comma, point, RUB, END (0x15F00)"),
-    (0x15FF4, 0x108, "name entry glyph tiles, 4 words per glyph, 33 entries; 32 is the blank (0x15FB4)"),
+    (0x15FF4, 0x808, "name entry glyph tiles, 4 words per glyph, 33 entries; 32 is the blank (0x15FB4); a glyph byte up to 255 is read (the name buffer is overwritten by letters past the third: the bytes after the table are the code that follows it)"),
     (0x161B2, 0x28, "name entry profanity filter: 5 names, then 5 replacements (0x1616C)"),
     (0x15ACE, 0x14, "rank text VRAM addresses, 3 players then 2 players (0x15AB0)"),
     (0x1632A, 0x0C, "player block VRAM base, 3-player layout (0x1631A)"),

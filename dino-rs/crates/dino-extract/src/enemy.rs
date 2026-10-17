@@ -105,7 +105,7 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x46AF6, 0x18, "class 20 slots (dx, dz)"),
     (0x46CF0, 0x10, "class 20 steering noise"),
     (0x46EC6, 0x40, "class 20 script row by variant and rand"),
-    (0x46D98, 0x40, "class 20 attack chance by variant row and level"),
+    (0x46D98, 0x100, "class 20 attack chance by variant row and level (a variant above 3 or a level above 15 reads on into the code that follows, 0x46DD8: the original does the same)"),
     (0x46E22, 0x28, "class 20 offsets of the walk at the target by row"),
     (0x4697E, 0x20, "class 20 recovery index by rand"),
     (0x4699E, 0x20, "class 20 recovery frames by index and level band"),

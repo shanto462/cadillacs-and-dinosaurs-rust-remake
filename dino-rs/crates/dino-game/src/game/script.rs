@@ -123,6 +123,12 @@ fn distance(x: u16, z: u16, sx: u16, sz: u16) -> u16 {
 }
 
 impl Game {
+    /// The part of the game task's sweep 0xA804 (G.$4CC .. G.$4EB) that holds scripted control state: G.$4D8 and G.$4DF.
+    pub fn script_game_clear(&mut self) {
+        self.flow.script.b4d8 = 0;
+        self.flow.script.b4df = 0;
+    }
+
     // ------------------------------------------------------------------------------------------------ entry points
 
     /// The start of 0x1DA10, 0x1D95E and 0x1DAC4: `+$D0` of the three heroes, G.$4DD and G.$4DE cleared.

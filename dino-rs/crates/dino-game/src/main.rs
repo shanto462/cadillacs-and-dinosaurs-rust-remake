@@ -10,8 +10,9 @@
 //!         [--episode 1..8 | --stage 0..7] [--area 0..3] [--camx X] [--autoplay] [--debug-keys] [--list-placeholders]`
 //! Without `--stage`, `--episode` and `--chars` the game starts from power on (the boot screens and the attract
 //! mode); `--stage N` / `--episode N` / `--chars` start directly in a stage (development). `--area` and `--camx` (hex or
-//! decimal) start that area with the camera at X. `--autoplay` is the bot of `autoplay.rs` (power on to the ending as far as
-//! it gets, mode changes on stderr); `--debug-keys` turns on the debug keys of `debug.rs` in windowed runs.
+//! decimal) start that area with the camera at X. `--autoplay` is the bot of `autoplay.rs`: from power on through the eight episodes
+//! to the ending and the attract loop (mode changes on stderr; `--headless --autoplay` without `--frames` stops there, about 250,000
+//! ticks in a second; the env vars `DINO_AUTO_MORTAL`, `DINO_AUTO_DIAG` and `DINO_AUTO_RANGE` are described in `autoplay.rs`); `--debug-keys` turns on the debug keys of `debug.rs` in windowed runs.
 //! `--config FILE` reads the settings file (`key = value` lines: difficulty, coin mode, free play ...; without the
 //! option `dino.cfg` next to the ROM is read, see `game/flow/config.rs`), `--print-config` prints the factory settings file.
 //! `--mute` (windowed runs) opens no audio device: the game runs silent, the same as `sound = off` in `dino.cfg`.
@@ -40,6 +41,9 @@ use render::Gpu;
 /// so every rule that counts frames behaves exactly as in the original.
 const TICK: f64 = 1.0 / 60.0;
 
+/// The length of an autoplay run that has no `--frames`: far more than one game from power on to the ending (about 240,000 ticks).
+const AUTOPLAY_CAP: u32 = 1_000_000;
+
 fn window_conf() -> Conf {
     Conf {
         window_title: "dino-rs".to_string(),
@@ -54,6 +58,8 @@ struct Args {
     shots: Vec<(u32, String)>,
     headless: bool,
     frames: u32,
+    /// `--frames` was given: the run is exactly that long.
+    frames_given: bool,
     view: Option<(usize, usize, u16)>,
     viewer: bool,
     /// `--stage`, `--episode`, `--area`, `--camx` or `--chars` start directly in a stage; without them the game boots (power on).
@@ -123,10 +129,13 @@ fn args() -> Args {
     }
     let headless = explicit_headless || (!shots.is_empty() && !windowed && !viewer);
     let frames = shots.iter().map(|s| s.0).max().unwrap_or(frames);
+    // `--headless --autoplay` without `--frames` plays until the ending and the return to the attract loop (at most `AUTOPLAY_CAP` ticks)
+    let frames = if a.iter().any(|x| x == "--autoplay") && value("--frames").is_none() && shots.is_empty() { AUTOPLAY_CAP } else { frames };
     Args {
         shots,
         headless,
         frames,
+        frames_given: value("--frames").is_some(),
         viewer,
         view,
         direct,
@@ -332,6 +341,9 @@ fn run_headless(mut args: Args, config: game::flow::Config) {
     let mut cpu = headless::Cpu::new(assets);
     for tick in 0..args.frames {
         tick_game(&mut game, &mut args, tick, input::Frame::default(), &mut None);
+        if args.autoplay.as_ref().is_some_and(|b| b.done()) && args.shots.is_empty() && !args.frames_given {
+            break;
+        }
         if args.shots.iter().any(|s| s.0 == tick + 1) {
             cpu.draw(&mut game);
             for (_, path) in args.shots.iter().filter(|s| s.0 == tick + 1) {
