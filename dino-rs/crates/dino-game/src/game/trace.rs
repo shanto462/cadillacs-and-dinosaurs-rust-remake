@@ -721,10 +721,9 @@ impl Prop {
             f.u16(0xA2, "yard_index", &mut ix);
             self.m.sw(0xA2, ix);
         }
-        if f.all() || self.b.k20 == 7 * 4 {
-            // Far-layer tiles (0x76CD2 var 4): byte countdown +$A0, picture index +$A2.
-        if f.all() || self.b.k20 == 5 * 4 || self.b.k20 == 6 * 4 {
-            // Chimney smoke (0x769E2) and interior flames (0x76A70): countdown +$A0, picture index +$A2.
+        if f.all() || matches!(self.b.k20 / 4, 5 | 6 | 7) {
+            // Chimney smoke (0x769E2), interior flames (0x76A70) and the far-layer tiles (0x76CD2 var 4): byte countdown +$A0,
+            // picture index +$A2.
             let mut t = self.m.b(0xA0);
             f.u8(0xA0, "far_timer", &mut t);
             self.m.sb(0xA0, t);
