@@ -1,8 +1,8 @@
 //! Pool A class 46 (`+$20 = 0xB8`, handler 0x5656C): a bird of the flock in the opening movie's jungle (M1-10); the
-//! spawner is pool B class 72 (`prop/class72.rs`). It sits where it is made (Y and depth are 0: the jungle's birds fly
+//! spawner is pool B class 72 (`prop/b72.rs`). It sits where it is made (Y and depth are 0: the jungle's birds fly
 //! from above) until `+$5C` frames have passed (0 here), then takes off: a horizontal speed of 4 to 7 pixels a frame (a
 //! 16.16 number at `+$B0`; the variant 0x200 goes the other way), a rise of 1 or 2 pixels a frame (`+$AA`), the
-//! sound 0x61 (0xA63C with d1 = 0x5011F, d2 = 0x600030) and the five random numbers of 0x5661A. Every frame of the
+//! sound 0x61 (0xA63C: d1 = 0x5011F, or 0x6201F when the variant is 0x200, d2 = 0x600030) and the five random numbers of 0x5661A. Every frame of the
 //! flight it moves; when `+$AC` and `+$AE` (24 to 39 and 32 to 47 frames) run out it drops a feather (pool A class 48,
 //! 0x5670A); when `+$A4` (32 to 47) is negative the speed falls by 0x400 (`+$B4`) a frame.
 //!
@@ -96,7 +96,9 @@ impl Game {
             e.m.sw(f::DECEL, e.m.w(f::DECEL).wrapping_neg()); // neg.w $B4(a6): the high word of 0x400, 0
             e.b.facing = 1;
         }
-        self.sound(0x61); // jsr 0xA63C
+        // 0x5668E: d0 = 0x61, d1 = 0x5011F (0x6201F when the variant is 0x200), d2 = 0x600030, jsr 0xA63C.
+        let d1 = if e.b.var26 == 0x200 { 0x6_201F } else { 0x5_011F };
+        self.snd_request(0x61, d1, 0x60_0030);
     }
 
     /// 0x566CA: the flight.

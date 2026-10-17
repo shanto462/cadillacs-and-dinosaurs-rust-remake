@@ -61,8 +61,8 @@ mod class32;
 mod class26;
 #[path = "prop/class66.rs"]
 mod class66;
-#[path = "prop/class72.rs"]
-mod class72;
+#[path = "prop/b72.rs"]
+mod b72;
 // Pool B class 25 (M2-24): the numbers of the stage clear tally.
 #[path = "prop/b25.rs"]
 mod b25;
@@ -121,6 +121,11 @@ mod b3;
 mod b2;
 #[path = "prop/b27.rs"]
 mod b27;
+// Episode 2 ambience (M6-16): far-layer tiles (7), the bird flock (72) and the jungle sound (80).
+#[path = "prop/b7.rs"]
+mod b7;
+#[path = "prop/b80.rs"]
+mod b80;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -166,6 +171,7 @@ impl Game {
                 1 => self.prop_b1(&mut p, h, i),
                 2 => self.prop_b2(&mut p, i),
                 3 => self.prop_b3(&mut p, h, i),
+                7 => self.prop_b7(&mut p, i),
                 15 => self.prop_wave(&mut p, h, i),
                 22 => self.boss_controller(&mut p, i),
                 17 => self.prop_class17(&mut p, i),
@@ -187,7 +193,7 @@ impl Game {
                 72 => self.prop_class72(&mut p, i),
                 73 => self.prop_bird_spawner(&mut p, i),
                 74 => self.prop_class74(&mut p, i),
-                80 => self.prop_ambience(&mut p, i),
+                80 => self.prop_b80(&mut p, i),
                 81 => self.prop_b81(&mut p, i),
                 82 => self.prop_b82(&mut p, i),
                 83 => self.prop_b83(&mut p, i),
@@ -303,29 +309,6 @@ impl Game {
             return; // harness: kept as the snapshot had it
         }
         self.prop_free(p, i);
-    }
-
-    /// 0x8A582 pool B class 80 (`+$20 = 0x140`): the ambience of the stage 1 (Episode 2), made by its start script. Mode 0 (0x8A596) goes to mode 2 and sets the
-    /// counter `+$A0` to 0x78; mode 2 counts it down and every 0x78 frames draws a number: below 4 of 16 a second one decides between the sound 0x78 and nothing
-    /// (the other branch, 0x8A5D0, loads the sound 0x61 into d0 and returns without the request). Mode 4 frees it.
-    fn prop_ambience(&mut self, p: &mut Prop, i: usize) {
-        match p.b.mode {
-            0 => {
-                p.b.mode = 2;
-                p.m.sw(0xA0, 0x78);
-            }
-            2 => {}
-            _ => return self.prop_free(p, i), // 0x8A5F4
-        }
-        let left = p.m.w(0xA0).wrapping_sub(1);
-        p.m.sw(0xA0, left);
-        if left != 0 {
-            return;
-        }
-        p.m.sw(0xA0, 0x78);
-        if self.rand() & 0xF < 4 && self.rand() & 1 != 0 {
-            self.snd_request(0x78, 0, 0);
-        }
     }
 
     /// 0x88A84 pool B class 69: the object of the debug mode (the button code 0x88BBE, the ENEMY spawner 0x88DDA). The stage start makes it; its first update

@@ -32,6 +32,9 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x75746, 0xCB0, "B2 water tile codes (0x7542C)"),
     // Pool B class 27 (0x7EEBA), yard picture pointers and the four pictures (M6-15).
     (0x7F1D4, 0x550, "B27 yard pictures (0x7EEBA)"),
+    // Pool B class 7 (0x76CD2), near pictures (var 0) and far-layer pictures (var 4) (M6-16).
+    (0x76D64, 0x22, "B7 var 0 picture offsets and tiles (0x76CD2)"),
+    (0x76DF6, 0x18, "B7 var 4 far-layer pictures (0x76CD2)"),
     // score
     (0x10292, 0x90, "BCD score values (0x10036), indexed by byte offset"),
     (0x325F8, 0x28, "kill score offset by name id (0x325E6)"),

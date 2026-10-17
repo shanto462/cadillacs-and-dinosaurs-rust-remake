@@ -655,6 +655,30 @@ impl Prop {
             f.u16(0xA2, "yard_index", &mut ix);
             self.m.sw(0xA2, ix);
         }
+        if f.all() || self.b.k20 == 7 * 4 {
+            // Far-layer tiles (0x76CD2 var 4): byte countdown +$A0, picture index +$A2.
+            let mut t = self.m.b(0xA0);
+            f.u8(0xA0, "far_timer", &mut t);
+            self.m.sb(0xA0, t);
+            let mut ix = self.m.w(0xA2);
+            f.u16(0xA2, "far_index", &mut ix);
+            self.m.sw(0xA2, ix);
+        }
+        if f.all() || self.b.k20 == 72 * 4 {
+            // Bird flock (0x89984): frames until the next bird, then birds left (both words).
+            let mut w = self.m.w(0xA0);
+            f.u16(0xA0, "flock_wait", &mut w);
+            self.m.sw(0xA0, w);
+            let mut n = self.m.w(0xA2);
+            f.u16(0xA2, "flock_left", &mut n);
+            self.m.sw(0xA2, n);
+        }
+        if f.all() || self.b.k20 == 80 * 4 {
+            // Jungle sound (0x8A582): word countdown +$A0.
+            let mut w = self.m.w(0xA0);
+            f.u16(0xA0, "jungle_wait", &mut w);
+            self.m.sw(0xA0, w);
+        }
         if f.all() || self.b.k20 == 73 * 4 || self.b.k20 == 96 * 4 {
             // The bird spawner's delay (class 73, 0x89AE0) and class 96 music timer sit in the same word.
             let mut t = self.m.w(0x80);
@@ -970,8 +994,8 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 /// `pool_c_update`, `pool_e_update`.
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
-    ("enemy", &[2, 10, 14, 15, 16, 17, 20, 27, 34, 41, 43, 49, 50, 54, 55, 56, 57, 60, 81, 90, 92, 93, 96, 97]),
-    ("prop", &[1, 2, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 27, 31, 35, 47, 66, 73, 74, 81, 82, 83, 84, 85, 87, 96]),
+    ("enemy", &[2, 10, 14, 15, 16, 17, 20, 27, 34, 41, 43, 46, 48, 49, 50, 54, 55, 56, 57, 60, 81, 90, 92, 93, 96, 97]),
+    ("prop", &[1, 2, 3, 7, 11, 12, 14, 15, 18, 20, 21, 22, 25, 27, 31, 35, 47, 66, 72, 73, 74, 80, 81, 82, 83, 84, 85, 87, 96]),
     (
         "item",
         &[
