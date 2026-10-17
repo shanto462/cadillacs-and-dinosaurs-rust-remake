@@ -33,7 +33,8 @@ fn draw_scroll3(g: &Game, gpu: &mut impl DrawTarget, cam: (u16, u16), layer: Lay
     let (fx, fy) = ((ox & 31) as i32, (oy & 31) as i32);
     for r in 0..8 {
         for c in 0..13 {
-            let cell = g.vram.scroll3[Vram::index3(((c0 + c) & 63) as usize, ((r0 + r) & 63) as usize)];
+            let cells = if g.w.scroll3_base == 0x9200 && g.w.layer_ctrl == 0x1396 && !g.vram.intro3.is_empty() { &g.vram.intro3 } else { &g.vram.scroll3 };
+            let cell = cells[Vram::index3(((c0 + c) & 63) as usize, ((r0 + r) & 63) as usize)];
             let code = cell.code & 0x3FFF;
             if !(TILES32_FIRST..TILES32_FIRST + 0x400).contains(&code) {
                 continue;

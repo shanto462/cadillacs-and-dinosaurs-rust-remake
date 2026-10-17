@@ -126,6 +126,11 @@ mod b3;
 #[path = "prop/b40.rs"]
 mod b40;
 
+#[path = "prop/b50.rs"]
+mod b50;
+#[path = "prop/b76.rs"]
+mod b76;
+
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
     pub b: Body,
@@ -188,6 +193,8 @@ impl Game {
                 37 => self.prop_b37(&mut p, i),
                 38 => self.prop_b38(&mut p, i),
                 47 => self.prop_b47(&mut p, i),
+                50 => self.prop_b50(&mut p, h, i),
+                76 => self.prop_b76(&mut p, i),
                 66 => self.prop_class66(&mut p, i),
                 67 => self.prop_class67(&mut p, i),
                 68 => self.prop_class68(&mut p, i),

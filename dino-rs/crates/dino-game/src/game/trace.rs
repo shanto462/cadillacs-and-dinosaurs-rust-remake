@@ -604,6 +604,26 @@ impl Prop {
     pub fn trace_visit(&mut self, f: &mut F, stage: u8) {
         self.b.trace_header(f, false);
         self.m.trace_load_all(f, 0xC0);
+        if f.all() || self.b.k20 == 50 * 4 {
+            for (off, name) in [(0xA2, "dialogue_palette"), (0xA4, "dialogue_timer"), (0xA6, "dialogue_mouth"), (0xAA, "dialogue_eyes"), (0xB0, "dialogue_hero")] {
+                let mut value = self.m.w(off);
+                f.u16(off as u32, name, &mut value);
+                self.m.sw(off, value);
+            }
+            let mut value = self.m.l(0xAC);
+            f.u32(0xAC, "dialogue_origin", &mut value);
+            self.m.sl(0xAC, value);
+        }
+        if f.all() || self.b.k20 == 76 * 4 {
+            for (off, name) in [(0x82, "flash_y"), (0x84, "flash_x"), (0x86, "flash_timer")] {
+                let mut value = self.m.w(off);
+                f.u16(off as u32, name, &mut value);
+                self.m.sw(off, value);
+            }
+            let mut value = self.m.b(0x88);
+            f.u8(0x88, "flash_active", &mut value);
+            self.m.sb(0x88, value);
+        }
         if f.all() || self.b.k20 == 11 * 4 {
             // The metal door's armed wait (class 11, 0x78A20) is the byte at +$80.
             let mut w = self.m.b(0x80);
@@ -958,7 +978,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 16, 17, 20, 27, 34, 41, 43, 49, 50, 54, 55, 56, 57, 60, 81, 90, 92, 93, 96, 97]),
-    ("prop", &[1, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 31, 35, 36, 37, 38, 40, 47, 57, 64, 66, 73, 74, 81, 82, 83, 84, 85, 87, 96]),
+    ("prop", &[1, 3, 11, 12, 14, 15, 18, 20, 21, 22, 25, 31, 35, 36, 37, 38, 40, 47, 50, 57, 64, 66, 73, 74, 76, 81, 82, 83, 84, 85, 87, 96]),
     (
         "item",
         &[
@@ -1114,6 +1134,7 @@ impl Game {
         }
         f.u16(0x0026, "video_ctrl", &mut w.video_ctrl);
         f.u16(0x0028, "layer_ctrl", &mut w.layer_ctrl);
+        f.u16(0x002E, "scroll3_base", &mut w.scroll3_base);
         f.u8(0x04D4, "stage_clear", &mut w.stage_clear);
         f.u8(0x04D9, "stage", &mut w.stage);
         f.u8(0x04DC, "vertical_scene", &mut w.vertical_scene);
@@ -1650,7 +1671,20 @@ impl Game {
                 let fade_in = self.flow.tally.raw.b(1) >= 0xE;
                 self.fade.task = Some(crate::game::palette::FadeTask { fade_in, sleep: cnt as u16, started: true });
             } else {
-                warn.push(format!("task slot 0x40 (fade) is active (state {st}): not taken over"));
+                // 0x8840 / 0x8824, suspended at 0x88A6: the kernel saves D0..A6 on the
+                // task stack. D1 is the signed brightness step, including after B50 freed.
+                let stack = u32::from_be_bytes(ram[0x9A..0x9E].try_into().unwrap()) as usize;
+                let sp = stack & 0xFFFF;
+                if stack >> 16 == 0xFF && sp + 0x40 <= ram.len() {
+                    let step = u32::from_be_bytes(ram[sp+4..sp+8].try_into().unwrap());
+                    let resume = u32::from_be_bytes(ram[sp+0x3C..sp+0x40].try_into().unwrap());
+                    if resume == 0x88A6 && matches!(step, 0x1000 | 0xFFFFF000) {
+                        self.fade.task = Some(crate::game::palette::FadeTask { fade_in: step == 0x1000, sleep: cnt as u16, started: true });
+                    }
+                }
+                if self.fade.task.is_none() {
+                    warn.push(format!("task slot 0x40 (fade) is active (state {st}): not taken over"));
+                }
             }
         }
         // The next vblank copies the snapshot's current inputs to the previous
@@ -1697,6 +1731,7 @@ impl Game {
                 c.attr = w(base + 4 * i + 2);
             }
         }
+        self.vram.intro3 = (0..0x1201).map(|i| dino_assets::stage::Cell { code: w(0x20000 + 4*i), attr: w(0x20002 + 4*i) }).collect();
         for (i, p) in self.pal.words.iter_mut().enumerate() {
             *p = w(0x14000 + 2 * i);
         }
@@ -1748,6 +1783,14 @@ impl Game {
                 img[o + 2..o + 4].copy_from_slice(&c.attr.to_be_bytes());
             }
             if !cells.is_empty() { mask[base..base + 0x4000].fill(1); }
+        }
+        if !scene && !self.vram.intro3.is_empty() {
+            for (i, c) in self.vram.intro3.iter().enumerate() {
+                let o = 0x20000 + i * 4;
+                img[o..o+2].copy_from_slice(&c.code.to_be_bytes());
+                img[o+2..o+4].copy_from_slice(&c.attr.to_be_bytes());
+            }
+            mask[0x20000..0x24804].fill(1);
         }
         for (i, p) in self.pal.words.iter().enumerate() {
             img[0x14000 + 2 * i..0x14000 + 2 * i + 2].copy_from_slice(&p.to_be_bytes());
