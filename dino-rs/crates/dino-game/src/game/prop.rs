@@ -135,6 +135,11 @@ mod b76;
 mod b28_29;
 #[path = "prop/b43.rs"]
 mod b43;
+// Episode 2 scenery (M6-15): swamp water (2) and the Butcher yard tiles (27).
+#[path = "prop/b2.rs"]
+mod b2;
+#[path = "prop/b27.rs"]
+mod b27;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -180,6 +185,7 @@ impl Game {
                 1 => self.prop_b1(&mut p, h, i),
                 57 => self.prop_b57(&mut p, i),
                 64 => self.prop_b64(&mut p, i),
+                2 => self.prop_b2(&mut p, i),
                 3 => self.prop_b3(&mut p, h, i),
                 15 => self.prop_wave(&mut p, h, i),
                 22 => self.boss_controller(&mut p, i),
@@ -189,6 +195,7 @@ impl Game {
                 20 => self.prop_go_hint(&mut p, i),
                 25 => self.prop_class25(&mut p, i),
                 26 => self.prop_class26(&mut p, i),
+                27 => self.prop_b27(&mut p, i),
                 21 => self.prop_b21(&mut p, i),
                 28 => self.prop_b28(&mut p, i),
                 29 => self.prop_b29(&mut p, i),

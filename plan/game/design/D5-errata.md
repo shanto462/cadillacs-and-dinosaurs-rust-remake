@@ -222,6 +222,7 @@ MAME wins over the design text; the design documents themselves are not edited.
 - D4c s5.4 (0x42, "one pool A class 97 stand in per hero"): the stand ins also wait for the boss' `+$A6`, make a pool A 93 piece, the dialogue of the boss (pool B 50 variant 7, 0x84490) and the aura (pool C 39 variant 0, by the stand in of Mustapha),
   set the camera go flag G.$7A9 and walk off to the right dragging the heroes' X (`m328_f_ep8`, records 1134 to 3874). M3-27.
 - Registers: the staff roll moves G.$6C8 as a long (G.$6CA is the fraction, 0xAE0 clears only the word) and the desert moves G.$7E4 with `subi.l #$1000` (G.$7E6 the fraction); the port had no fraction word for either. M3-25.
+- D3e s3, s5, A10 and open item 5 (B2 0x7542C, B27 0x7EEBA): a B2 record is an X limit, a flag word, a dest and a source. The writers paint 7 map rows (3 columns, or 2 plus the wrap column at 0x90F020, or 4). On screen only y 170 to 223 changes, the full width, the visible part of those rows (about 4 tile rows). The first wait is 15 frames and the first picture is phase 2, then every 24. B27 region 1 is 9 columns by 1 row at 0x90E03C plus a jagged pit, 166 words, not 9 rows and not 313 writes. The camera test is a signed less-than, so X + 0x1A0 still runs. The first picture is index 4 after 15 frames, then every 24. MAME: m615_a10 scroll2 equal for 130 frames (the scroll3 pair at 0x913D04 is class 7), m615_b27 equal for 160 frames. M6-15.
 
 ## From M3-13 and M3-14 (the lift, 2026-10-17)
 

@@ -133,6 +133,8 @@ impl<T> Pool<T> {
 pub struct World {
     /// G.$0000 frame counter.
     pub frame: u16,
+    /// G.-$703C. Swamp water phase (class 2 at 0x7546C, later class 8): 0, 2, 4 or 6.
+    pub water_phase: u16,
     /// G.$14 state of rand() (0x119C).
     pub rng: u16,
     /// G.$4D9 stage (0-7). The area lives in the camera (G.$786).
