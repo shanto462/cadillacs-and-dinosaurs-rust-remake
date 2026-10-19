@@ -93,6 +93,7 @@ pub struct HudCur {
 pub type Msg = [u16; 8];
 const FREE: Msg = [0xFFFF; 8];
 
+#[derive(Clone)]
 pub struct Hud {
     pub slots: [HudSlot; 3],
     pub cur: HudCur,

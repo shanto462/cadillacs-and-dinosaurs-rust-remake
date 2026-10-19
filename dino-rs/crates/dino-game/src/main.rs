@@ -30,6 +30,7 @@
 
 mod audio;
 mod autoplay;
+mod planner;
 mod debug;
 mod font5x7;
 mod game;
@@ -80,6 +81,8 @@ struct Args {
     goto: Option<(u8, u16)>,
     chars: Vec<u8>,
     autoplay: Option<autoplay::Bot>,
+    /// `--autoplay smart`: the planning bot of `planner.rs`.
+    smart: Option<planner::Smart>,
     debug: debug::Debug,
     config: Option<String>,
     script: Option<input::Script>,
@@ -145,6 +148,7 @@ fn args() -> Args {
     let direct = jump.is_some() || ["--stage", "--chars", "--episode", "--area", "--camx"].iter().any(|f| value(f).is_some());
     let test = a.iter().any(|x| x == "--test");
     let viewer = view.is_some() || a.iter().any(|x| x == "--viewer");
+    let smart = a.windows(2).any(|w| w[0] == "--autoplay" && w[1] == "smart");
     let explicit_headless = a.iter().any(|x| x == "--headless");
     let windowed = a.iter().any(|x| x == "--windowed");
     if explicit_headless && (viewer || windowed) {
@@ -166,7 +170,11 @@ fn args() -> Args {
         area: area.unwrap_or(0),
         camx: camx.unwrap_or(0) as u16,
         goto: area.filter(|&a| a > 0).map(|a| (a, camx.unwrap_or(0) as u16)),
-        autoplay: a.iter().any(|x| x == "--autoplay").then(autoplay::Bot::default),
+        autoplay: (a.iter().any(|x| x == "--autoplay") && !smart).then(autoplay::Bot::default),
+        smart: smart.then(|| {
+            let chars: Vec<u8> = value("--chars").map(|v| v.split(',').filter_map(|c| c.parse().ok()).collect()).unwrap_or(vec![0]);
+            planner::Smart::new(&chars, value("--smart-continues").and_then(|v| v.parse().ok()).unwrap_or(3))
+        }),
         debug: debug::Debug::new(a.iter().any(|x| x == "--debug-keys") || test),
         test,
         chars: value("--chars").map(|v| v.split(',').filter_map(|c| c.parse().ok()).collect()).unwrap_or(vec![0]),
@@ -354,6 +362,9 @@ fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Fr
     if let Some(bot) = &mut args.autoplay {
         f = bot.frame(game, tick, &mut args.debug);
     }
+    if let Some(bot) = &mut args.smart {
+        f = bot.frame(game, tick);
+    }
     if let Some(script) = &args.script {
         let s = script.at(tick);
         for p in 0..3 { f.players[p] |= s.players[p]; }
@@ -373,6 +384,9 @@ fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Fr
     if let Some(bot) = &mut args.autoplay {
         bot.report(game, tick);
     }
+    if let Some(bot) = &mut args.smart {
+        bot.report(game, tick);
+    }
     args.pokes.apply(game, tick as i32, true).unwrap_or_else(|e| fail(&e));
 }
 
@@ -386,7 +400,7 @@ fn run_headless(mut args: Args, config: game::flow::Config) {
         if !menu.open {
             tick_game(&mut game, &mut args, tick, input::Frame::default(), &mut None);
         }
-        if args.autoplay.as_ref().is_some_and(|b| b.done()) && args.shots.is_empty() && !args.frames_given {
+        if (args.autoplay.as_ref().is_some_and(|b| b.done()) || args.smart.as_ref().is_some_and(|b| b.done())) && args.shots.is_empty() && !args.frames_given {
             break;
         }
         if args.shots.iter().any(|s| s.0 == tick + 1) {
@@ -398,6 +412,9 @@ fn run_headless(mut args: Args, config: game::flow::Config) {
                 cpu.save(path).unwrap_or_else(|e| fail(&e));
             }
         }
+    }
+    if let Some(bot) = &mut args.smart {
+        bot.summary(args.frames.saturating_sub(1));
     }
 }
 

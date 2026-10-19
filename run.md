@@ -99,8 +99,23 @@ Hogg (Episode 3) and Tyrog (Episode 6 area 2) are not listed: a right walk from 
 
 ## 4. Headless runs (no window)
 
-- `--headless --autoplay`: a bot plays from power on through the eight episodes to the ending and back to the attract loop. It stops there (a few seconds). Mode changes go to stderr.
+- `--headless --autoplay`: a bot (god mode, the flow test) plays from power on through the eight episodes to the ending and back to the attract loop. It stops there (a few seconds). Mode changes go to stderr.
 - `--headless --screenshots 60,600 --shot-dir DIR`: runs the game and saves the pictures at frames 60 and 600 as `DIR/f00060.png` and `DIR/f00600.png`. Add `--jump NAME` (or `--episode`, `--area`, `--camx`) to choose the start.
 - `--test --headless --screenshots 30 --shot-dir DIR`: draws the test menu over the picture at frame 30.
+
+### The smart bot (`--autoplay smart`)
+
+    cargo run --release -p dino-game -- --rom ../dino.zip --headless --autoplay smart
+    cargo run --release -p dino-game -- --rom ../dino.zip --autoplay smart --chars 2          # watch it play (a window)
+
+A bot that plays like a player, with a planner (`planner.rs`). It presses only inputs: no god mode, no kill all, no clock top up, no debug keys. The old `--autoplay` (the flow test with god mode) is unchanged.
+
+- From power on it puts in a coin, presses start, moves the select cursor to the hero of `--chars` (one hero: `0` Jack, `1` Mustapha, `2` Hannah, `3` Mess) and picks it. In a scene it holds attack, which skips the waits of the scripted scenes.
+- In the game it decides every 8 frames. It plays about 60 candidate moves (the 8 directions and none, with attack, a two hit combo, jump, attack + jump, jump attack, and a run) on copies of the game (`Game` is `Clone`), for 96 frames, and scores the end state: the hero's HP and lives lost, the damage dealt to enemies and bosses, kills, progress to the right, the areas and episodes entered, food and weapons taken. A beam search keeps the 4 best plans of 3 moves; the first move of the best plan is played, then it plans again. The simulations run on all cores (up to 8) and are collected in order, so a run is the same every time.
+- `--chars N` chooses the hero. `--smart-continues N` is the number of continues the bot may use after the last life (default 3; 0 ends the run at the game over).
+- It also works with `--episode E --chars N` (a direct start in an episode) and `--frames N`.
+- Settings for a test run (environment variables): `DINO_SMART_H` horizon in frames (96), `DINO_SMART_D` plan depth (3), `DINO_SMART_B` beam width (4), `DINO_SMART_THREADS`, the weights `DINO_SMART_DAMAGE`, `_KILL`, `_PROGRESS`, `_NEAR`, `_LIFE`, `_HP_FULL`, `_HP_EMPTY`, and `DINO_SMART_DIAG=N` (a state line every N frames on stderr).
+- Output on stderr: one line for every episode and area, boss fight, lost life and continue, and at the end the summary line: `episodes cleared | lives lost | continues | score | frames | hp lost per episode | boss fights (episode:frames) | ending | real time, ticks per second, decisions, simulated frames, the cost of one game clone`.
+- Tests: `cargo test -p dino-game planner` (fast ones) and `cargo test --release -p dino-game smart -- --ignored` (clears Episode 1 with Jack without a continue).
 
 `--help` prints all the options.

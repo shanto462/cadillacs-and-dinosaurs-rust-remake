@@ -12,7 +12,7 @@ use super::{Game, Handle, POOL_A, POOL_B, Pool};
 use dino_assets::enemy::SpawnRec;
 
 /// Enemy-side globals of the original (G.$xxxx), kept here because this port owns them.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Globals {
     /// G.$4F3 alive enemies counted by the previous census, G.$4FB the running count.
     pub alive: u8,
@@ -74,7 +74,7 @@ pub struct Globals {
 }
 
 /// State of the interpreter (struct at G.$66C).
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Spawn {
     /// +$04 init done.
     pub init: u8,

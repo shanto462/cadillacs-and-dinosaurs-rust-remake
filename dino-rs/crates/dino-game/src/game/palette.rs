@@ -4,7 +4,7 @@ use super::Game;
 use super::vram::PaletteRam;
 
 /// Fade control block at G.$44A.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Fade {
     /// +0 bank mask: bit0 OBJ, bit1 scroll1, bit2 scroll2, bit3 scroll3. 0 = idle (callers poll it).
     pub mask: u8,
