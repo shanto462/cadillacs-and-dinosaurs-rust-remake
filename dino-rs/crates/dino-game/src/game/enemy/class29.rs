@@ -63,17 +63,8 @@ impl Game {
             e.m.sb(0xA4, 1);
         }
         e.b.sub = e.b.sub.wrapping_add(2);
-        // 0x94522: the chain effect. Its renderer belongs to the effects port.
-        if let Some(i) = self.effects.alloc() {
-            let fx = &mut self.effects.slots[i];
-            fx.b.live = 1;
-            fx.b.k20 = 20 * 4;
-            fx.owner58 = 0xFFFF; // move.l a6,$58(a0) = 0xFFFF0000 | handle (high word, then $5A)
-            fx.owner_class = h;
-            fx.b.set_xi_keep(e.b.xi());
-            fx.b.set_yi_keep(e.b.yi());
-            fx.b.set_zi_keep(e.b.zi());
-        }
+        // 0x4DDFE jmp 0x94522: the sweat beads (pool C class 20) over this hopper.
+        self.fx_spawn_sweat(h);
     }
 
     /// 0x4DEE4..0x4DFEC: partner states, including same-frame fallthroughs.
