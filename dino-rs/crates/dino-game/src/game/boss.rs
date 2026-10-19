@@ -61,6 +61,25 @@ impl Game {
 
     /// `boss_hit_entry` on an object the caller holds (an update in progress, see `placeholder.rs`).
     pub(super) fn boss_hit(&mut self, e: &mut Enemy, h: Handle) {
+        let hp = e.b.hp;
+        self.boss_credit(e);
+        // 0x38CCC: cmpi.w #0,$6C ; ble (signed)
+        if (hp as i16) > 0 {
+            return;
+        }
+        self.boss_clamp_camera(&mut e.b); // 0x32740
+        if e.b.hp_prev != 0 {
+            if self.boss_ends_fight(e, h) {
+                self.flow_boss_defeated(h); // 0xACEE
+            }
+            e.b.hp_prev = 0; // clr.w $6E
+            if e.b.k20 == 18 * 4 { self.hook_a5ea(); } // 0x43884
+        }
+    }
+
+    /// 0x3262A: the damage credit (HP before the hit minus HP now) to the attacker `+$02` (all three heroes in car mode); HP left sets `+$6E`.
+    /// A negative `+$02` skips it.
+    pub(super) fn boss_credit(&mut self, e: &mut Enemy) {
         let (hp, before, who) = (e.b.hp, e.b.hp_prev, e.b.who);
         if (who as i8) >= 0 {
             let dmg = before.wrapping_sub(hp);
@@ -76,23 +95,11 @@ impl Game {
                 e.b.hp_prev = hp;
             }
         }
-        // 0x38CCC: cmpi.w #0,$6C ; ble (signed)
-        if (hp as i16) > 0 {
-            return;
-        }
-        self.boss_clamp_camera(&mut e.b); // 0x32740
-        if e.b.hp_prev != 0 {
-            if self.boss_ends_fight(e, h) {
-                self.flow_boss_defeated(h); // 0xACEE
-            }
-            e.b.hp_prev = 0; // clr.w $6E
-            if e.b.k20 == 18 * 4 { self.hook_a5ea(); } // 0x43884
-        }
     }
 
     /// 0x32740: the boss is put back inside the camera, X at least the camera X and at most the camera X + 0x180
     /// (signed word compares, the low bound first).
-    fn boss_clamp_camera(&self, b: &mut super::body::Body) {
+    pub(super) fn boss_clamp_camera(&self, b: &mut super::body::Body) {
         let cam = self.cam.s2.cam_x as i16;
         let mut x = b.xi();
         if cam > x {

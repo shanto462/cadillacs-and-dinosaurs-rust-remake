@@ -460,3 +460,19 @@ MAME wins over the design text; the design documents themselves are not edited.
   stay until the tally writes them.
 - Player 3's start and coin are bits 7 and 6 of the P3 port (IN2), so they also show in G.$18 (MAME ep3_3p frame 400); the harness script now sets them.
 - Scroll2 at the start of probe recordings (34 sweep rows, mostly Episode 5 area 1 "hit" probes and the Tyrog probes, frames 2 to 108, camera equal): MAME has tile blocks where the port is blank. A write watch on 0x90E000 (task 25 of Desktop Haiku) saw only blank writes from 0x0BA4 and 0x0AAAD0 in frames 2 to 12, not the 0x5808 code word, so the writer is not named. Likely tied to the probe's stage jump and the area load right after it; check with a recording that starts in normal play before treating it as a port difference.
+
+## Tyrog (M8-06 .. M8-09, Task 11, 2026-10-19)
+- D3d 3.4 (action 6, hop and chest blades): 0x38AA8's division loops branch into action 3's code (`bpl.w 0x38A2A`, `beq.w 0x38A40`,
+  `bpl.w 0x38A56`, `beq.w 0x38A6C`), so it runs action 3's tail and never reaches its own face call at 0x38B7C. All three hops (actions 3, 5, 6) add 1
+  to a speed count that has bit 7 set.
+- D3d 3.4 (the sidestep 0x37A10): the `rand() & 0xF` it draws is lost in the call to 0x329B8; the table indexes use what 0x329B8 leaves in d2 (the last
+  Z window's distance, which 0x329B8 measures against this object's X) and d3 (the last window index * 2). The sideways step's sign is a word test of
+  d2 (its high byte is that leftover), the depth step's a byte test.
+- D3d 3.4 (the claw chain wait 0x37986): the time is computed from 0x74EE2 and 0x74F22 and then overwritten with 1 in both branches: the wait between
+  two swipes is one frame.
+- D3d 3.5 (class 26 variant 4, lava rock): the init never sets d2 / d3 for the sign tests at 0x4D6FC; the terrain routine 0x12CB4 leaves small
+  values there, so the X and Z speeds of speed id 9 always turn round (the port does that; MAME damage recordings equal in step mode).
+- D3d 3.7: class 4's hit (0x38CC6) for forms 2 and 1 sets G.$4D6 = 3 and G.$50E = 2 at HP 0 or below and never calls 0xACEE; the host is
+  rewritten into the same slot (`+$04..+$07` = 0, class word 0x120, the variant's high byte - 1).
+- Port bridge until M8-10: pool A class 72 (the host) is a placeholder (placeholder.rs `enemy_ph_host`): 250 frames, then class 4 with the same
+  variant. Without it the chain stopped at the first host and the autoplay could not finish Episode 6.

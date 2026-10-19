@@ -151,6 +151,9 @@ mod b40;
 mod b45;
 #[path = "prop/b71.rs"]
 mod b71;
+// Pool B 79 (M8-06): the starter of the Tyrog scene.
+#[path = "prop/b79.rs"]
+mod b79;
 // Pool B 95 (M6-31): the Episode 3 sky blend.
 #[path = "prop/b95.rs"]
 mod b95;
@@ -323,7 +326,8 @@ impl Game {
                 88 => self.prop_car(&mut p, h, i),
                 89 => self.prop_class89(&mut p, i),
                 93 => self.prop_class93(&mut p, i),
-                33 | 79 => self.ph_starter(&mut p, h, i), // placeholders of the boss starters (placeholder.rs)
+                33 => self.ph_starter(&mut p, h, i), // placeholder of the Slisaur starter (placeholder.rs)
+                79 => self.prop_b79(&mut p, i),
                 94 => self.prop_class94(&mut p, i),
                 95 => self.prop_b95(&mut p, i),
                 96 => self.prop_class96(&mut p, i),
