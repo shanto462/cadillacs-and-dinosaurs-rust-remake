@@ -311,7 +311,7 @@ MAME wins over the design text; the design documents themselves are not edited.
 - Baseline before any change (worktree of wt/haiku-m5-10): `cargo build` ok, `cargo test --workspace` 439 + 59 + 11 passed, 0 failed; `regress.sh` 50 of 52 at 0, mp_join 3, c14c_mustapha 8. `m600_bs_v1_v1_nat` step run: first difference at frame 68 is effect class 0x14 (not ported, the spawn dust), Vice (class 0x12, slot 22) differs from frame 775 (act: MAME 2, port 0): the placeholder runs his fight in mode 2. Check the intro end frame (775 or 776) first: the intro test skips `act == 0x12`.
 - Wiring miss from M5-10: class 29 (Rock Hopper) is missing from `PORTED_CLASSES` in `game/trace.rs`, so the diff reports it as "NOT PORTED". Add it in the next task only after checking the regress numbers (it counts its differences as ported-class pairs).
 
-## Episode 8 area 1: steam pipe hold (open, 2026-10-19)
+## Episode 8 area 1: steam pipe hold (closed, 2026-10-19)
 
 - A broken steam pipe (pool B class 40, 0x836A4, mode 4 sub 2 at 0x8375A) puffs class 15 pieces (0x41EEA, handler 0x41F1A) for ever; it has no far test. The census 0x3242E counts the new pieces (mode 0), so a wave can stay "alive" while a pipe steams. The port equals MAME here (piece counts and lifetimes in ep8_jack, frames 31000 to 33722).
 - In MAME (ep8_jack) the hold at camera X 0xA00 ends when the area camera event row changes from 0x19 to 0x16 at record 33491: the row loader around 0x1D96C to 0x1D9A6 copies G.$4DE / G.$514 and sets G.$4DD = G.$4E4 (scripted walk to the area end at 33722). The port fires the same row in the same record from MAME's state. The row is advanced by the wave controller (prop class 15, 0x7B336) in its end phase, not by camera X:
