@@ -118,7 +118,7 @@ impl Game {
 
     /// 0x32D0C / 0x32D16: keep +$BD, reroll zero with rand & 3; use
     /// table 0x32D7E even when the preceding six-slot choice left 4..6.
-    fn boss_slot4_keep(&mut self, e: &mut Enemy) {
+    pub fn boss_slot4_keep(&mut self, e: &mut Enemy) {
         let mut slot = e.m.b(0xBD);
         while slot == 0 {
             slot = (self.rand() & 3) as u8;

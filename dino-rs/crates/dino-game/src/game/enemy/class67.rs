@@ -46,6 +46,7 @@ impl Game {
                 e.b.az = 0;
                 e.b.sub = 2;
                 self.enemy_anim(&mut e.b, 3);
+                self.enemy_draw_check(&mut e.b, h);
                 return;
             }
             e.b.motion();

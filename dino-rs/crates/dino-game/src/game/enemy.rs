@@ -47,6 +47,7 @@ mod class57;
 mod class59;
 mod class35;
 mod class36;
+mod class40;
 mod class26;
 mod class68;
 mod class45;
@@ -301,6 +302,7 @@ impl Game {
                 57 => self.enemy_class57(&mut e, h),
                 68 => self.enemy_class68(&mut e, h, i),
                 36 => self.enemy_class36(&mut e, h, i),
+                40 => self.enemy_class40(&mut e, h, i),
                 35 => self.enemy_class35(&mut e, h, i),
                 45 => self.enemy_class45(&mut e, h, i),
                 67 => self.enemy_class67(&mut e, h, i),
@@ -1913,6 +1915,7 @@ impl Game {
             0x70 => self.c63_recover(e),            // 0x5ACAA the alternate Blade (class 63)
             0x74 | 0x90 => self.c64_recover(e),     // 0x5B2C4 the bomb carriers (class 64)
             0x54 => self.enemy_morgan_recover(e), // 0x51ACA
+            0x58 => self.c40_recover(e, h),          // 0x543AC Morgue (class 40)
             0x40 => self.enemy_c6_reset_ai(e),      // 0x396C2 Bludge (class 6)
             _ => e.b.set_state(0x0200_0000),
         }

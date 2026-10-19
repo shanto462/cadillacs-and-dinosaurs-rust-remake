@@ -144,6 +144,8 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x3A234, // Bludge class 6, init 0x392FE (M7-07)
     0x2EE70, // Bludge hit reaction table (0x2A606)
     0x30CE0, // Bludge grab animation table (0x2B35A)
+    0x6EA48, // Morgue class 40, init 0x53E1E (M7-19..M7-21)
+    0x30568, 0x31178, // Morgue hit and held tables (0x2E68C, 0x2E724, name 0x58)
 ];
 
 /// Single frame records items load directly (0x1236): the ammo box picture.
