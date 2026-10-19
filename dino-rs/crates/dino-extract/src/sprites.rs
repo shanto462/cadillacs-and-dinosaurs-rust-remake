@@ -30,6 +30,7 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x4F4E4, // Rock Hopper init 0x4DD2A (M5-10)
     0x6FB1A, // enemy bullet class 59, init 0x57FC8
     0x438F2, // Vice T. intro, 0x425B6 (M5-09)
+    0x50DFA, 0x51076, // Hogg: the rider class 31 (0x4FD6A) and the bike class 32 (0x50FD0) (M6-23)
     0x2FBE2, // Vice T. hit reactions (table 0x2E68C, +$84 = 0x30)
     0x30FB0, // Vice T. held by a player (table 0x2E724, +$84 = 0x30)
     0x34892, // enemy family init 0x3388A, variant 0 (palette 13)
