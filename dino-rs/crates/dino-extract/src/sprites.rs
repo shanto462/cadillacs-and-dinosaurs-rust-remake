@@ -26,6 +26,9 @@ const HITBOX_REGION: (u32, u32) = (0xF8000, 0x11D220);
 /// 10-byte animation tables used by non-player objects. Each address is a constant in the
 /// object's init code (stored into obj+$40); the comment names that code.
 pub const OBJECT_ANIM_TABLES: &[u32] = &[
+    0x71408, // Morgan thrown objects and grenades (0x5C0CA, 0x4D59E)
+    0x30444, 0x3112C, // Morgan hit and held tables (0x2E68C, 0x2E724, name 0x54)
+    0x70F02, 0x71758, 0x564D6, // Morgan scene, attached Uzi, chief (0x51412, 0x5BE9E, 0x563AE)
     0x6162E, // A83 flame pieces, 0x61570
     0x93F42, // burn death pieces, pool C class 15, 0x93E68 (M5-07)
     // The Butcher (M6-09): the starter class 5 (0x38E20), the carcass class 51 (0x5719E), the machete helper class 53 (0x57650), the knife

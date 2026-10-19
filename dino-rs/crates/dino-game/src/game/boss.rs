@@ -475,14 +475,15 @@ mod tests {
         g.boss_hit_entry(i);
     }
 
-    /// Morgan (class 35) dies, is Morgue (class 40) in the same object after the blink, with the Morgue HP row, and the
+    /// Morgan (class 36) dies, is Morgue (class 40) in the same object after the blink, with the Morgue HP row, and the
     /// first death does not end the fight (0xACEE comes at Morgue's death).
     #[test]
     fn morgan_becomes_morgue_and_the_fight_goes_on() {
         let Some(mut g) = rom_game() else { return eprintln!("morgan test skipped: dino.zip is absent") };
-        spawn_pool_a(&mut g, 35, 0x80);
-        g.enemies_update(); // the init
-        let i = slots_of(&g, 35)[0];
+        spawn_pool_a(&mut g, 36, 0x80);
+        g.enemies_update(); // 0x516A8: allocate the linked rifle
+        g.enemies_update(); // 0x5172E: initialize the combat body
+        let i = slots_of(&g, 36)[0];
         let morgue_hp = g.assets.enemy.boss_hp[5][0][0];
         kill_boss(&mut g, i);
         assert_eq!(g.flow.sub, 0, "Morgan's death does not end the fight");

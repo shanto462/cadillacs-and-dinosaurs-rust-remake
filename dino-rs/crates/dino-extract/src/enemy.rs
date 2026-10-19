@@ -16,6 +16,17 @@ const SENTINEL: u16 = 0x9FFF;
 
 /// Small tables copied as byte blobs: (ROM address, length, user).
 const TABLES: &[(u32, u32, &str)] = &[
+    (0x4D49E, 0x100, "grenade landing offsets, 0x4D618"),
+    (0x9E04, 4, "firearm sound codes, 0x9D9C"),
+    (0x51EF0, 0x80, "Morgan ambiguous kite directions, 0x51ED2"),
+    (0x5236C, 0x46, "Morgan kite durations and grid rows"),
+    (0x52EF0, 0x144, "Morgan kite grid"),
+    (0x524F4, 16, "Morgan throw count"),
+    (0x52594, 32, "Morgan thrown object variants"),
+    (0x526A0, 16, "Morgan grenade count"),
+    (0x52788, 32, "Morgan melee delay"),
+    (0x7449A, 0x40, "Morgan approach pause by level"),
+    (0x5BFDE, 0xD8, "Morgan attached rifle frame rows, 0x515C2"),
     (0x898C8, 13 * 12, "B71 palette phase lists"),
     (0x840E8, 24, "B45 broken socket destinations"),
     (0x84100, 16, "B45 broken socket tiles"),
