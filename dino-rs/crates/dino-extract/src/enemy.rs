@@ -195,6 +195,30 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x742FA, 0x20, "class 14 guard: pause after the block by aggression and variant"),
     (0x58178, 0x190, "class 60 part placement for BLADE: dx, dy, dz, animation by the frame byte"),
     (0x58308, 0x190, "class 60 part placement for RAZOR"),
+    // class 13 (POACHER J / SKINNER / GUTTER, 0x3DDEA): the decision tables, the timers and the small tables of the states.
+    (0x72A94, 0x300, "class 13 decision 1 by variant, rand and X class (0x4005C)"),
+    (0x72D94, 0xC0, "class 13 far gate by variant row, aggression and X class (0x40118)"),
+    (0x72F14, 0x300, "class 13 far decision by variant, rand and X class (0x40156)"),
+    (0x3E28E, 0x40, "class 13 flee timers: 0x3E28E positive, 0x3E2AE negative, by rand & 0x1E (0x3E1FA)"),
+    (0x3EADA, 0x20, "class 13 pause after a rifle shot by rand (0x3EA2A)"),
+    (0x3ECE2, 0x20, "class 13 pause after a dash by rand (0x3ECA8)"),
+    (0x3EF1E, 0x38, "class 13 melee animation by +$BA * 8 + +$BB (0x3EE82)"),
+    (0x3FA3E, 0x40, "class 13 melee starts: +$BA, +$BB, animation, pad (4 bytes per kind) (0x3F998)"),
+    (0x3F636, 0x20, "class 13 close in timer random add by rand (0x3F5E2)"),
+    (0x3F6E8, 0x20, "class 13 rifle shots by rand (0x3F6B2)"),
+    (0x3F530, 0x40, "class 13 drift speeds by rand (0x3F4D2)"),
+    (0x3FC84, 0x20, "class 13 wait after a hit target by rand (0x3FC60)"),
+    (0x743BA, 0x60, "class 13 close in timer by level and variant (0x3F5E2)"),
+    (0x7435A, 0x60, "class 13 pause at a point by level and variant (0x3E4DC)"),
+    (0x74E22, 0x40, "class 13 melee step add by level (0x3F0F6)"),
+    (0x3FBC4, 0x20, "class 13 kick speeds by X class: vx words, then vy words (0x3FB40)"),
+    (0x3EE5E, 0x10, "class 13 guard counter after the hop back by aggression (0x3EE2C)"),
+    (0x741D4, 0x18, "class 13 guard chance by aggression and variant (0x3DFC6)"),
+    (0x741EC, 0x63, "class 13 guard counter: a base byte and 32 random adds per variant (0x3DFC6)"),
+    (0x7424F, 0x19, "class 13 chance to keep guarding by aggression and variant (0x3E068)"),
+    (0x74268, 0x30, "class 13 pause after a guard by aggression and variant (0x3E068)"),
+    (0x3EFFC, 0xC, "class 13 fade destination palette by variant (0x3EFD0)"),
+    (0x3F008, 0x30, "class 13 fade source palette pointers by variant and step (0x3EFD0)"),
     // class 15 (flying pieces, 0x41F1A): five rows of 20 bytes after a header of five offsets
     (0x42050, 0x6E, "class 15 piece rows: dx, dy, dz, vx, vy, vz, attack flag"),
     // shared pool A library 0x32xxx
@@ -406,6 +430,11 @@ pub fn extract(rom: &Rom) -> EnemyData {
     // class 20 fade (0x45C6E): 2 variants x 4 palette blocks of 16 colours.
     for k in 0..8u32 {
         let p = rom.u32(0x45C6E + 4 * k);
+        extra.push((p, (p..p + 32).map(|x| rom.u8(x)).collect()));
+    }
+    // class 13 fade (0x3F008): 3 variants x 4 palette blocks of 16 colours.
+    for k in 0..12u32 {
+        let p = rom.u32(0x3F008 + 4 * k);
         extra.push((p, (p..p + 32).map(|x| rom.u8(x)).collect()));
     }
     // Pool B class 53: 27 palette sets x 3 variants (16 colours each = 32 bytes).

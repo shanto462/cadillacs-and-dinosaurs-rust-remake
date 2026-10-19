@@ -1,0 +1,146 @@
+# M6-01 / M6-02: the far poacher batch (four variant 0 poachers walk in from 464 px away at spawn frames 6 .. 53, 1 frame apart: the random numbers differ, the
+# first decision rolls the approach state 0xE in 4 of 32 cases). One batch: PR_SNAPS=none PR_SHEET=0 re/harness/probe/probe_record.sh re/harness/pokes/m601_far.txt all
+
+segment m601_far00
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+6 spawn A 13 var=0x0000 x=+0x1D0 z=0x28
+7 spawn A 13 var=0x0000 x=+0x1D4 z=0x30
+8 spawn A 13 var=0x0000 x=+0x1D8 z=0x38
+9 spawn A 13 var=0x0000 x=+0x1DC z=0x40
+trace 420
+
+segment m601_far01
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+10 spawn A 13 var=0x0000 x=+0x1D0 z=0x30
+11 spawn A 13 var=0x0000 x=+0x1D4 z=0x38
+12 spawn A 13 var=0x0000 x=+0x1D8 z=0x40
+13 spawn A 13 var=0x0000 x=+0x1DC z=0x48
+trace 420
+
+segment m601_far02
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+14 spawn A 13 var=0x0000 x=+0x1D0 z=0x38
+15 spawn A 13 var=0x0000 x=+0x1D4 z=0x40
+16 spawn A 13 var=0x0000 x=+0x1D8 z=0x48
+17 spawn A 13 var=0x0000 x=+0x1DC z=0x28
+trace 420
+
+segment m601_far03
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+18 spawn A 13 var=0x0000 x=+0x1D0 z=0x40
+19 spawn A 13 var=0x0000 x=+0x1D4 z=0x48
+20 spawn A 13 var=0x0000 x=+0x1D8 z=0x28
+21 spawn A 13 var=0x0000 x=+0x1DC z=0x30
+trace 420
+
+segment m601_far04
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+22 spawn A 13 var=0x0000 x=+0x1D0 z=0x48
+23 spawn A 13 var=0x0000 x=+0x1D4 z=0x28
+24 spawn A 13 var=0x0000 x=+0x1D8 z=0x30
+25 spawn A 13 var=0x0000 x=+0x1DC z=0x38
+trace 420
+
+segment m601_far05
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+26 spawn A 13 var=0x0000 x=+0x1D0 z=0x28
+27 spawn A 13 var=0x0000 x=+0x1D4 z=0x30
+28 spawn A 13 var=0x0000 x=+0x1D8 z=0x38
+29 spawn A 13 var=0x0000 x=+0x1DC z=0x40
+trace 420
+
+segment m601_far06
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+30 spawn A 13 var=0x0000 x=+0x1D0 z=0x30
+31 spawn A 13 var=0x0000 x=+0x1D4 z=0x38
+32 spawn A 13 var=0x0000 x=+0x1D8 z=0x40
+33 spawn A 13 var=0x0000 x=+0x1DC z=0x48
+trace 420
+
+segment m601_far07
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+34 spawn A 13 var=0x0000 x=+0x1D0 z=0x38
+35 spawn A 13 var=0x0000 x=+0x1D4 z=0x40
+36 spawn A 13 var=0x0000 x=+0x1D8 z=0x48
+37 spawn A 13 var=0x0000 x=+0x1DC z=0x28
+trace 420
+
+segment m601_far08
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+38 spawn A 13 var=0x0000 x=+0x1D0 z=0x40
+39 spawn A 13 var=0x0000 x=+0x1D4 z=0x48
+40 spawn A 13 var=0x0000 x=+0x1D8 z=0x28
+41 spawn A 13 var=0x0000 x=+0x1DC z=0x30
+trace 420
+
+segment m601_far09
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+42 spawn A 13 var=0x0000 x=+0x1D0 z=0x48
+43 spawn A 13 var=0x0000 x=+0x1D4 z=0x28
+44 spawn A 13 var=0x0000 x=+0x1D8 z=0x30
+45 spawn A 13 var=0x0000 x=+0x1DC z=0x38
+trace 420
+
+segment m601_far10
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+46 spawn A 13 var=0x0000 x=+0x1D0 z=0x28
+47 spawn A 13 var=0x0000 x=+0x1D4 z=0x30
+48 spawn A 13 var=0x0000 x=+0x1D8 z=0x38
+49 spawn A 13 var=0x0000 x=+0x1DC z=0x40
+trace 420
+
+segment m601_far11
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+50 spawn A 13 var=0x0000 x=+0x1D0 z=0x30
+51 spawn A 13 var=0x0000 x=+0x1D4 z=0x38
+52 spawn A 13 var=0x0000 x=+0x1D8 z=0x40
+53 spawn A 13 var=0x0000 x=+0x1DC z=0x48
+trace 420

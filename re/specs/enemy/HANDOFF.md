@@ -174,3 +174,48 @@ of the placeholder registry are gone (`--list-placeholders`). Check: `re/harness
 - **For M6-11 / M6-12.** Class 52 is complete here (init, held, the drop 0x573DE / 0x5743C / 0x57368, the item class 0 var 0x12 made at the landing, the follow tail 0x5A280);
   what is left of M6-11 is the check of the knife item in play (pick up by heroes, D2c 5.3) and the helper groups (the Poachers of the controller). The target rule 0x58CD6 is in
   `c61_pick_target`. M6-12 has the acceptance runs (and the death scores, which are already in `c61_dying`).
+
+
+## M6-01 and M6-02: the Poachers (class 13: POACHER J., SKINNER, GUTTER)
+
+Code: `game/enemy/class13.rs` (init 0x3DDFE, alive frame 0x3DF68, AI frame 0x3E0B8, flee timer 0x3E1FA, slot refresh 0x3E4A2, attack start tests 0x3E420, the
+guard 0x3DFC6, the ten entrances 0x3E504 .. 0x4001C, death 0x401CE), `class13_ai.rs` (the state handlers of the table 0x3E1AA, the decisions 0x4005C and
+0x40118 / 0x40156 with the state entries), `class13_attack.rs` (dash, rifle volley with the bullet 0x57F62 / flash 0x3EA8A, melee chain, kick, hop back),
+`class13_tests.rs` (formula tests with made-up tables). Data: 25 tables in `dino-extract/src/enemy.rs` (`TABLES` "class 13", the fade palettes 0x3F008 as extra blobs)
+and nine animation tables in `OBJECT_ANIM_TABLES` (0x6C57A, 0x6CA24, 0x6CF3E, hit 0x2EFEC / 0x2F176 / 0x2F2F6, grabbed 0x30D2C / 0x30D84 / 0x30DDC). Wiring: the dispatch line
+and the recover entry (0x2B56C: +$84 = 8 / 0x48 / 0x4C -> 0x3E504) in `enemy.rs`, `trace.rs` PORTED_CLASSES, the guard call in `player_combat.rs` (next to the class 14
+guard), `lib_slot6_keep` (0x32C54) in `lib32.rs`. The class 13 entry of the placeholder registry is gone (`--list-placeholders`).
+- **Check.** `re/harness/m601_check.sh` (step mode; `MODE=run` for a free run). The D3a H5 to H10 recordings, the two batches of this task (`re/harness/pokes/m601_poachers.txt`:
+  barrel, pail, far walkers, walk away; `m601_far.txt`: twelve segments with four far poachers each) and the Butcher scenarios. Record the two batches again with
+  `PR_SNAPS=none PR_SHEET=0 re/harness/probe/probe_record.sh re/harness/pokes/m601_poachers.txt all` (and `m601_far.txt`; about 25 s each, one MAME process).
+- **Result (step mode, ported class 0x0d fields).** H9 (nine entrances, 360 frames each) equal, also in free run mode (the random numbers too); H6 (level 0 and 31) and H7 (five spawn
+  frames) equal for 900 frames (shot at 192 / 243 / 255 / 261 / 321 as D3a says, the sound 0xEA with d1 / d2); H8 (melee, three variants, two levels, 1500 frames) equal,
+  except `v0_l31` after frame 1312 (a Shivat, class 24, not ported, draws random numbers before the poachers of the slot order); H10 (kill scores 2,100 / 3,100 / 4,100) equal; barrel and pail (state
+  0x48), 12 far segments (state 0xE and the decisions), walk away equal up to the unported classes. The Butcher scenarios `m600_bs_b1_b1_nat` (6500 frames) and `m600_bs_b1_b10_nat2`
+  (2200 frames: the two Gutters of the first group, entrance 0xC) and `m600_bs_b2_b4_face` are equal in every object field and global in step mode AND in a free run (the random numbers too).
+  The first difference of `m600_bs_b1_b10_nat2` is now frame 252 and is not an object: the scroll1 text cells of the talk step and the sound arguments (known, Butcher notes).
+- **Frame facts and traps.**
+  - D3a 4.1 / 3.4 said "no guard": wrong. The init sets `+$87` = 1 and the player's hit pass calls 0x3DFC6 through the table 0x10B50 (entries 8, 0x48, 0x4C). The chance table 0x741D4 of the
+    ROM is all 0, so it never blocks, but it **draws one random number and throws it away** (`moveq #0,d0` between the draw and the compare) for every hit on a free poacher on the
+    ground that faces the target. Without the call the random sequence is wrong from the first hit (mutation test on `m600_bs_b1_b1_nat`: frame 1109). The arenas of the D3a recordings (`jump 2 0 0x400`) have the
+    floor at height 0x40, so `+$0C` is not 0 there and the guard returns at its first test; the Butcher arena and the stages have floor 0. The block path (`+$BC`, hop back 0x3FBE4, state 0x28)
+    is ported but never runs on a genuine ROM.
+  - Mode 4 (0x401CE): sub 0 writes `+$80` = 0x3C first (the table 0x401DA has two words only; the next instructions are code, D3a read them as table entries), then the kill score; sub 2 counts `+$80`
+    down and draws on EVEN counts.
+  - The muzzle flash (class 57) takes `+$24` = the NEGATED facing (`neg.b`): 0xFF for a right facing poacher; for a left facing one the X goes back by 0x56 (net - 0x2B). The bullet is the shared
+    `enemy_spawn_bullet` (0x57F62: dx 0x30, dy 0x40, variant 0). The shot sound 0x9C76 is the pool A one (code 0xEA, d1 = (3 / 4) << 16 | 0x2000 | pan, d2 = 0x15000000).
+  - The far gate (0x40118) reads the X class `+$A5` of the PREVIOUS decision (not a fresh one), by `add.b` (the carry is lost); the roll `rand & 0x1F` must be below the table byte (signed).
+    0x4005C stores a fresh class; 0x40156 (after the gate, also the end of the close in state 0x16) too.
+  - Entrance 0x12 reads `sub.w $744(a5),d1` on the FRACTION of X (word access to a long: the low word of d1), not on the integer part; the scripts spawn on whole pixels, so the quirk
+    is kept as it reads (`enemy_c13_3fe60`). Entrances 0x10 / 0x12 start with Z = 0 and a Z speed from the distance (z 0 at spawn, D3a).
+  - `0x3E3D4` (the jump of a stuck or airborne poacher) and the ledge entry `0x3E38C` end the AI frame without drawing (the original `jmp 0x120E` returns to the caller).
+  - The state handler for state 0 and 0x22 / 0x2E point into the table itself (never entered); the dead routines are listed in the module doc of `class13.rs`.
+  - `+$A4` is written 0 and never read; `+$BD` is the slot number of `lib32.rs`; the pause table 0x7435A is indexed by the level plus the variant byte asr 5 (a byte add).
+- **Not checked against MAME (no recording reaches it, ported from the listing):** state 0x12 (the jump) and its two entries 0x3E38C / 0x3E3D4 (a ledge or an airborne poacher: seen only in
+  recordings of other classes, Episode 8), the hop back 0x28 (never runs on the ROM). Everything else of the live code is checked by at least one recording equal to MAME.
+- **Harness.** `spawn_pokes.py` turns the `spawn` notes of a probe sidecar into RAM writes so that the INIT frame of a spawned poacher runs in the port (without it step mode loads the
+  object after its init). A poke cannot set the free list: `global.free_count` / `free_ptr` differ at the spawn frame in step mode (and for the whole run in free run mode), and a spawn in
+  another pool than A is not replayed (the item containers of `m601_barrel`). Both are artifacts of the replay, not of the class.
+- **Known differences left.** (1) The scroll1 cells of the hero's HP bar at the frame a bullet or a blow hits him (3 cells at H6 frame 255 and H5 frame 36, the same in `c14a`): the HUD, not the
+  poacher (object fields and sounds are equal). (2) Recordings with a Hopper, Mack, a barrel or the Cadillac (m600_h14 / h15 / h16, ep3_*, m800_*, m700_*) show differences of the poacher only where
+  an unported class hits it or draws random numbers before it in the slot order.

@@ -1,0 +1,90 @@
+# M6-01 / M6-02: more recordings of the Poachers (class 13) for the states that the D3a H5..H10 recordings (m600_humans.txt) do not reach:
+# state 0xE (the approach, decision 5: only a variant 0 poacher far from the hero, X class 7, 4 rolls in 32) and state 0x48 (the swing at a container
+# in the way). One batch, one MAME process:  PR_SNAPS=none PR_SHEET=0 re/harness/probe/probe_record.sh re/harness/pokes/m601_poachers.txt all
+# Check with re/harness/m601_check.sh (the list at the end of the script).
+
+# a barrel and a pail between the poacher and Jack (recipe d4a1 of M9-sweep-a): the swing 68 and 186 frames after the start
+segment m601_barrel
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+0 snapshot keep
+2 spawn E 5 var=4 ax=1090 z=296
+3 spawn A 13 var=0 ax=1190 z=296
+trace 260
+
+segment m601_pail
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+0 snapshot keep
+2 spawn E 5 var=0 ax=1090 z=296
+3 spawn A 13 var=0 ax=1190 z=296
+trace 260
+
+# a variant 0 poacher that walks in from far away, entrance 0, at different frames (the random numbers differ): the approach state 0xE
+segment m601_far_a
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0000 x=+0x1D0 z=0x30
+trace 1200
+
+segment m601_far_b
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+9 spawn A 13 var=0x0000 x=+0x1D0 z=0x40
+trace 1200
+
+segment m601_far_c
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+14 spawn A 13 var=0x0000 x=+0x1D0 z=0x28
+trace 1200
+
+segment m601_far_d
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+20 spawn A 13 var=0x0000 x=+0x1D0 z=0x38
+trace 1200
+
+segment m601_far_e
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+31 spawn A 13 var=0x0000 x=-0x40 z=0x30
+trace 1200
+
+segment m601_far_f
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+47 spawn A 13 var=0x0000 x=+0x1D0 z=0x30
+trace 1200
+
+# a poacher that walks at Jack while Jack walks away (the flee timer, the run back onto the screen, the slots), level 31
+segment m601_walk_away
+jump 2 0 0x400
+level 31 free
+hp 100
+god on
+0 snapshot keep
+5 spawn A 13 var=0x0200 x=+0x100 z=0x30
+6 spawn A 13 var=0x0400 x=+0x120 z=0x40
+0-1200:R
+trace 1200
