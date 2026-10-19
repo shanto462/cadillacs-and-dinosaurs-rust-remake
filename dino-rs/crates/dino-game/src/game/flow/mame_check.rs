@@ -2720,7 +2720,13 @@ fn clear_tally_matches_mame() {
 fn story_panel_and_card_match_mame() {
     let Some(a) = assets() else { return };
     let mut checked = Vec::new();
-    for name in ["link-ep6", "link-ep8"] {
+    let mut failed: Vec<String> = Vec::new();
+    // M2-32 part 3: episodes 3, 5 and 7 differ (see the report); `DINO_LINKS=link-ep3,link-ep5,link-ep7` runs them without failing the test.
+    let names: Vec<String> = match std::env::var("DINO_LINKS") {
+        Ok(v) => v.split(',').map(String::from).collect(),
+        Err(_) => ["link-ep2", "link-ep4", "link-ep6", "link-ep8"].map(String::from).to_vec(),
+    };
+    for name in names.iter().map(String::as_str) {
         let Some(trace) = flow_trace_named(name) else { continue };
         let mut rd = TraceReader::open(&trace).expect("the recording opens");
         let (mut prev, mut start): (Option<(Vec<u8>, Vec<u8>)>, Option<(i32, Vec<u8>, Vec<u8>)>) = (None, None);
@@ -2791,10 +2797,14 @@ fn story_panel_and_card_match_mame() {
                 break;
             }
         }
-        assert!(bad.is_empty(), "{} problems, first: {:#?}", bad.len(), &bad[..bad.len().min(6)]);
+        if !bad.is_empty() {
+            eprintln!("{name}: {} problems, first: {:#?}", bad.len(), &bad[..bad.len().min(6)]);
+            failed.push(name.to_string());
+        }
         checked.push((name, records.len()));
     }
     println!("story panel and card records equal to MAME: {checked:?}");
+    assert!(failed.is_empty(), "episodes with problems: {failed:?}");
 }
 
 /// The recording `flow_NAME.mame.trc` of a batch segment (`re/out/traces`), or None (the test skips).
