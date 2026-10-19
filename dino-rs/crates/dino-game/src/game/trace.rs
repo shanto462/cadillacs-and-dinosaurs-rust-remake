@@ -916,6 +916,13 @@ impl Effect {
         f.u8(0x5E, "b5e", &mut self.b5e);
         f.u8(0x5F, "b5f", &mut self.b5f);
         f.u16(0x60, "owner60", &mut self.owner60);
+        if self.b.k20 == 0x84 {
+            // a bullet spark (class 33): the life byte and the two speed longs
+            f.u8(0x62, "b62", &mut self.b.b62);
+            f.i32(0x64, "vx64", &mut self.vx64);
+            f.i32(0x68, "vy68", &mut self.vy68);
+            return;
+        }
         f.i16(0x62, "off_x", &mut self.off_x);
         if self.b.k20 == 0x44 {
             f.u32(0x64, "scatter64", &mut self.scatter64);
@@ -1089,7 +1096,7 @@ pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
             class::ATTACK_BOX,
         ],
     ),
-    ("effect", &[0x04 / 4, 0x10 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x2C / 4, 0x38 / 4, 0x54 / 4, 0x0C / 4, 0x1C / 4, 0x4C / 4, 0x60 / 4, 0x64 / 4, 0x3C / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x88 / 4]),
+    ("effect", &[0x7C / 4, 0x84 / 4, 0x04 / 4, 0x10 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x2C / 4, 0x38 / 4, 0x54 / 4, 0x0C / 4, 0x1C / 4, 0x4C / 4, 0x60 / 4, 0x64 / 4, 0x3C / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x88 / 4]),
     // a pool D slot has no class word: the diff tool reads +$20 of the slot, which is 0 for the clock's slot (a sprite word)
     ("special", &[0]),
 ];

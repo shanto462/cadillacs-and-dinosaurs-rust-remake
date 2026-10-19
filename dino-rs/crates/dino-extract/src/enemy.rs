@@ -199,6 +199,10 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x29552, 0x15A, "container debris: chance masks, then the piece lists 0x295F4 / 0x29650"),
     // M5-04 pool C class 21 (0x94672): the puff lists by variant, a word offset table then (ay, +$60, 12 byte records) per variant.
     (0x9484A, 0x962, "pool C class 21 puff lists by variant (0x94698)"),
+    // M5-08 gunshot muzzle flash (class 31, 0x96800) and ricochet spark (class 33, 0x96B78): the velocity sets by selector (0x96986, to the end of the
+    // velocity sets at 0x96A7E), the flash and spark records by kind with the scatter rows (0x96D2A to 0x96DAA).
+    (0x96986, 0xF8, "gunshot flash velocities: 4 pointers by the selector, then (vx, vy) words by direction (0x967EA)"),
+    (0x96D2A, 0x80, "ricochet records: 6 offsets by kind 4..9, 6 records of 14 bytes (0x96B78), scatter rows for facing (0x96D8A) and facing 0 (0x96D9A)"),
     // M5-07 burn death and flames: the pieces of the charred body (0x93DB4), the offsets of the torch glow by frame byte (0x29C26), the flame lists of the enemies by name id (0x2CA36).
     (0x93DB4, 0xA0, "pool C class 15 burn piece records (0x93D48)"),
     (0x29C26, 0x90, "torch glow offsets by the frame byte of the torch (0x29B6E)"),

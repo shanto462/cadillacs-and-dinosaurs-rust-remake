@@ -392,6 +392,7 @@ impl Game {
         (g.b4f1, g.alive, g.dizzy, g.dizzy_prev, g.b4fa, g.alive_run, g.b4fc) = (0, 0, 0, 0, 0, 0, 0); // G.$4F1, $4F3, $4F8, $4F9, $4FA, $4FB, $4FC
         (g.go_timer, g.go_camera_x, g.b502, g.b504, g.b505) = (0, 0, 0, 0, 0); // G.$4FE, G.$500, G.$502, G.$504, G.$505
         (g.wave_timer, g.kill_all, g.car_mode) = (0, 0, 0); // G.$50C, G.$50E, G.$518
+        w.ricochet_seq = 0; // G.$515
         (g.b7b2, g.cage_smashed) = (0, 0); // G.$7B2, G.$7B6 (inside the 0x73C sweep)
         self.cam.car = 0; // G.$51A
         self.rank.w4f6 = 0; // G.$4F6
