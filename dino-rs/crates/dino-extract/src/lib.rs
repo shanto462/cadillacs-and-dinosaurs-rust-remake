@@ -69,19 +69,19 @@ mod tests {
 
     /// Needs the user's ROM set at `../dino.zip` (skipped otherwise). A frame record that no
     /// registered table reaches is decoded on demand; an address that is not a frame record is skipped.
-    /// The candidates are frame records of classes that may not be ported yet (0x57F4A was the first animation of the
-    /// Butcher's knife holder until M6-09 registered its table; 0x6FB20 is the first frame of the Vice bullet table
-    /// 0x6FB1A); the first one that the base set does not have is used.
+    /// The candidate is a frame record of a placeholder class (`game/placeholder.rs`) whose animation table is not
+    /// registered yet: 0x86D00 (class 65, BARREL). If the base set has it, the test fails, so pick a new candidate
+    /// (cargo run -p dino-game -- --list-placeholders).
     #[test]
     fn extra_frames_are_decoded_on_demand() {
         let path = Path::new("../../../dino.zip");
         if !path.exists() {
+            eprintln!("extra frames test skipped: user's dino.zip is absent");
             return;
         }
         let base = extract(path).unwrap();
-        let Some(addr) = [0x57F4Au32, 0x6FB20].into_iter().find(|a| !base.sprites.frame_by_addr.contains_key(a)) else {
-            return; // every candidate is registered by now
-        };
+        let addr = 0x86D00u32;
+        assert!(!base.sprites.frame_by_addr.contains_key(&addr), "frame record {addr:#x} is registered: pick a new candidate");
         let extra = ExtraFrames { sprite: vec![addr, 0x10, 0x56C61], effect: vec![0x9252C, 0x10], raw: vec![0x10] };
         let pack = extract_with(path, &extra).unwrap();
         let id = pack.sprites.frame_by_addr[&addr];

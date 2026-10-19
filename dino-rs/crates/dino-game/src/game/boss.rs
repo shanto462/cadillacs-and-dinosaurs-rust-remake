@@ -30,7 +30,8 @@ impl Game {
     pub fn boss_spawn_controller(&mut self, boss: Handle) -> Option<Handle> {
         let h = self.spawn_prop(22, 0, None)?;
         if let Some(Slot::Prop(i)) = slot_of(h) {
-            self.props.slots[i].m.sl(off::BOSS, 0x00FF_0000 | boss as u32); // move.l a6,$AA(a0)
+            // move.l a6,$AA(a0): a6 is the boss's RAM address from a sign extended word (MAME: high word 0xFFFF)
+            self.props.slots[i].m.sl(off::BOSS, 0xFFFF_0000 | boss as u32);
         }
         Some(h)
     }
@@ -305,6 +306,14 @@ mod tests {
     }
     fn alive_enemies(g: &Game) -> usize {
         g.enemies.slots.iter().filter(|e| e.b.live != 0).count()
+    }
+
+    #[test]
+    fn the_controller_keeps_its_boss_as_a_sign_extended_word() {
+        // 0x7BEDC: `move.l a6,$AA(a0)`, a6 a RAM address from a word (MAME: 0xFFFFxxxx, as the HUD message)
+        let mut g = game(vec![end()], vec![]);
+        let h = g.boss_spawn_controller(0xDC34).unwrap();
+        assert_eq!(prop(&g, h).m.l(off::BOSS), 0xFFFF_0000 | 0xDC34);
     }
 
     /// The threshold groups wait for the alive count and for `G.$502`, spawn their records after their delays
