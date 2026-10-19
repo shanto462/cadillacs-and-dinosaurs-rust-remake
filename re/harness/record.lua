@@ -497,14 +497,17 @@ end
 -- DINO_WATCH_WRITE=ADDR (hex, RAM address, e.g. FF84FC): log every CPU write to that byte or word (frame, PC, A6, value).
 -- The tap covers the even word of ADDR; each line still shows the real write address.
 -- The lines go to the MAME log (record.log / mame.log) as "WATCH ...". Used to find the routine that writes a variable.
+-- "frame" is MAME's screen frame (counted from power on); "tf" is the trace record that shows the write (-1 before the
+-- sync point). Compare trace frames with tf, never with frame.
 local function install_watch(space, cpu)
   local w = os.getenv("DINO_WATCH_WRITE")
   if w == nil or w == "" then return nil end
   local a = tonumber(w, 16) & ~1   -- taps need an even start (the word); the log shows the write's address
   return space:install_write_tap(a, a + 1, "dino_watch", function(offset, data, mask)
     local scr = manager.machine.screens[":screen"]
-    print(string.format("WATCH frame %d addr %06X data %04X mask %04X pc %06X a6 %08X",
-      scr and scr:frame_number() or -1, offset, data, mask, cpu.state["PC"].value, cpu.state["A6"].value))
+    local tf = DINO_TF or ((phase == "test") and k or -1)
+    print(string.format("WATCH frame %d tf %d addr %06X data %04X mask %04X pc %06X a6 %08X",
+      scr and scr:frame_number() or -1, tf, offset, data, mask, cpu.state["PC"].value, cpu.state["A6"].value))
     return data
   end)
 end

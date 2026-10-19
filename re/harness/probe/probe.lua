@@ -1151,6 +1151,7 @@ local function take_snapshot()
     irq_n, trace_n, W.json_str(sn.paths.input), W.json_str(seg.name)))
   W.write_record(sn.fh, -1, 0, irq_n, 0, nil, snap)
   sn.prev, sn.phase, sn.k, sn.lag, sn.lagged = snap, "trace", 0, 0, 0
+  DINO_TF = 0   -- the trace record that the next writes show (the WATCH lines of record.lua print it)
   log("SNAPSHOT", "state written (video frame %d, IRQ %d, game frame counter %d); tracing %d game frames", F, irq_n, r16(G.frame), trace_n)
   side_begin()
   run_post(0)
@@ -1175,7 +1176,9 @@ local function irq_tap()
     local snap = TW.snapshot()
     TW.write_record(sn.fh, sn.k, (sn.lag > 0) and 1 or 0, irq_n, sn.lag, sn.prev, snap)
     sn.prev, sn.lagged, sn.lag, sn.k = snap, sn.lagged + sn.lag, 0, sn.k + 1
+    DINO_TF = sn.k
     if sn.k >= trace_n then
+      DINO_TF = nil
       sn.fh:close(); sn.fh = nil
       if sn.pf then sn.pf:close(); sn.pf = nil end
       sn.phase, sn.msg = "done", string.format("trace %d frames (lag vblanks %d)", sn.k, sn.lagged)
