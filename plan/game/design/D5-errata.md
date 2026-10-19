@@ -632,3 +632,7 @@ Open items (M3):
 - Pace (bot, no kill all, ticks per episode from the card to the next card): episode 1 22105, episode 2 32808, episode 3 22833, episode 4 41460,
   episode 5 59690, episode 6 113352 (episode 7 is blocked, see item 2). A human run was not made.
 - The lag record of a busy card slide out (Episode 4 opening, record 250): G.$0 counts 2 in MAME, 1 in the port (design question, no change).
+
+## Free-run measure (2026-10-19, Desktop Haiku)
+
+The 24 natural whole-episode recordings (ep1_3p, ep2 to ep8 with Jack and 3 players, the other heroes of Episodes 3, 5 and 8) in run mode (the port plays alone from the start state with the recorded inputs): every one differs from MAME before its end. Frames equal from the start: median 1844, longest 9463 (ep3_jack), shortest 84 (ep1_3p); 5.4 % of all 1,151,836 frames. Step mode (each frame from MAME's state) is much closer (344 of 418 sweep recordings equal), so the remaining work for M10 is the run-mode drift. First causes, most common first: the player byte +$116 (MAME 00, port 01; all Episode 5 and 7 recordings, frames 426 to 1312); MAME lag records (the original's frame overran a vblank: the port has no model of the slowdown; the splash timer G.-$7126 / -$7124 shows it first; 5 recordings); the Bludge +$2F timer one frame (Episode 8, 4 recordings); class 2 +$05 sub (3); effect +$62 / +$64 of classes 1 and 31 (3); G.$14 rng (2). Detail: re/out/desk/dhaiku/report.md, task 48 (git-ignored).
