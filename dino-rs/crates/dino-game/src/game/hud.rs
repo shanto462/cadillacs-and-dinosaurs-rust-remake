@@ -359,19 +359,26 @@ impl Game {
 
     // ---------------------------------------------------------------- message producers
 
-    fn hud_ring_push(&mut self, ring: usize, m: Msg) {
+    /// The original stores only the record bytes of its producer; words from `keep` on keep the old
+    /// contents of the slot.
+    fn hud_ring_push(&mut self, ring: usize, m: Msg, keep: usize) {
         let w = self.hud.ring_w[ring];
         let e = &mut self.hud.rings[ring][(w >> 4) as usize];
         if (e[0] as i16) >= 0 {
             return; // ring full: the message is dropped
         }
+        let old = *e;
         *e = m;
+        for k in keep..8 {
+            e[k] = old[k];
+        }
         self.hud.ring_w[ring] = w.wrapping_add(0x10);
     }
 
     fn hud_msg_of(&self, kind: u8, e: Handle, w6: u16) -> Msg {
         let b = self.body(e);
-        [((kind as u16) << 8) | b.id as u16, b.hp_bar, b.hp_prev, w6, 0x00FF, e, 0, 0]
+        // `move.l a6,(a4)`: the object's word address sign extended, so the high word is 0xFFFF
+        [((kind as u16) << 8) | b.id as u16, b.hp_bar, b.hp_prev, w6, 0xFFFF, e, 0, 0]
     }
 
     /// 0x16B18: enemy `e` was hit by its last attacker (+$68); if that is a player (other than
@@ -396,7 +403,7 @@ impl Game {
             return;
         }
         let m = self.hud_msg_of(kind, e, self.body(e).hp);
-        self.hud_ring_push(who as usize, m);
+        self.hud_ring_push(who as usize, m, 6);
     }
 
     /// 0x1693C with kind 3: food `item` was eaten by its +$70 player. Record: +6 = item +$6C
@@ -412,11 +419,11 @@ impl Game {
         if who > 2 {
             return;
         }
-        let m = [(3u16 << 8) | b.id as u16, b.hp_bar, b.hp_prev, b.hp, b.var26, 0x00FF, item, 0];
+        let m = [(3u16 << 8) | b.id as u16, b.hp_bar, b.hp_prev, b.hp, b.var26, 0xFFFF, item, 0];
         if b.id == 2 {
             self.body_mut(item).hp_bar = 0x64;
         }
-        self.hud_ring_push(who as usize, m);
+        self.hud_ring_push(who as usize, m, 7);
     }
 
     /// 0x16A5A with kind 4: treasure `item` picked up by its +$70 player. +6 = treasure id.
@@ -430,8 +437,8 @@ impl Game {
         if who > 2 {
             return;
         }
-        let m = [(4u16 << 8) | b.id as u16, b.hp_bar, b.hp_prev, b.var26, 0x00FF, item, 0, 0];
-        self.hud_ring_push(who as usize, m);
+        let m = [(4u16 << 8) | b.id as u16, b.hp_bar, b.hp_prev, b.var26, 0xFFFF, item, 0, 0];
+        self.hud_ring_push(who as usize, m, 6);
     }
 
     // ---------------------------------------------------------------- score
