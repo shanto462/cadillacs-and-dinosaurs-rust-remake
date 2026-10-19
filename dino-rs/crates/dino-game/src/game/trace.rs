@@ -969,6 +969,12 @@ impl Effect {
         if self.b.k20 == 0x78 {
             f.i16(0x64, "off_y", &mut self.off_y);
             f.u16(0x66, "w66", &mut self.w66);
+            // the owner (a sign extended long), the owner's state saved at the spawn (a long) and the life byte (+$70, the high byte of the word)
+            f.u16(0x68, "owner_hi", &mut self.b.attacker);
+            f.u16(0x6A, "owner", &mut self.b.hp_bar);
+            f.u16(0x6C, "saved_hi", &mut self.b.hp);
+            f.u16(0x6E, "saved_lo", &mut self.b.hp_prev);
+            f.u16(0x70, "z_life", &mut self.b.partner);
         } else if self.b.k20 == 0x44 {
             f.u32(0x64, "scatter64", &mut self.scatter64);
         } else {
@@ -1123,7 +1129,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 /// `pool_c_update`, `pool_e_update`.
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
-    ("enemy", &[2, 5, 10, 13, 14, 15, 16, 17, 18, 20, 24, 27, 29, 31, 32, 34, 38, 41, 42, 43, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 63, 64, 65, 66, 70, 77, 78, 80, 81, 82, 83, 90, 92, 93, 96, 97]),
+    ("enemy", &[2, 3, 5, 8, 10, 13, 14, 15, 16, 17, 18, 20, 24, 27, 29, 31, 32, 34, 38, 41, 42, 43, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 70, 77, 78, 79, 80, 81, 82, 83, 90, 92, 93, 96, 97]),
     ("prop", &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 39, 40, 41, 42, 43, 45, 47, 48, 49, 50, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 66, 70, 71, 72, 73, 74, 76, 80, 81, 82, 83, 84, 85, 87, 88, 96]),
     (
         "item",

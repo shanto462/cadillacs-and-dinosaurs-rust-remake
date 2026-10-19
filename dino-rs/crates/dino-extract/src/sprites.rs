@@ -15,7 +15,9 @@ const COMP_EXTRA: u32 = 0x11D220;
 const PLAYER_SETS: [u32; 6] = [0x163E, 0x164E, 0x165E, 0x166E, 0x167E, 0x168E];
 const PLAYER_BOX_TABLES: u32 = 0x18CC4;
 const PLAYER_ATTACKS: u32 = 0xA26FC;
-const ATTACKS_PER_CHARACTER: u32 = 60;
+/// Records copied per character. The original indexes the table by the attack id / 2 with no bound (an id is a byte), so all 128 are
+/// copied: an id past the character's own table reads the bytes that follow, as the original does (Mustapha's 0x7A in the attract demo).
+const ATTACKS_PER_CHARACTER: u32 = 128;
 /// Region that holds every hit box table.
 /// It starts 0x8000 bytes before the first table (0x100000): a box test that adds a stale register word to a table (0x128F8 with the d0
 /// that the car's container pass 0x122D8 keeps between objects, M6-20) reaches back that far (`adda.w`, sign extended).
@@ -32,6 +34,8 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x3906A, 0x5727A, 0x57682, 0x57F44, 0x6FDEC, 0x6F8A6, 0x30750, 0x311C4,
     0x4F4E4, // Rock Hopper init 0x4DD2A (M5-10)
     0x53BE4, // Mack init 0x53430 (M6-03)
+    0x6C0E2, 0x7020A, 0x712A0, 0x2EC00, 0x30C48, // LASH T. (class 3, 0x359B0), his mace (0x5A4A4), his chain piece (0x3B2AE), hit and held tables of the name 0x38
+    0x5FB80, 0x5FCBA, 0x5FDF4, // the dinosaur hunters HAMMER T., BLK ELMER, WRENCH T. (class 79, 0x5F676, 0x5F692, 0x5F6AE)
     0x49574, // Shivat init 0x483B2 (M6-04)
     0x5F4F8, 0x600E0, // ground critters A78 (0x5F1AC) and A80 (0x5FF42) (M6-03)
     0x6FB1A, // enemy bullet class 59, init 0x57FC8
