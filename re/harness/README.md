@@ -1354,6 +1354,7 @@ Batch logs are under `re/out/probe/m800_*-rec/`; states and traces are under
 - `probe.lua` writes `NAME.pokes.txt` next to every probe scenario: one line per write the probe made after the
   snapshot (god mode, holds, hp, lives, score, time, poke, objset), frame k = before the tick of frame k.
   `port.sh` applies it by itself; `POKES=none` turns it off, `POKES=FILE` uses another file, `PORT_OPTS` adds options.
+  Since task 18, a sidecar with `spawn` notes goes through `spawn_pokes.py` first (the spawns become RAM writes in `re/out/NAME.spawnpokes.txt`).
   Spawns after a snapshot are not replayable (marked as a comment).
 - The snapshot loader reads stage and area before the objects, so later episodes load correctly (frame -1
   differences of the m515 / m516 / m600 / m700 scenarios went from 123 to 0).
