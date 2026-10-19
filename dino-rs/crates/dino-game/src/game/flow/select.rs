@@ -370,7 +370,8 @@ impl Game {
             if self.flow.front.select.rec[i].pending != 0 {
                 return;
             }
-            self.sound(0x33); // d1 = the pan of the position, d2 = 0
+            let pan = self.select_pan(pos) as u32;
+            self.sound_ex(0x33, pan, 0); // 0xB17E: d1 = the pan of the position, d2 = 0
             let t = &self.assets.frontend.text;
             let id = t.u8(rom::POS_TO_ID, pos as u32);
             self.flow.front.select.taken |= 1 << pos; // 0xB1BE
@@ -386,7 +387,8 @@ impl Game {
             self.flow.front.select.rec[i].state = 4; // 0xB204
         } else {
             // 0xB20C
-            self.sound(0x32); // d1 = the pan of the old position
+            let pan = self.select_pan(pos) as u32;
+            self.sound_ex(0x32, pan, 0); // 0xB20C: d1 = the pan of the old position, d2 = 0
             let s = &mut self.flow.front.select;
             s.taken &= !(1 << pos);
             let mut p = pos;

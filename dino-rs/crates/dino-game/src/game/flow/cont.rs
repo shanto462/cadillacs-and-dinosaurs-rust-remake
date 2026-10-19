@@ -279,7 +279,9 @@ impl Game {
                     let n = r.b(8).wrapping_sub(1);
                     r.sb(8, n);
                     if n == 9 {
-                        self.sound(0x1C);
+                        // 0xF47A: `moveq #$1C,d0; jsr 0xA63C` right after the tick 0x35 (`moveq #$10,d1; moveq #$0,d2` at 0xF45C), so
+                        // d1 and d2 are still the tick's 0x10 and 0 (M4-15)
+                        self.snd_request(0x1C, 0x10, 0);
                     }
                     if (n as i8) >= 0 {
                         self.flow_continue_digits();
@@ -684,6 +686,7 @@ mod tests {
     use crate::harness::TraceReader;
     use dino_assets::AssetPack;
     use std::{path::Path, sync::OnceLock};
+    use crate::game::flow::mame_check::listed_args;
 
     fn assets() -> Option<&'static AssetPack> {
         static A: OnceLock<Option<&'static AssetPack>> = OnceLock::new();
@@ -738,11 +741,18 @@ mod tests {
                     let word = |bytes: &[u8], o: usize| u16::from_be_bytes([bytes[o], bytes[o + 1]]);
                     let end = word(ram, 0x8034) & 0x3F0;
                     let mut sounds = Vec::new();
+                    let mut args = Vec::new();
+                    let long = |o: usize| u32::from_be_bytes([ram[o], ram[o + 1], ram[o + 2], ram[o + 3]]);
                     while sound_pos != end {
-                        sounds.push(word(ram, 0x803A + sound_pos as usize));
+                        let e = 0x803A + sound_pos as usize;
+                        sounds.push(word(ram, e));
+                        args.push((word(ram, e), long(e + 2), long(e + 6)));
                         sound_pos = (sound_pos + 16) & 0x3F0;
                     }
                     assert_eq!(g.w.sounds, sounds, "{name} frame {f} sounds");
+                    // M4-15: d1 and d2 of the listed codes (game over 0xE6 / 0x1D / 0x1F) against the ring
+                    let port: Vec<_> = g.w.snd_reqs.iter().map(|r| (r.code, r.d1, r.d2)).collect();
+                    assert_eq!(listed_args(&args), listed_args(&port), "{name} frame {f} sound arguments");
                     if g.flow.mode == 0x10 && g.flow.sub2 >> 8 == 2 {
                         let base = if word(ram, 0xE9B4) != 0 { 0x4000 } else { 0 };
                         let mut expected = Vec::new();
