@@ -1,0 +1,16 @@
+# Approved known differences of the Episode 8 acceptance part 1 (M8-26): D3e part 3 A19 to A29 (m800_a19 .. m800_a29) and the tank scenarios BT-A7 (m800_bta7_k8_*), step and
+# run mode (`diff.py MAME PORT --allow re/harness/allow/m8.txt`). All of them are equal in step mode; in run mode only the rule below is needed.
+# One rule per line: a key pattern (fnmatch) and an optional record range, then a "# reason".
+
+# 1. m800_bta7_k8_start (run mode): the scroll1 display shadow G.$860 is copied from the camera by the main loop at the start of a pass; in the frame where the Episode 8 title card
+#    ends (0xCC58 clears cam1 X / Y, record 251; again at the HUD slide, records 314 and 316) MAME still shows the old Y (0x100) and the port derives it from the camera (0). The same as m228 / m3e.
+global.display_y1 251-316
+
+# Not rules (whole-tail causes; these recordings are equal in step mode, which is their reference):
+# - m800_a25_n_e8a0_end (record 954) and m800_a26_n_e8a1_end (record 536): a MAME lag record at the area load (the game frame overran a vblank); in run mode the port is
+#   2 frames ahead from there (G.$0). Step mode skips lag records and is equal for the whole recording.
+# - m800_a22_c_flame_enemy (record 6) and m800_a24_tc_b42v0 / v4 / vC / v10 (record 3): probe recordings that spawn objects only in MAME (the probe's pokes at the spawn frames);
+#   run mode cannot follow them. Step mode is equal.
+# - No 3 player recordings exist for these scenarios (BT-A7 with 3 players was not recorded).
+# - m800_bta7_k8_start in step mode (records 226 .. 316, 9 fields): the Episode 8 title card task (G.$735E) sleeps inside 0xA82; its sleep counter is not in the trace, so
+#   the step loader cannot restart the task at MAME's point and the card's G.$4D5 / cam1 / G.$7364 come a frame apart. Run mode (the reference here) is equal with rule 1.

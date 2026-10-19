@@ -3266,8 +3266,11 @@ impl Game {
                 let p = &mut self.players[i];
                 p.action = 0x20;
                 p.b.step = 2;
-                // 1/64: 0x5A454 (enemy-side helper; carry clear for players in practice).
-                let _ = self.rand();
+                // 1/64: 0x5A454 (enemy-side helper; carry clear for players in practice). Only the light push-back draws it (0x1C9C4); the
+                // heavy one (0x1CB16, reactions 0x14 .. 0x18) has no random number.
+                if !heavy {
+                    let _ = self.rand();
+                }
                 self.player_pushback_stop(i);
             }
             2 => self.player_pushback_stop(i),

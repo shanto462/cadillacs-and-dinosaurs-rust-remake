@@ -303,9 +303,12 @@ impl Game {
                 }
             }
         } else {
-            // 0x3947A: landed
+            // 0x3947A: landed; the landing animation steps in this frame too (it falls into the state 4 routine).
             e.b.act = 4;
             self.enemy_anim(&mut e.b, 2); // landing anim
+            if self.enemy_step(&mut e.b) {
+                self.enemy_c6_entrance_end(e, h);
+            }
         }
     }
 
@@ -357,9 +360,12 @@ impl Game {
                 }
             }
         } else {
-            // 0x3951E: landed
+            // 0x3951E: landed; the landing animation steps in this frame too (it falls into the state 4 routine).
             e.b.act = 4;
             self.enemy_anim(&mut e.b, 2); // landing anim
+            if self.enemy_step(&mut e.b) {
+                self.enemy_c6_entrance_end(e, h);
+            }
         }
     }
 

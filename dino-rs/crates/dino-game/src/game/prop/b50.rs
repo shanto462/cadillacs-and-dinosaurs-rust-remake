@@ -6,19 +6,11 @@ use crate::game::{Game, Handle};
 impl Game {
     /// 0x844B4 / 0x844C8 / 0x84562 / 0x84F4A: dialogue dispatch and fades.
     pub fn prop_b50(&mut self, p: &mut Prop, h: Handle, i: usize) {
-        // Variant 3 (Episode 5 chief scene) runs its start fade (mode 0, 0x844E2) and its exit fade (mode 4,
-        // 0x84F4A) like the others: the original has no variant test there. Its dialogue (mode 2) is not ported.
-        let fade_only = p.b.var26 == 3 && matches!(p.b.mode, 0 | 4);
-        if !(matches!(p.b.var26, 0 | 1 | 2 | 4) || fade_only) {
-            // Other conversations, including ending variant 7, have separate task owners.
+        // Variants 0 to 6 (the table 0x84584: 3 the Episode 5 chief scene, 4 and 5 one dispatcher, 6 Fessenden's last words) are ported;
+        // the ending's variant 7 has its own owner.
+        if p.b.var26 > 6 {
             if !self.trace_hold(h, &p.b) {
-                if p.b.var26 == 3 && p.b.mode == 2 {
-                    // The chief's dialogue (mode 2) is not ported: go on to the exit fade (mode 4), so the screen comes back
-                    // from the start fade of mode 0 in free play.
-                    p.b.mode = 4;
-                } else {
-                    self.prop_free(p, i);
-                }
+                self.prop_free(p, i);
             }
             return;
         }
@@ -74,11 +66,17 @@ impl Game {
             0xA5D8E => 0xA5F2A,
             0xA5DA0 => 0xA5F42,
             0xA5DB2 => 0xA5F5A,
+            0xA5DC4 => 0xA5F72,
+            0xA5DD6 => 0xA5FA2,
+            0xA5DE8 => 0xA5FD2,
+            0xA5DFA => 0xA6002,
             0xA5E0C => 0xA6036,
+            0xA5E1E => 0xA604A,
             _ => panic!("unported B50 dispatcher {dispatch:06X}"),
         };
         let routine = self.assets.frontend.text.u32(table, 2 * p.b.sub as u32);
-        // 0xA6072..0xA6370, 0xA655A: immediate operands of the print routines.
+        // 0xA6072..0xA6370, 0xA655A, 0xA657E: immediate operands of the print routines (portrait, text, the palette row of 0x84E2E);
+        // 0xA637E, 0xA63BE, 0xA63E2 (variant 3) are below with their own palette routine and times.
         let line = match routine {
             0xA6072 => Some((0, 0, None)),
             0xA608E => Some((2, 2, None)),
@@ -105,15 +103,36 @@ impl Game {
             0xA632A => Some((9, 0x17, Some(5))),
             0xA634E => Some((9, 0x19, Some(5))),
             0xA655A => Some((4, 4, Some(0))),
+            0xA657E => Some((4, 0x3F, Some(0))),
             _ => None,
         };
+        // Variant 3 (the chief scene): 0xA637E / 0xA63BE print with 0x84E5C (the second portrait palette, row 4), 0xA63E2 with 0x84E2E row 3;
+        // their own times in `+$A4`.
+        let chief = match routine {
+            0xA637E => Some((8u32, 0x1Ai16, true, 4u32, 0x50u16)),
+            0xA63BE => Some((8, 0x1C, true, 4, 0xA0)),
+            0xA63E2 => Some((7, 0x1D, false, 3, 0x50)),
+            _ => None,
+        };
+        if let Some((portrait, text, second, row, time)) = chief {
+            if second {
+                self.prop_b50_palette_at(row, 0x1D0); // 0x84E5C
+            } else {
+                self.prop_b50_palette(row);
+            }
+            p.m.sw(0xA2, self.assets.frontend.text.u16(0x8461A, portrait * 2));
+            self.text_portrait(0x90A29C, portrait as u16, text);
+            p.m.sw(0xA4, time);
+            p.b.sub = p.b.sub.wrapping_add(2);
+            return;
+        }
         if let Some((portrait, text, palette)) = line {
             if let Some(row) = palette {
                 self.prop_b50_palette(row);
             }
             p.m.sw(0xA2, self.assets.frontend.text.u16(0x8461A, portrait * 2));
             self.text_portrait(0x90A29C, portrait as u16, text);
-            p.m.sw(0xA4, if routine == 0xA655A { 150 } else { 90 });
+            p.m.sw(0xA4, if matches!(routine, 0xA655A | 0xA657E) { 150 } else { 90 });
             p.b.sub = p.b.sub.wrapping_add(2);
             return;
         }
@@ -133,16 +152,30 @@ impl Game {
                 p.b.sub = p.b.sub.wrapping_add(2);
             }
             0xA6612 => p.b.mode = p.b.mode.wrapping_add(2),
+            // 0xA6372: a pause of 0xB4 frames; 0xA6602: its count (`subi.w`, at 0 the next step).
+            0xA6372 => {
+                p.m.sw(0xA4, 0xB4);
+                p.b.sub = p.b.sub.wrapping_add(2);
+            }
+            0xA6602 => {
+                let t = p.m.w(0xA4).wrapping_sub(1);
+                p.m.sw(0xA4, t);
+                if t == 0 {
+                    p.b.sub = p.b.sub.wrapping_add(2);
+                }
+            }
             // 0xA6628..0xA6768: wrappers selecting the animated face for 0x84910.
             _ => {
                 let face = match routine {
                     0xA6628 | 0xA6638 => 0,
                     0xA6658 | 0xA6668 => 2,
                     0xA6688 | 0xA6698 => 1,
-                    0xA66B8 | 0xA66C8 => 3,
+                    0xA66B8 | 0xA66C8 | 0xA66D8 => 3,
                     0xA6708 => 4,
                     0xA6718 => 5,
                     0xA6728 => 6,
+                    0xA6738 => 7,
+                    0xA6748 => 8,
                     0xA6768 => 9,
                     _ => panic!("unported B50 routine {routine:06X}"),
                 };
@@ -167,8 +200,13 @@ impl Game {
 
     /// 0x84E2E: replace the portrait palette RGB, preserving each brightness nibble.
     pub(in crate::game) fn prop_b50_palette(&mut self, row: u32) {
+        self.prop_b50_palette_at(row, 0x1C0);
+    }
+
+    /// 0x84E2E (`at` 0x1C0, palette 0x914780) and 0x84E5C (0x1D0, 0x9147A0): the 16 colours of the row of 0x84E8A, the brightness nibbles kept.
+    fn prop_b50_palette_at(&mut self, row: u32, at: usize) {
         for n in 0..16 {
-            let k = PaletteRam::SCROLL1 + 0x1C0 + n;
+            let k = PaletteRam::SCROLL1 + at + n;
             self.pal.words[k] = (self.pal.words[k] & 0xF000)
                 | self
                     .assets
@@ -210,6 +248,8 @@ impl Game {
             4 => (0x84BD2, 0x118, 4, 3, 0x84BDE, 0x110, 2, 1),
             5 => (0x84C34, 0x118, 5, 3, 0x84C40, 0x10C, 5, 2),
             6 => (0x84C96, 0x98, 6, 3, 0x84CA2, 0x110, 5, 1),
+            7 => (0x84D5A, 0x118, 4, 3, 0x84D66, 0x110, 4, 2),
+            8 => (0x84DBC, 0x114, 4, 4, 0x84DC8, 0x10C, 4, 2),
             9 => (0x84CF8, 0x94, 5, 3, 0x84D04, 0x8C, 4, 2),
             _ => unreachable!(),
         };
@@ -342,7 +382,7 @@ mod tests {
                         if old_ram[a] == 0 || !matches!(class, 50 | 76) {
                             continue;
                         }
-                        if class == 50 && !matches!(g.props.slots[i].b.var26, 0 | 1 | 2 | 4) {
+                        if class == 50 && g.props.slots[i].b.var26 > 6 {
                             continue;
                         }
                         // B20 writes a GO patch inside the dialogue rectangle. Keep its pool order

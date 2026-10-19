@@ -84,6 +84,8 @@ pub fn extract(rom: &Rom) -> FrontendData {
         (0x84C34, 0x14, "B50 Vice mouth and eyes"),
         (0x84C96, 0x14, "B50 Butcher mouth and eyes"),
         (0x84CF8, 0x14, "B50 Slice mouth and eyes"),
+        (0x84D5A, 0x14, "B50 face 7 (variant 3, the chief scene) mouth and eyes"),
+        (0x84DBC, 0x14, "B50 face 8 (variant 3) mouth and eyes"),
         (0x7F48, 0x3E, "continue HUD origins and digit tiles"),
         (0xED40, 24, "countdown digit origins (0xED2E)"),
         (0xFAF8, 0xF0, "game-over palette pointers and targets (0xED86)"),
