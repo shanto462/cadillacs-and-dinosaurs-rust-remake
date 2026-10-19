@@ -268,7 +268,7 @@ def main():
                 bc = by_class.setdefault((kind, cls), {"slots": set(), "objframes": set(), "first": f, "fields": {}, "port_only": 0})
                 bc["slots"].add(slot_i)
                 bc["objframes"].add((slot_i, f))
-                bc["fields"].setdefault(key.split(".", 1)[1], f)
+                bc["fields"].setdefault(key.split(".", 1)[-1], f)  # "unnamed" has no dot (M6 sweep: printed as <pool>[slot] +$OFF unnamed)
                 if side == "port only":
                     bc["port_only"] += 1
             frame_diffs.append((addr, label, fmt(mv, size), fmt(pv, size)))
