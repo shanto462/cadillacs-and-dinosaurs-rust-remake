@@ -183,8 +183,10 @@ pub struct World {
     pub level: u16,
     pub rank: u16,
     /// G.$43A toggle bits of the alternating sound codes (`snd.rs`), G.$43C of the hit sounds.
+    /// G.$43E: the biker engine (0xA128, bit 1) and the fall (0xA164, bit 0).
     pub snd_toggle: u8,
     pub snd_hit_toggle: u16,
+    pub snd_toggle_e: u8,
     /// Sound requests made this frame (sound ids as the original passes them to the sound queue).
     pub sounds: Vec<u16>,
     /// The same requests with d1 and d2 of the queue entry, in queue order (`sound_ex`, M4-13).

@@ -374,3 +374,9 @@ MAME wins over the design text; the design documents themselves are not edited.
   shower 0x94640) or the car. The pool D objects with `+$20` = 0x28 (0x264A2, 0x6BEA4) are another pool. Not in M6-22.
 - Pool C class 41 (0x97800, made by 0x977D2) is the car's dust (palette 0x8E) and smoke: ported in M6-22 (`effect/fx41.rs`); it draws one random number at its init, so without it the
   random order of every car recording broke at the first dust (frame 30), and now holds until the first unported class.
+
+## The hazards, classes 65, 66, 70 (M6-29 / M6-30, 2026-10-19)
+
+- D3a H11 / H12 / H13 give the numbers one frame later than MAME's end-of-frame record index: H11 frame 6 is x 1388 (design 1390) and vy 648; the hops at 80 and 180 have vy 708 (design 768); frame 220 is x 960 (962). H13 x 1311 is frame 59 and x 1147 frame 89. H12 y 207 is frame 5 and 158 frame 29; "state 4 at 90" is act 4 (the roll), on from frame 69; the break (mode 4) is frame 117.
+- The cave barrel (variant 0x201) has vy -3840 at frame 60 (-384 plus 27 frames of -128), not -3712.
+- The biker's kick success (attack 0x48) is in no recording; H13 v0 takes the fail path (act 0 to 2 at frame 46, attack stays 0x47).

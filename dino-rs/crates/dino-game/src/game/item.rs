@@ -416,6 +416,45 @@ impl Game {
         it.m.sb(DROP, row);
     }
 
+    /// 0x24B48 from a pool A object (the barrel, class 65): row +$96 of the container table 0xB64F2.
+    pub fn item_drop_container_enemy(&mut self, e: &mut Enemy) {
+        let pos = (e.b.xi(), e.b.yi(), e.b.zi());
+        let mut row = e.m.b(super::enemy::off::DROP);
+        self.item_drop_roll(pos, &mut row, 0xB64F2);
+        e.m.sb(super::enemy::off::DROP, row);
+    }
+
+    /// 0x9FB6 for a pool A caller (the barrel's wood landing and break).
+    pub fn item_snd_thud(&mut self, x: i16) {
+        self.item_snd_9fb6(x);
+    }
+
+    /// 0x9E60 for a pool A caller (the barrel's metal break).
+    pub fn item_snd_break(&mut self, x: i16) {
+        self.item_snd_9e60(x);
+    }
+
+    /// 0x294AA from a pool A hazard (the rock, list 0x29650): the same debris as a container.
+    pub fn item_debris(&mut self, b: &Body, table: u32) {
+        self.container_debris(b, table);
+    }
+
+    /// 0x292A6: two debris pieces (effect class 0x2C, pictures 2 and 4) at 0x60 and 0x10 above `b`,
+    /// with half its horizontal speed.
+    pub fn item_two_pieces(&mut self, b: &Body) {
+        for (dy, vy, ay, var) in [(0x60i16, 0x1C0i16, -0x12i16, 2u16), (0x10, 0x140, -0x10, 4)] {
+            let pos = (b.xi(), b.yi().wrapping_add(dy), b.zi());
+            if let Some(j) = self.item_spawn_effect(0x2C, pos) {
+                let piece = &mut self.effects.slots[j];
+                piece.b.facing = b.facing;
+                piece.b.vx = b.vx >> 1;
+                piece.b.vy = vy;
+                piece.b.ay = ay;
+                piece.b.var26 = var;
+            }
+        }
+    }
+
     /// 0x24B36 / 0x24B48 / 0x24B56: row `*drop` of `table` (32 bytes per row), one `rand()`
     /// picks the byte. The row byte is cleared first (an object drops once). Codes: 0 nothing,
     /// 0x0F "ammo box if a gun lies on screen, else the fallback treasure row", 1..0x13 weapon

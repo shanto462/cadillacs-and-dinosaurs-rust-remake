@@ -60,6 +60,10 @@ mod class42;
 // The bomb carriers (M6-27): the carrier (64) and its dynamite (77).
 mod class64;
 mod class77;
+// Hazards (M6-29, M6-30): the barrel (65), the rock (66) and the biker (70).
+mod class65;
+mod class66;
+mod class70;
 // The opening scene actors (M3-20): the Cadillac (16), the Episode 4 men (27) and leader (43).
 mod scene_actors;
 mod class20;
@@ -247,7 +251,10 @@ impl Game {
                 58 => self.enemy_class58(&mut e, h),
                 60 => self.enemy_class60(&mut e, h),
                 61 => self.enemy_class61(&mut e, h, i),
+                65 => self.enemy_class65(&mut e, h, i),
+                66 => self.enemy_class66(&mut e, h, i),
                 69 => self.enemy_class69(&mut e, h),
+                70 => self.enemy_class70(&mut e, h, i),
                 81 => self.enemy_class81(&mut e, h),
                 82 => self.enemy_class82(&mut e, h, i),
                 90 => self.enemy_class90(&mut e, h),
@@ -622,6 +629,22 @@ impl Game {
         }
         let d = e.b.xi().wrapping_sub(self.cam.s2.cam_x as i16).wrapping_add(0xC0) as u16;
         if d >= 0x300 {
+            e.b.mode = 6;
+        }
+    }
+
+    /// 0x1760: the narrower off-screen test (the barrel). Same vertical limits as 0x173C (0x1782). Sets mode 6 only.
+    pub fn enemy_despawn_near(&mut self, e: &mut Enemy) {
+        if self.w.vertical_scene != 0 {
+            if (e.b.xi().wrapping_add(0x80) as u16) >= 0x280
+                || (e.b.zi().wrapping_add(e.b.yi()).wrapping_add(0x80) as u16) >= 0x200
+            {
+                e.b.mode = 6;
+            }
+            return;
+        }
+        let d = e.b.xi().wrapping_sub(self.cam.s2.cam_x as i16).wrapping_add(0x40) as u16;
+        if d >= 0x240 {
             e.b.mode = 6;
         }
     }
