@@ -26,6 +26,7 @@ mod class92;
 mod class93;
 mod class96;
 mod class81;
+mod class82;
 mod class97;
 // The jungle of the opening movie (M1-10, M1-11): the hunters (11), the bird (46), its feather (48), the puff (57).
 mod class11;
@@ -229,6 +230,7 @@ impl Game {
                 61 => self.enemy_class61(&mut e, h, i),
                 69 => self.enemy_class69(&mut e, h),
                 81 => self.enemy_class81(&mut e, h),
+                82 => self.enemy_class82(&mut e, h, i),
                 90 => self.enemy_class90(&mut e, h),
                 92 => self.enemy_class92(&mut e, h),
                 93 => self.enemy_class93(&mut e, h),

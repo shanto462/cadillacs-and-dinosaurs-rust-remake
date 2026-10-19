@@ -96,7 +96,6 @@ pub const SPECS: &[Spec] = &[
     cross(78, "CRITTER", false),
     walker(79, "HUNTER", Some(0x1E), true),
     cross(80, "CRITTER", false),
-    dino(82, "ZEKE", Some(0x21)),
     Spec { boss: Some(Boss { hp_row: 0, controller: false, score: true, rebirth: None, group: true }), ..walker(71, "SLISAUR", Some(0x18), false) },
     Spec { boss: boss(8, false), ..walker(94, "FESSENDEN form 2", Some(0x25), true) },
 ];

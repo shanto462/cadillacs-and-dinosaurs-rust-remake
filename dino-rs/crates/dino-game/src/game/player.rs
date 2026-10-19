@@ -3755,13 +3755,11 @@ impl Game {
         let fac = rd16(row + 4) as u8;
         let anim = rd16(row + 6);
         let p = &mut self.players[i];
-        p.b.x = eb.x;
-        p.b.y = eb.y;
-        p.b.z = eb.z;
-        let x = p.b.xi().wrapping_add(if eb.facing != 0 { dx.wrapping_neg() } else { dx });
+        let x = eb.xi().wrapping_add(if eb.facing != 0 { dx.wrapping_neg() } else { dx });
         Player::set_hi(&mut p.b.x, x);
-        let y = p.b.yi().wrapping_add(dy);
+        let y = eb.yi().wrapping_add(dy);
         Player::set_hi(&mut p.b.y, y);
+        Player::set_hi(&mut p.b.z, eb.zi());
         p.b.facing = if eb.facing != 0 { fac ^ 1 } else { fac };
         let r = p.b.reaction;
         if (r as i8) < 0 {

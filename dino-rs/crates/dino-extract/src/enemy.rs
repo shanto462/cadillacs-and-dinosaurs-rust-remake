@@ -346,6 +346,14 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0xBDD52, 32, "B62 scroll2 palette phase 0 set (0x86824)"),
     (0xBDE12, 32, "B62 scroll2 palette phase 0 set (0x8680A)"),
     (0xC0E52, 0x1E0, "B62 scroll2 palette phases 1 to 5 (0x866D2)"),
+    // Zeke class 82 (0x606D4, M7-10)
+    (0x6137A, 160, "Zeke altitude transition table (0x606D4)"),
+    (0x6141A, 10, "Zeke target heights (0x606D4)"),
+    (0x61424, 8, "Zeke hit recoil physics (0x606D4)"),
+    (0x6142C, 16, "Zeke attack masks (0x606D4)"),
+    (0x6143C, 160, "Zeke attack choice table (0x606D4)"),
+    (0x614DC, 40, "Zeke approach table (0x606D4)"),
+    (0x61504, 40, "Zeke physics tables (0x606D4)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {
