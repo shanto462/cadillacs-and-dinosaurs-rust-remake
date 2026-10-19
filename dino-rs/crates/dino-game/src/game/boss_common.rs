@@ -118,7 +118,7 @@ impl Game {
 
     /// 0x32D0C / 0x32D16: keep +$BD, reroll zero with rand & 3; use
     /// table 0x32D7E even when the preceding six-slot choice left 4..6.
-    fn boss_slot4_keep(&mut self, e: &mut Enemy) {
+    pub(in crate::game) fn boss_slot4_keep(&mut self, e: &mut Enemy) {
         let mut slot = e.m.b(0xBD);
         while slot == 0 {
             slot = (self.rand() & 3) as u8;
@@ -227,7 +227,9 @@ impl Game {
         if !(0..0x180).contains(&x) && (self.rand() & 15) < 10 && heavy {
             if matches!(ai, BossAi::Morgue | BossAi::Fessenden) {
                 if (self.rand() & 15) < 10 {
-                    e.b.set_zi(self.lib_target(e).zi());
+                    // `move.w $10(a0),$10(a6)` (0x68384): the word only, the fraction stays.
+                    let tz = self.lib_target(e).zi();
+                    e.b.z = (e.b.z & 0xFFFF) | ((tz as i32) << 16);
                 }
                 self.enemy_begin_attack(&mut e.b, 0x4A);
                 return BossRecover::Shoulder;

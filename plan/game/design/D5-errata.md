@@ -535,3 +535,18 @@ What the creatures needed was in the Bludge (class 6, M7-07, `enemy/class6.rs`, 
 - **The part 0 template** stores the long address with the sign extended (`lea 10(a0),a2` after `movea.w`: 0xFFFFE4FE).
 
 Check (D3d BT-A7, step mode): `m800_bta7_k8_walk`: the Bludge from cylinder 01 (x 48, record 91 on) equals MAME from its creation to record 242 (the hop AI, the walk right), the Rock Hopper from cylinder 03 (real class 29) equals MAME in every record, the Bludge from cylinder 04 (record 275, the arc jump of the entrance 2) equals MAME to record 317. What differs after that is not the tanks: the Bludge tongue and its pool D list (M7-08: record 243 on, a sprite and +$80; record 92, `list_ptr` of the part 0 special slot, the order of the two allocations of the pair), the decision after the arc jump (record 318, the frame timer one off, record 321 an attack in MAME, M7-07 / M7-08), and Tyrog 2 (class 91, M8-12; record 1086 on, with the shifted piece lives above). `k8_start` differs only in the typewriter of the episode title (pool B 26, the step mode cannot take it over: known), `k8_t11` in Tyrog 2 from the first record. The picture `re/out/shots/m820/f00300.png` shows the second Bludge leaving cylinder 04.
+
+## Fessenden form 1, class 94 (M8-27 .. M8-29, Task 13, 2026-10-19)
+- D3d 6.2 ("8,000 points at t = 1743"): the death scene awards the kill score twice. The walk to the arena centre ends inside the window by jumping
+  into 0x697A4 with `+$05` = 6 + 2 = 8 (score, sub 0xA would follow), but the next frame runs sub 8 = 0x697A4 again: 8,000 at t = 1742 and again
+  at t = 1743 (16,000 in all, M f94-trans score 0x14700 -> 0x22700 -> 0x30700). The port does the same.
+- The death's sub 6 (0x6978C, reached only when the walk to the centre times out) reads `+$80` but never stores it back, so it only ends when
+  `+$80` is 0: with 180 loaded it never ends. Not seen in the recordings (the walk always ends in the window).
+- D5 M8-28 (the aura, pool C class 39, 0x974FA): not part of this death scene. M f94-trans has no class 39 object; its only caller is 0x69FE6
+  inside 0x69E66, which the script code 0x1E6DA calls (an Episode 8 ending actor). The palette animation 0x67F92 (open item 14) has no caller.
+- Not reachable in class 94: the states 2, 4, 6, 0xA, 0xC, 0x10, 0x16, 0x18, 0x1A, 0x24 (their set-up routines have no caller), and the phase
+  timer's escape (0x6800C, states 0x28 / 0x2A), which needs G.-$703E: the init clears it and nothing writes it.
+- 0x84736 (the portrait caption) keeps the portrait palette word (0x8461A) in `+$A2` of the caller: class 94's `+$A2` changes at each caption.
+- The recover entry's off screen shoulder (0x68384, also Morgue's) copies the target's Z word only (`move.w`); the fraction stays (boss_common
+  used `set_zi`, which cleared it).
+- G.-$7048 (form 1's start HP for the roar test 0x681C8) is now a traced global (`fess_hp`).
