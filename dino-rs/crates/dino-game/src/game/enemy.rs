@@ -52,6 +52,11 @@ mod class24_ai;
 // Mack (M6-03): the triceratops (38).
 mod class38;
 mod class78_80;
+// The dinosaur hunter (M6-06).
+mod class79;
+// LASH T. (M6-07, M6-08): the Lash (3), his chain piece (8) and his mace (62).
+mod class3;
+mod class62;
 // The Butcher (M6-09): the starter (5), the carcass and helpers (51, 53, 58), the fighter (61).
 mod class5;
 mod class6;
@@ -237,8 +242,10 @@ impl Game {
                 15 => self.enemy_class15(&mut e, h),
                 16 => self.enemy_class16(&mut e, h),
                 17 => self.enemy_class17(&mut e, h),
+                3 => self.enemy_class3(&mut e, h, i),
                 5 => self.enemy_class5(&mut e, h),
                 6 => self.enemy_class6(&mut e, h, i),
+                8 => self.enemy_class8(&mut e, h, i),
                 18 => self.enemy_class18(&mut e, h, i),
                 19 => self.enemy_class19(&mut e, h, i),
                 25 => self.enemy_class25(&mut e, h, i),
@@ -272,10 +279,12 @@ impl Game {
                 58 => self.enemy_class58(&mut e, h),
                 60 => self.enemy_class60(&mut e, h),
                 61 => self.enemy_class61(&mut e, h, i),
+                62 => self.enemy_class62(&mut e, h, i),
                 65 => self.enemy_class65(&mut e, h, i),
                 66 => self.enemy_class66(&mut e, h, i),
                 83 => self.enemy_class83(&mut e, h, i),
                 78 => self.enemy_class78(&mut e, h, i),
+                79 => self.enemy_class79(&mut e, h, i),
                 80 => self.enemy_class80(&mut e, h, i),
                 69 => self.enemy_class69(&mut e, h),
                 70 => self.enemy_class70(&mut e, h, i),
@@ -1865,6 +1874,8 @@ impl Game {
             0x20 | 0x24 => self.c20_reset_ai(e, h), // 0x45D74
             0x18 | 0x50 => self.c14_408e8(e),       // 0x408E8 class 14
             0x08 | 0x48 | 0x4C => self.enemy_c13_3e504(e), // 0x3E504 the poachers (class 13)
+            0x38 => self.c3_reset_ai(e, h),                 // 0x35D36 LASH T. (class 3)
+            0x78 | 0x7C | 0x80 => self.c79_enter_ai(e, h), // 0x5F84C the dinosaur hunters (class 79)
             0x3C => self.c61_decide(e, h),          // 0x58D40 the Butcher (class 61)
             0x14 => self.c25_alive_start(e, h),     // 0x4C072 Slice (class 25)
             0x70 => self.c63_recover(e),            // 0x5ACAA the alternate Blade (class 63)

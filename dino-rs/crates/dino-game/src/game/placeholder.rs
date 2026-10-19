@@ -73,7 +73,7 @@ const fn cross(class: u16, what: &'static str, counted: bool) -> Spec {
 
 /// Every pool A class of `stage_scripts.txt` that the port does not run yet.
 pub const SPECS: &[Spec] = &[
-    walker(3, "LASH T. (mace)", Some(0x0E), true),
+    // Class 3 (M6-07, M6-08), LASH T., is real (with his mace 62 and chain piece 8).
     // Class 5 (M6-09) and class 61 (M6-10), the Butcher, are real.
     walker(6, "BLUDGE", Some(0x10), true),
     // Class 13 (M6-01 / M6-02), the poachers, is real.
@@ -85,7 +85,7 @@ pub const SPECS: &[Spec] = &[
     Spec { boss: boss(5, true), ..walker(40, "MORGUE", Some(0x16), false) },
     Spec { boss: boss(6, false), ..walker(4, "TYROG", Some(0x19), false) },
     // Classes 78 and 80 (M6-03), the ground critters, are real.
-    walker(79, "HUNTER", Some(0x1E), true),
+    // Class 79 (M6-06), the dinosaur hunter, is real.
     Spec { boss: Some(Boss { hp_row: 0, controller: false, score: true, rebirth: None, group: true }), ..walker(71, "SLISAUR", Some(0x18), false) },
     Spec { boss: boss(8, false), ..walker(94, "FESSENDEN form 2", Some(0x25), true) },
 ];

@@ -34,6 +34,8 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x3906A, 0x5727A, 0x57682, 0x57F44, 0x6FDEC, 0x6F8A6, 0x30750, 0x311C4,
     0x4F4E4, // Rock Hopper init 0x4DD2A (M5-10)
     0x53BE4, // Mack init 0x53430 (M6-03)
+    0x6C0E2, 0x7020A, 0x712A0, 0x2EC00, 0x30C48, // LASH T. (class 3, 0x359B0), his mace (0x5A4A4), his chain piece (0x3B2AE), hit and held tables of the name 0x38
+    0x5FB80, 0x5FCBA, 0x5FDF4, // the dinosaur hunters HAMMER T., BLK ELMER, WRENCH T. (class 79, 0x5F676, 0x5F692, 0x5F6AE)
     0x49574, // Shivat init 0x483B2 (M6-04)
     0x5F4F8, 0x600E0, // ground critters A78 (0x5F1AC) and A80 (0x5FF42) (M6-03)
     0x6FB1A, // enemy bullet class 59, init 0x57FC8
