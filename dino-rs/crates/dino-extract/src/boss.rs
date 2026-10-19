@@ -53,6 +53,23 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x744DA, 0x30, "Butcher walk pause tables"),
     (0x74DA2, 0x40, "Butcher combo pause by random"),
     (0x74DE2, 0x40, "Butcher combo pause by level"),
+    // Hogg (M6-23 / M6-24, classes 31 and 32): the first target cycle (0x4FE06), the rider offsets on the bike (0x5078E), the entry points
+    // by side (0x507DC) and their weights (0x5083E), the throw limits by level (0x50AD8), the target rows (0x50C08), the death speeds
+    // (0x5040E / 0x5062E and the bounce 0x5049A / 0x506BA), the knock back of a car ram (0x5059A); the car mode zone maps: the 256 cell
+    // grid of aim offsets (0xC821A, dx and dz words), the cell transition rows (0xC6252, 256 rows of 32), the cruise times (0xC861A) and
+    // the unused re-aim times (0xC865A, read and overwritten at 0x5014E).
+    (0x4FE46, 0x10, "Hogg first target cycle"),
+    (0x507D0, 0x0C, "Hogg rider offsets on the bike"),
+    (0x50816, 0x28, "Hogg entry points by side"),
+    (0x5083E, 0x20, "Hogg entry point weights"),
+    (0x50B0A, 0x20, "Hogg throw limits by level"),
+    (0x50C62, 0x36, "Hogg target rows by player count"),
+    (0x504E0, 0x0C, "Hogg death speeds"),
+    (0x50616, 0x04, "Hogg car ram knock back"),
+    (0xC821A, 0x400, "Hogg car mode aim grid"),
+    (0xC6252, 0x2000, "Hogg car mode cell transitions"),
+    (0xC861A, 0x40, "Hogg car mode cruise times"),
+    (0xC865A, 0x40, "Hogg car mode re-aim times"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {

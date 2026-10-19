@@ -46,6 +46,9 @@ mod class52;
 mod class61;
 mod class61_moves;
 mod class61_states;
+// Hogg (M6-23 / M6-24): the rider (31) and his motorbike (32).
+mod class31;
+mod class32;
 // The opening scene actors (M3-20): the Cadillac (16), the Episode 4 men (27) and leader (43).
 mod scene_actors;
 mod class20;
@@ -208,6 +211,8 @@ impl Game {
                 20 => self.enemy_class20(&mut e, h),
                 27 => self.enemy_class27(&mut e, h),
                 29 => self.enemy_class29(&mut e, h, i),
+                31 => self.enemy_class31(&mut e, h, i),
+                32 => self.enemy_class32(&mut e, h, i),
                 30 => self.enemy_class30(&mut e, h),
                 34 => self.enemy_class34(&mut e, h),
                 41 => self.enemy_class41(&mut e, h),
