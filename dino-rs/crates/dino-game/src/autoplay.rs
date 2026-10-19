@@ -7,6 +7,8 @@
 //! hero, enemies, clock); `DINO_AUTO_DIAG=1` prints that line every `DIAG_EVERY` ticks of a game, and `DINO_AUTO_RANGE=A-B` every
 //! tick from A to B (with a second line of the flow state: mode, fade, task flags).
 //! A hero who makes no progress walks up and down by turns (`STALL`): the original's walls and ledges need a hero at the right depth.
+//! `DINO_AUTO_NOKILL=1` sends no kill all press (a check that the waves end by the game's own means). `DINO_AUTO_CENSUS=1` prints the census of the
+//! pool A classes the game makes, one line per episode at its end and one at the ending (see `Census`).
 
 use crate::debug::Debug;
 use crate::game::Game;
@@ -44,8 +46,51 @@ struct Back {
     sweep: Option<u32>,
 }
 
+/// The census of the pool A objects the bot makes (`DINO_AUTO_CENSUS=1`): per episode, the count of objects made per class. An object
+/// is made when a slot becomes live, or live with another class (`k20 / 4`). A line is printed for each episode when the game leaves it
+/// (and for the last one when the attract loop returns). A placeholder class (`game::placeholder::SPECS`) is marked with `*`.
+#[derive(Default)]
+pub struct Census {
+    /// The episode (stage) being counted, and the made count per class of it.
+    stage: Option<u8>,
+    made: std::collections::BTreeMap<u16, u32>,
+    /// Per enemy slot: (live, class) at the last tick.
+    prev: Vec<(bool, u16)>,
+}
+
+impl Census {
+    fn tick(&mut self, g: &Game) {
+        if self.prev.len() != g.enemies.slots.len() {
+            self.prev = vec![(false, 0); g.enemies.slots.len()];
+        }
+        for (i, e) in g.enemies.slots.iter().enumerate() {
+            let now = (e.b.live != 0, e.b.k20 / 4);
+            let before = self.prev[i];
+            if now.0 && (!before.0 || before.1 != now.1) {
+                *self.made.entry(now.1).or_insert(0) += 1;
+            }
+            self.prev[i] = now;
+        }
+    }
+
+    /// One line for the episode counted so far (stage `stage`), then the counts start again.
+    fn line(&mut self) {
+        if let Some(stage) = self.stage.take() {
+            let parts: Vec<String> = self
+                .made
+                .iter()
+                .map(|(c, n)| format!("{c}{}:{n}", if crate::game::placeholder::spec_of(*c).is_some() { "*" } else { "" }))
+                .collect();
+            eprintln!("census: episode {} made {} classes: {}", stage + 1, self.made.len(), parts.join(" "));
+        }
+        self.made.clear();
+    }
+}
+
 #[derive(Default)]
 pub struct Bot {
+    /// The census (`DINO_AUTO_CENSUS=1`).
+    census: Census,
     /// The stall retreat in progress, and the tick until which the hero walks right after one (`REST`).
     back: Option<Back>,
     rest_until: u32,
@@ -126,7 +171,8 @@ impl Bot {
             }
             f.players[0] |= if leg % 2 == 0 { UP } else { DOWN };
         }
-        if tick % KILL_EVERY == 0 {
+        // `DINO_AUTO_NOKILL=1`: no kill all presses (the waves are cleared by the bot's own punches and walks; god mode stays).
+        if tick % KILL_EVERY == 0 && std::env::var_os("DINO_AUTO_NOKILL").is_none() {
             debug.kill_all();
         }
         f
@@ -165,6 +211,17 @@ impl Bot {
 
     /// After a tick: one line when the game mode, the episode or the area changes.
     pub fn report(&mut self, g: &Game, tick: u32) {
+        if std::env::var_os("DINO_AUTO_CENSUS").is_some() {
+            if g.flow.in_game != 0 {
+                if self.census.stage.is_some_and(|s| s != g.w.stage) {
+                    self.census.line();
+                }
+                self.census.stage = Some(g.w.stage);
+                self.census.tick(g);
+            } else if self.census.stage.is_some() {
+                self.census.line();
+            }
+        }
         if g.flow.in_game != 0 && g.flow.mode == 0x1C && self.ending.is_none() {
             self.ending = Some(tick);
         }

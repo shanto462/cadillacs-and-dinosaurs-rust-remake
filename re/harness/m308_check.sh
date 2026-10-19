@@ -7,6 +7,8 @@
 # causes of the car scenarios are in re/harness/allow/m3.txt and in specs/stage/HANDOFF.md). The car chase is also checked on its own: the formula
 # camX += clamp(car X - (camX + 0xC0), 8, 20) with the car X of the same frame, on every frame of the recording that is in mode 8 with G.$518 = 1.
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+# The port traces go to PORT_OUT (default re/out/port of this checkout), never to the shared re/out/traces.
+PO=${PORT_OUT:-$ROOT/re/out/port}; export PORT_OUT=$PO; mkdir -p "$PO"
 LIST=${*:-"m308_foot1p:1000 m308_foot3p:1500 m308_car:1200 m308_car_end:800 m308_car_time:800 m308_row300:25 m308_row1000:25 m308_row2400:25 m308_rowmove:90"}
 PY="$ROOT/re/.venv/bin/python -I"
 mkdir -p "$ROOT/re/out/m308"
@@ -15,9 +17,9 @@ for item in $LIST; do
   [ -f "$ROOT/re/out/traces/$n.mame.trc" ] || { echo "$n: no recording (re/harness/probe/probe_record.sh re/harness/pokes/m308.txt all)"; continue; }
   MODE=step "$ROOT/re/harness/port.sh" "$ROOT/re/out/traces/$n.input.txt" "$n" "$f" > "$ROOT/re/out/m308/$n.port.log" 2>&1 || { echo "$n: the port failed, see re/out/m308/$n.port.log"; continue; }
   if grep -q panicked "$ROOT/re/out/m308/$n.port.log"; then echo "$n: PANIC"; grep -A2 panicked "$ROOT/re/out/m308/$n.port.log" | head -4; continue; fi
-  case $n in m308_car*) ALLOW="--allow $ROOT/re/harness/allow/m3.txt" ;; *) ALLOW= ;; esac
+  ALLOW=  # M3-30: no rule is needed (the car is ported); allow/m3.txt keeps the M3-29 notes only
   # shellcheck disable=SC2086
-  out=$($PY "$ROOT/re/harness/diff.py" "$ROOT/re/out/traces/$n.mame.trc" "$ROOT/re/out/traces/$n.step.trc" $ALLOW 2>&1)
+  out=$($PY "$ROOT/re/harness/diff.py" "$ROOT/re/out/traces/$n.mame.trc" "$PO/$n.step.trc" $ALLOW 2>&1)
   echo "== $n ($f frames)"
   echo "$out" | awk '/^FIRST DIFFERENCE/{print; getline; print "  " $0} /^RESULT/{print} /^SUMMARY/{print} /object fields of ported classes/{print}' | cut -c1-200
   echo "$out" | sed -n '/^FIELDS WITH DIFFERENCES/,/^DIFFERENCES BY/p' | grep -E "^  global\.(cam|event|area|vfollow|go |lock|push|max_|min_|up52|down54|display|shake|rowscroll|b4d4|stage_clear)" | cut -c1-170

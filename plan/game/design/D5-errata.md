@@ -577,3 +577,58 @@ Check, step mode (all 8 Bludge recordings, `re/harness/m707_check.sh`): 0 fields
   class 40 (0x9764E, now `effect/fx40.rs`).
 - f84-dmg frame 54: the hero's reaction to the arm strike 0x60 (hero state 0x0202, act 0x14, step 2) draws one random number more in the port
   than in MAME (player port, not the boss); it re-syncs in step mode.
+
+## M3-30 (2026-10-19): M3 acceptance, part 2 (fix list, placeholder report, checks)
+
+Checks run on the merged port (1131525 and later), with the bot of `autoplay.rs` (kill all every 600 ticks unless noted).
+
+1. **Allow rules (re/harness/allow/m3.txt, m313.txt).** The car ported, so the rules of the Episode 3 car (M3-08 section, 26 rule lines) are gone:
+   m308_car, m308_car_end and m308_car_time equal MAME in every field, tilemap and row scroll word with no rule (before: 0 differences with the rules,
+   after: 0 without them). The chase formula check at the end of `m308_check.sh` still runs: 839 frames in mode 8 with G.$518 = 1, 0 differ.
+   m313 (the lift): the two fade rules of the snapshot were not needed (no fade or palette difference without them). `global.display_y2` is kept
+   and `global.display_y1` added, with the current reason (run mode only: the port's camera Y is one record behind after the area start, the lag
+   record 382; step mode has no difference). Fields differing in `m328_l_e7a0_k16` (run): 142 before, 141 after. `m800_a14_n_e7a1_full` and `ep7_3p`
+   (step): 56 and 3 fields, unchanged. The check scripts (`m308_check.sh`, `m313_check.sh`, `m329_check.sh`, `area_events.py`) read and write
+   the port traces in PORT_OUT (default re/out/port), not in the shared re/out/traces.
+   m329 (the flow compare): no rule lines. The autoplay reaches the ending at frame 274344, the seven link scenes equal MAME, the mode change
+   records equal MAME in all seven, the area change table as documented in the M3-29 notes.
+
+2. **Autoplay without kill all (`DINO_AUTO_NOKILL=1`, god mode stays).** Episode 1: the bot is stuck in area 2 from frame 11770 (the Vice T. fight,
+   camera lock 2) and gets to the Episode 2 card at frame 22105. The later episodes start at 54913 (3), 77746 (4), 119206 (5), 178896 (6) and
+   292248 (7). Episode 7 area 3 (from frame 328864) is the block: the Slisaur (pool A class 71, a placeholder) is never killed, the camera stays
+   locked from frame 337724 and the run stops at the cap (600000 ticks, no ending). With kill all on (the default bot) the ending is reached at 274344.
+
+3. **Census (`DINO_AUTO_CENSUS=1`, default bot, the first game from power on to the ending).** One line per episode when the game leaves it. "made"
+   counts a slot that becomes live, or live with another class (`k20 / 4`), once per tick (an object made and freed in one tick is missed).
+   Placeholder classes (`--list-placeholders`: 22, 35, 40, 45, 71) are marked here with their counts.
+
+| Episode | classes made | objects made | placeholder classes (made) | biggest counts (class:count) |
+| ---: | ---: | ---: | --- | --- |
+| 1 | 19 | 82 | - | 59:16, 2:14, 64:7, 55:6, 50:6 |
+| 2 | 27 | 137 | - | 13:21, 52:20, 48:14, 46:11, 60:10 |
+| 3 | 17 | 152 | - | 42:34, 2:25, 65:19, 20:14, 13:11 |
+| 4 | 19 | 400 | - | 19:227, 64:23, 2:22, 60:18, 14:18 |
+| 5 | 31 | 378 | 35 (1), 40 (1), 45 (1) | 68:109, 26:73, 59:67, 60:18, 13:15 |
+| 6 | 23 | 2235 | 22 (2) | 75:1563, 74:360, 26:156, 13:26, 60:24 |
+| 7 | 18 | 189 | 71 (2) | 2:33, 60:26, 14:26, 13:20, 10:17 |
+| 8 | 40 | 3690 | - | 15:2510, 83:594, 92:232, 93:91, 95:33 |
+
+   The census has no placeholder class in episodes 1 to 4 and 8. Placeholder classes met: 35 (Morgan) and 40 (morgue) and 45 (villager) in
+   episode 5; 22 (brontosaurus foot) in episode 6; 71 (Slisaur) in episode 7. The bot's own kills end all of them (kill all runs every 600 ticks).
+
+4. **Link scenes (screenshots of the bot's first game; frames from the mode change lines).** Looked at, all OK unless noted:
+   18014 (Episode 2 story, the Butcher), 18173 (Episode 2 map card), 45662 and 45690 (Episode 3 story, the same panel 28 frames apart; the
+   text "they look pretty busy, take Jack's garage" is not checked against the original script), 54493 (Episode 4 story), 82742 (Episode 5
+   story), 125305 (Episode 6 story), 197582 (Episode 7 story), 222180 (Episode 8 story, Fessenden), 222473 (Episode 8 map card), 274464 (the
+   ending, the heroes in the last fight), 276500 (the staff roll, OK), 279000 (the last text of the ending: "Nature always balances itself"),
+   279944 (black: the fade to the attract loop, expected).
+
+Open items (M3):
+- The Slisaur (class 71, placeholder) blocks a run without kill all in Episode 7 area 3. Needs the Slisaur port (M8-13 is the owner).
+- m313 `m800_a14_n_e7a1_full`: the player's invulnerability byte (+$F9) differs from the first record (4894 records, MAME 7E, port 7D). The
+  lift itself is equal; this is the god mode bit of the recording, not checked yet.
+- m313 `ep7_3p`: effect class 0x01 frame at record 12341 (the lift start) and enemy class 0x02 sub at 13086 and target at 14240.
+- Run mode, the lift (`m328_l_e7a0_k16`): the camera Y and the copies of it are one record behind after the area start (lag record 382).
+- Pace (bot, no kill all, ticks per episode from the card to the next card): episode 1 22105, episode 2 32808, episode 3 22833, episode 4 41460,
+  episode 5 59690, episode 6 113352 (episode 7 is blocked, see item 2). A human run was not made.
+- The lag record of a busy card slide out (Episode 4 opening, record 250): G.$0 counts 2 in MAME, 1 in the port (design question, no change).

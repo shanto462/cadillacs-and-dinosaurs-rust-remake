@@ -8,6 +8,8 @@
 # 4. area_events.py for the 13 area changes of m328_areas (free run with DINO_GAME_CLOCK=1): the records of the end mode, the area load, the clock reload and the
 #    control release, MAME against the port. The differences and their causes are listed in re/harness/allow/m3.txt (section M3-29).
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+# The port traces go to PORT_OUT (default re/out/port of this checkout), never to the shared re/out/traces.
+PO=${PORT_OUT:-$ROOT/re/out/port}; export PORT_OUT=$PO; mkdir -p "$PO"
 PY="$ROOT/re/.venv/bin/python -I"
 echo "== 1. autoplay"
 (cd "$ROOT/dino-rs" && cargo build --release -q -p dino-game 2>/dev/null; ./target/release/dino-game --rom ../dino.zip --headless --autoplay 2>&1 | tail -8)

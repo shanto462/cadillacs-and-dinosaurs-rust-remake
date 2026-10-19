@@ -7,6 +7,8 @@
 # 3. ep7_3p (step mode, three heroes, the whole lift is records 12306 to 17850): the same, from record 12310.
 # The causes of what is left are in re/harness/allow/m313.txt and re/specs/stage/HANDOFF.md.
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+# The port traces go to PORT_OUT (default re/out/port of this checkout), never to the shared re/out/traces.
+PO=${PORT_OUT:-$ROOT/re/out/port}; export PORT_OUT=$PO; mkdir -p "$PO"
 PY="$ROOT/re/.venv/bin/python -I"
 ALLOW="$ROOT/re/harness/allow/m313.txt"
 OUT="$ROOT/re/out/m313"
@@ -20,7 +22,7 @@ run() { # MODE NAME FRAMES [diff options]
   if grep -q panicked "$OUT/$n.$mode.log"; then echo "$n: PANIC"; grep -A2 panicked "$OUT/$n.$mode.log" | head -4; return; fi
   echo "== $n ($mode, $f records) $*"
   # shellcheck disable=SC2086
-  $PY "$ROOT/re/harness/diff.py" "$ROOT/re/out/traces/$n.mame.trc" "$ROOT/re/out/traces/$n.$t.trc" --allow "$ALLOW" "$@" > "$OUT/$n.$mode.diff" 2>&1
+  $PY "$ROOT/re/harness/diff.py" "$ROOT/re/out/traces/$n.mame.trc" "$PO/$n.$t.trc" --allow "$ALLOW" "$@" > "$OUT/$n.$mode.diff" 2>&1
   awk '/^FIRST DIFFERENCE/{print} /^RESULT/{print} /^SUMMARY/{print} /object fields of ported classes/{print}' "$OUT/$n.$mode.diff" | cut -c1-200
   sed -n '/^VIDEO AND SOUND/,/^$/p' "$OUT/$n.$mode.diff" | grep -E "^  (scroll[123]|palette)" | cut -c1-170
   sed -n '/^DIFFERENCES BY OBJECT CLASS/,/^SPRITE/p' "$OUT/$n.$mode.diff" | grep -E "class 0x(39|40) " | cut -c1-170
