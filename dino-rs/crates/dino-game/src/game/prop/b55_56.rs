@@ -45,7 +45,7 @@ impl Game {
             // 0x85796: move.b #$4, $4(a6) ; lea $857A6, a0 ; jmp $F94
             p.b.mode = 4;
             self.hud_clear_rect([0x00, 0x07, 0x30, 0x19]);
-            self.prop_free(p, i);
+            // The original's jmp $F94 returns to the object loop, so the slot lives on: mode 4 (0x85910) frees it on the next frame.
             return;
         }
         // 0x85778: subq.w #1, $a0(a6) ; bne 0x85794
@@ -246,8 +246,10 @@ mod tests {
         g.pool_b_update();
         assert_eq!(g.props.slots[i].m.b(0xA2), 16);
 
-        // Advance cam_x to 0x500: frees itself
+        // Advance cam_x to 0x500: mode 4 (the slot lives on this frame), freed by the next update
         g.cam.s2.cam_x = 0x500;
+        g.pool_b_update();
+        assert_eq!((g.props.slots[i].b.live, g.props.slots[i].b.mode), (1, 4));
         g.pool_b_update();
         assert_eq!(g.props.slots[i].b.live, 0);
     }
