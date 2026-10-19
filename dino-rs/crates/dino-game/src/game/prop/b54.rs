@@ -103,6 +103,11 @@ mod tests {
         ];
 
         let mut g = test_game(blobs);
+
+        // the test hands out a prop that is not from the pool: take every slot so index 0 is not free
+        for _ in 0..24 {
+            g.props.alloc();
+        }
         assert_eq!(g.spawn.g.cage_smashed, 0);
 
         let mut p = Prop::default();
@@ -147,6 +152,11 @@ mod tests {
         ];
 
         let mut g = test_game(blobs);
+
+        // the test hands out a prop that is not from the pool: take every slot so index 0 is not free
+        for _ in 0..24 {
+            g.props.alloc();
+        }
         g.spawn.g.cage_smashed = 1;
 
         let mut p = Prop::default();

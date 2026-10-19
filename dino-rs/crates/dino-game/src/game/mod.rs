@@ -108,7 +108,10 @@ impl<T> Pool<T> {
     }
 
     /// Pushes the slot back. The caller clears exactly the fields the original free routine clears.
+    /// Debug only: a slot pushed twice would be handed out twice (the original frees are 0x48FC pool A, 0x4938 pool B,
+    /// 0x4964 pool C, 0x4994 pool D / E); a double free is a port bug.
     pub fn release(&mut self, i: usize) {
+        debug_assert!(!self.free.contains(&i), "double free of pool slot {i} (base {:#x})", self.base);
         self.free.push(i);
     }
 
