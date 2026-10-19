@@ -87,9 +87,14 @@ session. If the build breaks in a file you do not own, wait and retry instead of
 | draw / effects port | `game/draw.rs`, `game/effect.rs`, `dino-assets/src/effect.rs`, `dino-extract/src/effect.rs` |
 | enemy port | `game/enemy.rs`, `enemy_combat.rs`, `prop.rs`, `item.rs`, `spawn.rs`, `rank.rs`, `dino-assets/src/enemy.rs`, `dino-extract/src/enemy.rs` |
 | sound port | `crates/dino-sound/`, `dino-game/src/audio.rs`, `dino-assets/src/sound.rs`, `dino-extract/src/sound.rs` |
-| flow / HUD port | `game/hud.rs`, `game/flow.rs` (also the `hook_*` stage routines the camera calls), `dino-assets/src/text.rs`, `dino-extract/src/text.rs` |
+| flow / HUD port | `game/hud.rs`, `game/flow.rs` (also the `hook_*` stage routines the camera calls), `dino-assets/src/text.rs`, `dino-extract/src/text.rs`; `game/flow/*.rs` (boot, attract, movie, demo, slides, profiles, ranking, picture, scene, text, system, select, front, join, cont, name_entry, tally, cards, ending, config, skip, mame_check), `game/script.rs` (scripted control), `dino-assets/src/frontend.rs`, `script.rs`, `dino-extract/src/frontend.rs`, `script.rs` |
+| enemy port (bosses and classes) | `game/enemy/classNN*.rs` (one file or a small family per class), `game/boss.rs`, `game/boss_common.rs` (the shared boss skeleton), `game/placeholder.rs` (the classes not ported yet), `game/car.rs`, `game/prop/*.rs` (child modules of `prop.rs` with `#[path]`, one per pool B class or family), `dino-assets/src/boss.rs`, `dino-extract/src/boss.rs` |
+| draw / effects port (pool C) | `game/effect/fxNN*.rs` (child modules of `effect.rs` with `#[path]`, one per pool C class or family) |
+| review tools (main session) | `autoplay.rs` (the review bot), `debug.rs` (debug keys), `menu.rs`, `jumps.rs`, `font5x7.rs` (the test menu and jump points), `headless.rs` (the CPU renderer), `harness.rs` and `game/trace.rs` (the trace writer and the step loader), `re/harness/*` |
 
 Allowed small edits in files you do not own (re-read the file right before editing):
+- the edits a task block of `plan/game/design/D5-final-plan.md` names as allowed (workers edit main session files only then);
+- the wiring lines a new class needs: its `mod` line and dispatch arm (`enemy.rs`, `prop.rs`, `effect.rs`), `PORTED_CLASSES` and trace fields in `game/trace.rs`, ROM table entries in the `TABLES` lists of `dino-extract`;
 - registering a new assets module: one line in each `lib.rs` and one `AssetPack` field;
 - appending animation table addresses to `OBJECT_ANIM_TABLES` in `dino-extract/src/sprites.rs`.
 
