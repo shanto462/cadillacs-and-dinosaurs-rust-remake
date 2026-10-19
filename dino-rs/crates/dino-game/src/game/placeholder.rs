@@ -204,12 +204,16 @@ impl Game {
             e.m.sb(DIR, on_left as u8);
         }
         self.enemy_snap_to_floor(e);
-        let t = self.enemy_pick_target(&e.b);
-        e.m.sw(TARGET, t);
+        if boss.is_some() {
+            self.boss_pick_target(e); // 0x32032, shared with the real D3d handlers
+        } else {
+            let t = self.enemy_pick_target(&e.b);
+            e.m.sw(TARGET, t);
+        }
     }
 
     /// Morgan's death (0x52EBE): the same object becomes class `to` (Morgue, class 40) and its init runs. The fight goes on.
-    fn enemy_ph_rebirth(&mut self, e: &mut Enemy, h: Handle, to: u16) {
+    pub(super) fn enemy_ph_rebirth(&mut self, e: &mut Enemy, h: Handle, to: u16) {
         e.b.k20 = to * 4;
         e.b.sub = 0;
         e.b.hitstop = 0;
@@ -317,32 +321,18 @@ impl Game {
 
     /// Mode 4: kill score (when the class has a name), then the blink, then free (mode 6).
     fn enemy_ph_dying(&mut self, e: &mut Enemy, h: Handle, spec: &Spec) {
-        let boss = boss_part(spec, e.b.var26);
+        if let Some(boss) = boss_part(spec, e.b.var26) {
+            self.boss_placeholder_dying(e, h, boss);
+            return;
+        }
         if e.b.sub == 0 {
-            if (spec.name.is_some() || spec.name_v2.is_some()) && boss.is_none_or(|b| b.score) {
-                let b = e.b.clone();
-                self.enemy_award_kill_score(&b);
+            if spec.name.is_some() || spec.name_v2.is_some() {
+                self.enemy_award_kill_score(&e.b);
             }
             e.m.sw(T80, BLINK);
-            e.b.sub += 2;
-            if boss.is_some_and(|b| b.rebirth.is_none()) {
-                self.hook_a5ea(); // the first step of a boss death state fades the music (Butcher 0x38D44)
-            }
+            e.b.sub = e.b.sub.wrapping_add(2);
         }
-        match boss {
-            // Morgan: after the blink he is Morgue, the same object (0x52EBE, the fight goes on).
-            Some(Boss { rebirth: Some(to), .. }) => {
-                let t = e.m.w(T80);
-                if t == 0 {
-                    self.enemy_ph_rebirth(e, h, to);
-                } else {
-                    e.m.sw(T80, t - 1);
-                }
-            }
-            // a boss stays in its death state (the body stays, the controller and G.$4E0 read it)
-            Some(_) => {}
-            None => self.enemy_dying_blink(e, h),
-        }
+        self.enemy_dying_blink(e, h);
     }
 
     /// Whether the death of the boss `e` ends the fight (0xACEE): not Morgan (he becomes Morgue), and a Slisaur only
