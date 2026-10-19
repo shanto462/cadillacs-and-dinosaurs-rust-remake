@@ -267,6 +267,28 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x8534C, 8, "prop B53: G.$7B2 offset table (0x8534C)"),
     (0x8537A, 216, "prop B53: 27 palette table pointers and destinations (0x8537A)"),
     (0x85458, 336, "prop B53: 27 pointer tables (0x85458)"),
+    // Pool B class 4 (door burst, 0x767D8, M8-02)
+    (0x768CC, 56, "prop B4: var 4/8 tile codes (0x768CC)"),
+    (0x7699A, 48, "prop B4: var 0xC tile codes (0x7699A)"),
+    (0x76904, 12, "prop B4: destination pointers (0x76904)"),
+    // Pool B class 60 (mine lamps, 0x863AC, M8-02)
+    (0x86476, 18, "prop B60: palette list A pointers (0x86476)"),
+    (0x86488, 18, "prop B60: palette list B pointers (0x86488)"),
+    (0xBE052, 32, "prop B60: palette 80 step 0 (0xBE052)"),
+    (0xBEA52, 96, "prop B60: palette 80 steps 1..3 (0xBEA52)"),
+    (0x8649A, 64, "prop B60: palette 81 colour sets (0x8649A)"),
+    // Pool B class 55 (rain streaks, 0x8574C, M8-02)
+    (0x857D8, 150, "prop B55: 75 streak offsets (0x857D8)"),
+    (0x8586E, 75, "prop B55: 75 streak phase offsets (0x8586E)"),
+    (0x858D0, 64, "prop B55: streak glyphs (0x858D0)"),
+    // Pool B class 56 (rain drops, 0x85916, M8-02)
+    (0x85AE4, 32, "prop B56: drop depth table (0x85AE4)"),
+    (0x85A14, 16, "prop B56: probability table 1 (0x85A14)"),
+    (0x85A24, 32, "prop B56: variant table 1 (0x85A24)"),
+    (0x85A44, 16, "prop B56: probability table 2 (0x85A44)"),
+    (0x85A54, 32, "prop B56: variant table 2 (0x85A54)"),
+    (0x85A74, 16, "prop B56: probability table 3 (0x85A74)"),
+    (0x85A84, 32, "prop B56: variant table 3 (0x85A84)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {
