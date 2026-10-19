@@ -853,7 +853,7 @@ reaction 8 (enemy code, out of scope). Throw damage is the 0x0A entry.
   (guns that can fire while walking, auto-aim at nearest enemy 0x64F6), 0x209 (strong recoil, state
   0x22: pushed backwards `vx = RECOIL[chr]` from 0x19CD8 = Jack 0x800, Hannah 0xA00, Mustapha 0xC00,
   Mess 0x600, `ax = 0x100` against it; bazooka [I]), 0x20A (heavy object, slow walk tables, no jump for Mustapha).
-  Weapon names by type (0x23C65, as in D2c section 1): 0 RIFLE, 1 GUN, 2 KNIFE, 3 UZI, 4 M-16A1, 5 SHOT GUN, 6 BAZOOKA, 7 ROD, 8 STICK, 9 B. KNIFE (butcher knife), 10 CLUB, 11 TORCH, 12 DYNAMITE, 13 GRENADE, 14 STONE.
+  Weapon names by type (0x23C65, as in D2c section 1): 0 RIFLE, 1 GUN, 2 KNIFE, 3 UZI, 4 M-16A1, 5 SHOT GUN, 6 BAZOOKA, 7 ROD, 8 STICK, 9 B. KNIFE (butcher knife), 10 CLUB, 11 TORCH, 12 DYNAMITE, 13 GRENADE, 14 STONE (stones, 3 sizes).
 - Ammo / durability = the **item object's** `$6C`; after a weapon attack ends, if it is 0 the
   weapon is dropped (`$B6 = 0`, 0x19980). Where `$6C` is decremented is item code [U].
 - Getting hit drops the weapon (`0x1177A` sets `$C5 = 1, $B6 = 0`, except some 0x2xx cases) [O].

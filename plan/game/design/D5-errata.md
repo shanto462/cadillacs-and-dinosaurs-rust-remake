@@ -380,3 +380,9 @@ MAME wins over the design text; the design documents themselves are not edited.
 - D3a H11 / H12 / H13 give the numbers one frame later than MAME's end-of-frame record index: H11 frame 6 is x 1388 (design 1390) and vy 648; the hops at 80 and 180 have vy 708 (design 768); frame 220 is x 960 (962). H13 x 1311 is frame 59 and x 1147 frame 89. H12 y 207 is frame 5 and 158 frame 29; "state 4 at 90" is act 4 (the roll), on from frame 69; the break (mode 4) is frame 117.
 - The cave barrel (variant 0x201) has vy -3840 at frame 60 (-384 plus 27 frames of -128), not -3712.
 - The biker's kick success (attack 0x48) is in no recording; H13 v0 takes the fail path (act 0 to 2 at frame 46, attack stays 0x47).
+
+## Player damage and power tables (M9-03, 2026-10-19)
+
+- D2b 5.2 "thug (name 9) at level 31 row value 58": the ROM row for name 9 at level 31 is 72 (D2b 5.3 agrees); 58 is name 0 (Ferris). The measured outputs [14, 14, 15, 13] and [10, 10, 10, 9] come out with name 0, so the probe probably hit another enemy than the text says. Open: one MAME probe with a thug at level 31.
+- D2b 5.2 "HP 20: HP factor 31": the factor for HP 16 to 23 is 27 (the words of 0x2C996); the stated outputs 5, 5, 5, 4 come out with 27.
+- D2b 5.3 the power table $C6 (0x2C9B6): row 1 has 26 set cells of 32 (the text says 25), row 2 has 25 (the text says 22).

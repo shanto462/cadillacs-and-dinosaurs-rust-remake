@@ -10,7 +10,7 @@
 //! | 8 | 0x207 | M-16 (48) | 0x16 | 0x203 | torch, with an overlay (class 6) |
 //! | 0xA | 0x208 | shotgun (6) | 0x18 | 0x201 | dynamite |
 //! | 0xC | 0x209 | bazooka (4) | 0x1A | 0x201 | grenade |
-//! | | | | 0x1C | 0x201 | stone (G.$4F1 counts them) |
+//! | | | | 0x1C | 0x201 | stones, 3 sizes (G.$4F1 counts them) |
 //!
 //! Kind 0x201 = thrown only, 0x202 / 0x203 = melee (swing), 0x204..0x209 = guns (ammo in +$6C;
 //! an empty gun becomes a melee 0x203 or a throwable 0x201).
@@ -947,7 +947,7 @@ impl Game {
         self.weapon_throw(it, h, p, THROW_BASE + 0x60, 0x26, 0x10, 0x1C, true);
     }
 
-    /// Type 14 (0x25E08): stone (sub 0x20); also clears +$80 and +$B1.
+    /// Type 14 (0x25E08): stones (sub 0x20); also clears +$80 and +$B1.
     fn weapon_held_14(&mut self, it: &mut Item, h: Handle, p: usize) {
         if self.players[p].weapon_atk == 0 {
             return self.item_draw_check(it, h);
@@ -1187,7 +1187,7 @@ impl Game {
         self.weapon_spawn_blast(it);
     }
 
-    /// 0x262BC (sub 0x20): the stone: bounces twice and then stops (state 0x24); a hit
+    /// 0x262BC (sub 0x20): a stone: bounces twice and then stops (state 0x24); a hit
     /// (unless +$A8) or a wall turns it around.
     fn weapon_fly_20(&mut self, it: &mut Item, h: Handle) {
         let mut turn = false;
