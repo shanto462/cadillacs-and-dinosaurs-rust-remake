@@ -169,6 +169,7 @@ def main():
     ap.add_argument("--field", help="print this field (key pattern) every frame it differs")
     ap.add_argument("--snd-table", action="store_true", help="per sound code: MAME (d1, d2) and port (d1, d2) counts (M4-13)")
     ap.add_argument("--no-skip-spawn", action="store_true", help="compare the spawn frames of the probe sidecar too (default: left out, task 20)")
+    ap.add_argument("--no-skip-lag", action="store_true", help="compare the MAME lag records in step mode too (default in step mode: left out, one port step cannot replay a lag record)")
     ap.add_argument("--at", type=int, action="append", default=[], help="list every difference at this frame (repeatable)")
     ap.add_argument("--rom-image", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "out", "dino_68k.bin"),
                     help="68000 program image, only used to print handler addresses (optional)")
@@ -228,6 +229,10 @@ def main():
                 if mm:
                     skip_spawn.add(int(mm.group(1)))
     print("spawn frames not compared: " + (" ".join(str(k) for k in sorted(skip_spawn)) if skip_spawn else "none"))
+    # Step mode (the port trace header says "mode":"step"): a MAME lag record (flags & 1, the game frame overran vblanks) covers more game
+    # ticks than one port step, so it is left out. Run and follow modes compare every record.
+    skip_lag = tp.header.get("mode") == "step" and not args.no_skip_lag
+    lag_skipped = 0
     for rm, rp in zip(tm.records(), tp.records()):
         if rm.frame != rp.frame:
             print(f"frame mismatch: MAME record {rm.frame}, port record {rp.frame}")
@@ -250,6 +255,9 @@ def main():
         if f < args.start:
             continue
         if f in skip_spawn:
+            continue
+        if skip_lag and rm.flags & 1:
+            lag_skipped += 1
             continue
         frames += 1
         pram, pmask = rp.images["ram"], rp.images["ram_mask"].astype(bool)
@@ -450,6 +458,7 @@ def main():
     print(f"compared {frames} records (frame -1 = sync state)")
     if lag_frames:
         print(f"MAME lag frames (game frame overran a vblank): {lag_frames[:20]}{' ...' if len(lag_frames) > 20 else ''}")
+    print(f"lag frames not compared (step mode): {lag_skipped}" + ("" if skip_lag else " (off: run/follow mode or --no-skip-lag)"))
     if first_frame is None:
         print("\nRESULT: no differences" + (" (some allowed, see below)" if allowed else ""))
     else:
