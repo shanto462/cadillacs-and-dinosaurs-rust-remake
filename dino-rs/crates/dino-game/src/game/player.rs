@@ -3102,6 +3102,7 @@ impl Game {
                 let p = &mut self.players[i];
                 p.b.vz = 0;
                 p.b.az = 0;
+                self.hud_life_bar(i); // 0x1C794
                 let me = Game::player_handle(i);
                 let flames = self.player_pd().burn_flames;
                 for (k, [dx, dy, var]) in flames.iter().enumerate() {
@@ -3109,7 +3110,7 @@ impl Game {
                 }
                 let p = &mut self.players[i];
                 p.b.palette_override = 0x84;
-                // G.$7B2 = 2 (flow port).
+                self.spawn.g.b7b2 = 2; // 0x1C7A4: burn palette flag.
                 p.item_type = 0;
                 p.drop = 1;
                 p.b.airborne = 1;
@@ -3152,11 +3153,13 @@ impl Game {
                 self.player_downed_claim(i);
                 self.player_mash(i);
                 if self.players[i].mash == 0 {
+                    self.spawn.g.b7b2 = 0; // 0x1C860
                     return self.player_getup_entry(i);
                 }
                 let p = &mut self.players[i];
                 p.lie_t = p.lie_t.wrapping_sub(1);
                 if p.lie_t == 0xFF {
+                    self.spawn.g.b7b2 = 0; // 0x1C860
                     return self.player_getup_entry(i);
                 }
                 self.player_pstep(i);

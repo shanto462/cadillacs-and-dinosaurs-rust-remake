@@ -24,6 +24,7 @@ const HITBOX_REGION: (u32, u32) = (0xF8000, 0x11D220);
 /// 10-byte animation tables used by non-player objects. Each address is a constant in the
 /// object's init code (stored into obj+$40); the comment names that code.
 pub const OBJECT_ANIM_TABLES: &[u32] = &[
+    0x6162E, // A83 flame pieces, 0x61570
     0x93F42, // burn death pieces, pool C class 15, 0x93E68 (M5-07)
     // The Butcher (M6-09): the starter class 5 (0x38E20), the carcass class 51 (0x5719E), the machete helper class 53 (0x57650), the knife
     // holder class 58 (0x57E78), the fighter class 61 (0x584C4), the knives class 52 (0x572C0) and his hit (0x2E68C, +$84 = 0x3C) / held

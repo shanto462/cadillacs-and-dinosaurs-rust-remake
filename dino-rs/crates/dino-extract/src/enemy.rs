@@ -16,6 +16,11 @@ const SENTINEL: u16 = 0x9FFF;
 
 /// Small tables copied as byte blobs: (ROM address, length, user).
 const TABLES: &[(u32, u32, &str)] = &[
+    (0x898C8, 13 * 12, "B71 palette phase lists"),
+    (0x840E8, 24, "B45 broken socket destinations"),
+    (0x84100, 16, "B45 broken socket tiles"),
+    (0x84122, 0x65, "B45 boxes, cycle durations and flame parameters"),
+    (0x61730, 14, "A83 flame offsets and velocities"),
     (0x2E4E0, 0x244, "enemy held placement (0x3267A, Hopper 0x4F0E4)"),
     (0x4E28A, 16, "Hopper wander directions (0x4E268)"),
     (0x4FAF0, 8, "Hopper leap speeds (0x4E2E0)"),
@@ -465,6 +470,15 @@ pub fn extract(rom: &Rom) -> EnemyData {
         let tbl_ptr = rom.u32(0x8537A + 8 * i);
         for j in 0..3u32 {
             let p = rom.u32(tbl_ptr + 4 * j);
+            extra.push((p, (p..p + 32).map(|x| rom.u8(x)).collect()));
+        }
+    }
+    // 0x897B4: B71 signed palette offsets, thirteen lanes of six words.
+    for k in 0..13u32 {
+        for j in 0..6u32 {
+            let base: u32 = if k < 11 { 0xBCA52 } else { 0xC2252 };
+            let off = rom.u16(0x898C8 + k * 12 + j * 2) as i16;
+            let p = base.wrapping_add(off as i32 as u32);
             extra.push((p, (p..p + 32).map(|x| rom.u8(x)).collect()));
         }
     }
