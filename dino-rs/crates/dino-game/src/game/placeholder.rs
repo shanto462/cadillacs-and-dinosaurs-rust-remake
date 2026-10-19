@@ -85,7 +85,6 @@ pub const SPECS: &[Spec] = &[
     walker(45, "MORGAN villager", None, true),
     Spec { boss: boss(5, true), ..walker(40, "MORGUE", Some(0x16), false) },
     Spec { boss: boss(6, false), ..walker(4, "TYROG", Some(0x19), false) },
-    walker(63, "BLADE alt", Some(0x1C), true),
     cross(78, "CRITTER", false),
     walker(79, "HUNTER", Some(0x1E), true),
     cross(80, "CRITTER", false),
