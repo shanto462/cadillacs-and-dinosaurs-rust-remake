@@ -383,9 +383,10 @@ impl Game {
         self.text_words(t.slice_from(base + offset), t.u32(origins, 4 * i as u32));
     }
 
-    /// 0x81FE / 0x825A: HUD hold suppresses prompts outside character select.
+    /// 0x81FE / 0x825A: the hold G.$4D5 suppresses the prompts outside the character select (mode 4: another position). The scripted control
+    /// (G.$4DD) does not (the recording ep2_jack draws the blinking INSERT COIN while the area walk is scripted).
     fn flow_join_prompt_visible(&self) -> bool {
-        self.spawn.g.b4d5 == 0 && self.w.scripted == 0
+        self.spawn.g.b4d5 == 0
     }
 
     /// 0x8242 / 0x8292: prompt origin, read from the ROM layout table.

@@ -350,6 +350,7 @@ impl Game {
                 self.c61_check_slash(e);
             }
             self.c61_slot_keep(e); // 0x32E00
+            e.b.frame_w1 = 0;
             self.c61_state(e, h);
             self.c61_leap_roll(e);
             self.c61_check_far(e);
@@ -473,7 +474,9 @@ impl Game {
         }
         let d0 = self.rank.aggression << 3;
         let d0 = (d0 & 0xFF00) | (d0 as u8).wrapping_add(e.m.b(o::DIST_X)) as u16;
-        let d1 = self.assets.enemy.t.u8(0x73E94, d0 as u32) as i16;
+        // `move.b (a0),d1` keeps the high byte of d1: a frame record read in this frame (0x1236: d1 = its second word, 0x8000 for the walk frames) makes
+        // the word negative, so the roll `blt` cannot succeed in that frame.
+        let d1 = ((e.b.frame_w1 & 0xFF00) | self.assets.enemy.t.u8(0x73E94, d0 as u32) as u16) as i16;
         if ((self.rand() & 0x1F) as i16) < d1 {
             self.c61_5a1ea(e);
         }

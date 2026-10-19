@@ -392,7 +392,7 @@ impl Game {
         if self.player_special_check(i) {
             return;
         }
-        // 0x19B96: stage 1 area 1 (G.$4D9 == 1, G.$786 == 1) calls 0x60E2 (water ripples: effects port).
+        self.player_water_ripple(i); // 0x19BAA (and 0x24AC): stage 1 area 1 (G.$4D9 == 1, G.$786 == 1) calls 0x60E2
         if self.players[i].pressed & JMP != 0 {
             return self.player_jump_entry(i);
         }

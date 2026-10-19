@@ -1,0 +1,14 @@
+# Approved known differences of the Episode 2 acceptance (M6-17): the natural recordings ep2_jack and ep2_3p (step mode and run mode, `re/harness/m603_check.sh`), the area walks
+# m328_e2a0n and m328_e2a1n, the item recordings m516_e2_start, m516_e2_pearl and m516_e2_diamond (equal, no rule needed) and the walks m307_e2a0_x400_* and m307_e2a2_x1a0_walk (equal).
+#   diff  re/.venv/bin/python -I re/harness/diff.py re/out/traces/NAME.mame.trc re/out/traces/NAME.step.trc --allow re/harness/allow/m6.txt [--frame-list]
+# The Episode 2 part of ep2_3p is the records 0 to 22270 (then Episode 3 starts: G.$4D9 = 2); ep2_jack stays in Episode 2 (area 2, the Butcher) to the end.
+# One rule per line: a key pattern (fnmatch) and an optional record range, then a "# reason". The recording specific causes (lag records, the stream columns past the
+# edge of an area) are listed with their record numbers in D5-errata.md (section M6-17); `diff.py --frame-list` prints the differing records.
+
+# 1. G.$868 (display_y2), the main loop's copy of the camera Y at the start of a pass (0x6C0 .. 0x71C): one frame behind the camera. The port derives it from the camera of
+#    the same frame, so it is one step ahead in every record in which the camera moves in Y (the hill of area 1, the slope of area 2). The same rule as m313.txt.
+global.display_y2
+
+# 2. The sound arguments d1 / d2 of a few requests are registers that the original does not set (a stale d2 of the caller): the landing 0x62 (d2 = 7 for Jack, 0xA Hannah, 3 Mess, set by
+#    the animation start 0x13A0 before 0x9C0C), the punch 3 0x4F (d2 = the stale distance), the GO sound 0x3E (d2 = 1). `diff.py` prints them as "SOUND ARGUMENTS", they are not
+#    fields and need no rule here. Nothing audible depends on them that was found in 42,000 frames.

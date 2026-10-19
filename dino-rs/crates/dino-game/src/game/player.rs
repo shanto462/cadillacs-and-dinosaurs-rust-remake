@@ -67,6 +67,8 @@ pub struct Player {
     /// +$A7 facing last frame, +$AB frames since the facing changed.
     pub last_facing: u8,
     pub facing_age: u8,
+    /// +$97 frames until the next water ripple (0x60E2, Episode 2 area 1).
+    pub ripple_t: u8,
     /// +$A9 grab push-away timer / run release grace.
     pub ba9: u8,
     /// +$AA frames attack held (stops counting when bit 7 is set).
@@ -375,6 +377,25 @@ impl Game {
     fn player_height(&self, i: usize) -> i16 {
         let b = &self.players[i].b;
         b.yi().wrapping_sub(b.floor).wrapping_sub(b.floor2)
+    }
+
+    /// 0x60E2 (called from the walk, the gun walk and the run in Episode 2 area 1: G.$4D9 and G.$786 are 1): a wading hero on the ground at height 0x18 makes a
+    /// ripple (pool C class 26) every 8th frame (+$97 counts 7 .. 0). G.$4 is 0 in play, so the ripple stands 0x10 to the left of the hero.
+    pub(super) fn player_water_ripple(&mut self, i: usize) {
+        if self.w.stage != 1 || self.cam.s2.area != 1 {
+            return;
+        }
+        let p = &mut self.players[i];
+        if (p.b.wading as i8) <= 0 || p.b.airborne != 0 || p.b.yi() != 0x18 {
+            return;
+        }
+        let (t, borrow) = p.ripple_t.overflowing_sub(1);
+        p.ripple_t = t;
+        if !borrow {
+            return;
+        }
+        p.ripple_t = 7;
+        self.fx_spawn_water_ripple(Game::player_handle(i), 0);
     }
 
     /// 0x606E: water splash when falling into water (effect TODO). Only sets the done flag.
@@ -1203,7 +1224,8 @@ impl Game {
         {
             let p = &mut self.players[i];
             if p.b.wading != 0 && (p.b.yi() as u16) < 0x20 {
-                // stage 1 area 1 hook 0x60E2 (water ripples): effects TODO.
+                self.player_water_ripple(i); // 0x19304 (and 0x1C28): stage 1 area 1 hook 0x60E2
+                let p = &mut self.players[i];
                 let t = p.b80().wrapping_sub(1);
                 p.set_b80(t);
                 if t == 0xFF {
@@ -1920,7 +1942,7 @@ impl Game {
                         p.set_b80(0x14);
                         self.player_sfx(i, 0x9B60);
                     }
-                    // stage 1 area 1: 0x60E2 water ripples (effects TODO)
+                    self.player_water_ripple(i); // 0x1A05A (and 0x2934): stage 1 area 1 hook 0x60E2
                 }
             } else {
                 let t = p.b80().wrapping_sub(1);
@@ -3106,7 +3128,7 @@ impl Game {
         self.player_pmove(i);
         self.players[i].b.step += 2;
         self.player_pstep(i);
-        // 0x1C696 / 0x1F808: 0x16446 HP bar after the animation tick, before the sound 0x9796
+        // 0x1C696 / 0x1F808: 0x16446 HP bar after the animation tick, then 0x16B18 (2) (0x1C69E / 0x1F810) and the sound 0x9796
         self.hud_life_bar(i);
         self.hud_hit(Game::player_handle(i), 2); // 0x16B18(2): after the bar (0x1C696 / 0x1F808)
         self.player_sfx(i, 0x9796);

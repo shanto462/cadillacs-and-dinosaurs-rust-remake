@@ -1047,6 +1047,7 @@ impl Player {
         f.u8(0xA9, "ba9", &mut self.ba9);
         f.u8(0xAA, "atk_hold", &mut self.atk_hold);
         f.u8(0xAB, "facing_age", &mut self.facing_age);
+        f.u8(0x97, "ripple_t", &mut self.ripple_t);
         f.u8(0xAC, "run_dir", &mut self.run_dir);
         f.u8(0xAD, "atk_buf", &mut self.atk_buf);
         f.u8(0xAE, "combo_t", &mut self.combo_t);

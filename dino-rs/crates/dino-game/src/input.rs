@@ -33,6 +33,11 @@ pub const ATTACK: u8 = 0x10;
 pub const JUMP: u8 = 0x20;
 /// G.$1A bit 7: the SERVICE button.
 pub const SERVICE: u8 = 0x80;
+/// G.$18 bit 6: the coin slot 3 (the board has no other port for it; the coins G.$20 get it too). The recordings of the 3 player scripts show it
+/// in `input_p3` (re/harness/scripts/ep2_3p.txt, `3...C`).
+pub const COIN3: u8 = 0x40;
+/// G.$18 bit 7: the start button 3 (also bit 2 of G.$1A).
+pub const START3: u8 = 0x80;
 
 /// One frame of cooked input.
 #[derive(Clone, Copy, Debug, Default)]
@@ -103,6 +108,12 @@ impl Script {
                 out.system |= f.system;
                 out.coins |= f.coins;
             }
+        }
+        if out.coins & 4 != 0 {
+            out.players[2] |= COIN3;
+        }
+        if out.system & 4 != 0 {
+            out.players[2] |= START3;
         }
         out
     }
@@ -191,6 +202,12 @@ impl Inputs {
                 *p &= !(UP | DOWN);
             }
         }
+        if f.coins & 4 != 0 {
+            f.players[2] |= COIN3;
+        }
+        if f.system & 4 != 0 {
+            f.players[2] |= START3;
+        }
         f
     }
 }
@@ -206,6 +223,7 @@ mod tests {
         // player 3's start is also bit 7 of its own byte (IN2)
         assert_eq!(f.players, [RIGHT, LEFT, ATTACK | 0x80]);
         assert_eq!(f.system, 4);
+        assert_eq!(Script::parse("0:3C").at(0).players[2], COIN3);
         assert_eq!(s.at(10).coins, 1);
         let c3 = Script::parse("0:3C").at(0);
         assert_eq!((c3.coins, c3.players[2]), (4, 0x40));

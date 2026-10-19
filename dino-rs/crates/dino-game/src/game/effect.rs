@@ -884,6 +884,11 @@ impl Game {
             let b = self.body(owner);
             (b.xi(), b.zi(), b.k20)
         };
+        self.fx_spawn_water_splash_at(owner, x, z, class)
+    }
+
+    /// The same for an owner that is not in its slot (the running enemy is taken out of it): its X, depth and class are passed.
+    pub fn fx_spawn_water_splash_at(&mut self, owner: Handle, x: i16, z: i16, class: u16) -> bool {
         let Some(i) = self.fx_alloc() else { return false };
         let e = &mut self.effects.slots[i];
         e.b.live = 1;

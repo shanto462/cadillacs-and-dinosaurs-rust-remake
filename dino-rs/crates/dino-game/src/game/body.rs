@@ -60,6 +60,9 @@ pub struct Body {
     pub var26: u16,
     /// +$28 current frame.
     pub frame: FrameId,
+    /// Not an original field: the second word of the last frame record read by `load_frame` (0x1236 leaves it in d1). The Butcher's roll 0x5A1AC compares
+    /// d1 as a word whose high byte is still this (the animation step of the same frame), so the word decides when a frame was loaded.
+    pub frame_w1: u16,
     /// +$2C / +$2D / +$2E: frame bytes +4 / +5 / +6 (+$2E = frame class for collision).
     pub param_a: u8,
     pub param_b: u8,
@@ -178,6 +181,7 @@ impl Body {
     pub fn load_frame(&mut self, s: &SpriteData, id: FrameId) {
         let f = s.frame(id);
         self.frame = id;
+        self.frame_w1 = f.w1;
         self.param_a = f.param_a;
         self.param_b = f.param_b;
         self.kind = f.kind;
