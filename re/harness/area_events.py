@@ -16,6 +16,8 @@ sys.path.insert(0, HERE)
 import trace as T  # noqa: E402
 
 TRACES = os.path.join(HERE, "..", "out", "traces")
+# the port traces: PORT_OUT (default re/out/port), see port.sh
+PORT = os.environ.get("PORT_OUT") or os.path.join(HERE, "..", "out", "port")
 
 
 def events(path, limit=None):
@@ -62,6 +64,6 @@ def show(name, ev):
 
 for name in sys.argv[1:]:
     m = events(os.path.join(TRACES, name + ".mame.trc"))
-    p = events(os.path.join(TRACES, name + ".port.trc"))
+    p = events(os.path.join(PORT, name + ".port.trc"))
     show(name + " MAME", m)
     show(name + " port", p)
