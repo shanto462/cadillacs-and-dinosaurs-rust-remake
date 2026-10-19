@@ -318,4 +318,4 @@ MAME wins over the design text; the design documents themselves are not edited.
   - The 0x7C0D8 jmp into 0x1D95E is another controller (not checked here). The loader has no other caller in the listing.
   - Port: prop.rs prop_wave_wait, prop_wave_end and its type 2 branch (about line 580), script.rs script_area_end. Checked against the 68000 code: equal, no change made.
   - A new watch run from ep8_jack.txt (DINO_WATCH_WRITE=FF84DE, re/out/traces/ep8_row*) did not reproduce the episode (stage 1 area 1 at 33486), so it gives no WATCH lines for this case. ep8_watch has the same run as ep8_jack, but its record.log is gone.
-- Before 8b201fa a bot route broke two pipes at camera X 0x45F and stalled for ever (no row change there). Open: find the row trigger; until then a stall there is a known bot route problem, not fixed by a debug skip.
+- Before 8b201fa a bot route broke two pipes at camera X 0x45F and stalled for ever: no wave controller was alive there, so nothing could end the hold. Open: why the controller of that hold was gone (or never made) on that route; the current route does not reach it. Not fixed by a debug skip.
