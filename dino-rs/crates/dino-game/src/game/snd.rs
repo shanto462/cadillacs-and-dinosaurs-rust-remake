@@ -247,7 +247,7 @@ mod tests {
     /// A game whose pan table 0xA66A (48 bytes, `enemy.t`) counts 0, 1, 2 ... (synthetic: no ROM bytes).
     fn game_with_pan_table() -> Game {
         let mut a = AssetPack::default();
-        a.enemy.t = dino_assets::enemy::ByteTables { blobs: vec![(0xA66A, (0..0x30).collect())] };
+        a.enemy.t = dino_assets::enemy::ByteTables { blobs: vec![(0xA66A, (0..0x30).collect())], ..Default::default() };
         Game::new(Box::leak(Box::new(a)))
     }
 
@@ -303,7 +303,7 @@ mod tests {
         let t = vec![0, 0, 0, 1, 0x11, 0x22, 2, 0x33, 0x44];
         let mut a = AssetPack::default();
         a.text = TextData { blobs: vec![(0x96AA, t)] };
-        a.enemy.t = dino_assets::enemy::ByteTables { blobs: vec![(0xA66A, (0..0x30).collect())] };
+        a.enemy.t = dino_assets::enemy::ByteTables { blobs: vec![(0xA66A, (0..0x30).collect())], ..Default::default() };
         let mut g = Game::new(Box::leak(Box::new(a)));
         g.snd_hit(3, 0, 0);
         g.w.snd_hit_toggle = 0b10;

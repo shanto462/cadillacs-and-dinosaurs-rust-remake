@@ -172,7 +172,7 @@ mod tests {
 
     fn game() -> Game {
         let mut a = AssetPack::default();
-        a.enemy.t = ByteTables { blobs: vec![(NEAR, near_blob()), (FAR, far_blob())] };
+        a.enemy.t = ByteTables { blobs: vec![(NEAR, near_blob()), (FAR, far_blob())], ..Default::default() };
         Game::new(Box::leak(Box::new(a)))
     }
 

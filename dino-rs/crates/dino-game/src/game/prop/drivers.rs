@@ -345,7 +345,7 @@ mod tests {
 
     fn game(blobs: Vec<(u32, Vec<u8>)>) -> Game {
         let mut a = AssetPack::default();
-        a.enemy.t = ByteTables { blobs };
+        a.enemy.t = ByteTables { blobs, ..Default::default() };
         Game::new(Box::leak(Box::new(a)))
     }
 

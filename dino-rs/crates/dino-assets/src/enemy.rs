@@ -6,7 +6,8 @@
 //! does (`t.u8(0x353B6, row + aggr)`), which keeps out-of-range quirks visible.
 
 use crate::sprites::AttackRecord;
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
+use std::sync::Mutex;
 
 /// One spawn record. List 1 records are 14 bytes (`b5b`/`b96` are 0), list 2 and wave records 16.
 /// In wave scripts and boss reinforcement lists `trig` is the delay in frames.
@@ -68,11 +69,16 @@ pub struct StageScript {
     pub waves: Vec<Wave>,
 }
 
-/// Byte blobs copied from the ROM, named by start address.
+/// Byte blobs copied from the ROM, named by start address, and the whole 68000 program image as a fallback: a read that no blob
+/// covers is read from `program` (address = index, as the ROM). An empty `program` means no fallback.
 #[derive(Clone, Debug, Default)]
 pub struct ByteTables {
     pub blobs: Vec<(u32, Vec<u8>)>,
+    pub program: Vec<u8>,
 }
+
+/// The table addresses already reported as missing (debug builds print each one once).
+static MISSING: Mutex<BTreeSet<u32>> = Mutex::new(BTreeSet::new());
 
 impl ByteTables {
     fn find(&self, addr: u32) -> (&[u8], usize) {
@@ -80,6 +86,12 @@ impl ByteTables {
             if addr >= *start && ((addr - start) as usize) < data.len() {
                 return (data, (addr - start) as usize);
             }
+        }
+        if (addr as usize) < self.program.len() {
+            if cfg!(debug_assertions) && MISSING.lock().unwrap_or_else(|e| e.into_inner()).insert(addr) {
+                eprintln!("ROM table byte {addr:#x} is not in TABLES: read from the program image");
+            }
+            return (&self.program, addr as usize);
         }
         panic!("ROM table byte {addr:#x} was not extracted (add it to dino-extract/src/enemy.rs TABLES)")
     }
@@ -128,5 +140,41 @@ impl EnemyData {
     /// Speed vector of table `table` for direction `dir` (0..31).
     pub fn speed(&self, table: u32, dir: u8) -> (i16, i16) {
         self.speeds.get(&table).unwrap_or_else(|| panic!("speed table {table:#x} was not extracted"))[(dir & 31) as usize]
+    }
+}
+
+#[cfg(test)]
+mod byte_table_tests {
+    use super::ByteTables;
+
+    /// A blob covers 0x100..0x104; the program image covers 0..0x200 (test data, not ROM bytes).
+    fn tables() -> ByteTables {
+        ByteTables { blobs: vec![(0x100, vec![1, 2, 3, 4])], program: (0..0x200u32).map(|x| (x as u8) ^ 0x5A).collect() }
+    }
+
+    #[test]
+    fn a_read_inside_a_blob_comes_from_the_blob() {
+        let t = tables();
+        assert_eq!(t.u8(0x100, 2), 3);
+        assert_eq!(t.u16(0x100, 0), 0x0102);
+    }
+
+    #[test]
+    fn a_read_only_the_program_image_covers_comes_from_the_image() {
+        let t = tables();
+        assert_eq!(t.u8(0x150, 0), 0x50 ^ 0x5A);
+        assert_eq!(t.u16(0x1FE, 0), u16::from_be_bytes([0xFE ^ 0x5A, 0xFF ^ 0x5A]));
+    }
+
+    #[test]
+    #[should_panic(expected = "was not extracted")]
+    fn a_read_outside_both_panics() {
+        tables().u8(0x300, 0);
+    }
+
+    #[test]
+    fn an_empty_program_image_means_no_fallback() {
+        let t = ByteTables { blobs: vec![(0x100, vec![1])], program: Vec::new() };
+        assert_eq!(t.u8(0x100, 0), 1);
     }
 }

@@ -210,7 +210,7 @@ mod tests {
 
     fn test_game(blobs: Vec<(u32, Vec<u8>)>) -> Game {
         let mut a = AssetPack::default();
-        a.enemy.t = ByteTables { blobs };
+        a.enemy.t = ByteTables { blobs, ..Default::default() };
         let mut g = Game::new(Box::leak(Box::new(a)));
         g.w.stage = 5;
         g.cam.s2.area = 1;

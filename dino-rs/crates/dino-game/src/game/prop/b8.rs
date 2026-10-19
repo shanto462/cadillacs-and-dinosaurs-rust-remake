@@ -145,7 +145,7 @@ mod tests {
 
     fn game(recs: &[[u8; 12]], tiles: usize) -> Game {
         let mut a = AssetPack::default();
-        a.enemy.t = ByteTables { blobs: vec![(PHASE, table(recs)), (0x770F6, words(tiles))] };
+        a.enemy.t = ByteTables { blobs: vec![(PHASE, table(recs)), (0x770F6, words(tiles))], ..Default::default() };
         Game::new(Box::leak(Box::new(a)))
     }
 

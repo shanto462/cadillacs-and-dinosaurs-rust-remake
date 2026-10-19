@@ -9,7 +9,7 @@ use dino_assets::text::TextData;
 /// A game with the given ROM byte tables (`enemy.t` and `text` blobs by address).
 fn game(enemy: Vec<(u32, Vec<u8>)>, text: Vec<(u32, Vec<u8>)>) -> Game {
     let mut a = AssetPack::default();
-    a.enemy.t = ByteTables { blobs: enemy };
+    a.enemy.t = ByteTables { blobs: enemy, ..Default::default() };
     a.text = TextData { blobs: text };
     Game::new(Box::leak(Box::new(a)))
 }

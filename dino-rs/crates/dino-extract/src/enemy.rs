@@ -446,6 +446,8 @@ pub fn extract(rom: &Rom) -> EnemyData {
         }
     }
     d.t.blobs.extend(extra);
+    // Reads that no blob covers (a table the list does not name yet) read the ROM itself (`ByteTables::find`).
+    d.t.program = rom.program.clone();
     d
 }
 
