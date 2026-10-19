@@ -31,6 +31,7 @@ import argparse
 import difflib
 import fnmatch
 import os
+import re
 import struct
 import sys
 from collections import defaultdict
@@ -167,6 +168,7 @@ def main():
     ap.add_argument("--first", type=int, default=40, help="fields listed for the first differing frame")
     ap.add_argument("--field", help="print this field (key pattern) every frame it differs")
     ap.add_argument("--snd-table", action="store_true", help="per sound code: MAME (d1, d2) and port (d1, d2) counts (M4-13)")
+    ap.add_argument("--no-skip-spawn", action="store_true", help="compare the spawn frames of the probe sidecar too (default: left out, task 20)")
     ap.add_argument("--at", type=int, action="append", default=[], help="list every difference at this frame (repeatable)")
     ap.add_argument("--rom-image", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "out", "dino_68k.bin"),
                     help="68000 program image, only used to print handler addresses (optional)")
@@ -213,6 +215,19 @@ def main():
     watch = []
     at_lists = {}
 
+    # Task 20: the frames of the probe's MAME-only `spawn` notes (NAME.pokes.txt, `# frame K: spawn ...`) are left out of the compare
+    # (the spawn frame itself; the frames after it are compared). --no-skip-spawn compares them again.
+    skip_spawn = set()
+    if not args.no_skip_spawn:
+        base = os.path.basename(args.mame)
+        name = base[:-len(".mame.trc")] if base.endswith(".mame.trc") else base
+        sidecar = os.path.join(os.path.dirname(os.path.abspath(args.mame)), name + ".pokes.txt")
+        if os.path.exists(sidecar):
+            for line in open(sidecar, encoding="utf-8", errors="replace"):
+                mm = re.match(r"#\s*frame\s+(\d+):\s*spawn\b", line)
+                if mm:
+                    skip_spawn.add(int(mm.group(1)))
+    print("spawn frames not compared: " + (" ".join(str(k) for k in sorted(skip_spawn)) if skip_spawn else "none"))
     for rm, rp in zip(tm.records(), tp.records()):
         if rm.frame != rp.frame:
             print(f"frame mismatch: MAME record {rm.frame}, port record {rp.frame}")
@@ -233,6 +248,8 @@ def main():
         sounds_m = T.mame_sounds(prev_ram, mram)
         prev_ram = mram.copy()
         if f < args.start:
+            continue
+        if f in skip_spawn:
             continue
         frames += 1
         pram, pmask = rp.images["ram"], rp.images["ram_mask"].astype(bool)
