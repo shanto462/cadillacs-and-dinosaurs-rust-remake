@@ -666,10 +666,25 @@ mod tests {
         assert_eq!(enemy_damage(&t, 20, 0, 0, 0, 12, 0), 20);
     }
 
+    /// 0x6422 mercy: an overkill of 0 to 4 leaves 1 HP; 5 or more kills; at HP 1 there is no mercy.
+    #[test]
+    fn enemy_damage_mercy_edges() {
+        let t = tables();
+        // HP 12, damage 16: overkill 4 is inside the window, the hero keeps 1 HP (damage 11).
+        assert_eq!(enemy_damage(&t, 16, 0, 0, 0, 12, 0), 11);
+        // HP 12, damage 17: overkill 5, no mercy.
+        assert_eq!(enemy_damage(&t, 17, 0, 0, 0, 12, 0), 17);
+        // HP 1: the next hit kills, no mercy (damage 3 stays 3).
+        assert_eq!(enemy_damage(&t, 3, 0, 0, 0, 1, 0), 3);
+    }
+
+    /// 0xFFC8 score cap: the BCD sum saturates at 99999999 on a carry out of the top digit.
     #[test]
     fn bcd_score() {
         assert_eq!(bcd_add(0x0000_0990, 0x0000_0020), 0x0000_1010);
         assert_eq!(bcd_add(0x9999_9990, 0x0000_0100), 0x9999_9999);
+        assert_eq!(bcd_add(0x9999_9999, 0x0000_0001), 0x9999_9999);
+        assert_eq!(bcd_add(0x9999_9998, 0x0000_0001), 0x9999_9999);
     }
 }
 
@@ -733,6 +748,64 @@ mod rom_tests {
         assert_eq!(t.dizzy_mask, [0, 0, 0, 0, 0xFFF0, 0xFFFF]);
     }
 
+    /// 0x2C88E hero factors: the level 31 measurements of D2b section 5.2 (HP 100, `r` = 0, so the
+    /// HP reduction is 0). The 5.2 row value 58 is name 0 (Ferris) at level 31; the thug row
+    /// (name 9) gives 72 there, see the open item in the report.
+    #[test]
+    fn hero_damage_measured_at_level_31_from_rom() {
+        let Some(a) = rom() else { return };
+        let t = &a.player;
+        assert_eq!(t.enemy_level_scale[31], 58, "name 0 at level 31");
+        let at = |base: u8, w84: u16, level: u16, hp: u16| -> Vec<u16> {
+            (0..4).map(|chr| enemy_damage(t, base, level, w84, chr, hp, 0)).collect()
+        };
+        assert_eq!(at(8, 0, 31, 100), vec![14, 14, 15, 13], "attack id 0, base 8");
+        assert_eq!(at(6, 0, 31, 100), vec![10, 10, 10, 9], "attack id 1, base 6");
+        assert_eq!(at(6, 0, 0, 100), vec![6, 6, 6, 5], "attack id 1, base 6, level 0");
+        assert_eq!(at(8, 0, 0, 100), vec![8, 8, 8, 7], "attack id 0, base 8, level 0");
+        // HP 20 (band 0xC0, reduction word 0 is 0): HP factor 27 from the words of 0x2C996.
+        assert_eq!(t.enemy_hp_scale[2], 27, "HP 16 to 23");
+        assert_eq!(at(6, 0, 0, 20), vec![5, 5, 5, 4]);
+    }
+
+    /// 0x2C9B6: the power table `$C6` has four rows of 32 cells. The row is by HP: 75 or more
+    /// row 0, 50 to 74 row 1, 25 to 49 row 2, below 25 row 3 (`player_power_factor`).
+    /// Every row holds 32 as the most common value; the top cells grow with the lower HP.
+    #[test]
+    fn power_table_rows_from_rom() {
+        let Some(a) = rom() else { return };
+        let t = &a.player;
+        assert_eq!(t.power.len(), 128);
+        let row = |r: usize| &t.power[r * 32..r * 32 + 32];
+        let count = |r: usize, v: u8| row(r).iter().filter(|&&x| x == v).count();
+        assert_eq!([count(0, 32), count(1, 32), count(2, 32), count(3, 32)], [27, 26, 25, 22]);
+        assert_eq!(row(0)[..2], [24, 28]);
+        assert_eq!(row(0)[29..], [36, 42, 48]);
+        assert_eq!(row(1)[0], 28);
+        assert_eq!(row(3)[31], 64, "row 3 has the one 64 at the top");
+        // Every row is weighted to 32 and never drops below 24.
+        for r in 0..4 {
+            assert!(row(r).iter().all(|&x| x >= 24 && x <= 64), "row {r}");
+            assert!(count(r, 32) >= 22, "row {r}");
+        }
+    }
+
+    /// 0x6BFE: the extra life lists. The pointer word at 0x6BFE + 2 * sel gives the list; each
+    /// list is absolute BCD thresholds ending in 99999999 (never reached). sel = 2 * option
+    /// (option 0 none, 1 300000 and 700000, 2 factory 500000 and 1000000, 3 1000000 only).
+    #[test]
+    fn extra_life_lists_from_rom() {
+        let Some(a) = rom() else { return };
+        let list = |sel: u32| -> Vec<u32> {
+            let l = 0x6BFE + a.text.u16(0x6BFE, sel) as u32;
+            (0..).map(|k| a.text.u32(l, 4 * k)).take_while(|&v| v != 0x9999_9999).collect()
+        };
+        assert_eq!(list(0), Vec::<u32>::new(), "option 0: none");
+        assert_eq!(list(2), vec![0x0030_0000, 0x0070_0000], "option 1");
+        assert_eq!(list(4), vec![0x0050_0000, 0x0100_0000], "option 2, factory");
+        assert_eq!(list(6), vec![0x0100_0000], "option 3");
+    }
+
     /// 0x6BFE / G.$777B bits 5-6: the factory setting (option 2) gives one extra life at 500000 and
     /// one more at 1000000, one life per step (D2b section 1.3). The crossing runs through
     /// `hud_draw_all_scores` -> `hud_extend_check` (0x6B98).
@@ -773,4 +846,5 @@ mod rom_tests {
         g.hud_draw_all_scores();
         assert_eq!(g.players[0].lives, 2);
     }
+
 }
