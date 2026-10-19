@@ -18,7 +18,7 @@ impl Game {
     pub fn enemy_class0_part(&mut self, e: &mut Enemy, h: Handle, i: usize) {
         match e.b.mode {
             0 => self.enemy_part0_init(e, i),
-            2 => self.enemy_part0_active(e, h, i),
+            2 => self.enemy_part0_run(e, h, i),
             _ => self.enemy_part0_free(e, i),
         }
     }
@@ -84,48 +84,8 @@ impl Game {
         }
     }
 
-    /// 0x333D0: Part 0 mode 2 update.
-    fn enemy_part0_active(&mut self, e: &mut Enemy, _h: Handle, i: usize) {
-        let parent_h = e.m.w(0xA0);
-        let parent_body = self.body(parent_h).clone();
-
-        // 0x333D4: if parent dead or mode >= 4, free
-        if parent_body.hp == 0 || parent_body.mode >= 4 || parent_body.live == 0 {
-            self.enemy_part0_free(e, i);
-            return;
-        }
-
-        // 0x333E6: check parent frame class 0x0E or hit reaction (0x0202)
-        if parent_body.kind == 0x0E || (parent_body.mode == 2 && parent_body.sub == 2) {
-            if let Some(Slot::Enemy(pi)) = slot_of(parent_h) {
-                self.enemies.slots[pi].m.sb(0xC3, 0);
-            }
-            if let Some(Slot::Enemy(pi)) = slot_of(parent_h) {
-                if self.enemies.slots[pi].m.b(0xC2) != 0 {
-                    e.b.sub = 0;
-                }
-            }
-        }
-
-        // 0x33404: check parent $C3
-        let parent_c3 = if let Some(Slot::Enemy(pi)) = slot_of(parent_h) {
-            self.enemies.slots[pi].m.b(0xC3)
-        } else {
-            0
-        };
-
-        if parent_c3 == 0 {
-            // 0x33436: move.b $c3(a4), $a6(a6); rts (does not draw or push hurtable)
-            e.m.sb(0xA6, 0);
-            return;
-        }
-
-        // Parent $C3 != 0 tongue attack handling (M7-08).
-        e.m.sb(0xA6, parent_c3);
-    }
-
     /// 0x3355E: Part 0 free.
-    fn enemy_part0_free(&mut self, e: &mut Enemy, i: usize) {
+    pub(super) fn enemy_part0_free(&mut self, e: &mut Enemy, i: usize) {
         self.draw_special_free(&mut e.m); // 0x498C
         self.enemy_free_pool_a(e, i);      // 0x48FC
     }
@@ -144,7 +104,7 @@ impl Game {
                 match e.b.sub {
                     0 => self.enemy_c6_alive(e, h),
                     2 => self.enemy_c6_hit(e, h),
-                    4 => {} // 0x3A0B4 tongue grab on player (M7-08)
+                    4 => self.enemy_c6_grab_state(e, h), // 0x3A0B4
                     6 => self.enemy_grabbed(e, h), // 0x2B35A
                     _ => {}
                 }
@@ -262,7 +222,7 @@ impl Game {
         e.b.stun = 10;              // move.b #$a, $78(a6)
         e.m.sb(0x79, 0);            // clr.b $79(a6)
         e.m.sb(0x7A, 0);            // clr.b $7a(a6)
-        e.m.sb(0x7B, 0);            // clr.b $7b(a6)
+        e.b.reaction = 0;           // clr.b $7b(a6)
         e.m.sb(0x7D, 0);            // clr.b $7d(a6)
         e.m.sb(0x87, 0);            // clr.b $87(a6)
         e.b.b63 = 0;                // clr.b $63(a6)
@@ -428,7 +388,7 @@ impl Game {
                 }
                 // 0x395FA: check player proximity
                 if self.enemy_c6_check_player_near(e) {
-                    self.enemy_c6_entrance_end(e, h);
+                    e.b.sub += 2; // 0x395FA .. 0x3963E: a hero within 0x50: the sub 6
                 }
             }
             4 => {
@@ -438,13 +398,13 @@ impl Game {
                 if (t as i16) < 0 {
                     e.b.act = 6;
                 } else if self.enemy_c6_check_player_near(e) {
-                    self.enemy_c6_entrance_end(e, h);
+                    e.b.sub += 2;
                 }
             }
             6 => {
-                // 0x395EC: step 6, anim tick
+                // 0x395EC: step 6, anim tick: the end makes the sub 6 (the entrance end of the next frame)
                 if self.enemy_step(&mut e.b) {
-                    self.enemy_c6_entrance_end(e, h);
+                    e.b.sub += 2;
                 }
             }
             _ => self.enemy_c6_entrance_end(e, h),
@@ -471,9 +431,14 @@ impl Game {
     pub fn enemy_c6_entrance_end(&mut self, e: &mut Enemy, h: Handle) {
         self.enemy_c6_target_init(e); // 0x3A54C
         self.enemy_c6_slot_init(e);   // 0x3A77E, 0x3A78C
-        self.enemy_c6_reset_ai(e);    // 0x396C2
-        // 0x396C2 is the head of the wait state: it does not return after the reset but falls into 0x396DC (the wait timer, the eat check and
-        // the hop decision) in the same frame (the recording k8_walk, record 93: the Bludge from the tank is already in the hop state).
+        self.enemy_c6_enter_wait(e, h); // 0x396C2
+    }
+
+    /// 0x396C2 is the head of the wait state: it does not return after the reset but falls into 0x396DC (the wait timer, the eat check and the hop
+    /// decision) in the same frame (the recording k8_walk, record 93: the Bludge from the tank is already in the hop state). It is also the recover
+    /// entry of the hit reaction (the table 0x2B56C, name 0x40).
+    pub fn enemy_c6_enter_wait(&mut self, e: &mut Enemy, h: Handle) {
+        self.enemy_c6_reset_ai(e);
         self.enemy_c6_state_wait(e, h);
     }
 
@@ -489,35 +454,32 @@ impl Game {
     fn enemy_c6_hit(&mut self, e: &mut Enemy, h: Handle) {
         if e.b.hp != 0 && e.m.b(0xDA) != 0 {
             e.m.sb(0xDA, 0);
-            // vomit item in M7-09 (0x3B086)
+            self.enemy_c6_give_back(e); // 0x3B086: the item comes back
         }
         self.enemy_hit_reaction(e, h); // 0x2A606
     }
 
     /// 0x3A1E2: Bludge dying (mode 4).
     fn enemy_c6_dying(&mut self, e: &mut Enemy, h: Handle) {
-        match e.b.sub {
-            0 => {
-                // 0x3A1F2: award kill score 8,000
-                self.enemy_award_kill_score(&mut e.b); // 0x325E6
-                e.m.sw(0x80, 0x78);                    // 120 frames
-                e.b.sub = e.b.sub.wrapping_add(2);      // sub 2
-                // vomit items in M7-09 (0x3B086, 0x3B0D8)
-            }
-            2 => {
-                // 0x3A20A: countdown timer
-                let t = e.m.w(0x80).wrapping_sub(1);
-                if (t as i16) < 0 {
-                    e.b.mode = e.b.mode.wrapping_add(2); // mode 6
-                } else {
-                    e.m.sw(0x80, t);
-                    // Blinking on odd frame counts
-                    if (t & 1) != 0 {
-                        self.enemy_draw_check(&mut e.b, h);
-                    }
+        if e.b.sub == 0 {
+            // 0x3A1F2: the kill score 8,000, the death timer, the last eaten item comes back and the others are freed; the code falls into 0x3A20A
+            self.enemy_award_kill_score(&mut e.b); // 0x325E6
+            e.m.sw(0x80, 0x78);
+            e.b.sub = e.b.sub.wrapping_add(2);
+            self.enemy_c6_give_back(e); // 0x3B086
+            self.enemy_c6_give_all(e); // 0x3B0D8
+        }
+        if e.b.sub == 2 {
+            // 0x3A20A: the countdown, drawn on odd counts
+            let t = e.m.w(0x80).wrapping_sub(1);
+            if (t as i16) < 0 {
+                e.b.mode = e.b.mode.wrapping_add(2); // 0x3A222: mode 6
+            } else {
+                e.m.sw(0x80, t);
+                if (t & 1) != 0 {
+                    self.enemy_draw_check(&mut e.b, h); // jmp 0x49CA
                 }
             }
-            _ => {}
         }
     }
 

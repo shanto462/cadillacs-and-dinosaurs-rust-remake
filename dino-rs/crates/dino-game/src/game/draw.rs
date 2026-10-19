@@ -412,6 +412,9 @@ impl Game {
     pub fn draw_special_alloc(&mut self, caller: &mut Ram) -> Option<usize> {
         let slot = self.specials.alloc();
         caller.sw(0x98, slot.map_or(0, |i| self.specials.handle(i)));
+        if let Some(i) = slot {
+            self.specials.slots[i].b.live = 1; // the mirror of the byte +$00 (the trace tells a used block from a free one by it)
+        }
         slot
     }
 

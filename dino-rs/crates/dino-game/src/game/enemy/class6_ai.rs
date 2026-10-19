@@ -29,14 +29,15 @@ impl Game {
             _ => self.enemy_c6_reset_ai(e),
         }
 
-        // 0x396A6: jsr $12cb4.l (terrain collide, store obstacle in +$94)
+        self.enemy_c6_tail(e, h);
+    }
+
+    /// 0x396A6: the tail of the alive state and of the tongue grab: the floor (0x12CB4, the obstacle in +$94), the draw check, the list of the hurtable.
+    pub(super) fn enemy_c6_tail(&mut self, e: &mut Enemy, h: Handle) {
         if let Some(o) = self.terrain_collide(&mut e.b, h, false) {
             e.m.sw(0x94, o);
         }
-
-        // 0x396AC: jsr $49ca.l
         self.enemy_draw_check(&mut e.b, h);
-        // 0x396B2: jmp $4bea.l
         self.enemy_push_hurtable(h);
     }
 
@@ -54,9 +55,7 @@ impl Game {
         // 0x396EA: check eat (0x3AFFA, 0x3AFA4)
         self.enemy_c6_claim_item(e);
         if self.enemy_c6_check_eat(e) {
-            // 0x396F2: bcs 0x39ac8 -> state 8 (eating)
-            e.b.set_state(0x0200_0800);
-            return;
+            return self.enemy_c6_start_eat(e); // 0x396F2: bcs 0x39AC8
         }
 
         // 0x396F6: fall through into State 2
@@ -74,17 +73,23 @@ impl Game {
             true
         };
 
-        let b0 = e.m.w(0xB0).wrapping_sub(1);
-        e.m.sw(0xB0, b0);
-        if invalid || (b0 as i16) < 0 {
+        // 0x396F6: a dead target (or one in the action 0x23) retargets without counting; else `subq.w #1,$B0 ; bcc`: only a borrow retargets
+        // (+$B0 can start high: the stale bytes of the slot)
+        let mut retarget = invalid;
+        if !invalid {
+            let (b0, borrow) = e.m.w(0xB0).overflowing_sub(1);
+            e.m.sw(0xB0, b0);
+            retarget = borrow;
+        }
+        if retarget {
             e.m.sw(0xB0, 0x258); // 600 frames
             self.enemy_c6_retarget(e); // 0x3A5D2
         }
 
         // 0x39718: decision timer $AE
-        let ae = e.m.b(0xAE).wrapping_sub(1);
+        let (ae, borrow) = e.m.b(0xAE).overflowing_sub(1); // subq.b #1,$AE ; bcc: only a borrow starts the decision (+$AE can be above 0x7F)
         e.m.sb(0xAE, ae);
-        if (ae as i8) < 0 {
+        if borrow {
             if e.b.airborne != 0 {
                 e.m.sb(0xAE, 0);
             } else {
@@ -94,9 +99,13 @@ impl Game {
                     self.enemy_c6_start_attack(e);
                     return;
                 } else if self.enemy_c6_check_taunt(e) {
-                    // 0x3973C: bcs 0x39aa8 (taunt)
+                    // 0x39AA8: the taunt starts and its animation ticks in the same frame
                     e.b.set_state(0x0200_0400);
                     self.enemy_anim(&mut e.b, 3);
+                    if self.enemy_step(&mut e.b) {
+                        e.b.act = 2; // move.w #$200,$6(a6)
+                        e.b.step = 0;
+                    }
                     return;
                 } else {
                     // 0x39740: level threshold check
@@ -118,7 +127,10 @@ impl Game {
             self.enemy_c6_pick_hop_type(e);
         }
 
-        // 0x39780: step 2 update
+        // 0x39780: every later frame first asks whether a hero is within reach of the tongue (0x3AEE4 / 0x3AF64); the update of the hop type goes on after it.
+        if !first && self.c6_tongue_reach(e) {
+            self.c6_tongue_react(e);
+        }
         self.enemy_c6_step2_update(e, h, first);
     }
 
@@ -182,9 +194,7 @@ impl Game {
                 e.b.ay = -0x50;
                 self.enemy_c6_compute_dir_to_slot(e);
                 e.b.dir &= 0xFE;
-                let aa = e.m.b(0xAA).wrapping_sub(1);
-                e.m.sb(0xAA, if aa == 0xFF { 0 } else { aa }); // bcc / clr.b: a borrow (AA was 0) clears it
-                self.enemy_c6_hop_flight(e, 2);
+                self.enemy_c6_hop_flight(e, 2); // falls into 0x39896
             }
             2 => self.enemy_c6_hop_flight(e, 2),
             4 => self.enemy_c6_hop_landing(e),
@@ -209,9 +219,7 @@ impl Game {
                 e.b.ay = -0x60;
                 self.enemy_c6_compute_dir_to_slot(e);
                 e.b.dir &= 0xFE;
-                let aa = e.m.b(0xAA).wrapping_sub(1);
-                e.m.sb(0xAA, if aa == 0xFF { 0 } else { aa }); // bcc / clr.b: a borrow (AA was 0) clears it
-                self.enemy_c6_hop_flight(e, 4);
+                self.enemy_c6_hop_flight(e, 4); // falls into 0x3993E
             }
             2 => self.enemy_c6_hop_flight(e, 4),
             4 => self.enemy_c6_hop_landing(e),
@@ -233,9 +241,10 @@ impl Game {
             }
             self.enemy_step(&mut e.b); // 0x121E
         } else {
-            // Landed
+            // 0x398B6: landed: the landing code (0x398C2) runs in the same frame
             e.m.sb(0xAD, 4);
-            self.enemy_anim(&mut e.b, 2); // landing anim
+            self.enemy_anim(&mut e.b, 2);
+            self.enemy_c6_hop_landing(e);
         }
     }
 
@@ -276,8 +285,7 @@ impl Game {
                 e.b.ax = 0;
                 e.b.vz = self.enemy_c6_leap_speed(e.b.zi(), dest_z);
                 e.b.az = 0;
-
-                self.enemy_c6_leap_flight(e);
+                // 0x39A36: rts, the flight starts in the next frame
             }
             2 => self.enemy_c6_leap_flight(e),
             4 => {
@@ -304,14 +312,20 @@ impl Game {
             }
             self.enemy_step(&mut e.b); // 0x121E
         } else {
-            // Landed
+            // 0x39A50: landed: the landing animation starts and ticks in the same frame
             e.m.sb(0xAD, 4);
-            self.enemy_anim(&mut e.b, 2); // landing anim
+            self.enemy_anim(&mut e.b, 2);
+            if self.enemy_step(&mut e.b) {
+                e.m.sb(0xAA, 0xF0); // 0x39A68
+                self.enemy_c6_advance_slot(e);
+                e.b.act = 2;
+                e.b.step = 0;
+            }
         }
     }
 
     /// 0x39A7A: compute leap velocity for 44 frames flight time.
-    fn enemy_c6_leap_speed(&self, current: i16, dest: i16) -> i16 {
+    pub(super) fn enemy_c6_leap_speed(&self, current: i16, dest: i16) -> i16 {
         let diff = (current as u16).wrapping_sub(dest as u16);
         let abs_d = if (diff as i16) < 0 {
             (dest as u16).wrapping_sub(current as u16)
@@ -341,30 +355,14 @@ impl Game {
         }
     }
 
-    /// State 6 attack handler (M7-08).
-    fn enemy_c6_state_attack(&mut self, e: &mut Enemy) {
-        // Fallback for M7-07: loop back to State 2
-        e.b.act = 2;
-        e.b.step = 0;
-        e.m.sb(0x7D, 0);
-    }
-
-    /// State 8 eating handler (M7-09).
-    fn enemy_c6_state_eat(&mut self, e: &mut Enemy) {
-        // Fallback for M7-07: loop back to State 2
-        e.b.act = 2;
-        e.b.step = 0;
-        e.m.sb(0x7D, 0);
-    }
-
     /// 0x39C1A: enter attack state.
-    fn enemy_c6_start_attack(&mut self, e: &mut Enemy) {
+    pub(super) fn enemy_c6_start_attack(&mut self, e: &mut Enemy) {
         e.b.set_state(0x0200_0600);
         // 0x3ADB4: pick attack script
         let census = (self.spawn.g.alive as u16).min(6);
         let r = (self.rand() & 0x1F) as u32;
         let b4 = self.assets.enemy.t.u8(0x3ADE0, (census as u32 * 32) | r);
-        e.m.sb(0xB4, b4);
+        e.m.sw(0xB4, b4 as u16); // move.w d1,$B4(a6): a word
         e.m.sw(0xB2, (b4 as u16) << 2);
         e.m.sb(0x7D, 1);
     }
@@ -396,6 +394,12 @@ impl Game {
 
     /// 0x3A5D2: retarget when target is invalid or timer expired.
     pub fn enemy_c6_retarget(&mut self, e: &mut Enemy) {
+        // 0x3A5D2: a target in the action 0x23 (down for good) is replaced by the 0x3A66A rules: no random number with one or two heroes
+        if let Some(Slot::Player(p)) = slot_of(e.m.w(0x76)) {
+            if self.players[p].action == 0x23 {
+                return self.enemy_c6_retarget_down(e);
+            }
+        }
         let r = (self.rand() & 0xF) as u32;
         let p_count = self.enemy_c6_scan_players(e);
         let offset = self.assets.enemy.t.u16(0x3A634, p_count * 2) as u32;
@@ -417,6 +421,32 @@ impl Game {
                 break;
             }
             idx += 2;
+        }
+    }
+
+    /// 0x3A66A: the next target when the old one is down: one hero left: him (+$A8 = 0); two: the other one (no random number); three: the next or the one
+    /// after by a roll (bit 3 of `rand() & 15`).
+    fn enemy_c6_retarget_down(&mut self, e: &mut Enemy) {
+        let n = self.enemy_c6_scan_players(e);
+        match n {
+            0 => {
+                e.m.sw(0x76, e.m.w(0xA2));
+                e.m.sb(0xA8, 0);
+            }
+            1 => {
+                let d2 = e.m.b(0xA8).wrapping_add(1) & 1;
+                e.m.sw(0x76, e.m.w(0xA2 + 2 * d2 as usize));
+                e.m.sb(0xA8, d2);
+            }
+            _ => {
+                let r = self.rand() & 0xF;
+                let mut d2 = e.m.b(0xA8).wrapping_add(if r & 8 == 0 { 1 } else { 2 });
+                if (d2 as i8) > 2 {
+                    d2 = d2.wrapping_sub(3);
+                }
+                e.m.sb(0xA8, d2);
+                e.m.sw(0x76, e.m.w(0xA2 + 2 * d2 as usize));
+            }
         }
     }
 
@@ -507,7 +537,7 @@ impl Game {
     }
 
     /// 0x3AB62: adjust +$22 towards destination angle.
-    fn enemy_c6_steer_angle(&self, e: &mut Enemy) {
+    pub(super) fn enemy_c6_steer_angle(&self, e: &mut Enemy) {
         let dest_x = e.m.w(0x88) as i16;
         let dest_z = e.m.w(0x8A) as i16;
         let target_dir = Self::enemy_angle_to(&e.b, dest_x as u16, dest_z as u16); // 0x103A
@@ -522,7 +552,7 @@ impl Game {
     }
 
     /// 0x3AB94: check if reached slot (within dx 16, dz 12).
-    fn enemy_c6_arrived_at_slot(&self, e: &Enemy) -> bool {
+    pub(super) fn enemy_c6_arrived_at_slot(&self, e: &Enemy) -> bool {
         let dest_x = e.m.w(0x88) as i16;
         let dest_z = e.m.w(0x8A) as i16;
         let dx = e.b.xi().wrapping_sub(dest_x).wrapping_add(8);
@@ -554,7 +584,7 @@ impl Game {
     }
 
     /// 0x3AC9A: face target player.
-    fn enemy_c6_face_target(&self, e: &mut Enemy) {
+    pub(super) fn enemy_c6_face_target(&self, e: &mut Enemy) {
         let target_h = e.m.w(0x76);
         let target = self.body(target_h);
         e.b.facing = if target.xi() >= e.b.xi() { 1 } else { 0 };
@@ -598,69 +628,5 @@ impl Game {
         let aggr = (self.rank.aggression & 0x7) as u32;
         let threshold = self.assets.enemy.t.u8(0x3ADA4, a9 * 4 + aggr);
         r < threshold
-    }
-
-    /// 0x3AFA4: check if Bludge should eat an item.
-    fn enemy_c6_check_eat(&mut self, e: &mut Enemy) -> bool {
-        if e.m.w(0xD6) >= 8 {
-            return false;
-        }
-        let b6 = e.m.b(0xB6) as i8;
-        if b6 < 0 {
-            let total_items = self.combat.get(0x69EE).len() as u16;
-            if total_items > e.m.w(0xD8) {
-                e.m.sb(0xB6, 0);
-            }
-        }
-        if e.m.b(0xB6) != 0 {
-            return false;
-        }
-
-        let aggr = (self.rank.aggression & 0x7) as u32;
-        let threshold = self.assets.enemy.t.u8(0x3AFF2, aggr);
-        let r = (self.rand() & 0x1F) as u8;
-        if r >= threshold {
-            return false;
-        }
-
-        // 0x32762: global item check
-        self.script_floor_items(true)
-    }
-
-    /// 0x3AFFA: scan and claim the lowest-kind floor item.
-    fn enemy_c6_claim_item(&mut self, e: &mut Enemy) {
-        let mut lowest_kind = 0xFFu8;
-        let mut best_handle = 0u16;
-        let mut count = 0u16;
-
-        let list = self.combat.get(0x69EE).to_vec();
-        for &h in &list {
-            if let Some(Slot::Item(idx)) = slot_of(h) {
-                let it = &self.items.slots[idx];
-                if it.b.live == 0 {
-                    continue;
-                }
-                if it.m.w(0xA0) == 0x20A || it.m.b(0xAF) != 0 {
-                    count += 1;
-                    continue;
-                }
-                let kind = (it.m.w(0xA0) & 0xFF) as u8;
-                if kind < lowest_kind {
-                    lowest_kind = kind;
-                    best_handle = h as u16;
-                }
-            }
-        }
-
-        if count as usize == list.len() && !list.is_empty() {
-            e.m.sb(0xB6, 0xFF);
-        }
-        e.m.sw(0xD8, count);
-        e.m.sw(0xD0, best_handle);
-        if best_handle != 0 {
-            if let Some(Slot::Item(ii)) = slot_of(best_handle) {
-                self.items.slots[ii].m.sb(0xAF, 1);
-            }
-        }
     }
 }
