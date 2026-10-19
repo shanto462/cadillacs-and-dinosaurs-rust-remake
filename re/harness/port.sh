@@ -38,7 +38,15 @@ if [ -n "${POKES:-}" ]; then
     OPTS="$OPTS --poke-file $POKES"
   fi
 elif [ -f "$OUT/$NAME.pokes.txt" ]; then
-  OPTS="$OPTS --poke-file $OUT/$NAME.pokes.txt"
+  # Task 18: the probe's MAME-only `spawn` notes become RAM writes (spawn_pokes.py, pool A) in a temporary file under re/out/,
+  # so every step run replays the spawns; a sidecar without spawn notes is used as it is.
+  POKE_FILE=$OUT/$NAME.pokes.txt
+  if grep -q "spawn" "$POKE_FILE"; then
+    SPAWN_POKES=$ROOT/re/out/$NAME.spawnpokes.txt
+    "$ROOT/re/.venv/bin/python" -I "$ROOT/re/harness/spawn_pokes.py" "$OUT/$NAME.mame.trc" "$POKE_FILE" "$SPAWN_POKES" >/dev/null \
+      && POKE_FILE=$SPAWN_POKES || echo "port.sh: spawn_pokes.py failed, the sidecar is used without the spawns" >&2
+  fi
+  OPTS="$OPTS --poke-file $POKE_FILE"
 fi
 # shellcheck disable=SC2086
 ./target/release/dino-game --rom "$ROOT/dino.zip" $OPTS ${PORT_OPTS:-} \
