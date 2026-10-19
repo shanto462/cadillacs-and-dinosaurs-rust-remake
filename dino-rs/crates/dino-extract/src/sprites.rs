@@ -29,6 +29,8 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x3906A, 0x5727A, 0x57682, 0x57F44, 0x6FDEC, 0x6F8A6, 0x30750, 0x311C4,
     0x4F4E4, // Rock Hopper init 0x4DD2A (M5-10)
     0x6FB1A, // enemy bullet class 59, init 0x57FC8
+    0x2FDC6, 0x30FFC, // Walther hit / held tables, 0x2E68C / 0x2E724 +$34
+    0x43E54, // Walther, 0x425F8
     0x438F2, // Vice T. intro, 0x425B6 (M5-09)
     0x50DFA, 0x51076, // Hogg: the rider class 31 (0x4FD6A) and the bike class 32 (0x50FD0) (M6-23)
     0x55BF6, // Hogg's bomb class 42 (0x55B30) (M6-25)

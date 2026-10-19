@@ -39,7 +39,8 @@ impl Game {
     /// A stage boss takes the boss hit path. Until the real boss classes are ported only the placeholder bosses do
     /// (`placeholder.rs`, class 18 variant 0, Vice); each ported boss calls `boss_hit_entry` from its own hit code.
     fn boss_is_stage_boss(b: &super::body::Body) -> bool {
-        super::placeholder::spec_of(b.k20 / 4).is_some_and(|s| super::placeholder::boss_of(s, b.var26))
+        (b.k20 == 18 * 4 && b.var26 >> 8 == 0)
+            || super::placeholder::spec_of(b.k20 / 4).is_some_and(|s| super::placeholder::boss_of(s, b.var26))
     }
 
     /// The hit code of a boss variant 0 (Butcher's 0x38CC6 is the model: 0x3262A, then 0x32740 and 0xACEE). The hit pass
@@ -85,6 +86,7 @@ impl Game {
                 self.flow_boss_defeated(h); // 0xACEE
             }
             e.b.hp_prev = 0; // clr.w $6E
+            if e.b.k20 == 18 * 4 { self.hook_a5ea(); } // 0x43884
         }
     }
 
