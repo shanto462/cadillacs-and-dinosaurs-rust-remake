@@ -83,6 +83,10 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x8C8B6, 0x20, "car steering pairs"),
     (0x8C404, 0x19, "car body bump steps"),
     (0x8C5CC, 0x06, "car front wheel frames"),
+    // The seat drawers of the car (M6-21, 0x9704E): the offset of each seat from the car (dx, dy, dz words).
+    (0x970F6, 0x12, "car seat offsets"),
+    // The car's dust and smoke (M6-22, 0x97834): four drifts of two 16.16 longs (X, Y).
+    (0x978CE, 0x20, "car puff drifts"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {

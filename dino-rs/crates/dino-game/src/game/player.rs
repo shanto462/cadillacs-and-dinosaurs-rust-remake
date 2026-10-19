@@ -775,9 +775,15 @@ impl Game {
         p.b.airborne = 1;
         self.player_drop_place(i); // 0x62D6
         self.players[i].b.set_state(0x0200_0000);
-        self.player_drop_entry(i); // 0x1B67C (G.$518 == 0): fall in, state 0x42E
+        // In the car section (G.$518) the hero does not fall in and gets no marker bubble (0x18BF6, 0x18C0A): he is aboard at once.
+        let car = self.spawn.g.car_mode != 0;
+        if !car {
+            self.player_drop_entry(i); // 0x1B67C: fall in, state 0x42E
+        }
         self.player_count_players(); // 0x655E
-        self.fx_spawn_player_marker(i, 0); // 0x18C18
+        if !car {
+            self.fx_spawn_player_marker(i, 0); // 0x18C18
+        }
     }
 
     // ---------------------------------------------------------------------------------------

@@ -84,6 +84,12 @@ mod fx05;
 mod fx20;
 #[path = "effect/fx29.rs"]
 mod fx29;
+// Pool C classes 36 and 37 (M6-21): the Cadillac's seat drawers and the teammate who delivers it.
+#[path = "effect/fx36_37.rs"]
+mod fx36_37;
+// Pool C class 41 (M6-22): the dust and smoke of the Cadillac.
+#[path = "effect/fx41.rs"]
+mod fx41;
 use dino_assets::effect::{EffectData, RawSprite};
 use dino_assets::{FrameId, HitBox};
 
@@ -110,6 +116,9 @@ pub const FX_TALLY_WINNER: u16 = 0x88;
 pub const FX_BUBBLES: u16 = 0x14;
 pub const FX_SWEAT: u16 = 0x50;
 pub const FX_SMOKE_RING: u16 = 0x74;
+pub const FX_SEAT: u16 = 0x90;
+pub const FX_MATE: u16 = 0x94;
+pub const FX_CAR_PUFF: u16 = 0xA4;
 
 /// Hit spark animation table (0x924BE stores it in +$40).
 const SPARK_TABLE: u32 = 0x924F6;
@@ -577,6 +586,9 @@ impl Game {
                 FX_BUBBLES => self.fx_bubbles(i),
                 FX_SWEAT => self.fx_sweat(i),
                 FX_SMOKE_RING => self.fx_smoke_ring(i),
+                FX_SEAT => self.fx_seat(i),
+                FX_MATE => self.fx_mate(i),
+                FX_CAR_PUFF => self.fx_car_puff(i),
                 // TODO(port): remaining classes (handler addresses from the table at 0x237E6):
                 // 0x00 0x923E0, 0x18 0x92C9A,
                 // 0x24 0x93184, 0x28 0x932D2,

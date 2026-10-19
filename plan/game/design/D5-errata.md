@@ -358,3 +358,19 @@ MAME wins over the design text; the design documents themselves are not edited.
 - D3a s4.1 and s3.4 (poacher guard): "no guard (`+$87` stays 0)" is wrong. The class 13 init writes `+$87` = 1 and the player's hit pass calls 0x3DFC6 (table 0x10B50, `+$84` = 8 / 0x48 / 0x4C). On the ROM the chance table 0x741D4 is all 0, so it never blocks, but it draws one random number (thrown away) for every hit on a free poacher on the ground that faces its target; the arena `jump 2 0 0x400` has floor height 0x40, where the guard returns before the draw. The state 0x28 of s4.4 is the hop back after a block (0x3FBE4), never run. M6-01 / M6-02.
 - D3a s4.1 (poacher death): mode 4 sets `+$80` = 0x3C first (0x401DE), gives the score and blinks 60 frames drawn on even counts; "120 frames like class 2" is wrong. D3a s4.5 (muzzle flash): `+$24` of the flash is the NEGATED facing (0xFF for a right facing poacher). M6-02.
 - D3a s4.4 (dead states): the states 0x1A, 0x20, 0x22, 0x2E, 0x30, 0x32, 0x3A and 0x40 and the decisions 6, 7, 9 and 10 of table 1 have no live setter; the ROM table 1 (0x72A94) only holds the values 1, 2, 3, 4, 5 and 8, the far table (0x72F14) the values 1 to 7. M6-01.
+
+## The Cadillac's pool C helpers and the "car effects" of D5 M6-22 (task 5, 2026-10-19)
+
+- D3f FX28 / FX-P6 and D5 M6-22 call pool C class 36 (0x96FF4) a "radio exhaust plume" and class 37 (0x9720A) "tire burnout smoke": they are the car's **seat drawers**
+  (made three times by 0x96FD4 at the car's init, two in the 2 player layout; each draws the hero of its seat `+$A2` / `+$A3` / `+$A4` at the car plus the offsets 0x970F6) and the
+  **teammate who delivers the car** (0x971D6 at the stop: the first character not in play, jumps out with vx -0x230 / vy 0x7A0, stands, is freed 0x20 behind the camera). No sound.
+  Ported in M6-21 (`effect/fx36_37.rs`); equal to MAME in c1, c2_3p and m621_car_join.
+- "Class 32 exhaust puff" (0x96A7E) is the cloud of the ranking screen (`+$20` = 0x80, `effect/fx_cloud.rs`); its maker 0x96A56 is called only by pool B class 89 (0x8C982),
+  the cloud manager of the ranking screen (made by 0x151EC in the ranking routine 0x1516C). Both were ported in M1-07; neither belongs to Episode 3 (no class 0x80 or B89 object in
+  any Episode 3 recording, ep3_* and m600_bs_*).
+- Pool B class 90 (maker 0x8CABE, handler 0x8CAE0, chained captions) has no caller: unreachable. The `move.w #$168,$20(a0)` writes at 0x8AAAA .. 0x8AB22 are pool A class 90
+  (0x483C, the ending's explosion clouds).
+- Pool C class 10 (0x932D2) is made by the loop 0x93362 (class from d1) called only from the pool B prop handlers at 0x79146 and 0x7B1A6, not by Hogg's bike (its break is the class 21
+  shower 0x94640) or the car. The pool D objects with `+$20` = 0x28 (0x264A2, 0x6BEA4) are another pool. Not in M6-22.
+- Pool C class 41 (0x97800, made by 0x977D2) is the car's dust (palette 0x8E) and smoke: ported in M6-22 (`effect/fx41.rs`); it draws one random number at its init, so without it the
+  random order of every car recording broke at the first dust (frame 30), and now holds until the first unported class.

@@ -1,0 +1,13 @@
+# M6-21: a second player joins during the Cadillac drive (D2b section 2, open item 4: the respawn in the car has no wait, no air strike, no bubble).
+# The scene of m600_bs_c1_c1_base (radio at t = 5, the drive from t = 363), then P2: coin at 600, start at 650, confirm at 690.
+segment m621_car_join
+jump 3 0 0x300
+god on
+0 snapshot keep
+0 spawn E 9 var=0xC x=+0x60
+5-6:A
+0-1500:R
+600-607:2C
+650-655:2S
+690-695:2A
+trace 1500
