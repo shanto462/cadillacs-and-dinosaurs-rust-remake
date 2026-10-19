@@ -22,6 +22,9 @@ const EFFECT_TABLES: &[u32] = &[
     0x92BF0, // water bubbles and wake, effect $20 = 0x14 (0x92B8E), 12 animations
     0x945CC, // sweat and shock beads, effect $20 = 0x50 (0x9456E), 9 frames
     0x9664E, // ground impact smoke ring, effect $20 = 0x74 (0x965E2), 1 animation
+    0x97150, // the Cadillac's seat drawers, effect $20 = 0x90 (0x97008), 8 animations (character * 2, + 1 for the third seat)
+    0x9786E, // the Cadillac's dust and smoke, effect $20 = 0xA4 (0x97814)
+    0x972B2, // the teammate who delivers the car, effect $20 = 0x94 (0x9721E), 8 animations (jump by character, then stand)
 ];
 
 /// Frame lists loaded directly with 0x160A (10-byte records, no table).
