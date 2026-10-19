@@ -561,3 +561,19 @@ Things that were not what the first reading said (all found by the step-mode dif
 - `collide::boxes` takes a table outside the box bank as "no hit" (`try_single`): part 0 uses the table 0x337EA with indices beyond the bank in some frames; the original reads other ROM bytes there and never hits.
 - The special allocation (`draw_special_alloc`) sets `live = 1` on its slot, which the order of the two special allocations of the Bludge pair needs (the M8-20 record 92 difference).
 Check, step mode (all 8 Bludge recordings, `re/harness/m707_check.sh`): 0 fields and 0 video/sound items differ in every one. Free run (`MODE=run`): the two `_replay` recordings (2191 and 1491 frames) are equal; the other six differ from frame 7 only because the recording's spawn (Bludge, items, treasure: MAME-side pokes before the snapshot of the replay) is not made by the port (live bytes, free lists, rng): not a Bludge difference. `m800_bta7_k8_walk` (M8-20): the tongue (record 243), the special list pointer (92) and the attack decision (321) now equal MAME; what is left is the known entrance timer (+$2F one off from record 318, see M6-17) and Tyrog 2 from record 1086.
+
+## Fessenden form 2, class 84 with the parts 85 to 89 and the fire 95 (M8-30 .. M8-35, Task 14, 2026-10-19)
+- The body is never drawn by itself: after its routine (outside the grab) it takes its own entry off the top of the draw list (0x619BC, the
+  G.$67C2 / G.$67C0 pointer and count); part 85 copies its frame and draws it, and stops once the dead body sets `+$A6`.
+- The creation (0x6175A) sorts the six slot addresses with five passes of compare and exchange; the creator (form 1's object made in its
+  slot) can end up as a part, and a pool with fewer than 5 free slots retries every frame.
+- Class 95's Y step keeps the top byte of the X step in its lowest byte (`move.w (a0)+,d0; swap d0; asr.l #8,d0` with d0 still holding the X
+  step), so a ball's Y has a fraction that grows by 0xFF per frame (M f84-trace frame 519).
+- The 480 frame limit (0x629F0) and the HP fraction tests jump to the reset from inside a subroutine; the action routine goes on in the same
+  frame after the reset (its return address is still on the stack).
+- The heads' fire variant: T1 is indexed by the X distance & 0x3E0 >> 4 (a word index of dx / 32), so it covers 0 .. 1023 px; T2 adds -2, 0 or +2.
+- The death's dialogue box at `+$80` = 0x78 of step 6 is pool B class 50 variant 6 (0x8446C), not ported in prop/b50.rs (its owner list); the
+  port holds it in step mode and frees it in play. The blasts of step 0xA are pool E class 1 kind 4 with `+$5C` 0 (0x27DAA), the debris pool C
+  class 40 (0x9764E, now `effect/fx40.rs`).
+- f84-dmg frame 54: the hero's reaction to the arm strike 0x60 (hero state 0x0202, act 0x14, step 2) draws one random number more in the port
+  than in MAME (player port, not the boss); it re-syncs in step mode.

@@ -83,6 +83,9 @@ mod class74;
 mod class72;
 mod class91;
 mod class94;
+mod class84;
+mod class85_89;
+mod class95;
 mod class4;
 mod class4_states;
 // The Tyrog scene (M8-06): the actors (75) and the creature of the crate (76).
@@ -277,6 +280,12 @@ impl Game {
                 72 => self.enemy_class72(&mut e, h, i),
                 91 => self.enemy_class91(&mut e, h, i),
                 94 => self.enemy_class94(&mut e, h, i),
+                84 => self.enemy_class84(&mut e, h, i),
+                85 => self.enemy_class85(&mut e, h, i),
+                86 => self.enemy_class86(&mut e, h, i),
+                87 => self.enemy_class87(&mut e, h, i),
+                88 | 89 => self.enemy_class88(&mut e, h, i),
+                95 => self.enemy_class95(&mut e, h, i),
                 75 => self.enemy_class75(&mut e, h, i),
                 76 => self.enemy_class76(&mut e, h, i),
                 25 => self.enemy_class25(&mut e, h, i),
@@ -1918,6 +1927,7 @@ impl Game {
             0x6C => self.c72_recover(e),            // 0x5DFDE Tyrog's host (class 72)
             0x8C => self.c4_recover(e, h),          // 0x658A2 Tyrog 2 (class 91)
             0x94 => self.c94_recover(e, h),         // 0x682A2 Fessenden form 1 (class 94)
+            0x88 => self.c84_recover(e),            // 0x61A6C Fessenden form 2 (class 84)
             0x70 => self.c63_recover(e),            // 0x5ACAA the alternate Blade (class 63)
             0x74 | 0x90 => self.c64_recover(e),     // 0x5B2C4 the bomb carriers (class 64)
             0x54 => self.enemy_morgan_recover(e), // 0x51ACA

@@ -85,9 +85,7 @@ pub const SPECS: &[Spec] = &[
     // Classes 78 and 80 (M6-03), the ground critters, are real.
     // Class 79 (M6-06), the dinosaur hunter, is real.
     Spec { boss: Some(Boss { hp_row: 0, controller: false, score: true, rebirth: None, group: true }), ..walker(71, "SLISAUR", Some(0x18), false) },
-    // Class 94 (M8-27, M8-28), Fessenden form 1, is real; at its death it makes class 84. Until M8-30 class 84 is this placeholder (HP row 9,
-    // the controller, 1,000 points and the stage end).
-    Spec { boss: boss(9, true), ..walker(84, "FESSENDEN form 2", Some(0x22), false) },
+    // Classes 94 (M8-27, M8-28) and 84 with its parts 85 to 89 and the fire 95 (M8-30 .. M8-35), Fessenden, are real.
 ];
 
 /// The spec of a placeholder class, None when the port runs the class (or it has no placeholder).

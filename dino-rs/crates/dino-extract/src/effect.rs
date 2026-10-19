@@ -14,6 +14,7 @@ const EFFECT_TABLES: &[u32] = &[
     0x924F6, // hit spark, effect $20 = 4 (0x924BE)
     0x92AC0, // water splash, effect $20 = 0x10 (0x92A72)
     0x937AA, // debris, effect $20 = 0x2C (0x93590)
+    0x9770A, // Fessenden's death debris, effect $20 = 0xA0 (0x97688)
     0x951AC, // puff pieces, effect $20 = 0x54 (0x94776)
     0x944DC, // dizzy stars, effect $20 = 0x4C (0x94476)
     0x96884, // gunshot muzzle flash, effect $20 = 0x7C (0x96800), 4 animations by the gun

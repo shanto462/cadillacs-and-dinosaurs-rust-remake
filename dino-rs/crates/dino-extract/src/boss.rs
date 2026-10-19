@@ -136,6 +136,11 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x67D2C, 0x1C32, "Fessenden form 1 handler and tables"),
     (0x53034, 0x110, "Morgue grid directions"),
     (0x74F42, 0x60, "Fessenden swing waits by level"),
+    // Fessenden form 2, class 84 and its parts 85 to 89 (M8-30 .. M8-35, 0x6173E..0x64452) with the data block after them (the walk bands and
+    // points, the windows, the gate, the picker, the aims, the counter and knock down tables, 0x64AFA..0x650E0); the fire, class 95 (0x6995E,
+    // the speeds 0x69C74).
+    (0x6173E, 0x39C2, "Fessenden form 2 handlers and tables"),
+    (0x6995E, 0x3B8, "Fessenden fire handler and speeds"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {
