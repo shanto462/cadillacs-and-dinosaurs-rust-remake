@@ -31,7 +31,8 @@ impl Game {
     fn prop_b70_run(&mut self, p: &mut Prop, i: usize) {
         // 0x173C: free next frame (mode 6) when far off screen
         if self.w.vertical_scene != 0 {
-            if (p.b.xi().wrapping_add(0x80) as u16) >= 0x280 {
+            // 0x1782: |X| and Z + Y
+            if (p.b.xi().wrapping_add(0x80) as u16) >= 0x280 || (p.b.zi().wrapping_add(p.b.yi()).wrapping_add(0x80) as u16) >= 0x200 {
                 p.b.mode = 6;
             }
         } else {
