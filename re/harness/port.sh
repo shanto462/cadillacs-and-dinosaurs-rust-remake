@@ -24,12 +24,15 @@ SCRIPT=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 NAME=${2:-$(basename "$1" .txt)}
 FRAMES=${3:-600}
 OUT=$ROOT/re/out/traces
+# PORT_OUT=DIR writes the port trace there instead of next to the MAME trace (re/out/traces is shared by every worktree: two workers
+# with different code must not overwrite each other's .port / .follow / .step traces). diff.py takes both paths, so it reads either.
+PO=${PORT_OUT:-$OUT}; mkdir -p "$PO"
 cd "$ROOT/dino-rs"
 cargo build --release -q -p dino-game 2>/dev/null || cargo build --release -p dino-game
 case "${MODE:-run}" in
-  run)    OPTS="--load-state $OUT/$NAME.state";                                 TRACE=$OUT/$NAME.port.trc ;;
-  follow) OPTS="--load-state $OUT/$NAME.state --follow-rng $OUT/$NAME.mame.trc"; TRACE=$OUT/$NAME.follow.trc ;;
-  step)   OPTS="--step-from $OUT/$NAME.mame.trc";                               TRACE=$OUT/$NAME.step.trc ;;
+  run)    OPTS="--load-state $OUT/$NAME.state";                                 TRACE=$PO/$NAME.port.trc ;;
+  follow) OPTS="--load-state $OUT/$NAME.state --follow-rng $OUT/$NAME.mame.trc"; TRACE=$PO/$NAME.follow.trc ;;
+  step)   OPTS="--step-from $OUT/$NAME.mame.trc";                               TRACE=$PO/$NAME.step.trc ;;
   *) echo "MODE must be run, follow or step"; exit 1 ;;
 esac
 if [ -n "${POKES:-}" ]; then
