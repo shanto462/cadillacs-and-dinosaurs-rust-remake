@@ -171,6 +171,13 @@ mod b53;
 mod b7;
 #[path = "prop/b80.rs"]
 mod b80;
+// Episode 6 Area 0 and 1 (M8-02): door bursts (4), mine lamps (60), rain streaks and drops (55, 56).
+#[path = "prop/b4.rs"]
+mod b4;
+#[path = "prop/b60.rs"]
+mod b60;
+#[path = "prop/b55_56.rs"]
+mod b55_56;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -223,7 +230,11 @@ impl Game {
                 64 => self.prop_b64(&mut p, i),
                 2 => self.prop_b2(&mut p, i),
                 3 => self.prop_b3(&mut p, h, i),
+                4 => self.prop_b4(&mut p, i),
                 7 => self.prop_b7(&mut p, i),
+                55 => self.prop_b55(&mut p, i),
+                56 => self.prop_b56(&mut p, i),
+                60 => self.prop_b60(&mut p, i),
                 15 => self.prop_wave(&mut p, h, i),
                 22 => self.boss_controller(&mut p, i),
                 17 => self.prop_class17(&mut p, i),

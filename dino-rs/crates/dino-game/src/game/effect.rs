@@ -61,6 +61,9 @@ mod fx15;
 mod fx24;
 #[path = "effect/fx25.rs"]
 mod fx25;
+// Pool C class 2 (M8-02): falling cave dust and rain drops (0x92808).
+#[path = "effect/fx02.rs"]
+mod fx02;
 // Pool C class 11 (M5-04): the debris of broken containers and weapons.
 #[path = "effect/fx11.rs"]
 mod fx11;
@@ -72,6 +75,7 @@ use dino_assets::{FrameId, HitBox};
 
 /// Effect classes (+$20) ported here.
 pub const FX_SPARK: u16 = 0x04;
+pub const FX_CAVE_DROP: u16 = 0x08;
 pub const FX_WATER_SPLASH: u16 = 0x10;
 pub const FX_FLAMES: u16 = 0x20;
 pub const FX_BURN_PIECE: u16 = 0x3C;
@@ -525,6 +529,7 @@ impl Game {
             }
             match self.effects.slots[i].b.k20 {
                 FX_SPARK => self.fx_spark(i),
+                FX_CAVE_DROP => self.fx_cave_drop(i),
                 0x18 => self.fx_continue_flash(i),
                 0x40 => self.fx_game_over_word(i),
                 0x44 => self.fx_continue_digit(i),
@@ -546,7 +551,7 @@ impl Game {
                 FX_TALLY_FLASH => self.fx_tally_flash(i),
                 FX_TALLY_WINNER => self.fx_tally_winner(i),
                 // TODO(port): remaining classes (handler addresses from the table at 0x237E6):
-                // 0x00 0x923E0, 0x08 0x92808, 0x14 0x92B7A, 0x18 0x92C9A,
+                // 0x00 0x923E0, 0x14 0x92B7A, 0x18 0x92C9A,
                 // 0x24 0x93184, 0x28 0x932D2,
                 // 0x30 0x939D6, 0x34 0x93A7A, 0x3C 0x93E54, 0x40 0x93FFC,
                 // 0x44 0x94100, 0x48 0x942C6, 0x50 0x9454E,

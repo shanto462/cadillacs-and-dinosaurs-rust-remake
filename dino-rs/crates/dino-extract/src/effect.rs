@@ -55,6 +55,10 @@ const RAW_LISTS: &[u32] = &[
     0x96546, // the word TIME, effect $20 = 0x70 variant 0 (0x964B8)
     0x96550, // the word OVER, effect $20 = 0x70 variant 1 (0x964DA)
     0x92F3A, // ground dust, effect $20 = 0x1C (0x92EE0)
+    0x928C0, // cave dust/drops falling, effect $20 = 0x8 var 0 (0x928B0)
+    0x928DA, // same, var 4
+    0x928F4, // same, var 8
+    0x9290E, // cave dust/drops floor splash (0x92892)
 ];
 
 /// Shadow sprite list table used by the shadow pass 0x14EC0 (8 longs).
