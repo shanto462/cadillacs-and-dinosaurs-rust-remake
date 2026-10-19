@@ -683,6 +683,11 @@ mod overlay_tests {
     fn the_torch_glow_follows_the_torch_and_ends_with_it() {
         let Some(a) = rom() else { return };
         let mut g = Game::new(a);
+
+        // take every item slot first: slot 3 is written directly below, not allocated
+        for _ in 0..24 {
+            g.items.alloc();
+        }
         let torch = g.items.handle(3);
         {
             let t = &mut g.items.slots[3];

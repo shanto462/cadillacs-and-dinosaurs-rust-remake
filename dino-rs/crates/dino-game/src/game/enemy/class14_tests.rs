@@ -74,9 +74,11 @@ fn the_init_makes_the_middle_object_the_master() {
 #[test]
 fn the_init_needs_two_free_slots() {
     let mut g = game_with(Vec::new());
-    for _ in 0..23 {
+    // the object takes slot 0 from the pool: all 24 slots out, then slot 1 back as the one free slot
+    for _ in 0..24 {
         g.enemies.alloc();
     }
+    g.enemies.release(1);
     let i = 0;
     let h = arm(&mut g, i, 0);
     assert_eq!(g.enemies.free_count(), 1);

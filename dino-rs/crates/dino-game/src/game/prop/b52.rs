@@ -99,6 +99,11 @@ mod tests {
         ];
 
         let mut g = test_game(blobs);
+
+        // the test hands out a prop that is not from the pool: take every slot so index 0 is not free
+        for _ in 0..24 {
+            g.props.alloc();
+        }
         let mut p = Prop::default();
         p.b.live = 1;
         p.b.k20 = 52 * 4;
