@@ -17,10 +17,13 @@ impl Game {
             // The table 0x3C61A has only the entries 0 and 2. Any other `+$AC` (a stale word of the slot's previous object, e.g. 3 from a
             // class 20 thug, when a kill-all of the wave timer meets a drop entrance in the same frame) makes the original read the table
             // at that offset: an odd one is an address error (vector 3, 0xD0: the register dump screen, the game stops), an even one jumps
-            // into code. The port leaves the object idle for that update instead of stopping the game (D5 errata, class 10).
+            // into code. The port does not stop the game: it undoes the `addq.b #2, +$05` of the drop entrance 0x3B9CE, so the thug is back in
+            // the kill reaction (sub 2) that the kill-all check 0x326F8 put it in, and dies as the kill-all meant (D5 errata, class 10). Leaving
+            // it idle in sub 4 kept it counted for ever and its wave never ended.
             v => {
                 static ONCE: std::sync::Once = std::sync::Once::new();
-                ONCE.call_once(|| eprintln!("class 10 hold machine {v:#x}: the original stops here (address error 0xD0); the object stays idle"));
+                ONCE.call_once(|| eprintln!("class 10 hold machine {v:#x}: the original stops here (address error 0xD0); back to the kill reaction"));
+                e.b.sub = 2;
             }
         }
     }
