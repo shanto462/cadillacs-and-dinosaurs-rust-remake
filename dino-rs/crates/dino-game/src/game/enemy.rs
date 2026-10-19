@@ -9,6 +9,8 @@
 use super::body::Body;
 use super::{Game, Handle, Slot, slot_of};
 
+#[path = "boss_common.rs"]
+pub mod boss_common;
 mod claim;
 // The poachers (M6-01 / M6-02): POACHER J. / SKINNER / GUTTER.
 mod class13;

@@ -100,6 +100,22 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x4BE70, 0x161A, "Slice handler and tables"),
     (0x45082, 0x684, "boomerang handler and tables"),
     (0x9644A, 0x06, "afterimage palettes"),
+    // D3d shared bosses (M7-13): timers, aggression gates (8 x 8),
+    // and action choices (32 x 8). Only copied from the user ROM.
+    (0x5196A, 0x40, "Morgan phase timers"),
+    (0x5418A, 0x40, "Morgue phase timers"),
+    (0x36D36, 0x40, "Tyrog phase timers"),
+    (0x6575C, 0x40, "Tyrog 2 phase timers"),
+    (0x68080, 0x40, "Fessenden phase timers"),
+    (0x73B14, 0x40, "Morgan aggression gate"),
+    (0x73B54, 0x200, "Morgan action choices by AB sign"),
+    (0x73D54, 0x40, "Morgue aggression gate"),
+    (0x73D94, 0x100, "Morgue action choices"),
+    (0x74542, 0xC0, "Tyrog aggression gates by form"),
+    (0x74602, 0x300, "Tyrog action choices by form"),
+    (0x74A42, 0x40, "Fessenden aggression gate"),
+    (0x74A82, 0x100, "Fessenden action choices"),
+    (0x32D7E, 0x0E, "boss four-slot offsets including six-slot carryover"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {
@@ -118,6 +134,23 @@ pub fn extract(rom: &Rom) -> BossData {
 mod tests {
     use super::*;
     use std::path::Path;
+
+    /// 0x5196A..0x74B82: verify the registered boss tables against the
+    /// user's ROM. Expected bytes stay in the zip, never in the test source.
+    #[test]
+    fn shared_boss_tables_are_exact_runtime_copies() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../dino.zip");
+        if !path.exists() { return; }
+        let rom = Rom::load(&path).unwrap();
+        let data = crate::enemy::extract(&rom);
+        for &(addr, size, _) in TABLES {
+            let blob = data.t.blobs.iter().find(|(a, b)| *a == addr && b.len() == size as usize)
+                .unwrap_or_else(|| panic!("boss table {addr:#x} not extracted"));
+            for offset in 0..size {
+                assert_eq!(blob.1[offset as usize], rom.u8(addr + offset), "table {addr:#x}+{offset:#x}");
+            }
+        }
+    }
 
     /// Needs the user's ROM set at `../../../dino.zip` (skipped otherwise). The checks follow the group
     /// order and the thresholds of D3c section 1.7 (Vice, stage 0).
