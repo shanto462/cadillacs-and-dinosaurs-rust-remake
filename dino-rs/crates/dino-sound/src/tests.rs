@@ -68,6 +68,23 @@ fn settle(d: &mut Driver) {
     }
 }
 
+/// 0x00FB decrements memory without changing A; 0x0101 calls reset 0x0981 with A=1.
+/// Synthetic tracks keep this Z80 quirk covered without copying ROM reference writes.
+#[test]
+fn delayed_twin_resets_voice_one_then_pans_its_own_voice() {
+    let snd = synth(&[(0x10, 3, &[10])]);
+    let mut d = Driver::new(&snd, true);
+    settle(&mut d);
+    send(&mut d, 0x10, 0x0007_2010, 0x0380_0000);
+    d.take_dsp_writes();
+    for _ in 0..16 { d.tick(); }
+    let writes: Vec<_> = d.take_dsp_writes().into_iter().map(|w| (w.reg, w.value)).collect();
+    // Reset voice 1, then pan voice 11, the delayed twin of synthetic voice 10.
+    let reset = [(0xBA + 1, 0), (1 * 8 + 6, 0), (1 * 8 + 2, 0), (0x80 + 11, 0x110 + 16)];
+    assert!(writes.windows(reset.len()).any(|w| w == reset));
+    assert!(!writes.contains(&(0xBA + 11, 0)), "do not reset the twin voice");
+}
+
 /// Request with a pan and speed for the mode tests: d1 = mode<<16 | spread<<8 | pan,
 /// d2 = speed<<16 | speed2.
 fn req(mode: u8, pan: u8, spread: u8, speed: u16, speed2: u16) -> (u32, u32) {
@@ -653,12 +670,20 @@ fn check_full_writes(code: &str, frames: usize) {
 /// As [`check_full_writes`] for a request with its two longs. `code` is the trace name
 /// (the recorder adds d1 and d2 to the name when they are not 0).
 fn check_full_writes_req(code: &str, d1: u32, d2: u32, frames: usize) {
+    if !rom_path().exists() {
+        eprintln!("skipped: no user ROM");
+        return;
+    }
+    let pack = dino_extract::extract(&rom_path()).expect("dino.zip reads");
+    check_full_writes_data(&pack.sound, code, d1, d2, frames);
+}
+
+fn check_full_writes_data(snd: &SoundData, code: &str, d1: u32, d2: u32, frames: usize) -> bool {
     let Some(expected) = mame_frame_writes(code) else {
         eprintln!("skipped: no MAME trace of code {code} (set DINO_SOUND_TRACE_DIR)");
-        return;
+        return false;
     };
-    let pack = dino_extract::extract(&rom_path()).expect("dino.zip reads");
-    let mut d = Driver::new(&pack.sound, true);
+    let mut d = Driver::new(snd, true);
     settle(&mut d);
     d.take_dsp_writes();
     let code_n = u16::from_str_radix(&code[..4], 16).expect("hex code");
@@ -684,6 +709,52 @@ fn check_full_writes_req(code: &str, d1: u32, d2: u32, frames: usize) {
     }
     assert!(first.is_none());
     assert!(mine.len() >= n, "ours has fewer writes than MAME");
+    true
+}
+
+/// Sweep the runtime music headers (Z80 dispatch 0x017D, sequencer 0x0A28).
+/// The compare example checks full loops; these checks keep the first 600 frames in
+/// cargo test when the external MAME fixtures are present.
+#[test]
+fn rom_all_music_register_writes_match_mame() {
+    check_command_batch(true);
+}
+
+/// Every effect header, both fixed pan and mode 7 delayed twins (0x03C7).
+#[test]
+fn rom_all_effect_register_writes_match_mame() {
+    check_command_batch(false);
+}
+
+fn check_command_batch(music: bool) {
+    use dino_assets::sound::SoundKind;
+    if !rom_path().exists() {
+        eprintln!("skipped: no user ROM");
+        return;
+    }
+    let pack = dino_extract::extract(&rom_path()).expect("dino.zip reads");
+    let commands: Vec<_> = pack.sound.commands.iter().filter(|c| {
+        matches!(
+            (music, c.kind),
+            (true, Some(SoundKind::Music)) | (false, Some(SoundKind::Effect(_)))
+        )
+    }).collect();
+    assert_eq!(commands.len(), if music { 39 } else { 204 });
+    let expected = commands.len() * if music { 1 } else { 2 };
+    let mut checked = 0;
+    for c in commands {
+        checked += usize::from(check_full_writes_data(&pack.sound, &format!("{:04x}", c.code), 0, 0, 600));
+        if !music {
+            checked += usize::from(check_full_writes_data(
+                &pack.sound, &format!("{:04x}_00072010_03800000", c.code),
+                0x0007_2010, 0x0380_0000, 600,
+            ));
+        }
+    }
+    eprintln!("batch music={music}: checked {checked}/{expected} external MAME fixtures");
+    if std::env::var_os("DINO_SOUND_REQUIRE_BATCH").is_some() {
+        assert_eq!(checked, expected, "acceptance needs every batch fixture");
+    }
 }
 
 /// Coin 0x30 over its 240 frames: every register write (volume, pitch, pan, twin) equals MAME.

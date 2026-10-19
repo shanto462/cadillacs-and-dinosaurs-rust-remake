@@ -45,11 +45,13 @@ impl<'a> Driver<'a> {
                 let mut owned = false;
                 let delay = self.r8(s.wrapping_add(T_DELAY));
                 if delay != 0 {
-                    // 0x0101: the start delay counts down; at zero the voice is reset and panned.
+                    // 0x00F5..0x0107: DEC (IX+3F) leaves A holding the OLD delay.
+                    // At zero that old value is 1, passed to reset 0x0981. The original
+                    // resets voice 1, not the twin's voice; the pan uses F00D normally.
                     let left = delay - 1;
                     self.w8(s.wrapping_add(T_DELAY), left);
                     if left == 0 {
-                        self.voice_reset(v);
+                        self.voice_reset(delay);
                         let e = self.r8(s.wrapping_add(T_PAN));
                         self.pan_write_dbg(v, e);
                         owned = true;
