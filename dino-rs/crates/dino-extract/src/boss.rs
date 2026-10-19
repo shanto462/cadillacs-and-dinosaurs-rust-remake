@@ -87,6 +87,11 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x970F6, 0x12, "car seat offsets"),
     // The car's dust and smoke (M6-22, 0x97834): four drifts of two 16.16 longs (X, Y).
     (0x978CE, 0x20, "car puff drifts"),
+    // The bomb carriers (M6-27): the byte code lists of class 64 (0x5B318 by the variant high byte, 0x5B4D8 by the low byte) and the hand
+    // offsets of the dynamite class 77 (0x5EEE0: two tables of 16 rows of dx, dy words).
+    (0x5B326, 0x08, "bomb carrier first lists"),
+    (0x5B4E6, 0x08, "bomb carrier run lists"),
+    (0x5EF2A, 0x80, "dynamite hand offsets"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {

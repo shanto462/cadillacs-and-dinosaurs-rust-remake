@@ -212,7 +212,7 @@ impl Game {
     /// 0x4818 + the common spawn header of the drop routines: a new live object of class
     /// `class * 4` at (x, y, z) (integer words, fractions stay 0), act = 2 (spawned airborne).
     /// `None` = pool empty (the 68000 carry): the drop is lost.
-    fn item_spawn(&mut self, class_word: u16, pos: (i16, i16, i16), var: Option<u16>) -> Option<usize> {
+    pub(crate) fn item_spawn(&mut self, class_word: u16, pos: (i16, i16, i16), var: Option<u16>) -> Option<usize> {
         let j = self.items.alloc()?;
         let n = &mut self.items.slots[j];
         n.b.live = 1;

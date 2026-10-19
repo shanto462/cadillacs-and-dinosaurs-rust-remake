@@ -57,6 +57,9 @@ mod class61_states;
 mod class31;
 mod class32;
 mod class42;
+// The bomb carriers (M6-27): the carrier (64) and its dynamite (77).
+mod class64;
+mod class77;
 // The opening scene actors (M3-20): the Cadillac (16), the Episode 4 men (27) and leader (43).
 mod scene_actors;
 mod class20;
@@ -223,6 +226,8 @@ impl Game {
                 31 => self.enemy_class31(&mut e, h, i),
                 32 => self.enemy_class32(&mut e, h, i),
                 42 => self.enemy_class42(&mut e, h, i),
+                64 => self.enemy_class64(&mut e, h, i),
+                77 => self.enemy_class77(&mut e, h, i),
                 30 => self.enemy_class30(&mut e, h),
                 34 => self.enemy_class34(&mut e, h),
                 41 => self.enemy_class41(&mut e, h),
@@ -1814,6 +1819,7 @@ impl Game {
             0x18 | 0x50 => self.c14_408e8(e),       // 0x408E8 class 14
             0x08 | 0x48 | 0x4C => self.enemy_c13_3e504(e), // 0x3E504 the poachers (class 13)
             0x3C => self.c61_decide(e, h),          // 0x58D40 the Butcher (class 61)
+            0x74 | 0x90 => self.c64_recover(e),     // 0x5B2C4 the bomb carriers (class 64)
             _ => e.b.set_state(0x0200_0000),
         }
     }
