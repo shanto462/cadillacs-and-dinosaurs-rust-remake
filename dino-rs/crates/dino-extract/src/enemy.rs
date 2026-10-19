@@ -303,6 +303,21 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x85A54, 32, "prop B56: variant table 2 (0x85A54)"),
     (0x85A74, 16, "prop B56: probability table 3 (0x85A74)"),
     (0x85A84, 32, "prop B56: variant table 3 (0x85A84)"),
+    // Pool B classes 49 and 62 (M7-25): Episode 5 wall burst and fire palettes.
+    (0x84424, 40, "B49 wall burst tile codes, 4 columns of 5 (0x843C8)"),
+    (0x84454, 8, "B49 wall burst destinations by variant (0x843CC)"),
+    (0x86690, 4, "B62 hardware toggle waits (0x8666A)"),
+    (0x866EE, 44, "B62 palette dest offsets and counts (0x866BC)"),
+    (0x86720, 1, "B62 palette reload (0x86612)"),
+    (0x8672C, 0x5C, "B62 palette lanes, list pointer then dest (0x866A2)"),
+    (0x86788, 0x11E, "B62 palette phase lists (0x866B8)"),
+    (0x868A6, 0x140, "B62 inline colour sets (0x866D2)"),
+    (0xBDA52, 32, "B62 scroll2 palette phase 0 set (0x867F0)"),
+    (0xBDAD2, 32, "B62 scroll2 palette phase 0 set (0x867BC)"),
+    (0xBDC92, 32, "B62 scroll2 palette phase 0 set (0x86788)"),
+    (0xBDD52, 32, "B62 scroll2 palette phase 0 set (0x86824)"),
+    (0xBDE12, 32, "B62 scroll2 palette phase 0 set (0x8680A)"),
+    (0xC0E52, 0x1E0, "B62 scroll2 palette phases 1 to 5 (0x866D2)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {

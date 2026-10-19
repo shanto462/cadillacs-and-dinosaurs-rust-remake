@@ -60,6 +60,7 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     // The brown dinosaur (class 30, 0x4FB24) and the two pieces of the big one (class 69, 0x5C2EC).
     0x4FC22, 0x718C2,
     0x8B5E6, // pool B class 86, the Cadillac of the ranking screen (0x8B43C)
+    0x89736, // pool B class 70, decorative chief-scene rifle (0x896E6, M7-25)
     // Pool B class 19, the hero pictures of the select screen on the 2 player layout (0x7B7C6): the tables of the four cursor positions
     // (pointers at 0x7B85E; animation 0 = standing, 1 = picked).
     0x7B86E, 0x7B872, 0x7B876, 0x7B87A,

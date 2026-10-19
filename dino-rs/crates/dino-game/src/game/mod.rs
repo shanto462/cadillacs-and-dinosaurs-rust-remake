@@ -160,6 +160,8 @@ pub struct World {
     pub scroll3_base: u16,
     /// CPS-B priority masks for tile groups 0..3 (written by 0x8D92).
     pub priority_masks: [u16; 4],
+    /// CPS-B 0x800142 as written by B62 (0x8665C). Recorded, not applied to the picture (D3e open item 2).
+    pub cpsb_800142: u16,
     /// G.$16 / $17 / $18 cooked inputs of players 1-3 (active high: 1 R, 2 L, 4 D, 8 U, 0x10 attack, 0x20 jump).
     pub input: [u8; 3],
     /// G.$1A system inputs, active high: bit0..2 start 1..3 (cooked by 0x738).
