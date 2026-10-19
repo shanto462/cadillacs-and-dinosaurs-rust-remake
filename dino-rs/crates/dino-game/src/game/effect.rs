@@ -877,6 +877,12 @@ impl Game {
             let b = self.body(owner);
             (b.xi(), b.zi(), b.k20)
         };
+        self.fx_spawn_water_splash_at(owner, x, z, class)
+    }
+
+    /// `fx_spawn_water_splash` with the owner's X, depth and class given by the caller: an enemy that is being updated is taken out of its slot
+    /// (`std::mem::take`), so `body(owner)` would read an empty body (M4-19: the enemy splash at 0x2A784 / 0x2A90E / 0x2AB00 / 0x2AD1A).
+    pub fn fx_spawn_water_splash_at(&mut self, owner: Handle, x: i16, z: i16, class: u16) -> bool {
         let Some(i) = self.fx_alloc() else { return false };
         let e = &mut self.effects.slots[i];
         e.b.live = 1;

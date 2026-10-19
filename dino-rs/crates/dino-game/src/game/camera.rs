@@ -962,7 +962,7 @@ impl Game {
             s.lock78 = 1;
             s.go = 0;
             if self.w.vertical_scene != 0 {
-                self.sound(0x87);
+                self.sound_ex(0x87, 0x10, 0); // d1 = 0x10 (0x20C2C / 0x210AC / 0x2119C)
             }
         }
         let s = &mut self.cam.s2;
@@ -989,7 +989,7 @@ impl Game {
                 s.lock78 = 1;
                 s.go = 0;
                 if self.w.vertical_scene != 0 {
-                    self.sound(0x87);
+                    self.sound_ex(0x87, 0x10, 0); // d1 = 0x10 (0x20C2C / 0x210AC / 0x2119C)
                 }
                 self.area_end_wait_go();
             }
@@ -1268,7 +1268,7 @@ impl Game {
     fn mode_elevator(&mut self) {
         // Velocities live in +$14/+$16 (as i16), integrated on the 16.16 camera by 0x189C (`Scroll2::integrate`).
         if self.cam.s2.sub == 0 {
-            self.sound(0x86);
+            self.sound_ex(0x86, 0x10, 0); // d1 = 0x10 (0x21106)
             let s = &mut self.cam.s2;
             s.w14 = 0;
             s.a1a = 0;
@@ -1310,7 +1310,7 @@ impl Game {
                 s.cam_y = 0;
                 s.mode = 1;
                 s.sub = 0;
-                self.sound(0x87);
+                self.sound_ex(0x87, 0x10, 0); // d1 = 0x10 (0x20C2C / 0x210AC / 0x2119C)
                 return;
             }
         }
@@ -1450,7 +1450,7 @@ impl Game {
             s.sub += 2;
             s.go = 0;
             if self.w.vertical_scene != 0 {
-                self.sound(0x87);
+                self.sound_ex(0x87, 0x10, 0); // d1 = 0x10 (0x20C2C / 0x210AC / 0x2119C)
                 self.cam.s2.lock78 = 1;
             }
         }

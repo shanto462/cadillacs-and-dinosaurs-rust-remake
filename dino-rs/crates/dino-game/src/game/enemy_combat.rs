@@ -882,6 +882,20 @@ impl Game {
         }
     }
 
+    /// 0x606E for an enemy (a6 = the object; the shared hit reaction calls it at 0x2A784, 0x2A90E, 0x2AB00 and 0x2AD1A): an object that is
+    /// wading (+$53 > 0), in the air (+$51 != 0), moving up (+$16 < 0) and below height 0x20, and has no splash yet (+$83 == 0, +$25 bit 5
+    /// clear), gets a splash effect (pool C class 0x10) and the sound 0x9AF4 (the 0xEF / 0xF0 branch of a pool A object); +$83 is set only
+    /// when the effect object could be made (`jsr 0x4884` carry clear).
+    fn enemy_splash_check(&mut self, e: &mut Enemy, h: Handle) {
+        if e.m.b(B83) != 0 || e.b.draw_flags & 0x20 != 0 || (e.b.wading as i8) <= 0 || e.b.airborne == 0 || e.b.vy >= 0 || e.b.yi() >= 0x20 {
+            return;
+        }
+        if self.fx_spawn_water_splash_at(h, e.b.xi(), e.b.zi(), e.b.k20) {
+            e.m.sb(B83, 1);
+            self.snd_9af4_object(e.b.xi(), e.b.facing);
+        }
+    }
+
     /// 0x2A6C2 (type 4: anim 2, launch 0x2CBB0) / 0x2A84C (type 6: anim 3, launch 0x2CBC0).
     fn enemy_knockdown(&mut self, e: &mut Enemy, h: Handle, ty: u8) {
         e.b.act = ty;
@@ -907,7 +921,7 @@ impl Game {
                 e.b.step += 2;
             }
             2 => {
-                // 0x606E water splash: effects port.
+                self.enemy_splash_check(e, h); // 0x2A784 (type 6: 0x2A90E): jsr 0x606E
                 self.combat.push(0x6AC2, h);
                 e.b.motion();
                 self.enemy_screen_bounce(e);
@@ -1030,6 +1044,7 @@ impl Game {
             return;
         }
         self.combat.push(0x6B30, h); // 0x4BB0
+        self.enemy_splash_check(e, h); // 0x2AB00: jsr 0x606E
         self.combat.push(0x6AC2, h);
         e.b.motion();
         self.enemy_screen_bounce(e);
@@ -1093,7 +1108,7 @@ impl Game {
                     self.enemy_launch(e, 0x2CBD8);
                     self.item_drop_from_enemy(e);
                     if (e.b.b63 as i8) > 0 {
-                        self.sound(0x58); // 0x2ACE0: 0x97D2 (the original drops the item twice around it)
+                        self.snd_97d2(e.b.xi(), e.b.facing); // 0x2ACE0: jsr 0x97D2 (the original drops the item twice around it)
                     }
                 }
                 e.b.vz = 0;
@@ -1139,6 +1154,7 @@ impl Game {
     }
 
     fn enemy_burn_fly(&mut self, e: &mut Enemy, h: Handle) {
+        self.enemy_splash_check(e, h); // 0x2AD1A: jsr 0x606E
         self.combat.push(0x6AC2, h);
         e.b.motion();
         self.enemy_screen_bounce(e);

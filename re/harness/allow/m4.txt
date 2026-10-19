@@ -1,0 +1,142 @@
+# Approved known differences of the sound requests (M4-19: sound acceptance, request streams and the listening check).
+# One rule per line: a key pattern (fnmatch) and an optional record range, then a "# reason". Most of this file is the table of every
+# remaining difference by sound code and its cause; the few real rules are at the end of the file.
+#
+# 1. What was compared (every request is (code, d1, d2) in the frame where the original queues it, `0xA63C`; the ring is read from MAME's RAM)
+#
+#   whole episodes, `MODE=step` (the port is loaded with MAME's state before every frame, so every request is judged alone):
+#     ep1_3p, ep2_jack, ep2_3p, ep3_jack, ep3_3p, ep4_jack, ep4_3p, ep5_jack, ep5_3p, ep6_jack, ep6_3p, ep7_jack, ep7_3p, ep8_jack, ep8_3p
+#     (re/out/traces/NAME.mame.trc, scripts as in re/harness/README.md "Whole-episode recordings"; 89,531 MAME requests, 84,985 of the port)
+#     SCRIPT=NAME FRAMES=N re/harness/check.sh step NAME --snd-table     (diff.py prints the table by code and the first difference)
+#   power on, the port plays alone from the first frame (no snapshot):
+#     attract3 (the attract loop twice: boot, title, profiles, ranking, slides, movie, four demos), coinstart (coin, start, hero select,
+#     the Episode 1 opening), flow_clock_power (the Episode 1 opening, then the stage clock set to 0:13: the beep every second)
+#     dino-game --rom dino.zip [--input-file re/harness/scripts/coinstart.txt] --trace OUT --frames N
+#   the stage 1 scenarios of regress.sh (51 of 52 at 0, mp_join 3) check the same requests inside their object fields.
+#   The causes were found with a MAME run of the same recordings that logs, for every request, the call site (the return address on the
+#   stack above the enqueue 0xA63C, so the `jsr` that called the sound helper) and the registers a6, a3, a2 (the tool is in re/out/m419/tools,
+#   git-ignored: wrap.lua, rec_sndpc.sh, sndpc.py; the recordings are bit for bit the same as the old ones).
+#
+# 2. What is equal
+#
+#   attract loop (filtered as MAME): the attract filter of 0x610 drops every code but the coin 0x30 and the 0xFFxx commands while G.$4CC is 0
+#     (`snd_passes`, the request is recorded anyway). Outside the four demos the codes and the frames of all 273 request frames of the loop
+#     are equal to MAME (boot 0xFF0B / 0xFF00, title 0x88, profiles, ranking 0x80 / 0x70, slides 0x24 / 0x25, the movie 0x61 0xEA 0x73 0x75 0x36):
+#     265 of the 274 frames equal in d1 / d2 too, 8 differ only where the original leaves a register in them (section 4, "register leftover":
+#     0x24 and 0x25 of the slides, 0x61 of the movie handler), 1 is the flock round below.
+#     The test `front_end_sound_args_match_mame` (cargo test) is the same check with the random number state of MAME put in at the demo
+#     returns. A free run has one more flock round of 0x61 at 12534 because the port's demo levels draw other random numbers (rule below).
+#   select and Episode 1 start in coinstart: boot 0xFF0B, 0xFF00, title 0x88, coin 0x30, start 0x31, select music 0x00, pick 0x33, Episode 1 0x01 / 0x02,
+#     the opening sounds 0xE7 0x3B 0x79 0x4B 0x72 0xF8 0x3E: equal in code and frame (42 requests), d1 / d2 equal
+#     except the register leftovers of the select music (0x00: d1 0xFFFF, d2 0x900), of 0x02 (d2 0x4819) and of the GO arrow 0x3E (d2 0x60), and the
+#     hit mode of 0x3B.
+#   clock beep: the 8 x 0x34 (d1 0x10, d2 0) of flow_clock_power equal MAME in frame, d1 and d2 (the power on batch traces are one record
+#     later than the port's after the boot: `snd_streams.py --port-shift=-1`; the 27 beeps of m213_clock were equal since M2-13).
+#   QSound register traces (re/harness/probe/sound.sh + `dino-sound --example compare`, one headless MAME process each): the codes of these
+#     streams with their real d1 / d2 (102 triples: the 51 of the three power on streams and the 60 most frequent of the episodes; 96 effects
+#     for 900 frames, 6 music codes for 2500 frames): 0 register differences in 13,969 effect writes and 381,623 music writes.
+#     (All 39 music codes and all 204 effects with fixed pan are equal since M4-10 / M4-11, dino-sound/EXACTNESS.md.)
+#
+# 3. What was fixed in M4-19 (all found by the call site log)
+#   0xEF / 0xF0 (the water splash sound of an enemy, 0x9AF4 with +$82 != 0): 212 requests missing in Episodes 2, 6, 7 and 8. The shared
+#     enemy hit reaction called 0x606E at 0x2A784, 0x2A90E, 0x2AB00 and 0x2AD1A without the effect and the sound; `enemy_splash_check` now does both
+#     (pool C class 0x10 splash, `snd_9af4_object`). The ported-class field pairs of the step runs went down (ep8_jack 968 to 945, ep8_3p 1934 to 1913).
+#   0x86 / 0x87 (the lift, 0x20C2C, 0x210AC, 0x2119C, 0x21106): d1 is 0x10, the port sent 0 (28 requests).
+#   0x5A (taunt 0xA034): d1 is the pan byte of X, the port sent 0 (7 requests). 0x58 at 0x2ACE0 (burn knockdown): 0x97D2 arguments (1 request).
+#   the listening check as a test: `listening_check_game_mix_is_not_silent_and_does_not_clip` (dino-game audio.rs) mixes a power on run to the
+#     Episode 1 opening and a stage 1 fight through the real feed: peak 0.786 and 0.809, 0 frames above 0.9, nothing audible before the coin sound
+#     (frame 608). WAV files of 20 music codes and 25 effects (dino-sound `play` example) and of the two game mixes (`DINO_WAV_OUT=dir`):
+#     none silent, none clipped. The ear check is left to the user (the worker cannot listen).
+#
+# 4. The table of every remaining difference, by code (step runs of the 15 whole-episode recordings; counts are requests)
+#   causes:
+#     hit mode (stale a6)  0x962A (the hit sound of the attack passes) chooses mode 3 or 4 of d1 from `tst.b $24(a6)`, but a6 is not set in the
+#                          passes: it holds what an earlier routine left (a ROM table pointer such as 0x2BB4E, 0x11CC4, 0x100168, or a stale object).
+#                          The code, the frame and the pan are equal, only the pan sweep direction (mode 3 against 4) differs. a6 is a constant
+#                          per call site for 0x10A94 (0x2BB4E), 0x11132 (0x2BC4E), 0x11C0A / 0x11488 / 0x12420 (0x11CC4) and 0x12514 (0x1006D8):
+#                          MAME has mode 3 there; at the other sites it is the value of the last class filter that ran (0x10A0E `jsr (a4)`).
+#                          Not modelled (it needs the a6 of every routine that runs before the passes). 3,486 requests.
+#     register leftover    the request has the d1 / d2 that an earlier instruction left in the registers: the GO arrow 0x3E (d2 0x60, 0x70, 0x4, ...
+#                          at 0x7BC58 and 0x7BD7C), the victory jingle 0x18 (0x1E24C), the landing and pick-up voices 0x62 0xDE 0xDF 0xE0 0xE1
+#                          (0x1A8F4, 0x1B6DE, 0x465D6, 0x467A8, see D5-errata M4-17), 0x00 0x0E 0x10 0x20 0x21 0x23 0x1A 0x78 at their set up calls.
+#                          942 requests.
+#     MAME lag record      one MAME record holds the original's busy frames (up to 169 video frames in one game frame: the clear tally 0x49, the stage
+#                          end 0x6E 0xF5 0x105 0x72 0x79, the area start 0xFF00): the port runs them as many ticks, a record by record
+#                          comparison cannot pair the requests. 2,350 requests. Free runs (`MODE=run`) show the same requests a few records later
+#                          (ep3_jack: the 38 x 0x49 of record 9463 are at 9470 in the port).
+#     unported class N     the object that makes the request is of a pool A class that the port does not run yet (so it makes no sound in a step run):
+#                          class 4 Tyrog (446), 71 Slisaur (433), 36 Morgan's Uzi man (201), 91 (182), 26 (177), 94 Fessenden form 2 (172),
+#                          40 Morgue (161), 84 (136), 89 (55), 74 (41), 86 (40), 22 Brontosaurus foot (32), 95 (24), 88 (19), 6 Bludge part 1 (18),
+#                          68 (11), 7 (6), 72 (4). They belong to the class tasks of M6 to M8, not to the sound port. For a hit the victim a3 or the
+#                          attacker a2 is the unported object.
+#     other (not traced)   187 requests, listed below, each of 1 to 12 requests per code: an object of a ported class is in another state in the step
+#                          run than in MAME at that frame (a landing one frame early or late, a hit that the port does not make in that frame).
+#
+#   code   what                    differences (cause count)
+#   0000   select music            leftover 1 (d1 0xFFFF, d2 0x900 at the set up 0xAE12)
+#   0001..0009, 000C, 000D, 0011, 0013..0017, 001B  music and stingers at area starts and stage ends: MAME lag record 1 to 49 each
+#   000E   boss music              lag 3, leftover 1 (d1 8, d2 0x60 at 0x4285C)
+#   000F   boss music (class 94)   lag 4, unported class 94 2
+#   0010   boss music              leftover 3 (d1 0x64, d2 0xA at 0x4FE0E)
+#   0012   boss music              unported class 84 2
+#   0018   victory jingle          leftover 32 (d2 0x60, 0x13B0, 0x20, 0x55CE at 0x1E24C)
+#   001A   ending music            leftover 2 (d2 0xE69 at 0x8A7A4; the port sends 0x1388)
+#   0020, 0021, 0023  boss intro   lag 3 to 4 each, leftover 1 to 2 each
+#   0022, 0083  Fessenden          unported class 94 (2 and 4)
+#   002C, 0030, 0035, 0038, 003C, 0044, 004A, 004B, 006A, 006C, 006D, 006E, 0071, 0073, 0077, 007A, 007F, 0080, 0086, 0089, 008C, 008E, 0090,
+#   00A4, 00A7, 00A8, 00B8, 00C0, 00C4, 00C6, 00C7, 00C9, 00D2, 00E7, 00ED, 00EE, 00F2, 00F5, 00F7, 00F9, 00FB, 0104, 0105, FF00
+#                          (with the 19 codes above: 62 codes with lag only, 429 requests; 0x30 is the coin at the stage end, equal in the power on runs)
+#   0031   start sound             other 1 (ep8_3p f55210: a start press, 0x9D168, d1 0x10: the port makes no start sound for it)
+#   0037   other 7                 the pool B prop class 44 (0x83C8A, d1 0x72010, d2 0x2002200) sends it in Episodes 7 and 8; the port has no sender
+#   0039, 003A, 003B, 005E, 005F, 0063, 0066   hit sounds (the codes of the hit table at 0x96AA): hit mode (stale a6) 3,486 in all; unported classes
+#                          (hits by or on classes 4, 40, 71, 84, 89, 91, 94, 74, 86, 68, 26, 95, 36) 985; lag 759 (684 of them 0x66 at the stage end);
+#                          other 80 (hits with a ported victim or attacker that the port does not make in that frame: site 0x10A94 about 15, 0x11720
+#                          with a hero as victim 35, 0x11C0A 3, 0x11E38 3, 0x11F60 2, 0x11200 5, 0x1266E 3, 0x10B42 and the car passes a few);
+#                          6 requests that the port makes one frame early (0x39 4 in ep5_3p, 0x3A 2 in ep7_3p)
+#   003E   GO arrow                leftover 665 (d2 stale at 0x7BC58 and 0x7BD7C), lag 2
+#   0049   clear tally count       lag 527, other 16 (the tally counter is one frame early or late at the start: ep7_jack 53371, ep8_3p 47297)
+#   0058   enemy death voice       unported classes 4, 71, 36, 40, 94, 84 (18)
+#   0059   Butcher talk            other 9 (the talk timer of class 61 is 1 to 5 frames early in the step run: ep2_3p 16910 against 16915, 20821 against 20822)
+#   005A   taunt                   fixed (pan)
+#   0060   roar                    unported classes 94, 40, 84 (28), lag 4
+#   0062   landing voice           leftover 137 (d2 0x1F00, 0x4000 at 0x1B6DE, 0x1A8F4)
+#   0066   rumble (0x9F12) and hit  unported class 26 (107: the 0x4D824 rumble of Episodes 6 to 8), class 95 (20) and other classes in hits (62),
+#                          lag 684 (the stage end rumble), hit mode 165, other 6
+#   0069   0xA1DC                  unported classes 88 and 89 (20)
+#   006F, 00F6  wall break (0x9E60)  other 2 (the pool B class 46 break at 0x841C4 in Episode 8, not made by the port)
+#   0072, 00F8  thud (0x9796)       unported classes 708 (71, 4, 91, 94, 40, 84, 36), lag 389, other 39 (classes 2, 10, 13, 14, 20 land in another
+#                          frame or at another X in the step run; the toggle pair 0x72 / 0xF8 is taken the other way round 4 times)
+#   0076   brontosaurus foot       unported class 22 (24)
+#   0078   jungle ambience (0x8A5EC)  leftover 2 (d2 0x50000, 0x1000000)
+#   0079   enemy death voice       lag 20, unported classes 72 and 91 (7), other 3 (classes 10 and 14 in Episode 5)
+#   007B, 00FC  blocked hit pair    other 4 (0x10B42, class 14: the port takes the other code of the toggle pair)
+#   007E, 0101  boomerang spin sound (0xA21E, class 19)  lag 30, other 20 (the catch test of class 19 frees the object one frame early in the
+#                          step run of Episode 7, so the spin sound of that frame is not made)
+#   0082   Tyrog / class 91 shot    unported classes 4 (201) and 91 (49)
+#   00AD, 00B9  hero voices of player 3 at 0x1CBB4 and 0x1CC78 (Episode 8, 3 requests: the hero is hit by an unported attacker)
+#   00DC   Uzi (0x9D9C item row)    unported class 36 (102), lag 22
+#   00DE, 00DF, 00E0, 00E1  landing and pick-up voices   leftover 95 (d2 0x60 and others), lag 69
+#   00E4   blocked hit pair         other 1 (0x11CB6, class 29)
+#   FF07   music fade               lag 9, unported classes 4, 40, 71 (6), other 1 (the Vice T. defeat in ep1_3p: one frame early)
+#
+# 5. Open
+#   - the hit mode (section 4) would need the a6 left by every routine that runs before the passes. It changes only the pan sweep direction.
+#   - class 19 catch timing (Episode 7), class 61 talk timer (Episode 2) and the tally counter start are timing differences of other tasks.
+#   - the differences of unported classes go with their class tasks (M6 to M8); the list of classes is in the "unported class" cause above.
+#   - the attract filter: MAME decides at the flush (0x610, G.$4CC at that moment, one request a frame, only when the Z80 mailbox is free), the
+#     port at the request. The request streams above equal MAME in every code of the attract loop and the select, so no case showed up, but the
+#     Z80 mailbox itself (the writes to 0xF18001) was not tapped. A request queued in the frame where G.$4CC changes could differ.
+#
+# ----------------------------------------------------------------------------------------------------------------------------------
+# Rules for diff.py (--allow). They are exact frame ranges of the power on recordings above, not patterns that could hide a code mistake.
+#
+# attract3.mame.trc against a free run from power on: the sounds of the four demos (in the original they are queued but the attract filter
+# drops them; the demo levels of the port draw other random numbers, so their requests differ in timing and d1) and the ring clear of the demo
+# set up that looks like music 0.
+sounds 3343-4668
+sounds 9914-11239
+sounds 16448-17773
+sounds 23019-24344
+# the flock of the opening movie: the random number state after the first demo differs (the test with the injected value is equal), so the
+# last round of 0x61 at 12534 is made in the port and not in MAME.
+sounds 12534
