@@ -277,7 +277,7 @@ fn main() {
         let assets = load_assets(args.load_state.as_deref(), args.step_from.as_deref());
         let (load, step) = (args.load_state.as_deref(), args.step_from.as_deref());
         let follow = args.follow_rng.as_deref();
-        let start = harness::Start { boot: !args.direct, stage: args.stage, chars: &args.chars };
+        let start = harness::Start { boot: !args.direct, stage: args.stage, area: args.area, camx: args.camx, chars: &args.chars };
         let r = harness::run(assets, trace, load, step, follow, start, config, args.script.as_ref(), args.pokes, frames);
         if let Err(e) = r {
             eprintln!("error: {e}");

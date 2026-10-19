@@ -287,7 +287,7 @@ impl Game {
 }
 
 /// Items alive (pool E) from which the frame of the card's last slide out step is estimated to run over the vertical blank.
-const SLIDE_OUT_BUSY_ITEMS: usize = 8;
+pub(crate) const SLIDE_OUT_BUSY_ITEMS: usize = 8;
 
 // ------------------------------------------------------------------------------------------------------------------ the story panels
 

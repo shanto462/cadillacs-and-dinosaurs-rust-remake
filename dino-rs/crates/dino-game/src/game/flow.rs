@@ -116,6 +116,8 @@ pub struct Intro {
     pub init: bool,
     /// Where the next run goes on (a sleep inside a state routine).
     pub after: IntroAfter,
+    /// Step loader only: the record with sub 4 was seen before (the first one holds the sleep of 0xCC58, `trace.rs`).
+    pub sub4_seen: bool,
 }
 
 #[derive(Default)]

@@ -169,6 +169,9 @@ pub struct Camera {
     /// G.$868 (display_y2): the layer 2 scroll Y the hardware reads at the start of a pass (0x714). 0x71C copies the camera Y there at
     /// the start of each pass; the shake routine (0x22340..0x22368) writes camera Y + its offset on the frames it runs.
     pub display_y2: u16,
+    /// G.$860 (display_y1): the scroll1 Y the hardware reads, copied from camera Y 1 at the start of a pass (0x708); the shake routine writes
+    /// camera Y 1 + its offset on the scroll1 path (0x22356, when G.$4D9 = 6 and G.$786 = 1).
+    pub display_y1: u16,
     /// G.$7B8: scroll1 Y shadow copied when 0x22388 stops the shake.
     pub shake_scroll1_y: u16,
     /// The shadows of the last frames (see [`VIDEO_LATENCY`]).
@@ -178,7 +181,7 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         Camera { s2: Scroll2::default(), s3: Scroll3::default(), row: RowScroll::default(), car: 0, cam1_x: 0, cam1_y: 0, cam1_y_frac: 0, shake_req: 0, shake_state: 0, shake_strength: 0, shake_timer: 0, shake_sign: 0, shake_amp: 0,
-            shake_dy1: 0, shake_dy2: 0, display_y2: 0, shake_scroll1_y: 0, latch: ScrollLatch::default() }
+            shake_dy1: 0, shake_dy2: 0, display_y1: 0, display_y2: 0, shake_scroll1_y: 0, latch: ScrollLatch::default() }
     }
 }
 
@@ -216,6 +219,8 @@ impl Camera {
         let off = if self.shake_sign < 0 { self.shake_amp.wrapping_neg() } else { self.shake_amp };
         if scroll1 {
             self.shake_dy1 = off;
+            // 0x22356: move.w d0,$860(a5) with d0 = the offset + G.$6C8 (camera Y 1 of this frame)
+            self.display_y1 = self.cam1_y.wrapping_add(off as u16);
         } else {
             self.shake_dy2 = off;
             // 0x22364: move.w d0,$868(a5) with d0 = the offset + G.$748 (the camera Y of this frame)
@@ -240,7 +245,7 @@ impl Camera {
 
     /// The shadows now.
     fn scroll_now(&self) -> ScrollShadows {
-        ScrollShadows { cam1: (self.cam1_x, self.cam1_y.wrapping_add(self.shake_dy1 as u16)), s2: (self.s2.cam_x, self.display_y2), s3: (self.s3.cam_x, self.s3.cam_y) }
+        ScrollShadows { cam1: (self.cam1_x, self.display_y1), s2: (self.s2.cam_x, self.display_y2), s3: (self.s3.cam_x, self.s3.cam_y) }
     }
 
     /// The end of a frame: remember the shadows. The first call fills the whole history, so a game that
