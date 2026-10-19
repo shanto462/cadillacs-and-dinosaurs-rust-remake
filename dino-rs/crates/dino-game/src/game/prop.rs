@@ -121,6 +121,9 @@ mod b5;
 mod b6;
 #[path = "prop/b10.rs"]
 mod b10;
+// Episode 5 burning huts (M7-23, M7-24): B13, nine fire patches (0x79218).
+#[path = "prop/b13.rs"]
+mod b13;
 // Episode 5 events (M7-25): fire palettes B62, cliff no-op B48, wall burst B49, decorative rifle B70.
 #[path = "prop/b48.rs"]
 mod b48;
@@ -237,6 +240,7 @@ impl Game {
                 10 => self.prop_b10(&mut p, i),
                 11 => self.prop_b11(&mut p, i),
                 12 => self.prop_b12(&mut p, i),
+                13 => self.prop_b13(&mut p, i),
                 14 => self.prop_b14(&mut p, i),
                 1 => self.prop_b1(&mut p, h, i),
                 57 => self.prop_b57(&mut p, i),
