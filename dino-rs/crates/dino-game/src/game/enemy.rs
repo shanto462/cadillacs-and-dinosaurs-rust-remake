@@ -68,6 +68,14 @@ mod class52;
 mod class61;
 mod class61_moves;
 mod class61_states;
+// Tyrog (M8-07 / M8-08): the boss (4, states in class4_states.rs); his chest blades (74) and the bosses' fire (26) (M8-09).
+mod class26;
+mod class74;
+mod class4;
+mod class4_states;
+// The Tyrog scene (M8-06): the actors (75) and the creature of the crate (76).
+mod class75;
+mod class76;
 // Slice (M7-01 .. M7-04): the boss (25, moves in class25_ai.rs) and his boomerang (19).
 mod class19;
 mod class25;
@@ -250,6 +258,12 @@ impl Game {
                 8 => self.enemy_class8(&mut e, h, i),
                 18 => self.enemy_class18(&mut e, h, i),
                 19 => self.enemy_class19(&mut e, h, i),
+                4 => self.enemy_class4(&mut e, h, i),
+                26 => self.enemy_class26(&mut e, h, i),
+                74 => self.enemy_class74(&mut e, h, i),
+                72 => self.enemy_ph_host(&mut e, h, i), // placeholder until M8-10 (placeholder.rs)
+                75 => self.enemy_class75(&mut e, h, i),
+                76 => self.enemy_class76(&mut e, h, i),
                 25 => self.enemy_class25(&mut e, h, i),
                 20 => self.enemy_class20(&mut e, h),
                 24 => self.enemy_class24(&mut e, h, i),
@@ -1880,6 +1894,7 @@ impl Game {
             0x78 | 0x7C | 0x80 => self.c79_enter_ai(e, h), // 0x5F84C the dinosaur hunters (class 79)
             0x3C => self.c61_decide(e, h),          // 0x58D40 the Butcher (class 61)
             0x14 => self.c25_alive_start(e, h),     // 0x4C072 Slice (class 25)
+            0x64 => self.c4_recover(e, h),          // 0x36E7C Tyrog (class 4)
             0x70 => self.c63_recover(e),            // 0x5ACAA the alternate Blade (class 63)
             0x74 | 0x90 => self.c64_recover(e),     // 0x5B2C4 the bomb carriers (class 64)
             0x40 => self.enemy_c6_reset_ai(e),      // 0x396C2 Bludge (class 6)

@@ -118,6 +118,16 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x32D7E, 0x0E, "boss four-slot offsets including six-slot carryover"),
     // The Episode 3 sky blend, pool B 95 (M6-31, 0x92220): the periods by variant / 2 (0x922C8) and the target / palette address pairs (0x922D0).
     (0x922C8, 0x40, "sky blend periods and targets"),
+    // Tyrog (M8-07 / M8-08, class 4, 0x36A64..0x38DDE): the handler with its tables (the phase times 0x36D36 / 0x36D56, the waits 0x37C20,
+    // 0x38214, 0x38290, 0x3868C, the leap speeds 0x38754, the rocks 0x37ECA), the boss data block 0x74542..0x74F42 (gates, actions, sidesteps,
+    // the claw chain waits, the level delays) and the windows of 0x329B8 (0x32A28).
+    (0x36A64, 0x237A, "Tyrog handler and tables"),
+    (0x74542, 0xA00, "Tyrog gates, actions and moves"),
+    (0x32A28, 0x30, "distance class windows of 0x329B8"),
+    // The bosses' fire, class 26 (M8-09, 0x4D48A): the landing spot offsets 0x4D49E / 0x4D51E; the chest blades, class 74 (0x5E4F4): the spark
+    // offsets 0x5E6D4.
+    (0x4D49E, 0x100, "boss fire landing spots"),
+    (0x5E6D4, 0x20, "chest blade spark offsets"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {
