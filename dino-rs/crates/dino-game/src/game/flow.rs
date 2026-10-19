@@ -47,6 +47,8 @@ pub mod ranking;
 pub mod scene;
 #[path = "flow/select.rs"]
 pub mod select;
+#[path = "flow/skip.rs"]
+pub mod skip;
 #[path = "flow/slides.rs"]
 pub mod slides;
 #[path = "flow/system.rs"]
@@ -191,6 +193,8 @@ pub struct Flow {
     pub game_clock: bool,
     /// The last `flow_frame` used up a lag frame (no task ran in it).
     pub lag_tick: bool,
+    /// The skip wait task 0x9E38C was active in the last tick (`skip.rs`): the tick ran extra rounds of the tasks.
+    pub skip_tick: bool,
     /// The phase of 0xAC4E that the character select is in after its fade out (`select.rs`, `flow_stage_start_staged`); 0 = not in it.
     pub select_exit: u8,
     /// The globals of the scripted control (`script.rs`): G.$4D8, G.$4DF, G.$4EC.., G.$4FD, G.$503, G.$514, G.$516.
@@ -299,14 +303,7 @@ impl Game {
     pub fn flow_frame(&mut self) {
         self.flow_coin_isr(); // the interrupt: 0x9D4BE reads the coin inputs before the tasks
         self.flow.lag_tick = false;
-        if self.flow.intro.after == IntroAfter::SlideOutEnd {
-            // The last two instructions of the card's slide out (0xCC4C: `addq.b #2, sub`, `clr.b $4E2`) ran over the vertical blank: they are
-            // the first thing of this frame, before the system task and the game task (which sees G.$4E2 clear), and the task's sleep follows.
-            self.flow.intro.after = IntroAfter::Loop;
-            self.flow.intro.sub = self.flow.intro.sub.wrapping_add(2);
-            self.flow.b4e2 = 0;
-            self.flow.intro.sleep = 2;
-        }
+        self.flow_round_start();
         if self.flow.lag > 0 {
             self.flow.lag_tick = true;
             // a task keeps the CPU through this video frame: no task runs (the next vertical blank only runs the interrupts)
@@ -316,6 +313,30 @@ impl Game {
             self.flow.front.prev_system = self.w.system;
             return;
         }
+        self.flow_tasks();
+        // The vertical blank of the next frame copies G.$16..18 to G.$1B..1D and G.$1A to G.$1F
+        // (0x738) before it reads the new inputs, so during a task the "previous" bytes are the
+        // inputs of the frame before.
+        self.flow.front.prev_input = self.w.input;
+        self.flow.front.prev_system = self.w.system;
+        self.flow.front.ticks = self.flow.front.ticks.wrapping_add(1);
+    }
+
+    /// What a round of the tasks does before the first task (a frame, or an extra round of the skip wait, `skip.rs`).
+    pub(super) fn flow_round_start(&mut self) {
+        if self.flow.intro.after == IntroAfter::SlideOutEnd {
+            // The last two instructions of the card's slide out (0xCC4C: `addq.b #2, sub`, `clr.b $4E2`) ran over the vertical blank: they are
+            // the first thing of this frame, before the system task and the game task (which sees G.$4E2 clear), and the task's sleep follows.
+            self.flow.intro.after = IntroAfter::Loop;
+            self.flow.intro.sub = self.flow.intro.sub.wrapping_add(2);
+            self.flow.b4e2 = 0;
+            self.flow.intro.sleep = 2;
+        }
+    }
+
+    /// One round of the tasks of the flow, in task slot order (the kernel's scan 0x844: every task that is ready runs once). A normal frame has one round;
+    /// the skip wait task (`skip.rs`) makes more.
+    pub(super) fn flow_tasks(&mut self) {
         self.flow_system_task(); // slot 0
         if self.flow.in_game != 0 {
             self.flow_join_task(); // slot 0x10
@@ -326,12 +347,6 @@ impl Game {
         }
         self.flow_intro_task(); // slot 0x30
         self.flow_tally_task(); // slot 0x30
-        // The vertical blank of the next frame copies G.$16..18 to G.$1B..1D and G.$1A to G.$1F
-        // (0x738) before it reads the new inputs, so during a task the "previous" bytes are the
-        // inputs of the frame before.
-        self.flow.front.prev_input = self.w.input;
-        self.flow.front.prev_system = self.w.system;
-        self.flow.front.ticks = self.flow.front.ticks.wrapping_add(1);
     }
 
     // ---------------------------------------------------------------- game task 0xA870

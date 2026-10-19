@@ -100,14 +100,7 @@ impl Scene {
         self.sleep = counter;
     }
 
-    /// The skip-wait task 0x9E38C (slot 0xF0), which runs after all other tasks: while scripted
-    /// control is on and a present player holds attack or jump it takes one more frame off every
-    /// sleeping task (a task whose counter reaches 0 becomes ready and runs next frame).
-    pub fn speed_up(&mut self) {
-        if self.live && !self.suspended && self.sleep > 0 {
-            self.sleep -= 1;
-        }
-    }
+    // The skip-wait task 0x9E38C (hold attack or jump in a scripted scene) is `skip.rs`: it makes extra rounds of the tasks instead of touching the counters.
 
     /// Kernel call 0x92E (kill) or the end of the script (trap 1).
     pub fn kill(&mut self) {
@@ -171,25 +164,6 @@ mod tests {
         s.tick();
         s.sleep(0x103); // low byte 3
         assert_eq!((0..4).map(|_| s.tick()).collect::<Vec<_>>(), vec![false, false, true, true]);
-    }
-
-    /// The skip-wait task takes one more frame off a sleeper each frame, so a long sleep passes
-    /// at double speed while a button is held: counter 10 goes 9, 8 (skip), 7, 6, 5, 4, 3, 2, 1, 0
-    /// in 5 frames and the task runs in the 6th.
-    #[test]
-    fn speed_up_halves_a_sleep() {
-        let mut s = Scene::start(0);
-        s.tick();
-        s.sleep(10);
-        let mut frames = 0;
-        loop {
-            frames += 1;
-            if s.tick() {
-                break;
-            }
-            s.speed_up();
-        }
-        assert_eq!(frames, 6);
     }
 
     #[test]

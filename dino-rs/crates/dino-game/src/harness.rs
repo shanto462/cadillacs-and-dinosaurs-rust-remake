@@ -589,8 +589,13 @@ pub fn run(
         game.tick();
         // a game clock recording leaves out the video frames a game frame overran: one record spans the pass that overran, the frames of
         // the lag and the pass after them
-        while game.flow.game_clock && (game.flow.lag > 0 || game.flow.lag_tick || game.flow.ending.cont.is_some()) {
+        // A skip (hold attack or jump in a scripted scene, `flow/skip.rs`) keeps the CPU busy: its area change is one record (at most 64 ticks).
+        let mut joined = 0;
+        while game.flow.game_clock
+            && (game.flow.lag > 0 || game.flow.lag_tick || game.flow.ending.cont.is_some() || (game.skip_join_more() && joined < 64))
+        {
             game.tick();
+            joined += 1;
         }
         pokes.apply(&mut game, k as i32, true)?; // power clock: after the tick, before the record
         tw.record(&mut game, k as i32)?;

@@ -799,3 +799,34 @@ Tools: `re/harness/link_check.sh [NAME ...]` (`STORY_ONLY=1` stops at the first 
   `m516_torch_jack` equal MAME in all 374 records (before: 2 sprites missing in every record: the glow). `m800_a21_c_flame_*`, `m800_a22_c_flame_enemy` have no class 8 or class 15 difference. Of the 69 scenarios with flames or pieces
   `cmp_fx.py` finds a difference in 13: flames whose owner is a frozen unported class (Episode 3: the flame sits where its owner stood), lag records and first frames of objects an unported class made. What is left in the torch rows is the
   sound 0x72 call that MAME makes at record 107 (the burn thud, not called: sound call site). regress.sh 51 of 52 at 0, `mp_join` 3; autoplay reaches mode 0x1C (frame 203774).
+
+### The Episode 1 area end that finishes early in `m517_ep1_jack` (found 2026-10-17): the skip wait task 0x9E38C, not the fade
+
+M4-16 saw, in `m517_ep1_jack` (also in `ep6_jack` and, in part, `ep7_3p`), the area change of Episode 1 area 0 -> 1 five records after the fade-out started (fade at record 2363, area load and music 0x03 at 2368),
+where the port (and every other recording: `scan_fade.py`, 55 fades) needs 15 records and loads at 2378. **It is not a fade timing bug.** In MAME the record 2368 is a lag record of 14 vblanks (vblank 4162 -> 4176) in
+which G.$0 jumps by 43 (3576 -> 3619), and the fade-out steps 0xA..0 of G.$44B run 2.2 a vblank (video frames 4232 .. 4236, `DINO_WATCH_WRITE=FF844A`: every write by the fade task 0x8840 at pc 0x889E, delay G.$44C = 1
+the whole time, one IRQ per video frame: `FF0152`). The input script has `2368-2369:1A`: Jack presses attack in exactly that record, and the same happens in `ep6_jack` (`18284-18284:1RUAJ` = the record the fade ends) and
+`ep7_3p` (A at 12306 and 12317, during its 20 record fade). `ep2_jack` has an A press inside its fade (15089) and a normal 15 record fade: there G.$4D8 is 0.
+
+The cause is the **skip wait task** 0x9E38C (a task that yields every pass: `jsr 0x9B6`): while G.$4CC (in a game) is set, G.$4D8 bit 0 is set (the scripted control: set by the script at 0x1DEA0, cleared at 0x1E2C2; the Episode 1 area
+end is a scripted walk) and a present hero's input byte (G.$16 / $17 / $18) has attack or jump (mask 0x30), it does what the IRQ does to the sleeping tasks (state 1: counter - 1, at 0 state 4) **in every scheduler
+pass**. Every `sleep(n)` of every task then ends after about n passes, not n vblanks: the fade task steps once a round, the game task (`0xA914`: `sleep(G.$4D6 & 15)`) runs a game frame every round (that is why G.$0 jumps by 43 in 14
+vblanks: about 3 rounds a vblank, the number depends on the CPU time of a frame; the fade went 2.2 steps a vblank), the system task and the others too. So holding attack or jump during a scripted scene fast forwards the scene.
+**Ported (2026-10-19, `flow/skip.rs`).** `Game::tick` makes up to `SKIP_ROUNDS` = 3 rounds while `skip_wait_active()` holds (in a game, G.$4D8 bit 0, a present hero's input & 0x30): the first round is the normal
+frame (`flow_frame`: the coin interrupt, the first round of the tasks), each extra round is `flow_round_start` + `flow_tasks` (system, join, game, intro and tally tasks) + `run_fade_task`; not repeated: the interrupt
+work, the input `prev` bytes and the display latches. A task that took the CPU for a frame (`flow.lag`) ends the rounds. `Scene::speed_up` (one extra decrement a frame, an earlier guess) is gone.
+* **The CPU time limit (written down on purpose).** How many rounds fit in a vblank is the CPU time of one round, not a number in the code. Measured in the recordings (G.$0 per vblank in the skip records): 2.2 for the fade steps
+  of `m517_ep1_jack` (11 steps in 5 vblanks), 3.1 for its whole lag record (43 game frames in 14 vblanks, with the area setup), 4.0 for `ep6_jack` (139 in 35), 3.2 and 3.6 for the two records of `ep7_3p` at 12292 / 12293 (103 in
+  32, 68 in 19), 6 for the light record 2369 of `m517_ep1_jack` (6 in 1) and 1.7 for `ep7_3p` 12306 (15 in 9). The port uses a fixed 3: scenes skip about three times as fast, a fade of 16 steps is over in 6 ticks. The G.$0 of
+  the port then differs from MAME's after a skip (the area setup of 0x20766 costs MAME about 20 more rounds that the port does not model, and the light frames do more than 3), so every `G.$0 & 1` rule
+  (flicker, `G.$0 + d7` floor checks) can be a frame off until the next resync. Record exact frames after a skip are not possible without a CPU time model.
+* **The game clock records** (`DINO_GAME_CLOCK`, `harness.rs`): the recorder cuts a record at an interrupt only when no task of the slots 0 to 14 is ready or running (`lagging()` in `record.lua`), so a skip that keeps the CPU
+  busy gives one long record. The harness joins the ticks of a skip while the area change is in progress (`skip_join_more`: the fade task runs, or the camera is in mode 1 sub 4, 6 or 8; at most 64 ticks), which is what
+  the recordings show. Any other skip is one record a tick.
+* **Result.** Cut at record 2355 of `m517_ep1_jack` (`trace_slice.py`, the input shifted by `shift_script.py`) and run free with `DINO_GAME_CLOCK=1`: the fade, the camera sub state, the area byte and G.$4D8 equal MAME in
+  every record, the area change (area 1, camera 04.02) is in record 2368 like MAME's (before: record 2378); `ep6_jack` cut at 18265: all 30 records equal in fade, camera, area and G.$4D8, area 1 loaded in record 18284 (before: 16 records
+  later). `ep7_3p` cut at 12290 runs apart for another reason (the port's wave does not end: the camera stays in mode 4), but its skip records 12292 / 12293 run 3 rounds. The 58 area end fade windows in step mode (`re/out/m5fx/fade_windows.py`,
+  8 records before to 82 after each fade): 49 give the same numbers with the skip and with `SKIP_ROUNDS` = 1; of the 9 that change 6 are better (`ep2_3p` 115 to 113 and 117 to 111, `ep4_jack` 56 to 48, `ep7_3p` 100 to 98, `m800_a14_n_e7a1_full` 84 to 83,
+  `m328_e4a0n` 84 to 83) and 3 are worse (`ep4_3p` +2, `m328_e4a1n` +3 and `m517_ep1_jack` +43: the step mode loads MAME's state each record and runs one tick, the records 2368 / 2369 had 43 and 6 rounds in MAME, the port 3 and 3, so
+  more fields of the heroes and the pools differ by their RNG draws; the run mode above is the real check). The link scenes (`link_check.sh`) are the same as before (ep2, ep4, ep6, ep8 and the 24 panel recordings equal, ep3 915, ep5 442, ep7 991).
+Tools: `re/out/m5fx/scan_fade.py` (all area end fades and their lengths), `areaend.py`, `g0rate.py` (G.$0 and vblanks per record), `shift_script.py`, `cmp_run.py`, `fade_windows.py` (git-ignored scratch).

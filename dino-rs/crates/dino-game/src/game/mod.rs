@@ -294,6 +294,7 @@ impl Game {
         self.w.snd_reqs.clear();
         self.flow_frame();
         self.run_fade_task();
+        self.skip_wait_rounds(); // 0x9E38C: the extra rounds of a scripted scene while a hero holds attack or jump
         // the video hardware shows the scroll and the sprite list of two frames ago (`camera::VIDEO_LATENCY`)
         self.cam.latch_scroll();
         self.sprites.latch();
