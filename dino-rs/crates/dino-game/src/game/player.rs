@@ -2666,6 +2666,8 @@ impl Game {
             }
             self.player_panim(i, 2, 6);
             self.player_sfx(i, 0x98CC);
+            // 0x1CBC2 / 0x1FD06: 0x16446 HP bar after the face icon
+            self.hud_life_bar(i);
             let p = &mut self.players[i];
             p.action = 0x20;
             p.b.step = 2;
@@ -2813,6 +2815,8 @@ impl Game {
                     self.players[i].slow = 2;
                     self.player_sfx(i, 0x986C);
                 }
+                // 0x1C266 / 0x1C446 (copies 0x1F3E0 / 0x1F5BC): 0x16446 HP bar after the face icon, before the state set-up
+                self.hud_life_bar(i);
                 self.player_kd_common(i);
                 self.player_kd_air1(i, kind);
             }
@@ -2940,6 +2944,8 @@ impl Game {
                     p.slow = 2;
                     self.player_sfx(i, 0x986C);
                 }
+                // 0x1CC90 / 0x1FDD4: 0x16446 HP bar, then the state set-up
+                self.hud_life_bar(i);
                 self.player_kd_common(i);
                 self.player_kb_air1(i);
             }
@@ -3078,6 +3084,8 @@ impl Game {
         self.player_pmove(i);
         self.players[i].b.step += 2;
         self.player_pstep(i);
+        // 0x1C696 / 0x1F808: 0x16446 HP bar after the animation tick, before the sound 0x9796
+        self.hud_life_bar(i);
         self.player_sfx(i, 0x9796);
     }
 
@@ -3206,6 +3214,8 @@ impl Game {
                 p.b.vz = 0;
                 p.b.az = 0;
                 self.player_sfx(i, 0x98CC);
+                // 0x1C9B4 / 0x1CB16 (copies 0x1FB1E / 0x1FC5A): 0x16446 HP bar after the face icon
+                self.hud_life_bar(i);
                 let p = &mut self.players[i];
                 p.action = 0x20;
                 p.b.step = 2;
