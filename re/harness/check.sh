@@ -21,7 +21,9 @@ esac
 [ -n "$SCRIPT" ] && S=$SCRIPT
 [ -n "$FRAMES" ] && F=$FRAMES
 case $MODE in run) T=port ;; *) T=$MODE ;; esac
+# The port trace goes to PORT_OUT (default re/out/port in this checkout), never to the shared re/out/traces.
+PO=${PORT_OUT:-$ROOT/re/out/port}; export PORT_OUT=$PO; mkdir -p "$PO"
 MODE=$MODE "$ROOT/re/harness/port.sh" "$ROOT/re/harness/scripts/$S.txt" "$NAME" "$F" >"$ROOT/re/out/check.out" 2>"$ROOT/re/out/check.err" || { cat "$ROOT/re/out/check.err"; exit 1; }
 # A panic of the port ends the trace early (the diff then only compares the frames that exist): stop here.
 if grep -q panicked "$ROOT/re/out/check.out" "$ROOT/re/out/check.err"; then grep -h -A2 panicked "$ROOT/re/out/check.out" "$ROOT/re/out/check.err"; exit 1; fi
-"$ROOT/re/.venv/bin/python" -I "$ROOT/re/harness/diff.py" "$ROOT/re/out/traces/$NAME.mame.trc" "$ROOT/re/out/traces/$NAME.$T.trc" "$@"
+"$ROOT/re/.venv/bin/python" -I "$ROOT/re/harness/diff.py" "$ROOT/re/out/traces/$NAME.mame.trc" "$PO/$NAME.$T.trc" "$@"

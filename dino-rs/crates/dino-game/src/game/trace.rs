@@ -1865,9 +1865,15 @@ impl Game {
                 it.after = if it.state == 4
                     && it.sub == 4
                     && it.w6 == 0
-                    && self.players.iter().any(|p| p.b.live != 0 && p.b10a == 0x33)
+                    && self.players.iter().any(|p| p.b10a == 0x33 && p.b.live != 0)
                 {
                     super::flow::IntroAfter::Redraw
+                } else if it.state == 2 && it.sub == 2 && it.b2 == 0x14 && it.b3 == 0 && it.w4 == 0x78 && !self.props.slots.iter().any(|p| p.b.live != 0 && p.b.k20 == 0x68) {
+                    // 0xC6A8: the slide in set sub 2 and slept one frame; the title (0xC6AC, the typewriter) is the next step, and the
+                    // blink (0xCA20) starts after it (it sets b3 when b2 = 0x14). Not in RAM, so it is read from the blink counter, and
+                    // only while the blink countdown G.$7362 (w4) is still at its start value 0x78 (the blink has not run) and no typewriter
+                    // object (class 0x1A, k20 0x68) is live: a later blink cycle comes back to b2 = 0x14 too.
+                    super::flow::IntroAfter::Title
                 } else {
                     super::flow::IntroAfter::Loop
                 };
