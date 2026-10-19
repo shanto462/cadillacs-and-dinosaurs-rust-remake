@@ -241,7 +241,8 @@ impl Game {
         if e.b.step == 0 {
             e.b.set_state(0x0200_0C02);
             self.enemy_anim(&mut e.b, 2);
-            self.sound(0x5A); // 0xA034 (pan by X: not compared)
+            let pan = self.snd_pan_x(e.b.xi()) as u32;
+            self.sound_ex(0x5A, pan, 0); // 0xA034: d1 = the pan byte of X, d2 = 0
         }
         if self.enemy_step(&mut e.b) {
             self.c10_3bc78(e, h);

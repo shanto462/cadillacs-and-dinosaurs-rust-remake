@@ -245,12 +245,19 @@ impl Game {
     pub fn snd_enemy_death(&mut self, b63: u8, x: i16, facing: u8) {
         let pan = self.snd_pan_x(x) as u32;
         if (b63 as i8) > 0 {
-            let mode = if facing != 0 { 6 } else { 5 };
-            self.sound_ex(0x58, (mode << 16) | 0xA00 | pan, 0x0056_08D0);
+            self.snd_97d2(x, facing);
         } else {
             let mode = if facing != 0 { 4 } else { 3 };
             self.sound_ex(0x79, (mode << 16) | 0x2000 | pan, 0x0240_0000);
         }
+    }
+
+    /// 0x97D2: the death voice 0x58 of an enemy (also called directly by the burn knockdown at 0x2ACE0): d1 = (5, or 6 when +$24 is
+    /// nonzero) << 16 | 0xA00 | the pan byte of X, d2 = 0x5608D0.
+    pub fn snd_97d2(&mut self, x: i16, facing: u8) {
+        let pan = self.snd_pan_x(x) as u32;
+        let mode = if facing != 0 { 6 } else { 5 };
+        self.sound_ex(0x58, (mode << 16) | 0xA00 | pan, 0x0056_08D0);
     }
 
     /// 0x962A: the hit sound of an attack record (`sound` = record byte 4, a byte offset into
@@ -309,6 +316,31 @@ mod tests {
         assert_eq!(g.w.snd_toggle, 0b0010_0000);
         // d1 is the pan byte of player 0's X (0 here, the table counts 0, 1, 2 ...), d2 is the routine's constant
         assert_eq!(g.w.snd_reqs.iter().map(|r| (r.d1, r.d2)).collect::<Vec<_>>(), vec![(0, 0); 5]);
+    }
+
+    /// M4-19: the splash of an object that is not a player (0x9AF4, `+$82 != 0`) toggles bit 4 of G.$43A (the first request after a clear
+    /// is 0xF0, then 0xEF), d1 = (5, or 6 when +$24 is set) << 16 | 0x1200 | pan, d2 = 0xC41240; the direct call of the enemy death voice
+    /// 0x97D2 (burn knockdown, 0x2ACE0) has the mode 5 / 6, 0xA00, the pan and d2 = 0x5608D0.
+    #[test]
+    fn enemy_splash_and_death_voice_arguments() {
+        let mut g = game_with_pan_table();
+        g.snd_splash_object(0, 0);
+        g.snd_splash_object(0, 1);
+        g.snd_splash_object(0, 0);
+        g.snd_97d2(0, 1);
+        g.snd_97d2(0, 0);
+        let r: Vec<_> = g.w.snd_reqs.iter().map(|r| (r.code, r.d1, r.d2)).collect();
+        assert_eq!(
+            r,
+            vec![
+                (0xF0, 0x5_1200, 0xC4_1240),
+                (0xEF, 0x6_1200, 0xC4_1240),
+                (0xF0, 0x5_1200, 0xC4_1240),
+                (0x58, 0x6_0A00, 0x56_08D0),
+                (0x58, 0x5_0A00, 0x56_08D0),
+            ]
+        );
+        assert_eq!(g.w.snd_toggle & 0x10, 0x10, "bit 4 of G.$43A after three flips");
     }
 
     /// The attract filter (0x610): control codes and the coin sound always pass, everything else

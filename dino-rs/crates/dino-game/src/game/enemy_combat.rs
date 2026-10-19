@@ -1113,7 +1113,7 @@ impl Game {
                     self.enemy_launch(e, 0x2CBD8);
                     self.item_drop_from_enemy(e);
                     if (e.b.b63 as i8) > 0 {
-                        self.sound(0x58); // 0x2ACE0: 0x97D2 (the original drops the item twice around it)
+                        self.snd_97d2(e.b.xi(), e.b.facing); // 0x2ACE0: jsr 0x97D2 (the original drops the item twice around it)
                     }
                 }
                 e.b.vz = 0;

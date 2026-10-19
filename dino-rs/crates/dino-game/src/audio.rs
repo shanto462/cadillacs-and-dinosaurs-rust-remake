@@ -320,4 +320,86 @@ mod tests {
         assert_eq!(first, Some(329), "the title tune starts in the frame of its request");
         assert!(silent.iter().all(|&p| p < 1e-6), "the factory setting is silent in the title");
     }
+
+    /// The samples of `frames` game frames of a scripted run, rendered the way the windowed run feeds the driver
+    /// (`feed_frame`: the requests that pass the attract filter of 0x610, one video frame of ticks), and the peak of every frame.
+    fn render_run(assets: &'static AssetPack, boot: bool, script: &str, frames: u32) -> (Vec<f32>, Vec<f32>) {
+        let script = crate::input::Script::load(script).expect("the input script loads");
+        let mut game = crate::game::Game::new(assets);
+        if boot {
+            game.flow_apply_config(Config::default());
+            game.flow_boot();
+        } else {
+            game.start_stage(0, &[0]);
+        }
+        let mut feed = Feed::new(&assets.sound, true);
+        let (mut all, mut samples, mut peaks) = (Vec::new(), Vec::new(), Vec::new());
+        for k in 0..frames {
+            let f = script.at(k);
+            game.w.input = f.players;
+            game.w.system = f.system | 0x08;
+            game.w.coins = f.coins;
+            game.tick();
+            feed_frame(&mut feed, &mut game, &mut samples);
+            peaks.push(samples.iter().fold(0.0f32, |p, &x| p.max(x.abs())));
+            all.extend_from_slice(&samples);
+        }
+        (all, peaks)
+    }
+
+    /// 16 bit stereo WAV of the mixer output (`RATE`), for the ear check: `DINO_WAV_OUT=dir cargo test ... listening`.
+    fn write_wav(path: &Path, samples: &[f32]) {
+        let data: Vec<u8> = samples.iter().flat_map(|&x| ((x.clamp(-1.0, 1.0) * 32767.0) as i16).to_le_bytes()).collect();
+        let mut out = Vec::new();
+        out.extend_from_slice(b"RIFF");
+        out.extend_from_slice(&(36 + data.len() as u32).to_le_bytes());
+        out.extend_from_slice(b"WAVEfmt ");
+        out.extend_from_slice(&16u32.to_le_bytes());
+        out.extend_from_slice(&1u16.to_le_bytes()); // PCM
+        out.extend_from_slice(&2u16.to_le_bytes()); // stereo
+        out.extend_from_slice(&RATE.to_le_bytes());
+        out.extend_from_slice(&(RATE * 4).to_le_bytes());
+        out.extend_from_slice(&4u16.to_le_bytes());
+        out.extend_from_slice(&16u16.to_le_bytes());
+        out.extend_from_slice(b"data");
+        out.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        out.extend_from_slice(&data);
+        std::fs::write(path, out).expect("the WAV is written");
+    }
+
+    /// M4-19 listening check that does not need ears: the real mix of a game run is not silent where the game makes sounds, is silent
+    /// in the attract filter (title, factory setting), has no NaN and never reaches full scale (no clipping). Two runs: from power on
+    /// (coin, start, hero select, the Episode 1 opening: `coinstart.txt`) and a fight in stage 1 (`stage1_fight.txt`, hits, voices,
+    /// containers, many sounds at once). With `DINO_WAV_OUT=dir` the two mixes are also written as WAV files for the ear check.
+    #[test]
+    fn listening_check_game_mix_is_not_silent_and_does_not_clip() {
+        let Some(assets) = rom() else {
+            eprintln!("skipped: no dino.zip");
+            return;
+        };
+        let scripts = ["../../../re/harness/scripts/coinstart.txt", "../../../re/harness/scripts/stage1_fight.txt"];
+        if !scripts.iter().all(|s| Path::new(s).exists()) {
+            eprintln!("skipped: no input scripts");
+            return;
+        }
+        for (name, boot, script, frames) in [("power_on_to_episode1", true, scripts[0], 2300u32), ("stage1_fight", false, scripts[1], 1400u32)] {
+            let (all, peaks) = render_run(assets, boot, script, frames);
+            assert!(all.iter().all(|x| x.is_finite()), "{name}: NaN or infinity in the mix");
+            let peak = all.iter().fold(0.0f32, |p, &x| p.max(x.abs()));
+            let loud = peaks.iter().filter(|&&p| p > 1e-3).count();
+            let over = peaks.iter().filter(|&&p| p > 0.9).count();
+            let first = peaks.iter().position(|&p| p > 1e-3);
+            eprintln!("{name}: {frames} frames, peak {peak:.3}, {loud} audible frames, {over} frames above 0.9, first audible frame {first:?}");
+            assert!(peak < 1.0, "{name}: the mix reaches full scale ({peak}): clipping");
+            assert!(loud > 20, "{name}: the mix is silent (only {loud} audible frames)");
+            if boot {
+                // the attract filter: nothing is heard before the coin (frame ~600); the coin sound is the first sound
+                assert!(first.is_some_and(|f| (590..640).contains(&f)), "{name}: the first sound is the coin, got {first:?}");
+            }
+            if let Some(dir) = std::env::var_os("DINO_WAV_OUT") {
+                std::fs::create_dir_all(&dir).expect("the output directory exists");
+                write_wav(&Path::new(&dir).join(format!("{name}.wav")), &all);
+            }
+        }
+    }
 }
