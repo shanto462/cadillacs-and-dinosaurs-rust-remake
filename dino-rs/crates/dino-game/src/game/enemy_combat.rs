@@ -216,6 +216,17 @@ impl Game {
     /// the credited owner's +$C6 respectively, and exactly two RNG calls.
     fn enemy_monster_damage(&mut self, base: u32, a: Handle, di: usize, hero: bool) -> (u16, bool) {
         let ab = self.body(a);
+        let atk = ab.atk;
+        let power = if hero {
+            match slot_of(a) { Some(Slot::Player(i)) => Some(self.players[i].power), _ => None }
+        } else if (ab.who as i8) >= 0 {
+            Some(self.players[((ab.who & 3) % 3) as usize].power)
+        } else { None };
+        self.enemy_damage_core(base, atk, power, di, hero)
+    }
+
+    /// The body of 0x2B904 / 0x2BA2A: `atk` is the attacker's attack id (+$58), `power` its +$C6 (None: no factor).
+    pub(super) fn enemy_damage_core(&mut self, base: u32, atk: u8, power: Option<u8>, di: usize, hero: bool) -> (u16, bool) {
         let e = &self.enemies.slots[di];
         let t = &self.assets.enemy.t;
         let mut d = base;
@@ -231,17 +242,12 @@ impl Game {
         }
         let w84 = e.m.w(W84) as u32;
         for offset in [0, 2] {
-            if t.u8(0xA32FA, w84 + offset).wrapping_mul(2) == ab.atk {
+            if t.u8(0xA32FA, w84 + offset).wrapping_mul(2) == atk {
                 d = shift_word((d as u16 as u32) * t.u8(0xA32FA, w84 + offset + 1) as u32);
                 counter = true; // G.$4F5 also makes the word G.$4F4 nonzero
                 break;
             }
         }
-        let power = if hero {
-            match slot_of(a) { Some(Slot::Player(i)) => Some(self.players[i].power), _ => None }
-        } else if (ab.who as i8) >= 0 {
-            Some(self.players[((ab.who & 3) % 3) as usize].power)
-        } else { None };
         if let Some(power) = power { d = (d as u16 as u32) * power as u32; }
         let index = (w84 as u16).wrapping_shl(3).wrapping_add(self.w.level) as u32;
         d = ((d as u16 as u32) * t.u8(0x2BECE, index) as u32) >> 10;
@@ -741,7 +747,7 @@ impl Game {
         self.enemy_hud_hit(h, &b, kind);
     }
 
-    fn enemy_hud_hit(&mut self, h: Handle, b: &Body, kind: u8) {
+    pub(super) fn enemy_hud_hit(&mut self, h: Handle, b: &Body, kind: u8) {
         if (b.who as i8) < 0 || b.who > 2 {
             return;
         }

@@ -26,6 +26,13 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x49448, 0x14, "Shivat colour flash delays"),
     (0x4945C, 4, "Shivat colour pairs"),
     (0x53956, 0x14, "Mack colour flash delays"),
+    (0x5F5A0, 0x30, "ground critter A78: direction steps 0x5F5A0, directions after a rest 0x5F5B0, stop roll 0x5F5C0"),
+    (0x2E4E0, 8, "held enemy placement table pointers (0x3267A)"),
+    (0x2E5C2, 0x100, "held enemy placement rows of Shivat's grab (0x3267A, entry 4): offsets by name, rows of dx, dy, animation, facing"),
+    (0x49460, 0x80, "Shivat step table: 32 x (vx, vz) (class 24, 0x4937E)"),
+    (0x493E2, 0xA, "Shivat frame X offsets (0x493C4)"),
+    (0x49520, 0x54, "Shivat bite roll rows 0x49520, long reach roll 0x49560, hit slide speed and acceleration 0x49570"),
+    (0x53CBA, 0xC, "Mack jump roll mask 0x53CBA, slide speed and acceleration 0x53CBC, depth nudge speeds 0x53CC0 (class 38)"),
     (0x5396A, 4, "Mack colour pairs"),
     // Scene actors (M3-20): the Cadillac's rider rows (0x42350) and offsets (0x42374); the crouching men's variants (0x4D992).
     (0x42350, 0x3C, "Cadillac rider rows and offsets (class 16)"),
@@ -244,6 +251,7 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x61E6, 0x10, "pool C class 5 bubble variant by (rand & 1) + owner class (0x61D8)"),
     (0x6244, 4, "pool C class 5 bubble variant by character id (0x6234)"),
     // M6-14 pool C class 29 (0x965F2): a word index by the variant byte, then dx, dy, vx, vy and the life byte.
+    (0x96794, 0x30, "pool C class 30 Z mark parameter blocks (0x966C8)"),
     (0x9665E, 0x20, "pool C class 29 smoke ring parameter blocks (0x965F2)"),
     (0x24CC6, 0x20, "gun flag by weapon variant (0x24C3A)"),
     (0x2494A, 0x10, "gun-kind flag by item kind low nibble (0x248F6)"),

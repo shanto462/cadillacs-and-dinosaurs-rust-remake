@@ -79,12 +79,12 @@ pub const SPECS: &[Spec] = &[
     walker(13, "POACHER", Some(0x02), true),
     Spec { class: 18, what: "VICE T. / WALTHER", name: Some(0x0C), name_v2: Some(0x0D), counted: true, dino: false, hazard: false, still: false, boss: boss(0, true) },
     dino(22, "BRONTOSAURUS foot", None),
-    dino(24, "SHIVAT", Some(0x07)),
+    // Class 24 (M6-04, M6-05), Shivat, is real.
     Spec { boss: boss(0, true), ..walker(25, "SLICE", Some(0x05), true) },
     dino(29, "R HOPPER", Some(0x04)),
     Spec { boss: boss(2, true), ..walker(31, "HOGG", Some(0x26), true) },
     Spec { boss: Some(Boss { hp_row: 4, controller: true, score: false, rebirth: Some(40), group: false }), ..walker(35, "MORGAN", Some(0x15), true) },
-    dino(38, "MACK", Some(0x11)),
+    // Class 38 (M6-03), Mack, is real.
     walker(45, "MORGAN villager", None, true),
     Spec { boss: boss(5, true), ..walker(40, "MORGUE", Some(0x16), false) },
     Spec { boss: boss(6, false), ..walker(4, "TYROG", Some(0x19), false) },
@@ -93,9 +93,8 @@ pub const SPECS: &[Spec] = &[
     cross(65, "BARREL", false),
     cross(66, "ROCK", false),
     cross(70, "BIKER", true),
-    cross(78, "CRITTER", false),
+    // Classes 78 and 80 (M6-03), the ground critters, are real.
     walker(79, "HUNTER", Some(0x1E), true),
-    cross(80, "CRITTER", false),
     dino(82, "ZEKE", Some(0x21)),
     Spec { boss: Some(Boss { hp_row: 0, controller: false, score: true, rebirth: None, group: true }), ..walker(71, "SLISAUR", Some(0x18), false) },
     Spec { boss: boss(8, false), ..walker(94, "FESSENDEN form 2", Some(0x25), true) },

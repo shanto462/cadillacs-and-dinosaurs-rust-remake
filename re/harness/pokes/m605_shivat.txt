@@ -1,0 +1,77 @@
+# M6-05: Shivat grabs an enemy (0x48ED6, 0x48FF2, 0x3267A, 0x12686) and the open item 1 of D3b (a bullet through a sleeping Shivat for 3000 frames).
+# Record: PR_SNAPS=none PR_SHEET=0 re/harness/probe/probe_record.sh re/harness/pokes/m605_shivat.txt all
+
+segment m605_grab_enemy
+jump 2 0
+level 0 free
+hp 100
+god on
+0 snapshot keep
+2 spawn A 24 var=0 w5c=0x7fff x=+0x80
+4 spawn A 2 var=0 x=+0xA0
+6 objset A:24 +0xA8.w 4
+6 objset A:24 +0xA4.b 1
+6 objset A:24 +0xC0.b 1
+6 objset A:24 +0x0.b 1
+6 objset A:24 +0x6.w 0
+6 objset A:24 +0xAA.w 0
+6 objset A:24 +0xAC.b 0
+6 objset A:24 +0xB4.w 0
+20 objset A:24 +0x76.w 0xD994
+20 objset A:24 +0x6.b 6
+20 objset A:24 +0x7.b 14
+trace 500
+
+segment m605_grab_enemy_r
+jump 2 0
+level 0 free
+hp 100
+god on
+0 snapshot keep
+2 spawn A 24 var=0 w5c=0x7fff x=+0x80
+4 spawn A 2 var=0 x=+0xA0
+6 objset A:24 +0xA8.w 4
+6 objset A:24 +0xA4.b 1
+6 objset A:24 +0xC0.b 1
+6 objset A:24 +0x0.b 1
+6 objset A:24 +0x6.w 0
+6 objset A:24 +0xAA.w 0
+6 objset A:24 +0xAC.b 0
+6 objset A:24 +0xB4.w 0
+8 objset A:24 +0x24.b 1
+8 objset A:24 +0x22.b 8
+40 objset A:24 +0x76.w 0xD994
+40 objset A:24 +0x6.b 6
+40 objset A:24 +0x7.b 14
+trace 500
+
+segment m605_wake_bullet
+jump 2 0 0x400
+level 0 free
+hp 100
+god on
+0 snapshot keep
+2-60:L
+2 spawn A 24 var=0 w5c=0x7fff ax=1115 z=0x32
+20 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+170 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+320 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+470 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+620 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+770 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+920 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+1070 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+1220 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+1370 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+1520 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+1670 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+1820 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+1970 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+2120 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+2270 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+2420 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+2570 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+2720 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+2870 spawn A 59 var=0 ax=1190 z=0x32 y=0x80
+trace 3000
+# A thrown knife was not recorded: a lone class 41 spawn (no Razor owner) hangs MAME. By the code a sleeping Shivat (+$00 = 2) fails the live test of every hit pass, see the errata.

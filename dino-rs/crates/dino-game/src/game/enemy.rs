@@ -39,6 +39,12 @@ mod class59;
 mod class17;
 mod class18;
 mod class29;
+// Shivat (M6-04, M6-05): the T. rex (24).
+mod class24;
+mod class24_ai;
+// Mack (M6-03): the triceratops (38).
+mod class38;
+mod class78_80;
 // The Butcher (M6-09): the starter (5), the carcass and helpers (51, 53, 58), the fighter (61).
 mod class5;
 mod class51_58;
@@ -206,10 +212,12 @@ impl Game {
                 5 => self.enemy_class5(&mut e, h),
                 18 => self.enemy_class18(&mut e, h, i),
                 20 => self.enemy_class20(&mut e, h),
+                24 => self.enemy_class24(&mut e, h, i),
                 27 => self.enemy_class27(&mut e, h),
                 29 => self.enemy_class29(&mut e, h, i),
                 30 => self.enemy_class30(&mut e, h),
                 34 => self.enemy_class34(&mut e, h),
+                38 => self.enemy_class38(&mut e, h, i),
                 41 => self.enemy_class41(&mut e, h),
                 43 => self.enemy_class43(&mut e, h),
                 46 => self.enemy_class46(&mut e, h),
@@ -227,6 +235,8 @@ impl Game {
                 58 => self.enemy_class58(&mut e, h),
                 60 => self.enemy_class60(&mut e, h),
                 61 => self.enemy_class61(&mut e, h, i),
+                78 => self.enemy_class78(&mut e, h, i),
+                80 => self.enemy_class80(&mut e, h, i),
                 69 => self.enemy_class69(&mut e, h),
                 81 => self.enemy_class81(&mut e, h),
                 90 => self.enemy_class90(&mut e, h),
