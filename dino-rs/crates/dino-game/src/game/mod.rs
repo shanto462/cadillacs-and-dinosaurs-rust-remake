@@ -326,6 +326,7 @@ impl Game {
 
     /// 0xE90E objects_update.
     fn objects_update(&mut self) {
+        self.spawn.g.car_on = 0; // 0xE90E: clr.w $77A0 (the car sets it again in every frame of the drive)
         self.enemy_census(); // 0x3242E
         self.players_update(); // 0x18834
         self.combat.items_reset(); // $69EE / $69F0

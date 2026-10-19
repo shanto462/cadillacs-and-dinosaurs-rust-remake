@@ -311,7 +311,7 @@ impl Game {
         &self.assets.stages.area(self.w.stage, self.cam.s3.map_area).scroll3
     }
 
-    fn screen_id2(&self, x: u16, y: u16) -> u16 {
+    pub(crate) fn screen_id2(&self, x: u16, y: u16) -> u16 {
         let mut xs = x & 0xFFE0;
         if self.w.stage == 2 {
             while xs >= 0x4D00 {

@@ -153,6 +153,8 @@ pub struct Player {
     pub knees: u8,
     pub b116: u8,
     pub turn: u8,
+    /// +$119 the car steering table timer (0x8C346: 0x3D at a new press of a direction, counts down while the stick is held).
+    pub b119: u8,
     /// +$11A input lock, +$11B, +$11C / +$11D timers.
     pub input_lock: u8,
     pub b11b: u8,

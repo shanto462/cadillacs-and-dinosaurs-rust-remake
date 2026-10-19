@@ -73,6 +73,13 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     // Hogg's bomb, class 42 (M6-25): the landing cell list by rand() & 15 (0x55EB0) and the nine landing offsets around the car (0x55EB6).
     (0x55ED4, 0x20, "Hogg bomb landing cells"),
     (0x55EF4, 0x24, "Hogg bomb landing offsets"),
+    // The car, pool B class 88 (M6-18 / M6-19): the stick to pair offsets (0x8C364), the two equal pair tables (0x8C36C / 0x8C378), the body
+    // bump steps (0x8C42C, read up to +$AE = 0x18) and the front wheel frames (0x8C5BA).
+    (0x8C886, 0x10, "car stick to pair offsets"),
+    (0x8C896, 0x20, "car steering pairs (the copy while +$119 runs)"),
+    (0x8C8B6, 0x20, "car steering pairs"),
+    (0x8C404, 0x19, "car body bump steps"),
+    (0x8C5CC, 0x06, "car front wheel frames"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {

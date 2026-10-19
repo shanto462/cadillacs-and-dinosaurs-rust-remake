@@ -30,6 +30,11 @@ pub struct Globals {
     pub car_mode: u8,
     /// G.$502 boss threshold list enable (set by the boss summon).
     pub b502: u8,
+    /// G.$517 the car's riders (player bits, `+$A8` of the car, written by 0x8C0EC). G.$77A0 the car is driving (1, written every frame of the
+    /// drive by 0x8C140) and G.$77A2 its handle: the car passes 0x121D8..0x12454 read them.
+    pub car_riders: u8,
+    pub car_on: u16,
+    pub car_obj: u16,
     /// G.$4D5 stage clear in progress (set by 0xACEE). [I]
     pub b4d5: u8,
     /// G.$4F1, G.$4FC, G.$504, G.$505: cleared at area start (0xAAC2..). G.$4FC is cleared by
@@ -128,6 +133,7 @@ impl Game {
         g.b504 = 0;
         g.b505 = 0;
         g.kill_all = 0;
+        g.car_on = 0; // 0xAAD8: clr.w $77A0 (the car passes' switch)
     }
 
     fn spawn_area_script(&self) -> &'static dino_assets::enemy::AreaScript {

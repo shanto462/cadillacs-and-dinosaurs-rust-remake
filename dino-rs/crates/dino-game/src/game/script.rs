@@ -1152,7 +1152,7 @@ impl Game {
     /// `|distance| / 47` give `vx` = `d1 * 4` + `d0` in the high byte (8.8: pixels per frame and a part of them); the speed in Z is
     /// `d1 * 4 + d0` as a word (the quotient is added to the low byte, as the code does; the distance in Z is 0 in every use). The animation 0x14; in stage 7
     /// area 1 the draw flags 0x30; in stage 2 the held item is dropped.
-    pub(super) fn player_scripted_jump_entry(&mut self, i: usize) {
+    pub(crate) fn player_scripted_jump_entry(&mut self, i: usize) {
         self.players[i].b.set_state(0x0200_0434);
         self.player_count_players(); // jsr 0x655E
         let (stage, area) = (self.w.stage, self.cam.s2.area);
