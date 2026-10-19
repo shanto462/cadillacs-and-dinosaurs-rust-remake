@@ -550,3 +550,19 @@ Check (D3d BT-A7, step mode): `m800_bta7_k8_walk`: the Bludge from cylinder 01 (
 - The recover entry's off screen shoulder (0x68384, also Morgue's) copies the target's Z word only (`move.w`); the fraction stays (boss_common
   used `set_zi`, which cleared it).
 - G.-$7048 (form 1's start HP for the roar test 0x681C8) is now a traced global (`fess_hp`).
+
+## Fessenden form 2, class 84 with the parts 85 to 89 and the fire 95 (M8-30 .. M8-35, Task 14, 2026-10-19)
+- The body is never drawn by itself: after its routine (outside the grab) it takes its own entry off the top of the draw list (0x619BC, the
+  G.$67C2 / G.$67C0 pointer and count); part 85 copies its frame and draws it, and stops once the dead body sets `+$A6`.
+- The creation (0x6175A) sorts the six slot addresses with five passes of compare and exchange; the creator (form 1's object made in its
+  slot) can end up as a part, and a pool with fewer than 5 free slots retries every frame.
+- Class 95's Y step keeps the top byte of the X step in its lowest byte (`move.w (a0)+,d0; swap d0; asr.l #8,d0` with d0 still holding the X
+  step), so a ball's Y has a fraction that grows by 0xFF per frame (M f84-trace frame 519).
+- The 480 frame limit (0x629F0) and the HP fraction tests jump to the reset from inside a subroutine; the action routine goes on in the same
+  frame after the reset (its return address is still on the stack).
+- The heads' fire variant: T1 is indexed by the X distance & 0x3E0 >> 4 (a word index of dx / 32), so it covers 0 .. 1023 px; T2 adds -2, 0 or +2.
+- The death's dialogue box at `+$80` = 0x78 of step 6 is pool B class 50 variant 6 (0x8446C), not ported in prop/b50.rs (its owner list); the
+  port holds it in step mode and frees it in play. The blasts of step 0xA are pool E class 1 kind 4 with `+$5C` 0 (0x27DAA), the debris pool C
+  class 40 (0x9764E, now `effect/fx40.rs`).
+- f84-dmg frame 54: the hero's reaction to the arm strike 0x60 (hero state 0x0202, act 0x14, step 2) draws one random number more in the port
+  than in MAME (player port, not the boss); it re-syncs in step mode.

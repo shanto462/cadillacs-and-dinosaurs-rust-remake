@@ -90,6 +90,7 @@ mod fx36_37;
 // Pool C class 41 (M6-22): the dust and smoke of the Cadillac.
 #[path = "effect/fx41.rs"]
 mod fx41;
+mod fx40;
 #[path = "effect/fx30.rs"]
 mod fx30;
 // Pool C class 27 (M7-03): the afterimage of a running Slice.
@@ -600,6 +601,7 @@ impl Game {
                 FX_CAR_PUFF => self.fx_car_puff(i),
                 FX_Z_MARK => self.fx_z_mark(i),
                 FX_AFTERIMAGE => self.fx_afterimage(i),
+                0xA0 => self.fx40(i),
                 // TODO(port): remaining classes (handler addresses from the table at 0x237E6):
                 // 0x00 0x923E0, 0x18 0x92C9A,
                 // 0x24 0x93184, 0x28 0x932D2,
