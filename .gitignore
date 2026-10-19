@@ -25,7 +25,7 @@ dino-rs/target/
 .DS_Store
 re/specs/**/scratch*/
 .claude/*.lock
-re/mame/roms/
+re/mame/roms
 # MAME runtime output
 cfg/
 nvram/
