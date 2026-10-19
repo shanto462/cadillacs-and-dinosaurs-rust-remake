@@ -72,10 +72,10 @@ impl Game {
     }
 
     /// 0x3CCC0: the direction at the point the *target* object keeps at +$88 / +$8A (a player's
-    /// +$88 is the scratch word of 0x6606; its +$8A is never written: 0 in every recording).
+    /// +$88 / +$8A are the scratch words of 0x6606 and the walk scripts; the car sets +$8A to 0x30 in Episode 3, ep3_hannah frame 2106).
     pub(super) fn c10_3ccc0(&mut self, e: &mut Enemy) {
         let tp = self.c10_target(e);
-        let (d1, d2) = (self.players[tp].w88, 0u16);
+        let (d1, d2) = (self.players[tp].w88, self.players[tp].w8a);
         e.b.dir = Self::enemy_angle_to(&e.b, d1, d2);
     }
 
