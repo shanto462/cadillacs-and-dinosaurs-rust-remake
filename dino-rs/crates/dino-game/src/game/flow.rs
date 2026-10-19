@@ -456,6 +456,7 @@ impl Game {
             return;
         }
         self.flow.wait = self.flow.speed & 0xF;
+        let speed = self.flow.speed;
         // 0xA914..: the frame counters G.$0000 and G.$4DA are incremented before the mode runs,
         // so everything that reads G.$0000 in a game frame (parity tests, spark jitter, ...) sees
         // the new value. A mode routine that slept inside itself goes on without passing here.
@@ -475,6 +476,11 @@ impl Game {
             0x14 | 0x18 => self.flow_game_over(),
             0x1C => self.flow_ending_mode(), // 0xAC48: jmp 0xA69B8
             _ => self.flow_game_over(),
+        }
+        // 0xA92A: the sleep at the top of the loop reads G.$4D6 after the mode ran, so a speed the mode set (the boss defeat 0xACEE: 4, the end of
+        // the slow motion 0xAB44: 1) counts from this game frame on. A mode that slept inside itself (`resume`) or set its own wait keeps it.
+        if self.flow.speed != speed && !self.flow.resume && self.flow.wait == speed & 0xF {
+            self.flow.wait = self.flow.speed & 0xF;
         }
     }
 
