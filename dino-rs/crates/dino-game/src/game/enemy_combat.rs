@@ -1102,6 +1102,7 @@ impl Game {
             }
             2 => self.enemy_burn_fly(e, h),
             4 => {
+                // The step table 0x2AC14 sends step 4 to the shared landing block 0x2A7F6.
                 self.combat.push(0x6AC2, h);
                 e.b.motion();
                 self.enemy_screen_bounce(e);
@@ -1114,6 +1115,7 @@ impl Game {
                     if e.b.hp == 0 {
                         e.m.sb(T80, 1);
                     }
+                    self.snd_9796(e.b.xi()); // 0x2A832
                     e.b.step += 2;
                 }
             }
