@@ -135,6 +135,9 @@ struct Differences {
     /// The variables of the system task and the game start that differ (name, MAME, port), see
     /// `system_fields`. Not part of `none`: the demos and other screens of MAME have their own values.
     sys: Vec<(&'static str, u16, u16)>,
+    /// The sound requests of the frame with their d1 and d2 (MAME, port), when the codes agree and an argument differs (M4-15).
+    /// Not part of `none`: the tests that check the arguments read it with `sound_arg_diffs`.
+    sound_args: Option<(Vec<(u16, u32, u32)>, Vec<(u16, u32, u32)>)>,
 }
 
 impl Differences {
@@ -147,7 +150,7 @@ impl Differences {
 
     /// Nothing differs in the screens, the layer control, the title counter, the sounds and the state byte.
     fn none(&self) -> bool {
-        Differences { sys: Vec::new(), cams: None, ..self.clone() } == Differences::default()
+        Differences { sys: Vec::new(), cams: None, sound_args: None, ..self.clone() } == Differences::default()
     }
 }
 
@@ -297,6 +300,11 @@ fn compare_power_on_with(
         psn.retain(|&c| c != 0); // the code 0 (the select music) is not told from an empty entry of the ring
         if msn != psn {
             d.sounds = Some((msn, psn));
+        }
+        let ma = mame_sound_args(&prev_ram, ram);
+        let pa: Vec<(u16, u32, u32)> = g.w.snd_reqs.iter().filter(|r| r.code != 0).map(|r| (r.code, r.d1, r.d2)).collect();
+        if ma != pa {
+            d.sound_args = Some((ma, pa));
         }
         prev_ram.clone_from(ram);
         out.push(d);
@@ -2325,6 +2333,38 @@ fn mame_sound_args(prev: &[u8], ram: &[u8]) -> Vec<(u16, u32, u32)> {
     v
 }
 
+/// The front end codes of M4-15 (select, continue, game over, story, tally, ending, lab, name entry) whose d1 and d2 are compared
+/// with the recordings. The select music 0x00 is not in the list: `mame_sound_args` drops code 0 (it is also the empty ring entry).
+pub(super) const FRONT_END_CODES: [u16; 21] = [0x32, 0x33, 0x1B, 0x35, 0x1C, 0xAB, 0xE6, 0x1D, 0x1F, 0x13, 0x14, 0x15, 0x16, 0x49, 0x19, 0x1A, 0x66, 0xBB, 0x10, 0xF6, 0x56];
+
+/// M4-15: the requests of the listed codes whose d1 or d2 differs from the recording, one text per record (MAME, port).
+fn arg_diffs_of(rows: &[Differences], codes: &[u16]) -> Vec<String> {
+    let listed = |v: &[(u16, u32, u32)]| v.iter().filter(|e| codes.contains(&e.0)).copied().collect::<Vec<_>>();
+    rows.iter()
+        .enumerate()
+        .filter_map(|(k, d)| {
+            let (m, p) = d.sound_args.as_ref()?;
+            let (mf, pf) = (listed(m), listed(p));
+            (mf != pf).then(|| format!("record {k}: MAME {mf:X?} port {pf:X?}"))
+        })
+        .collect()
+}
+
+/// M4-15: the requests of the listed codes (`FRONT_END_CODES`) with d1 and d2. Three codes take d2 from the registers the frame left
+/// (M10, register leftovers, not modelled), so only their d1 is compared: 0x1A (`0x8A7A0`, `move.w #$1A,d0; jsr 0xA63C`: 0x1388 in the
+/// recordings, 0xE69 in `flow_end-3p` at record 3955), 0x1D (`0xEDB4`, after `bsr.w 0xEFC2`: MAME 0x45C3 in `flow_k-1p` at 3506, the
+/// port sends 0) and 0x1F (`0xEDFC`, after the allocations `jsr 0x4884`: MAME 0x45C3 in `flow_k-name-entry`).
+pub(super) fn listed_args(v: &[(u16, u32, u32)]) -> Vec<(u16, u32, u32)> {
+    v.iter().filter(|e| FRONT_END_CODES.contains(&e.0)).map(|&(c, d1, d2)| (c, d1, if matches!(c, 0x1A | 0x1D | 0x1F) { 0 } else { d2 })).collect()
+}
+
+/// M4-15: the listed requests of this frame (`FRONT_END_CODES`) with d1 and d2, MAME against the port, when they differ.
+fn listed_arg_diff(prev: &[u8], ram: &[u8], g: &Game) -> Option<String> {
+    let m = listed_args(&mame_sound_args(prev, ram));
+    let p = listed_args(&g.w.snd_reqs.iter().filter(|r| r.code != 0).map(|r| (r.code, r.d1, r.d2)).collect::<Vec<_>>());
+    (m != p).then(|| format!("MAME {m:X?} port {p:X?}"))
+}
+
 /// M2-03 and M2-04, the character select from power on to the level, record by record against the recordings of `flow_select_name` (the
 /// scripts are read from the scenario file): `sel-1p` (the 10 second timer from 725, the auto pick 610 frames after the screen starts, the
 /// palette flash, the 16 end steps, the fade out, mode 0xC 159 records after the pick), `sel-1p-moves` (left and right presses, attack
@@ -2384,6 +2424,7 @@ fn character_select_matches_mame() {
                 last_ram = ram.to_vec();
             },
         );
+        bad.extend(arg_diffs_of(&rows, &FRONT_END_CODES).into_iter().map(|s| format!("{name}: {s}")));
         for (k, d) in rows.iter().enumerate().skip(25) {
             let mut d = d.clone();
             if k == 610 && d.pal <= 4 {
@@ -2654,6 +2695,9 @@ fn clear_tally_matches_mame() {
             if msn != psn {
                 bad.push(format!("{name} +{k}: sounds MAME {msn:?} port {psn:?}"));
             }
+            if let Some(t) = listed_arg_diff(&prev_ram, &ram, &g) {
+                bad.push(format!("{name} +{k}: sound arguments {t}"));
+            }
             prev_ram = ram;
             if bad.len() > 5 || n > 900 {
                 break;
@@ -2843,6 +2887,9 @@ fn ending_run(a: &'static AssetPack, name: &str, last: i32, report: bool) -> Vec
         let (msn, psn) = (mame_sounds(&prev_ram, &ram), g.w.sounds.clone());
         if msn != psn {
             bad.push(format!("{name} +{n}: sounds MAME {msn:?} port {psn:?}"));
+        }
+        if let Some(t) = listed_arg_diff(&prev_ram, &ram, &g) {
+            bad.push(format!("{name} +{n}: sound arguments {t}"));
         }
         if (ram[0x84D0], ram[0x84D1]) != (g.flow.mode, g.flow.sub) {
             bad.push(format!("{name} +{n}: mode {:#x}/{:#x} port {:#x}/{:#x}", ram[0x84D0], ram[0x84D1], g.flow.mode, g.flow.sub));

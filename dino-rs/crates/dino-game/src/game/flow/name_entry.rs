@@ -531,6 +531,7 @@ mod tests {
     use super::*;
     use crate::harness::TraceReader;
     use crate::game::hud::HiScore;
+    use crate::game::flow::mame_check::listed_args;
     use dino_assets::AssetPack;
     use std::{path::Path, sync::OnceLock};
 
@@ -620,13 +621,23 @@ mod tests {
                 assert!(t == ram[0xF03E..0xF03E + 0x320], "{name} frame {f} table");
                 let end = word(0x8034) & 0x3F0;
                 let mut frame_sounds = Vec::new();
+                let mut frame_args = Vec::new();
+                let long = |o: usize| u32::from_be_bytes([ram[o], ram[o + 1], ram[o + 2], ram[o + 3]]);
                 while sound_pos != end {
-                    frame_sounds.push(word(0x803A + sound_pos as usize));
+                    let e = 0x803A + sound_pos as usize;
+                    frame_sounds.push(word(e));
+                    frame_args.push((word(e), long(e + 2), long(e + 6)));
                     sound_pos = (sound_pos + 16) & 0x3F0;
                 }
                 // The ranking screen after the entry (ambient 0x70) is M1-07 timing: checked only up to 4300.
                 if f < 4300 {
                     assert_eq!(g.w.sounds, frame_sounds, "{name} frame {f} sounds");
+                    // M4-15: d1 and d2 of the listed codes (name entry music 0x1F) against the ring
+                    // 0x1B at 2016 (the continue music, `0xEB1E`, `moveq #$1B,d0`) takes d1 = 0x46 and d2 = 0x40 from the registers of the
+                    // name entry code of that frame (M10, register leftovers, not modelled); the continue recording sends 0 / 0 there.
+                    let skip = |v: &[(u16, u32, u32)]| v.iter().filter(|e| !(f == 2016 && e.0 == 0x1B)).copied().collect::<Vec<_>>();
+                    let port: Vec<_> = g.w.snd_reqs.iter().map(|r| (r.code, r.d1, r.d2)).collect();
+                    assert_eq!(listed_args(&skip(&frame_args)), listed_args(&skip(&port)), "{name} frame {f} sound arguments");
                 }
                 sounds.extend(frame_sounds.iter().map(|&c| (f, c)));
             } else if ram[0x84D0] == 0x10 && ram[0x84D1] == 0 {
