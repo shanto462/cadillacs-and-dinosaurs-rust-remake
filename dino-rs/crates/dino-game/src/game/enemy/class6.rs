@@ -76,7 +76,7 @@ impl Game {
     fn enemy_part0_copy_template(&mut self, spec_idx: usize) {
         let spec_h = self.specials.handle(spec_idx);
         let spec_ram = &mut self.specials.slots[spec_idx].m;
-        let a2 = (spec_h as u32).wrapping_add(10);
+        let a2 = (spec_h as i16 as i32 as u32).wrapping_add(10); // lea 10(a0),a2 with the sign extended movea.w address: 0xFFFFE4FE
         spec_ram.sl(0, a2);
         for k in 4..126u32 {
             let b = self.assets.enemy.t.u8(0x3375C, k);
@@ -267,7 +267,7 @@ impl Game {
         e.m.sb(0x87, 0);            // clr.b $87(a6)
         e.b.b63 = 0;                // clr.b $63(a6)
         e.m.sb(0xA8, 0);            // clr.b $a8(a6)
-        e.m.sb(0x72, 0xB4);         // move.b #$b4, $72(a6)
+        e.b.b72 = 0xB4;             // move.b #$b4, $72(a6)
         e.m.sb(0xAF, 3);            // move.b #$3, $af(a6)
         e.m.sb(0xC2, 0);            // clr.b $c2(a6)
         e.m.sb(0xC3, 0);            // clr.b $c3(a6)
@@ -468,10 +468,13 @@ impl Game {
     }
 
     /// 0x39644: finish entrance, pick target & slot, reset to AI.
-    pub fn enemy_c6_entrance_end(&mut self, e: &mut Enemy, _h: Handle) {
+    pub fn enemy_c6_entrance_end(&mut self, e: &mut Enemy, h: Handle) {
         self.enemy_c6_target_init(e); // 0x3A54C
         self.enemy_c6_slot_init(e);   // 0x3A77E, 0x3A78C
         self.enemy_c6_reset_ai(e);    // 0x396C2
+        // 0x396C2 is the head of the wait state: it does not return after the reset but falls into 0x396DC (the wait timer, the eat check and
+        // the hop decision) in the same frame (the recording k8_walk, record 93: the Bludge from the tank is already in the hop state).
+        self.enemy_c6_state_wait(e, h);
     }
 
     /// 0x396C2: reset to AI mode 2 sub 0 act 0 step 0.
