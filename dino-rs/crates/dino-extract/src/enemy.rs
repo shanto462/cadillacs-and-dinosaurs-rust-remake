@@ -197,7 +197,7 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x58308, 0x190, "class 60 part placement for RAZOR"),
     // class 13 (POACHER J / SKINNER / GUTTER, 0x3DDEA): the decision tables, the timers and the small tables of the states.
     (0x72A94, 0x300, "class 13 decision 1 by variant, rand and X class (0x4005C)"),
-    (0x72D94, 0xC0, "class 13 far gate by variant row, aggression and X class (0x40118)"),
+    (0x72D94, 0x180, "class 13 far gate by variant row, aggression and X class (0x40118); the index has no bound (variants of Episode 8 read past 6 rows), so the whole space up to the far decision table"),
     (0x72F14, 0x300, "class 13 far decision by variant, rand and X class (0x40156)"),
     (0x3E28E, 0x40, "class 13 flee timers: 0x3E28E positive, 0x3E2AE negative, by rand & 0x1E (0x3E1FA)"),
     (0x3EADA, 0x20, "class 13 pause after a rifle shot by rand (0x3EA2A)"),
