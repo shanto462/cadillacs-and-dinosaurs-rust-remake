@@ -118,6 +118,7 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x29EB4, // shells (class 7)
     0x2A00A, // projectiles (class 8)
     0x2A49C, // pellets (class 10)
+    0x611D2, // Zeke class 82, init 0x606E8 (M7-10)
 ];
 
 /// Single frame records items load directly (0x1236): the ammo box picture.

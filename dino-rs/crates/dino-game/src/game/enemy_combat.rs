@@ -741,7 +741,7 @@ impl Game {
         self.enemy_hud_hit(h, &b, kind);
     }
 
-    fn enemy_hud_hit(&mut self, h: Handle, b: &Body, kind: u8) {
+    pub(super) fn enemy_hud_hit(&mut self, h: Handle, b: &Body, kind: u8) {
         if (b.who as i8) < 0 || b.who > 2 {
             return;
         }
