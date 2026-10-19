@@ -837,6 +837,8 @@ impl Game {
                 continue;
             }
             let (hit, left) = self.car_box_test(&car, d0, &d, d.body_box);
+            // 0x12916: `mulu.w #$c,d0` leaves the product's high word in d0; the word moves after it keep it, so the spark sees it.
+            let d0_hi = ((d0 as u32).wrapping_mul(12) >> 16) as u16;
             d0 = left;
             let Some((ha, hb)) = hit else { continue };
             {
@@ -848,7 +850,7 @@ impl Game {
             let v = self.body_mut(a3);
             v.attacker = a2;
             v.hp = 0;
-            self.spawn_hit_spark(a2, a3, ha, hb, 0); // 0x12720 with d5 = 0
+            self.spawn_hit_spark_d0(a2, a3, ha, hb, 0, d0_hi); // 0x12720 with d5 = 0
             self.car_score_all(0x14);
             d0 = 0x14;
             self.body_mut(a3).facing = 0;

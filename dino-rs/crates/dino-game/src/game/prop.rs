@@ -151,6 +151,9 @@ mod b40;
 mod b45;
 #[path = "prop/b71.rs"]
 mod b71;
+// Pool B 95 (M6-31): the Episode 3 sky blend.
+#[path = "prop/b95.rs"]
+mod b95;
 
 #[path = "prop/b50.rs"]
 mod b50;
@@ -322,6 +325,7 @@ impl Game {
                 93 => self.prop_class93(&mut p, i),
                 33 | 79 => self.ph_starter(&mut p, h, i), // placeholders of the boss starters (placeholder.rs)
                 94 => self.prop_class94(&mut p, i),
+                95 => self.prop_b95(&mut p, i),
                 96 => self.prop_class96(&mut p, i),
                 _ => self.prop_unported(&mut p, h, i),
             }
@@ -508,7 +512,23 @@ impl Game {
                     _ => self.prop_wave_end(p),
                 }
             }
-            _ => self.prop_free(p, i),
+            _ => {
+                // The free (0x4938) clears +$00 .. +$27 only: the slot keeps the original's pointer +$A0 (the port's group and record words
+                // are turned into it, as the trace shows them).
+                let w = self.prop_wave_script(p);
+                let ptr = super::trace::wave_ptr_of(w, p.m.w(GROUP) as usize, p.m.w(REC) as usize, p.b.mode, p.b.sub);
+                p.m.sl(GROUP, ptr);
+                self.prop_free(p, i)
+            }
+        }
+    }
+
+    /// The end of a controller in its end step (sub 4): the original's pointer is the end word + 6 there; the port marks it with the group
+    /// index past the last group (`trace::wave_ptr_of`).
+    fn prop_wave_mark_end(&self, p: &mut Prop) {
+        if p.b.sub == 4 {
+            let n = self.prop_wave_script(p).groups.len();
+            p.m.sw(GROUP, (n + 1) as u16);
         }
     }
 
@@ -599,6 +619,7 @@ impl Game {
             2 => {
                 self.prop_set_leader(); // 0x7B4F2
                 self.script_area_end(); // 0x1D95E: the area end script, the heroes walk to the next area
+                self.prop_wave_mark_end(p);
                 p.b.mode = 6;
                 p.b.sub = 0;
             }
@@ -606,6 +627,7 @@ impl Game {
             _ => {
                 self.prop_set_leader(); // 0x7B506
                 self.script_boss_area(); // 0x1DAC4: the boss area script
+                self.prop_wave_mark_end(p);
                 p.b.mode = 6;
                 p.b.sub = 0;
             }
@@ -614,6 +636,7 @@ impl Game {
 
     /// 0x7B4DE: GO (camera go flag G.$7A9) and done.
     fn prop_wave_end_go(&mut self, p: &mut Prop) {
+        self.prop_wave_mark_end(p);
         self.camera_go();
         self.prop_set_leader();
         p.b.mode = 6;

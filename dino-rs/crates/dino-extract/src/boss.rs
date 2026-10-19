@@ -100,6 +100,8 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x4BE70, 0x161A, "Slice handler and tables"),
     (0x45082, 0x684, "boomerang handler and tables"),
     (0x9644A, 0x06, "afterimage palettes"),
+    // The Episode 3 sky blend, pool B 95 (M6-31, 0x92220): the periods by variant / 2 (0x922C8) and the target / palette address pairs (0x922D0).
+    (0x922C8, 0x40, "sky blend periods and targets"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {

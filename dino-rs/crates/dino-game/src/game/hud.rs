@@ -360,12 +360,17 @@ impl Game {
     // ---------------------------------------------------------------- message producers
 
     fn hud_ring_push(&mut self, ring: usize, m: Msg) {
+        self.hud_ring_push_words(ring, &m);
+    }
+
+    /// The push of a producer that writes only the first `m.len()` words of the record (the rest keep what an older message left).
+    fn hud_ring_push_words(&mut self, ring: usize, m: &[u16]) {
         let w = self.hud.ring_w[ring];
         let e = &mut self.hud.rings[ring][(w >> 4) as usize];
         if (e[0] as i16) >= 0 {
             return; // ring full: the message is dropped
         }
-        *e = m;
+        e[..m.len()].copy_from_slice(m);
         self.hud.ring_w[ring] = w.wrapping_add(0x10);
     }
 
@@ -400,8 +405,8 @@ impl Game {
     }
 
     /// 0x1693C with kind 3: food `item` was eaten by its +$70 player. Record: +6 = item +$6C
-    /// (100 healed, 99 = points instead), +8 = food id (+$26), +$A = item pointer.
-    /// Quirk kept: for name id 2 the item's +$6A is set to 100.
+    /// (100 healed, 99 = points instead), +8 = food id (+$26), +$A = item pointer, a long: `a6` is sign extended on both paths (0x28AE2
+    /// `movea.w`, and the pool E loop), so its high word is 0xFFFF; word 7 is not written. Quirk kept: for name id 2 the item's +$6A is set to 100.
     pub fn hud_food(&mut self, item: Handle) {
         let p = self.body(item).partner;
         if !Self::hud_is_player(p) {
@@ -412,14 +417,15 @@ impl Game {
         if who > 2 {
             return;
         }
-        let m = [(3u16 << 8) | b.id as u16, b.hp_bar, b.hp_prev, b.hp, b.var26, 0x00FF, item, 0];
+        let m = [(3u16 << 8) | b.id as u16, b.hp_bar, b.hp_prev, b.hp, b.var26, 0xFFFF, item];
         if b.id == 2 {
             self.body_mut(item).hp_bar = 0x64;
         }
-        self.hud_ring_push(who as usize, m);
+        self.hud_ring_push_words(who as usize, &m);
     }
 
-    /// 0x16A5A with kind 4: treasure `item` picked up by its +$70 player. +6 = treasure id.
+    /// 0x16A5A with kind 4: treasure `item` picked up by its +$70 player. +6 = treasure id, +8 the item pointer (a long, `a6` of the pool E
+    /// loop, sign extended: high word 0xFFFF; MAME ep3_hannah frame 1780); words 6 and 7 are not written.
     pub fn hud_treasure(&mut self, item: Handle) {
         let p = self.body(item).partner;
         if !Self::hud_is_player(p) {
@@ -430,8 +436,8 @@ impl Game {
         if who > 2 {
             return;
         }
-        let m = [(4u16 << 8) | b.id as u16, b.hp_bar, b.hp_prev, b.var26, 0x00FF, item, 0, 0];
-        self.hud_ring_push(who as usize, m);
+        let m = [(4u16 << 8) | b.id as u16, b.hp_bar, b.hp_prev, b.var26, 0xFFFF, item];
+        self.hud_ring_push_words(who as usize, &m);
     }
 
     // ---------------------------------------------------------------- score

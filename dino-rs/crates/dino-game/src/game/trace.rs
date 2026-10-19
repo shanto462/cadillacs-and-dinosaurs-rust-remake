@@ -839,14 +839,14 @@ impl Prop {
                     self.m.sl(0xA0, p);
                 } else {
                     let (g, r) = (self.m.w(0xA0) as usize, self.m.w(0xA2) as usize);
-                    // A controller that has ended (mode 6, 0x7B4DE / 0x7B4F2 / 0x7B506 write the word 0x0600 over mode and sub) keeps
-                    // the pointer of the end word (+6) in RAM; the port keeps the group index, which is past the last group then.
-                    let sub = if self.b.mode == 6 && g >= w.groups.len() { 4 } else { self.b.sub };
-                    let mut p = wave_ptr(w, g, r, sub);
+                    let mut p = wave_ptr_of(w, g, r, self.b.mode, self.b.sub);
                     f.u32(0xA0, "wave_ptr", &mut p);
                     if f.loading() {
                         match wave_pos(w, p) {
                             Some((g, r)) => {
+                                // the normal end (the end word + 6) is the group index past the last group (see `wave_ptr_of`)
+                                let n = w.groups.len();
+                                let g = if self.b.mode == 6 && g == n && p == wave_groups(w)[n] + 6 { n + 1 } else { g };
                                 self.m.sw(0xA0, g as u16);
                                 self.m.sw(0xA2, r as u16);
                             }
@@ -921,6 +921,14 @@ fn wave_groups(w: &dino_assets::enemy::Wave) -> Vec<u32> {
     }
     v.push(a);
     v
+}
+
+/// The original's +$A0 of a wave controller in `mode` / `sub`. A controller that ended through its end step (sub 4, then 0x7B4DE / 0x7B4F2 /
+/// 0x7B506 write the word 0x0600 over mode and sub) keeps the pointer of the end word + 6; the port marks that end with the group index past the
+/// last group (`prop_wave_end`). One that ended in car mode (0x7B39A -> 0x7B4DE from the wait) keeps its group's own address.
+pub(crate) fn wave_ptr_of(w: &dino_assets::enemy::Wave, g: usize, r: usize, mode: u8, sub: u8) -> u32 {
+    let sub = if mode == 6 && g > w.groups.len() { 4 } else { sub };
+    wave_ptr(w, g, r, sub)
 }
 
 /// The original's +$A0 for (group, record, sub-state): the group's thresholds while waiting
@@ -1124,7 +1132,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[0, 2, 5, 6, 10, 13, 14, 15, 16, 17, 18, 19, 20, 24, 25, 27, 29, 31, 32, 34, 38, 41, 42, 43, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 63, 64, 65, 66, 70, 77, 78, 80, 81, 82, 83, 90, 92, 93, 96, 97]),
-    ("prop", &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 39, 40, 41, 42, 43, 45, 47, 48, 49, 50, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 66, 70, 71, 72, 73, 74, 76, 80, 81, 82, 83, 84, 85, 87, 88, 96]),
+    ("prop", &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 39, 40, 41, 42, 43, 45, 47, 48, 49, 50, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 66, 70, 71, 72, 73, 74, 76, 80, 81, 82, 83, 84, 85, 87, 88, 95, 96]),
     (
         "item",
         &[

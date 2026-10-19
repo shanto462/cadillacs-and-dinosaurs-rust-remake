@@ -67,8 +67,19 @@ impl Script {
                     'U' => f.players[p] |= UP,
                     'A' => f.players[p] |= ATTACK,
                     'J' => f.players[p] |= JUMP,
-                    'S' => f.system |= 1 << p,
-                    'C' => f.coins |= 1 << p,
+                    // Player 3's start and coin are bits 7 and 6 of the P3 port (IN2), so the game also sees them in G.$18 (MAME ep3_3p frame 400).
+                    'S' => {
+                        f.system |= 1 << p;
+                        if p == 2 {
+                            f.players[2] |= 0x80;
+                        }
+                    }
+                    'C' => {
+                        f.coins |= 1 << p;
+                        if p == 2 {
+                            f.players[2] |= 0x40;
+                        }
+                    }
                     'V' => f.system |= SERVICE,
                     _ => {}
                 }
@@ -192,9 +203,12 @@ mod tests {
     fn script_players_and_comments() {
         let s = Script::parse("0-9:R2L3AS # comment\n10:C,\n 12-13:J,\n20-21:V");
         let f = s.at(5);
-        assert_eq!(f.players, [RIGHT, LEFT, ATTACK]);
+        // player 3's start is also bit 7 of its own byte (IN2)
+        assert_eq!(f.players, [RIGHT, LEFT, ATTACK | 0x80]);
         assert_eq!(f.system, 4);
         assert_eq!(s.at(10).coins, 1);
+        let c3 = Script::parse("0:3C").at(0);
+        assert_eq!((c3.coins, c3.players[2]), (4, 0x40));
         assert_eq!(s.at(20).system, SERVICE);
         assert_eq!(s.at(22).system, 0);
         assert_eq!(s.at(12).players[0], JUMP);

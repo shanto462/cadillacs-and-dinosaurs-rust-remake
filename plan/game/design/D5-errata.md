@@ -427,3 +427,20 @@ MAME wins over the design text; the design documents themselves are not edited.
   (pool A class 15) every 6 frames, and in its first frame (mode 0) the piece still has the HP word of the slot's last object (the free 0x48FC clears `+$00` ..
   `+$27`, not `+$6C`) while `+$7D` is 0. In step with the bot's 12 frame swing the hero jabbed, stood, jabbed and never walked. Fix in the bot only (autoplay.rs:
   an object in mode 0 is no fight). The original has no such loop for a player.
+
+## Episode 3 acceptance (M6-31 / M6-32, Task 10, 2026-10-19)
+
+- B95 (the sky blend, 0x92220): the init reads the target colours and the palette address from 0x922D0 by variant * 4 and the period from 0x922C8 by variant / 2
+  (15, 15, 2, 2, 2, 2, 2); the first round runs in the frame after the init; after 16 rounds it frees itself (MAME m631_blend_1200: gone between 214 and 216).
+- Walther (class 18, variant high byte set): the init goes straight to the fight start and the approach (0x42690 -> 0x42864 -> 0x42B96) and skips the draw check
+  0x426A6 of the intro path: `+$01` stays 0 in that frame.
+- The HUD ring records of food (0x1693C) and treasure (0x16A5A) store `a6` as a long: sign extended (0xFFFF high word; the pool E loop's `a6` and the
+  `movea.w` at 0x28AE2), and they leave the words after it (food: word 7, treasure: words 6 and 7) as an older message left them.
+- 0x12720 (the hit spark): `add.l d2,d0 ; lsr.l #1,d0` brings the low bit of the upper words into bit 15 of X. The player passes leave 0 there; the car's
+  container pass 0x122D8 calls its box test with a leftover d0, and the `mulu.w #$c,d0` of 0x12916 leaves the product's high word, so its sparks can have X
+  bit 15 set (ep3_jack 2446).
+- The wave controller that the car ends in its wait (0x7B39A -> 0x7B4DE) keeps its group's own address in `+$A0`; only the end step (sub 4) leaves the end word
+  + 6. The free 0x4938 keeps `+$A0`.
+- The tally task (0xB97E) uses the struct G.$735E after the stage intro task without clearing it: the intro's `+2`, `+3` and `+4` (the marker time, 0xFFEC)
+  stay until the tally writes them.
+- Player 3's start and coin are bits 7 and 6 of the P3 port (IN2), so they also show in G.$18 (MAME ep3_3p frame 400); the harness script now sets them.

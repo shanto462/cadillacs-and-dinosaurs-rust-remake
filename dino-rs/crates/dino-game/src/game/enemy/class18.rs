@@ -14,11 +14,12 @@ impl Game {
             0 => {
                 if e.b.sub == 0 { self.enemy_vice_init(e, h); }
                 if e.b.var26 >> 8 != 0 {
-                    self.enemy_vice_fight_start(e, h); // 0x42694 -> 0x42864
+                    // 0x42694 -> 0x42864 -> 0x42B96: Walther goes straight to the approach, without the draw check of 0x426A6.
+                    self.enemy_vice_fight_start(e, h);
                 } else {
                     self.enemy_vice_intro(e, h);
+                    self.enemy_draw_check(&mut e.b, h); // 0x426A6: jmp 0x49CA
                 }
-                self.enemy_draw_check(&mut e.b, h);
             }
             2 => {
                 // 0x42884 tests the whole variant word, unlike the byte tests.

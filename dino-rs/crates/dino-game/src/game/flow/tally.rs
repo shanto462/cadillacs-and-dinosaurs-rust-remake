@@ -156,6 +156,9 @@ impl Game {
             t.raw = Ram::default();
             t.raw.sb(o::STATE, it.state);
             t.raw.sb(o::SUB, it.sub);
+            t.raw.sb(o::B2, it.b2); // +2 / +3 the intro's marker period and light flag, +4 its marker time (MAME keeps 0xFFEC there)
+            t.raw.sb(o::B3, it.b3);
+            t.raw.sw(o::W4, it.w4);
             t.raw.sw(o::W6, it.w6);
             t.raw.sw(o::W8, it.w8);
             t.raw.sl(o::LA, it.src);
