@@ -89,6 +89,8 @@ impl Game {
         }
         let seats = [car.m.b(0xA2), car.m.b(0xA3), car.m.b(0xA4)];
         let changed = (0..3).any(|k| self.effects.slots[i].seen(k) != seats[k]);
+        // the record a start loaded (0x15E4 with a0 = the table entry), `None` when no start happened
+        let mut started = None;
         if changed {
             for k in 0..3 {
                 self.effects.slots[i].set_seen(k, seats[k]);
@@ -104,9 +106,19 @@ impl Game {
                 }
                 let fx = self.fx_data();
                 fx_start(&mut self.effects.slots[i].b, fx, id);
+                // 0x15E4: the record is the word at 0x97150 + id * 2 added to the table
+                let t = &self.assets.enemy.t;
+                started = Some(SEAT_ANIMS + u32::from(t.u16(SEAT_ANIMS, u32::from(id) * 2)));
             }
         }
-        if (Self::fx_seat_of(&car, var) as i8) < 0 {
+        // 0x970BE tests the seat once more. After a start, 0x97108 jumps to 0x15E4, which returns to 0x970BE with a0 at the new
+        // record + 8 (not at the car): the byte tested is the record's +$A2 + var (0x970BE .. 0x970E0), so a record byte
+        // below zero makes the drawer skip its tick in the start frame (MAME, ep3_mess frame 2275).
+        let seat = match started {
+            Some(rec) => self.assets.enemy.t.i8(rec + 8, 0xA2 + u32::from(var.min(2))),
+            None => Self::fx_seat_of(&car, var) as i8,
+        };
+        if seat < 0 {
             return;
         }
         let fx = self.fx_data();

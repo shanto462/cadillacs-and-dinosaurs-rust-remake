@@ -85,6 +85,8 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x8C5CC, 0x06, "car front wheel frames"),
     // The seat drawers of the car (M6-21, 0x9704E): the offset of each seat from the car (dx, dy, dz words).
     (0x970F6, 0x12, "car seat offsets"),
+    // The seat drawers' animation offsets (0x97150, 8 words) and the records' +$A2..+$A4 bytes read after a start (0x970BE, 0x9720C..0x97276).
+    (0x97150, 0x128, "seat drawer animation offsets and record bytes (0x97008, 0x970BE)"),
     // The car's dust and smoke (M6-22, 0x97834): four drifts of two 16.16 longs (X, Y).
     (0x978CE, 0x20, "car puff drifts"),
     // The bomb carriers (M6-27): the byte code lists of class 64 (0x5B318 by the variant high byte, 0x5B4D8 by the low byte) and the hand
