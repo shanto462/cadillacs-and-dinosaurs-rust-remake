@@ -380,3 +380,20 @@ MAME wins over the design text; the design documents themselves are not edited.
 - D3a H11 / H12 / H13 give the numbers one frame later than MAME's end-of-frame record index: H11 frame 6 is x 1388 (design 1390) and vy 648; the hops at 80 and 180 have vy 708 (design 768); frame 220 is x 960 (962). H13 x 1311 is frame 59 and x 1147 frame 89. H12 y 207 is frame 5 and 158 frame 29; "state 4 at 90" is act 4 (the roll), on from frame 69; the break (mode 4) is frame 117.
 - The cave barrel (variant 0x201) has vy -3840 at frame 60 (-384 plus 27 frames of -128), not -3712.
 - The biker's kick success (attack 0x48) is in no recording; H13 v0 takes the fail path (act 0 to 2 at frame 46, attack stays 0x47).
+
+## Slice, classes 25, 19 and pool C 27 (M7-01 .. M7-04, 2026-10-19)
+
+- D3c 6.3 "the wake-up roll w = 11 / 5 / 3 by HP": 0x4C0B6 compares the quarter and the half of `+$BE` with d0, and d0 is what 0x120E left (the frame word of
+  animation 0's first frame, 0x1E48), not the HP. So the chance is 11 in 32 at every HP. It runs only from 0x4C072 (the end of the intro and the recover entry of
+  `+$84` 0x14, tables 0x2B56C / 0x4A7FC) with reaction 4.
+- D3c 6.3 (the script choice 0x4D288): the distance is (target X - X) as an unsigned word clamped at 0x80, so a target on his left is always "far" (row 2).
+- D3c 6.3: act 6 (0x4C3D4, animation 0xA, 120 frames) has no caller. The act dispatch is 0 the wait `+$7A`, 2 the decision, 4 the attack script.
+- D3c 6.4 ("`+$B3` = 8 ticks, the anim speed"): `+$B2` / `+$B3` are the spin sound timer and its period (8 for a single, 4 for the fan); the sound is 0xA21E
+  (0x7E, or 0x101 when bit 5 of G.$43B was clear, with the pan of X), made only by singles and the fan member of row 0. Variant 4 homes in on the target (vy / vz
+  +-0x100) on the way back or once 0x40 px from the throw X; variants 0 and 2 do not (variant 0 reverses its vy at the turn). The catch test starts after 10 frames.
+- D3c 6.5 (the afterimage `+$26`): d1 at the call is the act / step table word of the dispatch before it: 0xB2 in the route run (act 2), 0x3A0 in the running slash
+  (act 4), or what the re-target left in that frame.
+- The intro sounds 0x23 and 0x11 have d1 = 8 (the mode table word of 0x4BE74); d2 is left from the object updated before him.
+- Port flow (not Slice): after a boss defeat (0xACEE sets G.$4D6 = 4) the game task of the original sleeps the new count before the next game frame; `flow_game_task`
+  takes `wait` from `speed` before it runs the mode, so the port runs one game frame more right after the killing hit (m700_bs_s1_s1_nat run mode: equal through
+  5414, then G.$0 one ahead at 5415). Owner: flow.

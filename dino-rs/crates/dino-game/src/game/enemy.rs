@@ -53,6 +53,10 @@ mod class52;
 mod class61;
 mod class61_moves;
 mod class61_states;
+// Slice (M7-01 .. M7-04): the boss (25, moves in class25_ai.rs) and his boomerang (19).
+mod class19;
+mod class25;
+mod class25_ai;
 // Hogg (M6-23 / M6-24): the rider (31) and his motorbike (32).
 mod class31;
 mod class32;
@@ -225,6 +229,8 @@ impl Game {
                 17 => self.enemy_class17(&mut e, h),
                 5 => self.enemy_class5(&mut e, h),
                 18 => self.enemy_class18(&mut e, h, i),
+                19 => self.enemy_class19(&mut e, h, i),
+                25 => self.enemy_class25(&mut e, h, i),
                 20 => self.enemy_class20(&mut e, h),
                 27 => self.enemy_class27(&mut e, h),
                 29 => self.enemy_class29(&mut e, h, i),
@@ -1844,6 +1850,7 @@ impl Game {
             0x18 | 0x50 => self.c14_408e8(e),       // 0x408E8 class 14
             0x08 | 0x48 | 0x4C => self.enemy_c13_3e504(e), // 0x3E504 the poachers (class 13)
             0x3C => self.c61_decide(e, h),          // 0x58D40 the Butcher (class 61)
+            0x14 => self.c25_alive_start(e, h),     // 0x4C072 Slice (class 25)
             0x70 => self.c63_recover(e),            // 0x5ACAA the alternate Blade (class 63)
             0x74 | 0x90 => self.c64_recover(e),     // 0x5B2C4 the bomb carriers (class 64)
             _ => e.b.set_state(0x0200_0000),

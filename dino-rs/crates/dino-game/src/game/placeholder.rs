@@ -79,7 +79,6 @@ pub const SPECS: &[Spec] = &[
     // Class 13 (M6-01 / M6-02), the poachers, is real.
     dino(22, "BRONTOSAURUS foot", None),
     dino(24, "SHIVAT", Some(0x07)),
-    Spec { boss: boss(0, true), ..walker(25, "SLICE", Some(0x05), true) },
     Spec { boss: Some(Boss { hp_row: 4, controller: true, score: false, rebirth: Some(40), group: false }), ..walker(35, "MORGAN", Some(0x15), true) },
     dino(38, "MACK", Some(0x11)),
     walker(45, "MORGAN villager", None, true),
