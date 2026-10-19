@@ -211,27 +211,6 @@ impl Game {
         }
     }
 
-    /// Tyrog's host (pool A class 72, 0x5DD58), a placeholder until M8-10 ports it: the original host lasts 250 frames when it is left alone
-    /// (D3d 3.7) and then its slot becomes Tyrog again (class word 0x10, the same variant, the state 0: class 4's init runs next frame). This
-    /// keeps the chain 4 var 2 -> 72 var 1 -> 4 var 1 -> 72 var 0 -> 4 var 0 going; the host is not drawn, has no hits and no moves.
-    pub(super) fn enemy_ph_host(&mut self, e: &mut Enemy, h: Handle, _i: usize) {
-        if self.trace_hold(h, &e.b) {
-            return; // harness: kept as the snapshot had it
-        }
-        if e.b.mode == 0 {
-            e.b.mode = 2;
-            e.m.sw(T80, 250);
-            e.m.sb(ATTACKING, 0xFE);
-            return;
-        }
-        let t = e.m.w(T80).wrapping_sub(1);
-        e.m.sw(T80, t);
-        if t == 0 {
-            e.b.k20 = 4 * 4;
-            e.b.set_state(0);
-        }
-    }
-
     /// Morgan's death (0x52EBE): the same object becomes class `to` (Morgue, class 40) and its init runs. The fight goes on.
     pub(super) fn enemy_ph_rebirth(&mut self, e: &mut Enemy, h: Handle, to: u16) {
         e.b.k20 = to * 4;

@@ -183,7 +183,7 @@ impl Game {
     /// Recover entries of table 0x2B56C: 0x51ACA, 0x543AC, 0x36E7C,
     /// 0x658D4 and 0x682A2. Returns the class-specific continuation.
     pub fn boss_recover(&mut self, e: &mut Enemy, ai: BossAi) -> BossRecover {
-        if ai == BossAi::Tyrog {
+        if matches!(ai, BossAi::Tyrog | BossAi::Tyrog2) {
             e.b.palette_override = 0x9F;
             match e.b.var26 >> 8 {
                 1 => {

@@ -118,17 +118,28 @@ impl Game {
 
     /// 0x36E7C: the recover entry (also of `+$84` 0x64 in the table 0x2B56C): the shared part (`boss_recover`), then the wake-up claw
     /// (0x382B0), the off screen pounce (0x3862A) or state 0x4C.
-    pub(super) fn c4_recover(&mut self, e: &mut Enemy, _h: Handle) {
-        match self.boss_recover(e, BossAi::Tyrog) {
+    pub(super) fn c4_recover(&mut self, e: &mut Enemy, h: Handle) {
+        match self.boss_recover(e, Self::c4_ai(e)) {
             BossRecover::WakeAttack => self.c4_wake_claw(e),
+            // Tyrog 2 (0x668F6): the breath's start with animation 0x1F (0x37EDA in class 4, which nothing there reaches).
+            BossRecover::OffscreenHop if Self::c4_is_t2(e) => self.c4_breath_start(e, h, 0x1F),
             BossRecover::OffscreenHop => self.c4_pounce_crouch(e, 0x26),
             _ => {}
         }
     }
 
-    /// 0x36B9A: mode 2. The palette and `+$7D` by form; with HP 0 X is kept in camera X - 0x10 .. + 0x190; by `+$05` (the long table 0x36C24):
-    /// 0 the AI 0x36C34, 2 the hit 0x38CC6, 4 the defeat 0x38D0E, 6 held (0x2B35A); then the play field clamp (0x193E).
-    fn c4_fight(&mut self, e: &mut Enemy, h: Handle, i: usize) {
+    /// Tyrog 2 (class 91, 0x654E2) runs this code with the differences of `class91.rs`.
+    pub(super) fn c4_is_t2(e: &Enemy) -> bool {
+        e.b.k20 == 91 * 4
+    }
+
+    /// The table set of `boss_common.rs` (0x36D36 / 0x6575C ...).
+    pub(super) fn c4_ai(e: &Enemy) -> BossAi {
+        if Self::c4_is_t2(e) { BossAi::Tyrog2 } else { BossAi::Tyrog }
+    }
+
+    /// The palette and `+$7D` by form (0x36B9A, 0x655BA).
+    pub(super) fn c4_fight_palette(e: &mut Enemy) {
         let form = (e.b.var26 >> 8) as u8;
         e.b.palette_override = 0x9F;
         if form == 1 {
@@ -139,6 +150,24 @@ impl Game {
             e.b.palette_override = 0x9D;
             e.m.sb(ATTACKING, 0xFE);
         }
+    }
+
+    /// 0x36B9A: mode 2. The palette and `+$7D` by form; with HP 0 X is kept in camera X - 0x10 .. + 0x190; by `+$05` (the long table 0x36C24):
+    /// 0 the AI 0x36C34, 2 the hit 0x38CC6, 4 the defeat 0x38D0E, 6 held (0x2B35A); then the play field clamp (0x193E).
+    fn c4_fight(&mut self, e: &mut Enemy, h: Handle, i: usize) {
+        Self::c4_fight_palette(e);
+        self.c4_dead_clamp(e);
+        match e.b.sub {
+            0 => self.c4_alive(e, h),
+            2 => self.c4_hit(e, h),
+            4 => self.c4_dying(e, h),
+            _ => self.enemy_grabbed(e, h),
+        }
+        self.enemy_clamp_to_playfield(e, i); // jmp 0x193E
+    }
+
+    /// 0x36BCC: with HP 0 X is kept in camera X - 0x10 .. + 0x190.
+    pub(super) fn c4_dead_clamp(&self, e: &mut Enemy) {
         if e.b.hp == 0 {
             let cam = self.cam.s2.cam_x as i16;
             let put = |b: &mut crate::game::body::Body, x: i16| b.x = (b.x & 0xFFFF) | ((x as i32) << 16);
@@ -149,19 +178,12 @@ impl Game {
                 put(&mut e.b, cam.wrapping_add(0x190));
             }
         }
-        match e.b.sub {
-            0 => self.c4_alive(e, h),
-            2 => self.c4_hit(e, h),
-            4 => self.c4_dying(e, h),
-            _ => self.enemy_grabbed(e, h),
-        }
-        self.enemy_clamp_to_playfield(e, i); // jmp 0x193E
     }
 
     /// 0x36C34: the poise refill (11), the terrain (0x12CB4); the hit stop (the animation steps when it ends, `+$2F` = 1) or the wait `+$7A`;
     /// else a slot point (0x32C54), the state of `+$06` (table 0x36CA0), the gate (0x36DF0) and the phase flag (0x36CF4); then the target
     /// check (0x32F56), the draw check and the hurtable list.
-    fn c4_alive(&mut self, e: &mut Enemy, h: Handle) {
+    pub(super) fn c4_alive(&mut self, e: &mut Enemy, h: Handle) {
         let t = e.m.b(POISE_T);
         if t != 0 {
             e.m.sb(POISE_T, t - 1);
@@ -183,9 +205,9 @@ impl Game {
             // 0x36DF0: in the aggressive phase G.$502 = 1 and the gate 0x38BD6.
             if e.m.b(o::PHASE) != 0 {
                 self.spawn.g.b502 = 1;
-                self.boss_aggression_gate(e, BossAi::Tyrog);
+                self.boss_aggression_gate(e, Self::c4_ai(e));
             }
-            self.boss_phase_tick(e, BossAi::Tyrog); // 0x36CF4
+            self.boss_phase_tick(e, Self::c4_ai(e)); // 0x36CF4 (0x6571A)
         }
         self.lib_check_target(e); // 0x32F56
         self.enemy_draw_check(&mut e.b, h);
