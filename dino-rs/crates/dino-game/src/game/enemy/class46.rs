@@ -46,7 +46,9 @@ impl Game {
                 e.m.sw(0xA6, 0x10);
                 e.b.set_yi(0); // move.w #0,$C(a6)
                 e.b.set_zi(0);
-                let _ = self.terrain_collide(&mut e.b, h, false);
+                if let Some(o) = self.terrain_collide(&mut e.b, h, false) {
+                    e.m.sw(0x94, o); // 0x12CB4 leaves the obstacle in +$94
+                }
                 self.enemy_anim(&mut e.b, 0);
                 if self.rand() & 1 == 0 {
                     self.enemy_anim(&mut e.b, 1);

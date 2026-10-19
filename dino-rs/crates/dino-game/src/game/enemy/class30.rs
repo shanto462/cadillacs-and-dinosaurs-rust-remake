@@ -39,7 +39,9 @@ impl Game {
                 e.b.b63 = 0xFF;
                 e.m.sw(0x80, 0);
                 e.m.sw(0x82, 0x64);
-                let _ = self.terrain_collide(&mut e.b, h, false);
+                if let Some(o) = self.terrain_collide(&mut e.b, h, false) {
+                    e.m.sw(0x94, o); // 0x12CB4 leaves the obstacle in +$94
+                }
                 put_hi(&mut e.b.y, -0x20);
                 put_hi(&mut e.b.z, 0x45);
                 e.b.facing = 1;

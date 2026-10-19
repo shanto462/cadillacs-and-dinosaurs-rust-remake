@@ -37,7 +37,9 @@ impl Game {
                 e.m.sw(0xA0, 0);
                 e.m.sw(0xA2, 0x64);
                 e.m.sw(0xA6, 0x10);
-                let _ = self.terrain_collide(&mut e.b, h, false);
+                if let Some(o) = self.terrain_collide(&mut e.b, h, false) {
+                    e.m.sw(0x94, o); // 0x12CB4 leaves the obstacle in +$94
+                }
                 self.enemy_anim(&mut e.b, 0);
                 e.b.mode += 2;
                 self.enemy_c48_frame(e, h);

@@ -17,7 +17,9 @@ impl Game {
                 p.b.anim_table = 0x89736;
                 p.m.sw(0x80, 0);
                 p.m.sw(0x82, 0x64);
-                let _ = self.terrain_collide(&mut p.b, h, false); // jsr 0x12CB4
+                if let Some(o) = self.terrain_collide(&mut p.b, h, false) { // jsr 0x12CB4
+                    p.m.sw(0x94, o); // 0x12CB4 leaves the obstacle in +$94
+                }
                 p.b.start_anim(&self.assets.sprites, 0); // jsr 0x120E, d0 = 0
                 p.b.mode = 2; // addq.b #2,+$04
                 self.prop_b70_run(p, i); // falls into 0x89724

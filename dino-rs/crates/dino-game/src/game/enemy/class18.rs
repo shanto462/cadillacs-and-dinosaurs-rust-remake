@@ -108,7 +108,9 @@ impl Game {
             e.m.sb(0x7A, e.m.b(0x7A).wrapping_sub(1));
             if e.m.b(0x7A) == 0 { self.enemy_vice_approach(e); }
         }
-        self.terrain_collide(&mut e.b, h, false);
+        if let Some(o) = self.terrain_collide(&mut e.b, h, false) {
+            e.m.sw(0x94, o); // 0x12CB4: the obstacle test leaves the obstacle in +$94 (read by 0x4292E)
+        }
         e.m.sb(0xC3, e.m.b(0xC3).wrapping_sub(1));
         if e.m.b(0xC3) == 0 {
             e.m.sb(0xC3, 200);

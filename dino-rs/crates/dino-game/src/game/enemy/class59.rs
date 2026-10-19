@@ -47,7 +47,9 @@ impl Game {
                     self.enemy_anim(&mut e.b, 1);
                 }
                 if e.b.facing == 0 { e.m.sw(0xA0, e.m.w(0xA0).wrapping_neg()); }
-                self.terrain_collide(&mut e.b, h, false);
+                if let Some(o) = self.terrain_collide(&mut e.b, h, false) {
+                    e.m.sw(0x94, o); // 0x12CB4 leaves the obstacle in +$94
+                }
                 e.b.mode = e.b.mode.wrapping_add(2);
             }
             2 => {}

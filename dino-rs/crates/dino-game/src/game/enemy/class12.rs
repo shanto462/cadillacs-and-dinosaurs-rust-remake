@@ -40,7 +40,9 @@ impl Game {
                 let z = e.b.zi().wrapping_add(0x10);
                 put_hi(&mut e.b.z, z);
                 put_hi(&mut e.b.y, -0x20);
-                let _ = self.terrain_collide(&mut e.b, h, false);
+                if let Some(o) = self.terrain_collide(&mut e.b, h, false) {
+                    e.m.sw(0x94, o); // 0x12CB4 leaves the obstacle in +$94
+                }
                 self.enemy_anim(&mut e.b, 2);
                 if e.b.var26 >> 8 != 0 {
                     self.enemy_anim(&mut e.b, 1);

@@ -86,7 +86,9 @@ impl Game {
             }
             2 => {
                 // 0x82086: first flight arc
-                let _ = self.terrain_collide(&mut p.b, h, false); // 0x12CB4
+                if let Some(o) = self.terrain_collide(&mut p.b, h, false) { // 0x12CB4
+                    p.m.sw(0x94, o); // 0x12CB4 leaves the obstacle in +$94
+                }
                 if p.b.airborne == 0 {
                     // 0x82094: bounce!
                     p.b.airborne = 1;
@@ -99,7 +101,9 @@ impl Game {
             }
             _ => {
                 // 0x820B8: second flight arc (sub >= 4)
-                let _ = self.terrain_collide(&mut p.b, h, false); // 0x12CB4
+                if let Some(o) = self.terrain_collide(&mut p.b, h, false) { // 0x12CB4
+                    p.m.sw(0x94, o); // 0x12CB4 leaves the obstacle in +$94
+                }
                 if p.b.airborne == 0 {
                     // 0x820C6: landed
                     p.b.mode = 4;

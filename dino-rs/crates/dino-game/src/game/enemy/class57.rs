@@ -23,7 +23,9 @@ impl Game {
                 e.m.sw(0x80, 0);
                 e.m.sb(0x83, 0);
                 e.b.draw_flags = 0x10;
-                let _ = self.terrain_collide(&mut e.b, h, false); // jsr 0x12CB4
+                if let Some(o) = self.terrain_collide(&mut e.b, h, false) { // jsr 0x12CB4
+                    e.m.sw(0x94, o); // 0x12CB4 leaves the obstacle in +$94
+                }
                 if e.b.var26 != 0 {
                     self.enemy_anim(&mut e.b, 1);
                 } else {
