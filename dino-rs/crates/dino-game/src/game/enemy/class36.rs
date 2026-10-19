@@ -40,17 +40,7 @@ impl Game {
                 }
                 self.enemy_clamp_to_playfield(e, i);
             }
-            4 => {
-                // M7-19 owns the full death dialogue. Retain the approved placeholder rebirth.
-                let spec = crate::game::placeholder::Boss {
-                    hp_row: 4,
-                    controller: true,
-                    score: false,
-                    rebirth: Some(40),
-                    group: false,
-                };
-                self.boss_placeholder_dying(e, h, spec);
-            }
+            4 => self.enemy_morgan_dying(e, h),
             _ => self.enemy_free_pool_a(e, i),
         }
     }
@@ -710,10 +700,116 @@ impl Game {
         }
         self.enemies.slots[i] = r;
     }
+
+    /// 0x52ECE / 0x5490E: clear 45 columns x 13 rows of space tile 0x20 at `a0`.
+    pub(in crate::game) fn clear_caption_box(&mut self, mut a0: u32) {
+        for _col in 0..45 {
+            let mut a2 = a0;
+            for _row in 0..13 {
+                self.hud_put(a2, 0x20, 0);
+                a2 += 4;
+            }
+            a0 += 0x80;
+        }
+    }
+
+    /// 0x52DA2: Morgan death talk, walk to center, pose, caption box clear, and rewrite to Morgue (class 40).
+    fn enemy_morgan_dying(&mut self, e: &mut Enemy, h: Handle) {
+        match e.b.sub {
+            0 => {
+                // 0x52DBA
+                self.spawn.g.kill_all = 2;
+                self.flow.speed = 1;
+                self.spawn.g.b502 = 0;
+                self.prop_b50_palette(3); // 0x84E2E
+                self.text_portrait(0x90A29C, 7, 0x3B); // 0x84736
+                e.m.sw(0xA2, 0x1C); // 0x84746: move.w 0(a2, d0.w), $A2(a6)
+                e.m.sw(0x80, 0x78); // 120 frames
+                e.b.sub = 2;
+                self.draw_list_add_check(h);
+            }
+            2 => {
+                // 0x52DF4
+                self.spawn.g.kill_all = 0;
+                let t = e.m.w(0x80);
+                if t != 0 {
+                    e.m.sw(0x80, t.wrapping_sub(1));
+                    self.draw_list_add_check(h);
+                    return;
+                }
+                // 0x52E0C: timer expired (borrow)
+                let d0 = e.b.xi().wrapping_sub(0x11C0);
+                if d0 > 0x40 && d0 < 0x140 {
+                    // Skip walk, go directly to sub 10 (pose)
+                    e.b.sub = 10;
+                    e.m.sw(0x80, 0x77); // 0x78 decremented in sub 10 fallthrough
+                    self.enemy_anim(&mut e.b, 0x10);
+                    self.draw_list_add_check(h);
+                    return;
+                }
+                // 0x52E2E: walk towards center
+                e.b.facing = 1;
+                e.b.dir = 8;
+                if e.b.xi().wrapping_sub(self.cam.s2.cam_x as i16) >= 0xC0 {
+                    e.b.facing = 0;
+                    e.b.dir = 0x18;
+                }
+                e.b.sub = 4;
+                self.enemy_set_speed(&mut e.b, 5); // 0x17A4
+                e.m.sw(0x80, 0x3B); // 0x3C decremented in sub 4 fallthrough
+                self.enemy_anim(&mut e.b, 0x0E); // anim 14
+                self.enemy_step(&mut e.b);
+                self.enemy_move_dir(&mut e.b);
+                self.draw_list_add_check(h);
+            }
+            4 => {
+                // 0x52E70
+                let t = e.m.w(0x80);
+                if t != 0 {
+                    e.m.sw(0x80, t.wrapping_sub(1));
+                    self.enemy_step(&mut e.b);
+                    self.enemy_move_dir(&mut e.b);
+                    self.draw_list_add_check(h);
+                } else {
+                    // Falls into sub 10 (0x52E90 / 0x52EA2)
+                    e.b.sub = 10;
+                    e.m.sw(0x80, 0x77); // 0x78 decremented in sub 10 fallthrough
+                    self.enemy_anim(&mut e.b, 0x10);
+                    self.draw_list_add_check(h);
+                }
+            }
+            6 | 8 => {
+                e.b.sub = 10;
+                e.m.sw(0x80, 0x77);
+                self.enemy_anim(&mut e.b, 0x10);
+                self.draw_list_add_check(h);
+            }
+            10 => {
+                // 0x52EA2
+                let t = e.m.w(0x80);
+                if t != 0 {
+                    e.m.sw(0x80, t.wrapping_sub(1));
+                    self.draw_list_add_check(h);
+                } else {
+                    // 0x52EB4: clear caption window and rewrite to Morgue (class 40)
+                    self.clear_caption_box(0x90A29C); // 0x52ECE
+                    e.b.k20 = 40 * 4;
+                    e.b.mode = 0;
+                    e.b.sub = 0;
+                    e.b.act = 0;
+                    e.b.step = 0;
+                    self.draw_list_add_check(h);
+                }
+            }
+            _ => {
+                self.draw_list_add_check(h);
+            }
+        }
+    }
 }
 
 /// 0x51E8A: signed Z bands and five strict X thresholds.
-fn morgan_cell(x: i16, z: i16) -> u16 {
+pub(super) fn morgan_cell(x: i16, z: i16) -> u16 {
     let z = z.wrapping_sub(0x110);
     let mut n = if z <= 26 {
         13
@@ -738,7 +834,7 @@ fn morgan_steps(e: &mut Enemy, x: i16, z: i16, sx: i32, sz: i32) {
     e.m.sl(0xB4, (if z > e.b.zi() { sz } else { -sz }) as u32);
 }
 /// 0x51CDC: SUBQ.W preserves underflow.
-fn morgan_count(e: &mut Enemy) -> bool {
+pub(super) fn morgan_count(e: &mut Enemy) -> bool {
     let n = e.m.w(0xAC).wrapping_sub(1);
     e.m.sw(0xAC, n);
     n == 0

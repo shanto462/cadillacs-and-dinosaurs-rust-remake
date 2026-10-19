@@ -179,6 +179,10 @@ pub struct World {
     /// the flight, 0x592EE, reads them).
     pub leap_dx: u32,
     pub leap_dz: u32,
+    /// G.-$7054: Morgue target zone indicator (written by 0x53EBC / 0x54116).
+    pub morgue_7054: u16,
+    /// G.-$705E: Morgue initial HP (written by 0x53EE6).
+    pub morgue_init_hp: u16,
     /// G.$5EE level (difficulty row, 0..31) and G.$5F0 rank.
     pub level: u16,
     pub rank: u16,

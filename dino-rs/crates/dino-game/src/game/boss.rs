@@ -496,9 +496,13 @@ mod tests {
         assert_eq!(g.flow.sub, 0, "Morgan's death does not end the fight");
         g.enemies.slots[i].b.mode = 4; // the hit reaction starts the death state
         g.enemies.slots[i].b.sub = 0;
-        for _ in 0..40 {
+        for _ in 0..320 {
             g.enemies_update();
+            if g.enemies.slots[i].b.k20 == 40 * 4 {
+                break;
+            }
         }
+        g.enemies_update(); // run Morgue's mode 0 init
         assert_eq!(g.enemies.slots[i].b.k20 / 4, 40, "the same object is Morgue now");
         assert_eq!((g.enemies.slots[i].b.mode, g.enemies.slots[i].b.hp), (2, morgue_hp));
         assert_eq!(g.flow.sub, 0);
