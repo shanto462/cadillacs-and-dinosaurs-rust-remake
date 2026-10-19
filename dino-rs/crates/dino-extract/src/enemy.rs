@@ -363,6 +363,12 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x80518, 2856, "B29 block tables: dest addrs, phase table ptrs, phase ptrs, tile codes (0x804CA)"),
     // Pool B class 43 (wall torches, 0x83ACA): 7 records of 2 x 2 flames, 4 phases.
     (0x83B4E, 92, "B43 torch tables: dest addrs, phase ptrs, tile codes (0x83B20)"),
+    // M8-19 lab tank breakers (pool B 44): the creature rows, the recolour flags, the recolour words, the 42 tile codes of the empty cylinder, the 11 cylinder addresses.
+    (0x83C36, 0x2C, "B44 creature rows (class word, variant)"),
+    (0x83C96, 12, "B44 recolour flags by cylinder"),
+    (0x83D22, 36, "B44 recolour palette words"),
+    (0x83D84, 84, "B44 tile codes of the broken cylinder"),
+    (0x83DD8, 44, "B44 cylinder addresses"),
     // Pool B class 0 (generic breakable wall panel / garage fixtures, 0x74FA2, M7-05).
     (0x75018, 9, "B0 size records (0x75006)"),
     (0x750B4, 0x12C, "B0 box tables and patch layouts (0x74FA2)"),

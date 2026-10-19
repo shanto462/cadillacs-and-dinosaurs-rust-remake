@@ -159,6 +159,8 @@ mod b76;
 // Episode 8 sewer scenery (M8-21): water bands (28, 29) and torches (43).
 #[path = "prop/b28_29.rs"]
 mod b28_29;
+#[path = "prop/b44.rs"]
+mod b44;
 #[path = "prop/b43.rs"]
 mod b43;
 // Episode 2 scenery (M6-15): swamp water (2) and the Butcher yard tiles (27).
@@ -289,6 +291,7 @@ impl Game {
                 37 => self.prop_b37(&mut p, i),
                 38 => self.prop_b38(&mut p, i),
                 43 => self.prop_b43(&mut p, i),
+                44 => self.prop_b44(&mut p, i),
                 47 => self.prop_b47(&mut p, i),
                 48 => self.prop_b48(&mut p, i),
                 49 => self.prop_b49(&mut p, i),
