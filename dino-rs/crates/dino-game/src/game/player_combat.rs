@@ -440,7 +440,7 @@ impl Game {
         }
         let hp = (p.b.hp as i16).wrapping_sub(cost as i16);
         p.b.hp = if hp > 0 { hp as u16 } else { 1 };
-        // 0x16446 HP bar redraw (HUD port).
+        self.hud_life_bar(i); // 0x16446 HP bar redraw, after the cost
     }
 
     /// 0x12526: knee / throw damage to the held enemy (+$70). No hit-stop.

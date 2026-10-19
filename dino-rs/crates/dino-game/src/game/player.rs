@@ -1427,7 +1427,9 @@ impl Game {
         {
             let p = &mut self.players[i];
             p.special_budget = 0x14;
-            // G.$4D5 == 0: 0x16446 HP bar redraw (HUD port reads +$6C).
+        }
+        if self.spawn.g.b4d5 == 0 {
+            self.hud_life_bar(i); // 0x16446 HP bar redraw (G.$4D5 == 0)
         }
         self.player_sfx(i, 0x992C);
         self.players[i].action = 0x11;
@@ -2643,7 +2645,8 @@ impl Game {
             }
             self.player_panim(i, 2, anim);
             self.player_sfx(i, 0x98CC);
-            // 0x16B18(2) face icon, 0x16446 HP bar: HUD port reads +$6C / +$6E.
+            // 0x16B18(2) face icon (not ported), then 0x16446 HP bar: HUD port reads +$6C / +$6E.
+            self.hud_life_bar(i);
             let p = &mut self.players[i];
             p.action = 0x20;
             p.b.step = 2;
