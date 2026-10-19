@@ -20,19 +20,21 @@ merged. Review aids: `--episode N --area A --camx X`, `--autoplay`, `--debug-key
 
 ## Milestones
 
+Checkpoint (2026-10-19 21:20, user: "complete up to M4"): M1 to M3 are done, M4 waits for M4-16. Workers finish their current tasks and then stop; the held tasks are in `re/out/desk/*/held.txt`, open leads in `re/out/cli/pending_fixes.md` (git-ignored). Play and test commands: `run.md`.
+
 | M | What the player gets | Agent hours (plan) | State |
 | --- | --- | --- | --- |
 | M0 | Every episode starts | 1.5 | Done (`f8e3c93`) |
-| M1 | Attract loop, exact from power on (boot, title, profiles, ranking, story slides, opening movie, demos) | 24 | Done (2026-10-13): two full loops from power on equal MAME outside the demos; the demos match as far as their levels exist |
-| M2 | Coin, select, Episode 1 opening, clock and TIME OVER, join, continue, game over, name entry, tally, link scenes | 52 | In progress (2026-10-19: 32 of 33; the acceptance checks M2-32 are merged) |
-| M3 | The whole game from power on to the ending, every transition and story scene, placeholder fights | 51 | In progress (2026-10-19: 29 of 30: `dino-game --headless --autoplay` plays from power on through all eight episodes to the ending and back to the attract loop; left: M3-30 fix list and docs) |
-| M4 | Sound: Z80 driver port, QSound mixer, cue wiring | 35 | In progress (2026-10-19: 18 of 20: the driver, mixer and audio output, the exactness passes over all music and effect codes, front end, hero, weapon and item sounds; left: area and boss music M4-16; running: the acceptance M4-19) |
-| M5 | Episode 1 for real | 37 | In progress (2026-10-19: 17 of 23: effects, Vice T., Rock Hopper, Walther, steam pipes, the scenario prep; left: the verify passes and full runs M5-18 to M5-23) |
-| M6 | Episodes 2 and 3 (poachers, dinosaurs, Butcher, the Cadillac drive, Hogg) | 59 | In progress (2026-10-19: 32 of 33: Episode 2 (poachers, hunter, Lash T., Mack, Shivat, Butcher, scenery) and Episode 3 (Hogg, the Cadillac drive, bomb carriers, hazards, the acceptance M6-31 / M6-32); running: the Episode 2 acceptance M6-17) |
-| M7 | Episodes 4 and 5 (Slice, Bludge, Zeke, Morgan / Morgue, the burning village) | 50 | In progress (2026-10-19: 20 of 28: Slice, Zeke, Rock Hopper, Bludge part 1, the shared boss skeleton, the Morgan scene and fight, Episode 4 and 5 scenery and events; running: Bludge parts 2 and 3, Morgan's death and Morgue M7-19 to M7-21; left: the Episode 4 and 5 acceptance) |
-| M8 | Episodes 6, 7 and 8 (the foot, the storm, Tyrog, the lift, Slisaurs, the tanks, Fessenden, the ending) | 66 | In progress (2026-10-19: 11 of 37: Episode 6 scenery and lightning, Episode 7 lab events, Episode 8 sewer scenery and flame vents; running: Tyrog M8-06 to M8-12, the tank breakers M8-19; left: the foot, Slisaurs, Fessenden, the acceptance runs) |
+| M1 | Attract loop, exact from power on (boot, title, profiles, ranking, story slides, opening movie, demos) | 24 | Done (2026-10-13: two full loops from power on equal MAME outside the demos; the picture compare tool M1-14 in 2136d09) |
+| M2 | Coin, select, Episode 1 opening, clock and TIME OVER, join, continue, game over, name entry, tally, link scenes | 52 | Done (2026-10-19: 33 of 33; the timed pokes M2-00 in 2136d09, the acceptance checks M2-32) |
+| M3 | The whole game from power on to the ending, every transition and story scene, placeholder fights | 51 | Done (2026-10-19: 30 of 30: the bot plays from power on through all eight episodes to the ending and back to the attract loop; M3-30: the car allow rules gone, Episode 1 cleared without kill all, the placeholder census in D5-errata, the link scenes looked at) |
+| M4 | Sound: Z80 driver port, QSound mixer, cue wiring | 35 | In progress (2026-10-19: 19 of 20: the driver, mixer, audio output, every music and effect code, the front end, hero, weapon and item sounds, the acceptance M4-19 (request streams of 15 episodes, QSound registers equal); running: area and boss music M4-16) |
+| M5 | Episode 1 for real | 37 | In progress (2026-10-19: 17 of 23: effects, Vice T., Rock Hopper, Walther, steam pipes; running: the heroes' moves M5-18; left: the verify passes and full runs M5-19 to M5-23) |
+| M6 | Episodes 2 and 3 (poachers, dinosaurs, Butcher, the Cadillac drive, Hogg) | 59 | Done (2026-10-19: 33 of 33: Episodes 2 and 3, the Episode 2 and 3 acceptance) |
+| M7 | Episodes 4 and 5 (Slice, Bludge, Zeke, Morgan / Morgue, the burning village) | 50 | In progress (2026-10-19: 22 of 28: Slice, Zeke, Rock Hopper, Bludge, the boss skeleton, the Morgan scene and fight, Episode 4 and 5 scenery; running: Morgan's death and Morgue M7-19 to M7-21, the Episode 4 acceptance M7-06; left: the Episode 5 acceptance) |
+| M8 | Episodes 6, 7 and 8 (the foot, the storm, Tyrog, the lift, Slisaurs, the tanks, Fessenden, the ending) | 66 | In progress (2026-10-19: 30 of 37: Tyrog (4, 72, 91), Fessenden (94, 84 to 89, 95), the lab tank breakers, Episode 6 to 8 scenery, the Episode 8 acceptance part 1; left: the foot M8-01, the Slisaurs M8-13 to M8-15, M8-16, M8-18, M8-36) |
 | M9 | Small things pass over `mechanics-seen.md` | 25 | In progress (2026-10-19: 3 of 14) |
-| M10 | Exactness against MAME and finish | 58 | In progress (2026-10-19: 2 of 26; the recording sweep: 266 of 418 recordings equal MAME in step mode) |
+| M10 | Exactness against MAME and finish | 58 | In progress (2026-10-19: 2 of 26; the recording sweep: 344 of 418 recordings equal MAME in step mode) |
 | | Total | 456 listed (about 610 expected) | |
 
 ## Done before the build plan
