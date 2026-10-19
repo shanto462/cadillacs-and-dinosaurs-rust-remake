@@ -48,6 +48,9 @@ impl Game {
                         self.enemy_zeke_sub_hit(e, h);
                         self.terrain_floor_only(&mut e.b);
                         self.enemy_draw_check(&mut e.b, h);
+                        // 0x60F2A: the inner step handler ends with `jmp $49ca`, so its rts comes
+                        // back to 0x60F2A, which runs `jmp $49ca` again: the draw list gets Zeke twice.
+                        self.enemy_draw_check(&mut e.b, h);
                     }
                     4 => {
                         // 0x60FEE: dive grab

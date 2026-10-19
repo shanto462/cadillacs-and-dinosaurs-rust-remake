@@ -23,13 +23,13 @@ impl Game {
                 p.b.mode = 2; // 0x7529E
                 // Falls through to 0x752A2
                 self.prop_b1_camera_check(p); // 0x752A2: bsr 0x752B2 (mode 6 when passed; the frame goes on)
-                self.draw_list_add_if_visible(h); // 0x752A6: jsr 0x49C0
+                self.prop_draw_list(p, i); // 0x752A6: jsr 0x49C0
                 self.prop_register_hit(h); // 0x752AC: jmp 0x4BFA
             }
             2 => {
                 // 0x752A2: idle / solid
                 self.prop_b1_camera_check(p); // 0x752A2
-                self.draw_list_add_if_visible(h); // 0x752A6
+                self.prop_draw_list(p, i); // 0x752A6
                 self.prop_register_hit(h); // 0x752AC
             }
             4 => {
@@ -37,7 +37,7 @@ impl Game {
                 if p.b.sub != 0 {
                     // 0x75318: lingering broken fence (sub state 2)
                     self.prop_b1_camera_check(p); // 0x75318: bsr 0x752B2
-                    self.draw_list_add_if_visible(h); // 0x7531A: jmp 0x49C0
+                    self.prop_draw_list(p, i); // 0x7531A: jmp 0x49C0
                     return;
                 }
 
@@ -52,7 +52,7 @@ impl Game {
                         p.b.mode = 2; // 0x752E4
                     }
                     self.prop_b1_camera_check(p); // 0x75318: bsr 0x752B2
-                    self.draw_list_add_if_visible(h); // 0x7531A: jmp 0x49C0
+                    self.prop_draw_list(p, i); // 0x7531A: jmp 0x49C0
                     return;
                 }
 
@@ -67,7 +67,7 @@ impl Game {
 
                 // 0x75318
                 self.prop_b1_camera_check(p); // 0x75318: bsr 0x752B2
-                self.draw_list_add_if_visible(h); // 0x7531A: jmp 0x49C0
+                self.prop_draw_list(p, i); // 0x7531A: jmp 0x49C0
             }
             _ => self.prop_free(p, i), // 0x753FA: jmp 0x4938
         }
