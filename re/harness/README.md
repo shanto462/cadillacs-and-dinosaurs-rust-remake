@@ -1752,3 +1752,14 @@ frames. Record (one MAME process, about 40 seconds) and check:
 PR_SNAPS=none PR_SHEET=0 re/harness/probe/probe_record.sh re/harness/pokes/m610_butcher.txt all
 re/harness/m610_check.sh                    # every scenario in step mode: 0 fields expected
 ```
+
+## Music, hero move and Episode 4 acceptance (M4-16, M5-18, M7-06)
+
+The results and the causes of what is left are in `allow/m4.txt` (section 6: area and boss music), `allow/m5.txt` (55 hero move scenarios, 0 differences with its one rule) and
+`allow/m7.txt` (Episode 4: 57 scenarios in step mode, 48 equal, the rest with causes). To repeat a check without overwriting a recording, give the port a new name and link the MAME
+files to it (`ln -s NAME.mame.trc a416_NAME.mame.trc`, the same for `.state`, `.pokes.txt`, `.input.txt`), then
+`MODE=step re/harness/port.sh re/harness/scripts/NAME.txt a416_NAME FRAMES` and `diff.py re/out/traces/a416_NAME.mame.trc re/out/traces/a416_NAME.step.trc --allow re/harness/allow/m5.txt`
+(`MODE=run` and the `.port.trc` for the free run; `DINO_GAME_CLOCK=1` for the area change scenarios of M3-29). The scenario lists: `m515_a1_idle_*` to `m515_a14_wj_*` (M5-18), the Episode 4 rows of
+`m700_a207` to `m700_a214` and `m700_a224`, `m600_h13_*`, `m600_h22_e4_open`, `m600_h23_car_trace` and `m516_e4a*` (M7-06). The music requests of a recording are the ring entries with a code
+below 0x27, 0xFF00 or 0xFF07 (`trace.mame_sounds`); `DINO_WATCH_WRITE=ADDR probe_record.sh BATCH SEGMENT NEWNAME` logs which routine writes a byte (the wall jump terrain skip was found with the wall
+byte `FFB2C4`, the log is in `re/out/probe/BATCH-rec/mame.log`).

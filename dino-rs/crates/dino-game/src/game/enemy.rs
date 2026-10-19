@@ -842,28 +842,27 @@ impl Game {
                 }
             }
             score[n] = 10;
+            // 0x3215A..: the +1 and +2 go to the slot a0 points at. a0 is set by a present player 1 only (the tests of players 2 and 3 move it when
+            // they beat the value); with no player 1 it stays where the block before left it: the nearest player, then the +1 player.
             // Largest score (BCD long +$100), ties keep the earlier player: +1.
-            let mut n = 0;
+            let mut a0 = n;
             let mut v = 0u32;
             for p in 0..3 {
                 if present[p] && (p == 0 || self.enemy_player_score(p) > v) {
-                    if p == 0 || self.enemy_player_score(p) > v {
-                        v = self.enemy_player_score(p);
-                        n = p;
-                    }
+                    v = self.enemy_player_score(p);
+                    a0 = p;
                 }
             }
-            score[n] = score[n].wrapping_add(1);
+            score[a0] = score[a0].wrapping_add(1);
             // Largest vitality: +2.
-            let mut n = 0;
             let mut v = 0u16;
             for p in 0..3 {
                 if present[p] && (p == 0 || self.players[p].b.hp > v) {
                     v = self.players[p].b.hp;
-                    n = p;
+                    a0 = p;
                 }
             }
-            score[n] = score[n].wrapping_add(2);
+            score[a0] = score[a0].wrapping_add(2);
             for p in 0..3 {
                 if !present[p] {
                     continue;
@@ -900,9 +899,11 @@ impl Game {
         self.players[p % 3].score
     }
 
-    /// Player +$A0 current move word (0x02xx = attack). TODO(player port): real field.
-    pub fn enemy_player_move_a0(&self, _p: usize) -> u16 {
-        0
+    /// The word at player +$A0 (0x3314 / 0x3494 / 0x3614): +$A0 (`held`) in the high byte, +$A1 (`prev`) in the low byte. 0x32032 adds 3 or 6 to a
+    /// hero whose word is 0x02xx (M7-06: the stub returned 0, so the target scores of a hero holding that input were never raised).
+    pub fn enemy_player_move_a0(&self, p: usize) -> u16 {
+        let q = &self.players[p % 3];
+        (q.held as u16) << 8 | q.prev as u16
     }
 
     /// 0x10036: add BCD `v` to player `p`'s score (+$100), saturating at 99999999.
@@ -1085,24 +1086,29 @@ impl Game {
         }
     }
 
-    /// 0x33B96: a present player inside the box `ahead` px in front.
+    /// 0x33B96 (reached by `bra` from 0x33A3E and 0x33ADE with d0 = X in front, d2 = `half`, d3 = `w`): a present player inside the box.
+    /// The original keeps d1 across the three players: 0x33BCC subtracts the player's X from it and adds d2, and when the X test fails (d1 >=
+    /// d3, unsigned) d1 stays that sum for the next player; when it passes, d1 becomes the Z sum `z - z' + 0xC`. So the second and the third
+    /// player are tested against a leftover and not against the X in front (M7-06: ep4_3p 2178, three heroes). Players 1 and 2 stop the scan
+    /// with the carry of the test (`bcc` goes on), player 3 returns it; a missing player 3 returns carry clear.
     pub fn enemy_player_ahead(&self, e: &Enemy, ahead: i16, half: u16, w: u16) -> bool {
-        let px = e.b.xi().wrapping_add(if e.b.facing != 0 { ahead } else { -ahead });
+        let mut d1 = e.b.xi().wrapping_add(if e.b.facing != 0 { ahead } else { -ahead }) as u16;
         for p in 0..3 {
             let q = &self.players[p].b;
             if q.live == 0 {
                 continue;
             }
-            let d = px.wrapping_sub(q.xi()).wrapping_add(half as i16) as u16;
-            if d >= w {
-                continue;
+            // 0x33BCC
+            d1 = d1.wrapping_sub(q.xi() as u16).wrapping_add(half);
+            let carry = if d1 >= w {
+                false // cmp.w d3,d1; bcc
+            } else {
+                d1 = (e.b.zi() as u16).wrapping_sub(q.zi() as u16).wrapping_add(0xC);
+                d1 < 0x18 // cmpi.w #$18,d1: carry set inside the Z window
+            };
+            if carry || p == 2 {
+                return carry;
             }
-            let dz = e.b.zi().wrapping_sub(q.zi()).wrapping_add(0xC) as u16;
-            if dz < 0x18 {
-                return true;
-            }
-            // The original returns the Z test's carry: a player beside but not inside Z stops
-            // the scan only for P1 and P2 when the X test passed (bcc continues).
         }
         false
     }
@@ -1743,7 +1749,8 @@ impl Game {
 
     /// 0x3555A: a free player right in front: he becomes the target.
     pub fn enemy_c2_bump_player(&self, e: &mut Enemy) -> bool {
-        for p in [2usize, 1, 0] {
+        // 0x3555A: d5 = 2, 1, 0 index the pointer table 0x35574 (B574, B3F4, B274), so the scan is P1, P2, P3 (M7-06: ep4_3p 15856)
+        for p in [0usize, 1, 2] {
             let q = &self.players[p].b;
             if q.live == 0 || q.sub != 0 {
                 continue;
@@ -2321,6 +2328,50 @@ mod tests {
     fn angle_adds_with_a_byte() {
         let b = at(0x4B3, 0x13E);
         assert_eq!(Game::enemy_angle_to(&b, 0xBB, 0), 0x14);
+    }
+
+    fn bare_game() -> Game {
+        Game::new(Box::leak(Box::new(dino_assets::AssetPack::default())))
+    }
+
+    /// 0x33B96 keeps d1 across the heroes (M7-06, ep4_3p 2178): player 2 is tested against the X sum that player 1 left, not against the spot in
+    /// front of the thug. Player 2 at x 0x10C would pass a fresh test (0x24 < 0x30) and fails the leftover one (0xFF3C).
+    #[test]
+    fn the_entrance_test_keeps_d1_across_the_heroes() {
+        let mut g = bare_game();
+        let mut e = Enemy::default();
+        e.b.set_xi(0x100);
+        e.b.set_zi(0x20);
+        e.b.facing = 1;
+        for (i, x) in [0x100i16, 0x10C].into_iter().enumerate() {
+            let b = &mut g.players[i].b;
+            b.live = 1;
+            b.set_xi(x);
+            b.set_zi(0x20);
+        }
+        assert!(!g.enemy_player_ahead(&e, 0x18, 0x18, 0x30));
+        // player 1 alone, at the spot: 0x118 - 0x118 + 0x18 = 0x18 < 0x30, and the same Z
+        g.players[1].b.live = 0;
+        g.players[0].b.set_xi(0x118);
+        assert!(g.enemy_player_ahead(&e, 0x18, 0x18, 0x30));
+    }
+
+    /// 0x3555A tests P1, then P2, then P3 (the pointer table is read from its end): two heroes inside the box make player 1 the target.
+    #[test]
+    fn the_bump_scan_goes_player_1_first() {
+        let mut g = bare_game();
+        let mut e = Enemy::default();
+        e.b.set_xi(0x100);
+        e.b.set_zi(0x20);
+        for i in 0..3 {
+            let b = &mut g.players[i].b;
+            b.live = 1;
+            b.sub = 0;
+            b.set_xi(0x100);
+            b.set_zi(0x20);
+        }
+        assert!(g.enemy_c2_bump_player(&mut e));
+        assert_eq!(e.m.w(TARGET), Game::player_handle(0));
     }
 
     #[test]

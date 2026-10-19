@@ -1,0 +1,63 @@
+# Approved known differences of the Episode 4 acceptance (M7-06): D3e part 2 A207 to A214 and A224 (Episode 4 rows), D3a H22, H23 (the opening car), H13 (the bikers), D4a A18, A19 and A25
+# (the drums, the M-16 drops and the tires), the natural recordings ep4_jack and ep4_3p (1 and 3 players), in step mode and run mode.
+#   MODE=step re/harness/port.sh re/harness/scripts/NAME.txt NAME FRAMES                       (the traces here were made with the names a416_NAME: no old trace was overwritten)
+#   re/.venv/bin/python -I re/harness/diff.py re/out/traces/NAME.mame.trc re/out/traces/NAME.step.trc --allow re/harness/allow/m7.txt [--frame-list]
+# `--list-placeholders` has no Episode 4 class (the registry holds the Bludge, the Brontosaurus foot, Morgan, the villagers, Morgue, the Slisaur and Fessenden form 2); the two natural
+# recordings run all 27,954 records without the line "not ported (freed)" and the class report of diff.py has no [NOT PORTED] class.
+#
+# Result in step mode, 57 scenarios (every Episode 4 scenario of the list above): 48 equal without any rule, 9 differ: the 4 opening scenes (cause 2) and the 5 fence scenes (cause 3).
+# Result in run mode, 48 scenarios (the list without the opening scenes and the fence scenes): 45 equal, the 3 bikers (H13) differ in the free list only (cause 5).
+# ep4_jack in step mode: 1,221 of 27,954 records differ, 1,177 of them are the fence sprites (cause 3), the rest the tally and the stage change at the end (cause 4) and G.$2E (cause 6).
+# ep4_3p in step mode: 1,368 records, 1,286 fence sprites, the rest cause 4, 6, 7 and 8.
+# Before M7-06 the same two recordings had 25 and 36 groups of records with differences in the Walther (class 18), the thugs (class 2), the target choice and the score (the list at the end).
+#
+# 1. G.$860 (display_y1) and G.$868 (display_y2): the main loop's copies of the camera Y at the start of a pass, one frame behind the camera. The port derives them from the camera of the
+#    same frame, so they are one step ahead in the record in which the camera moves (the opening scene of H23 at 251 to 253: the camera Y goes from 0x100 to 0). The same rule as allow/m5.txt,
+#    m6.txt, m313.txt.
+global.display_y1
+global.display_y2
+#
+# 2. The opening scenes (m700_a207_e4_opening, m700_a207_e4_gate_crash, m600_h22_e4_open, m600_h23_car_trace; step mode only). The title typewriter and the scripted scenes live in the
+#    flow code of the port (`flow.typers`, the intro struct G.$735E ..), not in their pool B objects (class 26, the caption class 66 and the scene objects), which a step run loads from MAME but
+#    the port does not run: the fields prop.live of the typewriter slot (records 26 to 250), the pool B free list (G.$65F6, G.$6600, 25 records), the intro words G.$7360 to G.$7362 (record 26),
+#    G.$4D5 (records 226 and 888), and at 888 the second scene (cam1, G.$735E .. G.$736C, the scroll1 cells of its text). In run mode the four scenes are equal to MAME from the first record
+#    to 249 (the typewriter, the title, the gate scene start); h23_car_trace is equal to the end except cause 1.
+#    In run mode from 250 on the scenes of the first three differ because MAME has a lag record there: G.$0 goes 0x496 to 0x498 in one record (the caption banner class 66 variant 0x38 is made in it) and the port runs one game frame; every later record is one game frame early. The cause of the overrun was not found (the 1 in 128 scan 0x86B3C of the
+#    banner is 0.5 ms, not a frame; `flow.lag` is set only where the original's CPU time is known: ending, character select). It is the open item "lag from CPU time" (camera.rs
+#    TODO(M10)) of D5-errata M3-29.
+#
+# 3. The fence of the garage (A211 three scenarios and the replay, A212 e4a1_scenery_grid, and the records 8473 to 9758 of ep4_3p, 8570 to 9746 of ep4_jack): the pool B fence class is drawn
+#    with 10 sprites (x 0x1BF, y 0xA0, code 0x57D0, attribute 0x0B) that the port does not draw. The other worker of this milestone (the Haiku sub agent: the fence and Zeke sprites) owns it; all
+#    other fields of these scenarios are equal. Not an allow rule: when that task is merged these scenarios must be equal.
+#
+# 4. The stage change after the tally (ep4_jack 27497 on, ep4_3p 27308 on): the first records of the Episode 5 story panel. MAME runs them in lag records (G.$0 jumps, 4 records at 27497); the
+#    objects of the clear (effect owner words, the HUD blink, the floor and spawn list pointers, G.$7362) differ for 100 records and the panel's fade (palette bank 3). The known item of
+#    D5-errata M3-29 / M6-17 (the blocking code of the area and stage start).
+#
+# 5. m600_h13_bike_v0, v1, left in run mode: the free list of pool A (G.$65F8, G.$6602, G.$6666: one slot more free in the port) from record 6 on. The probe spawns the biker (class 70) in MAME only
+#    (`5 spawn A 70 ...`); `port.sh` writes the object from the sidecar but not the free list. The biker object, its updates, its sounds and the rider equal MAME in every record (0 object fields in
+#    step and run mode).
+#
+# 6. G.$2E (scroll3_base, 0x9100 against 0x9200 for one record) 39 records after a continue (ep4_jack 5850, 13830, 20290, 24470): D5-errata M6-17 item 2 (the mode switch of the continue
+#    keeps the CPU through two frames).
+#
+# 7. ep4_3p 17903: the record after a MAME lag record of 142 game frames (G.$0 0x4E77 to 0x4F05; a pause): the held item (item 8, y 0x36 against 0x34) and the second body of the hero
+#    (+$30 .. +$3E) are one animation step apart.
+#
+# 8. ep4_3p 8295: effect 46 (a spark, class 1) is made in a slot that has +$64 / +$65 = 0x0208 from the object before it; MAME has 0x030C in the creation record, the port in the next. Nothing
+#    reads the bytes (a stale byte pair of a freed slot; the same kind: the first record of ep4_jack in run mode, effect 30, +$62 / +$64 = 0xFF00 / 0xFFFE left by an earlier object).
+#
+# What was fixed in M7-06 (all in step mode, found by ep4_jack and ep4_3p; 0 records are new differences in the 15 whole-episode recordings: 381 records fewer differ, none more):
+#   - Walther (class 18 variant 2): the counter attack chance 0x42980 reads the table at 3 * the type byte + the HP row (Walther has its own row 6, 14, 24; the port used Vice's 7, 17, 30);
+#     the distance of 0x1926 in the escape jump scan 0x4488C is unsigned (a cell left of the thug is far on the unsigned side and negative for the signed compare: slot 12 instead of 2 at
+#     ep4_jack 4256 and 3 more); the target change 0x44316 for a fallen hero (+$C8 = 0x23) goes to 0x443A6 (next hero of the list, a random choice only with three) and does not return at once;
+#     the list builder 0x44416 keeps a first cell that it does not rewrite when nobody is present.
+#   - The target choice 0x32032 (all the classes that call it): the +1 and +2 points go to the slot a0 points at (with no player 1 a0 is the nearest hero, then the +1 hero); the word at the hero's
+#     +$A0 (3 or 6 for a hero in a 0x02xx input state) was a stub returning 0.
+#   - The class 2 thugs: the entrance test 0x33B96 keeps d1 across the three heroes (the 2nd and 3rd are tested against a leftover, the X sum of the one before); the bump scan 0x3555A goes P1,
+#     P2, P3 (the pointer table is read backwards).
+#   - The biker (class 70) death: the 200 points go to the hero in +$02 of the biker (the object was out of its slot, so the credit read an empty body and went to player 1).
+#   - The light hero pushback entry 0x1C9B4 draws one rand(); the heavy entry 0x1CAFC (acts 0x14, 0x16) does not.
+#   - The hit of a hero on an enemy with a weakness pair (A7, Jack's running jump kick on a Ferris) is a counter hit (G.$4F5): second spark and 400 more points.
+#   - Effects: the trace now carries +$51 (the debris pieces bounce on it; a step run had no airborne flag for them).
+#   - The harness joins the sound requests of the ticks of a game clock record (`harness.rs`): an area change with the fade and the area music in one lag record lost the first requests.

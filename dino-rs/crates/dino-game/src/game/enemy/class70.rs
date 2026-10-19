@@ -237,11 +237,12 @@ impl Game {
 
     /// 0x5C6CE: the enemy-table drop (0x24B36), the rider (0x33802), the kill credit (0x2AF9A), 200 points
     /// (table 0x10292 offset 0x18) and the free (0x48FC). Mode 4 enters here.
-    fn enemy_c70_death_tail(&mut self, e: &mut Enemy, h: Handle, i: usize) {
+    fn enemy_c70_death_tail(&mut self, e: &mut Enemy, _h: Handle, i: usize) {
         self.item_drop_from_enemy(e);
         self.enemy_c70_rider(e);
         self.enemy_c70_credit(e);
-        self.hud_add_score(h, 0x18);
+        // 0x10036 with a6 = this biker: its +$02 (the object is out of its slot here, so `hud_add_score(h, ..)` would read an empty body: ep4_3p 7068)
+        self.hud_add_score_to(e.b.who, self.assets.text.u32(0x10292, 0x18));
         self.enemy_free_pool_a(e, i);
     }
 

@@ -561,7 +561,6 @@ Things that were not what the first reading said (all found by the step-mode dif
 - `collide::boxes` takes a table outside the box bank as "no hit" (`try_single`): part 0 uses the table 0x337EA with indices beyond the bank in some frames; the original reads other ROM bytes there and never hits.
 - The special allocation (`draw_special_alloc`) sets `live = 1` on its slot, which the order of the two special allocations of the Bludge pair needs (the M8-20 record 92 difference).
 Check, step mode (all 8 Bludge recordings, `re/harness/m707_check.sh`): 0 fields and 0 video/sound items differ in every one. Free run (`MODE=run`): the two `_replay` recordings (2191 and 1491 frames) are equal; the other six differ from frame 7 only because the recording's spawn (Bludge, items, treasure: MAME-side pokes before the snapshot of the replay) is not made by the port (live bytes, free lists, rng): not a Bludge difference. `m800_bta7_k8_walk` (M8-20): the tongue (record 243), the special list pointer (92) and the attack decision (321) now equal MAME; what is left is the known entrance timer (+$2F one off from record 318, see M6-17) and Tyrog 2 from record 1086.
-
 ## Fessenden form 2, class 84 with the parts 85 to 89 and the fire 95 (M8-30 .. M8-35, Task 14, 2026-10-19)
 - The body is never drawn by itself: after its routine (outside the grab) it takes its own entry off the top of the draw list (0x619BC, the
   G.$67C2 / G.$67C0 pointer and count); part 85 copies its frame and draws it, and stops once the dead body sets `+$A6`.
@@ -577,11 +576,8 @@ Check, step mode (all 8 Bludge recordings, `re/harness/m707_check.sh`): 0 fields
   class 40 (0x9764E, now `effect/fx40.rs`).
 - f84-dmg frame 54: the hero's reaction to the arm strike 0x60 (hero state 0x0202, act 0x14, step 2) draws one random number more in the port
   than in MAME (player port, not the boss); it re-syncs in step mode.
-
 ## M3-30 (2026-10-19): M3 acceptance, part 2 (fix list, placeholder report, checks)
-
 Checks run on the merged port (1131525 and later), with the bot of `autoplay.rs` (kill all every 600 ticks unless noted).
-
 1. **Allow rules (re/harness/allow/m3.txt, m313.txt).** The car ported, so the rules of the Episode 3 car (M3-08 section, 26 rule lines) are gone:
    m308_car, m308_car_end and m308_car_time equal MAME in every field, tilemap and row scroll word with no rule (before: 0 differences with the rules,
    after: 0 without them). The chase formula check at the end of `m308_check.sh` still runs: 839 frames in mode 8 with G.$518 = 1, 0 differ.
@@ -592,16 +588,13 @@ Checks run on the merged port (1131525 and later), with the bot of `autoplay.rs`
    the port traces in PORT_OUT (default re/out/port), not in the shared re/out/traces.
    m329 (the flow compare): no rule lines. The autoplay reaches the ending at frame 274344, the seven link scenes equal MAME, the mode change
    records equal MAME in all seven, the area change table as documented in the M3-29 notes.
-
 2. **Autoplay without kill all (`DINO_AUTO_NOKILL=1`, god mode stays).** Episode 1: the bot is stuck in area 2 from frame 11770 (the Vice T. fight,
    camera lock 2) and gets to the Episode 2 card at frame 22105. The later episodes start at 54913 (3), 77746 (4), 119206 (5), 178896 (6) and
    292248 (7). Episode 7 area 3 (from frame 328864) is the block: the Slisaur (pool A class 71, a placeholder) is never killed, the camera stays
    locked from frame 337724 and the run stops at the cap (600000 ticks, no ending). With kill all on (the default bot) the ending is reached at 274344.
-
 3. **Census (`DINO_AUTO_CENSUS=1`, default bot, the first game from power on to the ending).** One line per episode when the game leaves it. "made"
    counts a slot that becomes live, or live with another class (`k20 / 4`), once per tick (an object made and freed in one tick is missed).
    Placeholder classes (`--list-placeholders`: 22, 35, 40, 45, 71) are marked here with their counts.
-
 | Episode | classes made | objects made | placeholder classes (made) | biggest counts (class:count) |
 | ---: | ---: | ---: | --- | --- |
 | 1 | 19 | 82 | - | 59:16, 2:14, 64:7, 55:6, 50:6 |
@@ -612,17 +605,14 @@ Checks run on the merged port (1131525 and later), with the bot of `autoplay.rs`
 | 6 | 23 | 2235 | 22 (2) | 75:1563, 74:360, 26:156, 13:26, 60:24 |
 | 7 | 18 | 189 | 71 (2) | 2:33, 60:26, 14:26, 13:20, 10:17 |
 | 8 | 40 | 3690 | - | 15:2510, 83:594, 92:232, 93:91, 95:33 |
-
    The census has no placeholder class in episodes 1 to 4 and 8. Placeholder classes met: 35 (Morgan) and 40 (morgue) and 45 (villager) in
    episode 5; 22 (brontosaurus foot) in episode 6; 71 (Slisaur) in episode 7. The bot's own kills end all of them (kill all runs every 600 ticks).
-
 4. **Link scenes (screenshots of the bot's first game; frames from the mode change lines).** Looked at, all OK unless noted:
    18014 (Episode 2 story, the Butcher), 18173 (Episode 2 map card), 45662 and 45690 (Episode 3 story, the same panel 28 frames apart; the
    text "they look pretty busy, take Jack's garage" is not checked against the original script), 54493 (Episode 4 story), 82742 (Episode 5
    story), 125305 (Episode 6 story), 197582 (Episode 7 story), 222180 (Episode 8 story, Fessenden), 222473 (Episode 8 map card), 274464 (the
    ending, the heroes in the last fight), 276500 (the staff roll, OK), 279000 (the last text of the ending: "Nature always balances itself"),
    279944 (black: the fade to the attract loop, expected).
-
 Open items (M3):
 - The Slisaur (class 71, placeholder) blocks a run without kill all in Episode 7 area 3. Needs the Slisaur port (M8-13 is the owner).
 - m313 `m800_a14_n_e7a1_full`: the player's invulnerability byte (+$F9) differs from the first record (4894 records, MAME 7E, port 7D). The
@@ -632,7 +622,14 @@ Open items (M3):
 - Pace (bot, no kill all, ticks per episode from the card to the next card): episode 1 22105, episode 2 32808, episode 3 22833, episode 4 41460,
   episode 5 59690, episode 6 113352 (episode 7 is blocked, see item 2). A human run was not made.
 - The lag record of a busy card slide out (Episode 4 opening, record 250): G.$0 counts 2 in MAME, 1 in the port (design question, no change).
-
 ## Free-run measure (2026-10-19, Desktop Haiku)
-
 The 24 natural whole-episode recordings (ep1_3p, ep2 to ep8 with Jack and 3 players, the other heroes of Episodes 3, 5 and 8) in run mode (the port plays alone from the start state with the recorded inputs): every one differs from MAME before its end. Frames equal from the start: median 1844, longest 9463 (ep3_jack), shortest 84 (ep1_3p); 5.4 % of all 1,151,836 frames. Step mode (each frame from MAME's state) is much closer (344 of 418 sweep recordings equal), so the remaining work for M10 is the run-mode drift. First causes, most common first: the player byte +$116 (MAME 00, port 01; all Episode 5 and 7 recordings, frames 426 to 1312); MAME lag records (the original's frame overran a vblank: the port has no model of the slowdown; the splash timer G.-$7126 / -$7124 shows it first; 5 recordings); the Bludge +$2F timer one frame (Episode 8, 4 recordings); class 2 +$05 sub (3); effect +$62 / +$64 of classes 1 and 31 (3); G.$14 rng (2). Detail: re/out/desk/dhaiku/report.md, task 48 (git-ignored).
+## M4-16, M5-18, M7-06 (area music, the hero moves, the Episode 4 acceptance, sonnet sub-agent)
+- D4e s1.3 and S7 ("the port starts the area tune at once", "Class 96: fade, then 59 frames later the byte") are done: `prop/class96.rs` (M3) sends 0xFF07 and 59 frames after the fade frame the 0xA582 byte; the traces m328_e5a0n, e6a1n and e8a2n equal MAME to the record. S10 (stage 7, lock 2, +$7D = 0xFE: 0x0F) is in `flow_area_music`; the recordings show it (Fessenden form 1 is the HUD boss: 0x0F in 4 continues, form 2: 0x12 in 6). Results and the stream check: `re/harness/allow/m4.txt` section 6.
+- The continue music 0x1B has d1 = 0x46 and d2 = 0x40 in all 111 continues (not frame specific, as the comment of the name entry test said); a game clock trace record that joins ticks (a lag record) keeps the sounds of all its ticks (`harness.rs`).
+- D2a s4.4 (wall jump): the check 0x1A744 is reached by `bra` (0x1A6E2, 0x1A990) and its `movea.l (a7)+,a1` pops the return address of the `jsr (a0)` at 0x18E76: the frame in which the wall jump starts has no terrain pass 0x12CAC and no screen clamp 0x4FCE (`Player::skip_post`). MAME's slanted wall at x 0xA5, z 0x13B (A14) slides the hero one record later than the port did. P-D2a-5 (the real wall jump spots): `allow/m5.txt` lists them from the natural recordings; in Episode 1 area 2 no hero ever touches a wall in 41,500 records of play, the A14 slanted wall at the west end is the only bit 4 wall.
+- D2a s10 / D2c (the counter hit): the word G.$4F4 is tested as a word (0x10AAE), so the second byte G.$4F5 (the weakness pair of 0x2B984) makes a counter hit too: 400 more points and the second spark (type 5). The hero's pushback entry 0x1C9B4 draws one rand(), the heavy entry 0x1CAFC none.
+- D3c s6 / D3a HU21 (Walther, class 18 variant 2): the counter attack chance table 0x429AE is indexed by 3 * the type byte (Walther: 6, 14, 24), the escape jump scan 0x4488C uses the unsigned distance of 0x1926 (negative offsets are far), the fallen hero target (+$C8 = 0x23) takes 0x443A6.
+- D2a / D3a target choice 0x32032: the +1 and +2 points go to a0 (kept from the block before when player 1 is absent); the hero's input word at +$A0 adds 3 or 6; the class 2 entrance test 0x33B96 keeps d1 across the heroes; the bump scan 0x3555A tests P1, P2, P3 (the pointer table 0x35574 is read from the end).
+- The biker (class 70) kill credit read an empty body (the object is out of its slot while it runs): its 200 points went to player 1.
+- Open: the fence of the garage (A211, A212: other worker), the lag record at 250 of the Episode 4 opening (D4c: CPU time, TODO(M10)), the typewriter and scene objects of the openings in step mode (`allow/m7.txt` causes 2, 4).

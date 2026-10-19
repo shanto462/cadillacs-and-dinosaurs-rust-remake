@@ -127,6 +127,25 @@
 #     port at the request. The request streams above equal MAME in every code of the attract loop and the select, so no case showed up, but the
 #     Z80 mailbox itself (the writes to 0xF18001) was not tapped. A request queued in the frame where G.$4CC changes could differ.
 #
+# 6. M4-16: area and boss music (D4e acceptance 1 to 4), checked in the request streams of MAME and the port (`re/out/m416`, git-ignored: music_streams.py, cmp_music.py, rule_check.py)
+#   - the rule 0xA55A (G.$7B4 = 2: table 0xA5C8 at the stage byte, entry 8 when the stage byte is 7 and the HUD boss has +$7D = 0xFE; else table 0xA582 at stage * 4 + area, d1 = d2 = 0):
+#     all 217 area and boss music requests of the 15 whole-episode recordings, the m328 area scenarios and the story link scenes (d1 = d2 = 0, not sent by a boss) equal the rule for the
+#     (stage, area, lock) of their record; the stage 7 lock 2 requests are 0x0F in 4 cases (the HUD boss is Fessenden form 1, +$7D = 0xFE) and 0x12 in 6. The other requests that follow an
+#     0xFF00 are the Episode 1 start 0x01 (43), the ending 0x19 (15) and the continue 0x1B (100); nothing else.
+#   - acceptance 1 (power on to the Episode 1 start, `coinstart`): 0xFF00 and 0x01 in the record 1057 of both; acceptance 2 (stage start of Episodes 2 to 8, m328_link-ep2 .. ep8): 0xFF00 and the
+#     area 0 byte (0x05 0x07 0x09 0x17 0x03 0x04 0x0C) in one record, equal in code, d1 and d2 (the port's record is 6 to 9 later: the blocking area start, D5-errata M3-29).
+#   - acceptance 3 (class 96, the sub area switch of mode 8): m328_e5a0n 1231 -> 1290, m328_e6a1n 727 -> 786, m328_e8a2n 500 -> 559: the fade 0xFF07 (d1 0x04440000) and 59 records later the
+#     area byte, equal in both runs to the record. m328_e2a0n (Episode 2 area 0): the fade at 585 and the byte in MAME's lag record 586 (73 game frames); the port 630: 59 game frames after the fade
+#     (G.$0 2162 -> 2221). The mode 1 area ends (m328_e1a0, e2a1n, e4a0n, e4a1n, l_e7a0_k16): 0xFF07 and the byte 16 records later, equal to the record. m328_e6a0n (the fade and the byte in
+#     one MAME lag record, 1018) and e8a1n (the byte in the lag record 511) are equal in code, order and d1 / d2 (the port's records 1062 and 584: the blocking area start). m328_e8a0n: the port's run
+#     does not leave the area in 1200 records (the wave of Episode 8 area 0 is not cleared there: an Episode 8 class, not the music).
+#   - acceptance 4 (G.$7B4 = 2 and 0xA55A): the continues at a boss lock (ep5 to ep8: 0x0E 0x0F 0x11 0x12 after 0xFF00 and 0x1B) and the Fessenden case equal the rule; the code of the port
+#     (`flow_area_music`) is the disassembly of 0xA55A / 0xA5A2; the unit tests `the_area_and_boss_music_index_every_stage`, `the_last_boss_music_follows_the_boss_mark`.
+#   - fixed: the continue music 0x1B has d1 = 0x46 and d2 = 0x40 in all 111 continues of the recordings (the registers of the text routines, constant); the port sent 0 / 0. The harness
+#     (`harness.rs`) lost the sound requests of the first ticks of a game clock record that joins several ticks (an area change in one lag record); it keeps them now.
+#   - not changed: the story music 0x13 .. 0x16 (d1 0x3330010 .. 0x3330646 with d2 0x5550666 in MAME, 0 / 0 in the port: leftovers of the palette routines before 0xD8EA), the boss intros 0x0E 0x10
+#     0x20 0x21 0x23 (d1 / d2 of the boss init, see section 4), the victory 0x18.
+
 # ----------------------------------------------------------------------------------------------------------------------------------
 # Rules for diff.py (--allow). They are exact frame ranges of the power on recordings above, not patterns that could hide a code mistake.
 #

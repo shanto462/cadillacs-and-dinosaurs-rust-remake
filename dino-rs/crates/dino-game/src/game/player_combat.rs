@@ -52,6 +52,9 @@ pub fn player_damage(
     if let Some(m) = m {
         let p = mulu(d1, m as u32);
         d1 = (p & 0xFFFF_0000) | ((p as u16 >> 5) as u32);
+        // 0x2B984 `st.b $4F5(a5)`: the next byte of G.$4F4; the pass tests the word (`tst.w $4F4(a5)`, 0x10AAE), so a weakness hit is a counter hit
+        // too: the second spark (type 5) and 400 points (M5-18: Jack's running jump kick on a Ferris, A7)
+        counter = true;
     }
     d1 = mulu(d1, power as u32);
     let k = ((enemy_w84 << 3).wrapping_add(level)) as i16 as isize;
@@ -643,9 +646,12 @@ mod tests {
         // enemy attacking with +$58 = 6 -> counter factor 0x30 (x1.5): 20 -> 30.
         let (d, c) = player_damage(&t, 20, 2, 32, 0, 4, 6, 0, 50, 0, 0);
         assert_eq!((d, c), (30, true));
-        // attack id 0x10 matches weakness id 8 (x1.5): 20 -> 30.
-        let (d, _) = player_damage(&t, 20, 0x10, 32, 0, 0, 0, 0, 50, 0, 0);
-        assert_eq!(d, 30);
+        // attack id 0x10 matches weakness id 8 (x1.5): 20 -> 30. The weakness sets G.$4F5, the second byte of the counter word the pass tests (M5-18).
+        let (d, c) = player_damage(&t, 20, 0x10, 32, 0, 0, 0, 0, 50, 0, 0);
+        assert_eq!((d, c), (30, true));
+        // no pair, no counter
+        let (_, c) = player_damage(&t, 20, 0x0C, 32, 0, 0, 0, 0, 50, 0, 0);
+        assert!(!c);
     }
 
     #[test]

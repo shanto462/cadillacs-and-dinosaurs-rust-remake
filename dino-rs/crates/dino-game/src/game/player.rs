@@ -80,6 +80,10 @@ pub struct Player {
     pub combo_t: u8,
     /// +$AF wall contact latch (wall jump).
     pub wall_latch: u8,
+    /// The wall jump check 0x1A744 is reached by `bra` from the jump handlers, which the sub state table enters by `jmp`; when it starts the jump it
+    /// pops that return address (0x18E78), so the frame ends without the terrain pass 0x12CAC and the screen clamp 0x4FCE (M5-18: A14, the z of
+    /// the first wall jump frame). Set by `player_wall_jump_check`, read and cleared in `player_alive`.
+    pub skip_post: bool,
     /// +$118 voice bank (0xA502): selects the sound codes of the voice routines.
     pub voice: u8,
     /// +$B2 combo hit count, +$B3 post-whiff movement lock.
@@ -926,12 +930,16 @@ impl Game {
                 }
             }
         }
+        self.players[i].skip_post = false;
         match self.players[i].b.sub {
             0 => self.player_normal(i),
             2 => self.player_hurt(i),
             4 => self.player_grabbing(i),
             6 => self.player_grabbed(i),
             _ => {}
+        }
+        if std::mem::take(&mut self.players[i].skip_post) {
+            return; // 0x1A744 popped the return address of the `jsr (a0)` at 0x18E76: no 0x12CAC, no 0x4FCE
         }
         if self.w.floor_only == 0 {
             self.player_floor_and_walls(i); // 0x12CAC
@@ -2120,7 +2128,8 @@ impl Game {
         if self.player_height(i) < 0x20 {
             return false;
         }
-        // 0x1A7A4
+        // 0x1A79E: `movea.l (a7)+,a1` (see `Player::skip_post`), then 0x1A7A4
+        self.players[i].skip_post = true;
         self.players[i].b.set_state(0x0200_0402);
         self.player_panim(i, 0, 0x12);
         let p = &mut self.players[i];

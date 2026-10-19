@@ -633,11 +633,10 @@ mod tests {
                 if f < 4300 {
                     assert_eq!(g.w.sounds, frame_sounds, "{name} frame {f} sounds");
                     // M4-15: d1 and d2 of the listed codes (name entry music 0x1F) against the ring
-                    // 0x1B at 2016 (the continue music, `0xEB1E`, `moveq #$1B,d0`) takes d1 = 0x46 and d2 = 0x40 from the registers of the
-                    // name entry code of that frame (M10, register leftovers, not modelled); the continue recording sends 0 / 0 there.
-                    let skip = |v: &[(u16, u32, u32)]| v.iter().filter(|e| !(f == 2016 && e.0 == 0x1B)).copied().collect::<Vec<_>>();
+                    // the continue music 0x1B (`0xEB1E`) takes d1 = 0x46 and d2 = 0x40 from the registers of the text routines (M4-16: the same in
+                    // every continue of the recordings, `flow_continue_start`)
                     let port: Vec<_> = g.w.snd_reqs.iter().map(|r| (r.code, r.d1, r.d2)).collect();
-                    assert_eq!(listed_args(&skip(&frame_args)), listed_args(&skip(&port)), "{name} frame {f} sound arguments");
+                    assert_eq!(listed_args(&frame_args), listed_args(&port), "{name} frame {f} sound arguments");
                 }
                 sounds.extend(frame_sounds.iter().map(|&c| (f, c)));
             } else if ram[0x84D0] == 0x10 && ram[0x84D1] == 0 {

@@ -204,7 +204,14 @@ impl Game {
         } else {
             self.flow.cont.raw.sw(8, 0xFFFF);
         }
-        self.sound(0x1B);
+        // 0xEB1E moveq #$1B,d0; jsr 0xA63C: d1 and d2 are what the digit, bubble and taunt text routines (0xF0A8, 0xF13E, 0x84F72) left in
+        // them, the same in all 111 continues of the whole-episode recordings (1 to 3 heroes, all episodes): d1 = 0x46, d2 = 0x40. With
+        // G.$4D7 set those routines are skipped and the registers are not known (the music then keeps 0 and 0).
+        if self.flow.b4d7 == 0 {
+            self.snd_request(0x1B, 0x46, 0x40);
+        } else {
+            self.sound(0x1B);
+        }
         let r = &mut self.flow.cont.raw;
         for (off, v) in [(0xC, 1), (0xE, 1), (0xD, 0), (0xF, 0)] {
             r.sb(off, v);

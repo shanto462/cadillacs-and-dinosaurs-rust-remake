@@ -1119,6 +1119,28 @@ mod tests {
         assert_eq!((g.cam.s2.lock78, *g.w.sounds.last().unwrap()), (0, 5));
     }
 
+    /// 0xA55A for every stage and area (M4-16): lock 0 or 1 reads the area table at stage * 4 + area, lock 2 the boss table at the stage
+    /// (the table bytes are read from the ROM; the recordings of the 8 episodes send exactly these codes, d1 = d2 = 0).
+    #[test]
+    fn the_area_and_boss_music_index_every_stage() {
+        let Some(assets) = rom() else { return eprintln!("test skipped: dino.zip is absent") };
+        for stage in 0..8u8 {
+            for area in 0..4u8 {
+                for lock in 0..3u8 {
+                    let mut g = Game::new(assets);
+                    g.w.stage = stage;
+                    g.cam.s2.area = area;
+                    g.cam.s2.lock78 = lock;
+                    g.flow_area_music();
+                    let want = if lock == 2 { assets.text.u8(0xA5C8, stage as u32) } else { assets.text.u8(0xA582, stage as u32 * 4 + area as u32) };
+                    assert_eq!(g.w.snd_reqs.len(), 1);
+                    let r = g.w.snd_reqs[0];
+                    assert_eq!((r.code, r.d1, r.d2), (want as u16, 0, 0), "stage {stage} area {area} lock {lock}");
+                }
+            }
+        }
+    }
+
     /// 0xA5AE: in Episode 8 with the boss of the HUD bar marked 0xFE in +$7D, the boss music is entry 8 (0x0F), else entry 7 (0x12).
     #[test]
     fn the_last_boss_music_follows_the_boss_mark() {
