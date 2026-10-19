@@ -628,6 +628,25 @@ impl Prop {
             f.u8(0x88, "flash_active", &mut value);
             self.m.sb(0x88, value);
         }
+        if f.all() || self.b.k20 == 9 * 4 {
+            for (off, name) in [
+                (0xA0, "b9_bolt_timer"),
+                (0xA2, "b9_bolt_step"),
+                (0xA6, "b9_pause_index"),
+                (0xA8, "b9_seq2_timer"),
+                (0xAA, "b9_seq1_timer"),
+                (0xB8, "b9_seq2_step"),
+                (0xBA, "b9_seq1_step"),
+                (0xBE, "b9_thunder_timer"),
+            ] {
+                let mut value = self.m.w(off);
+                f.u16(off as u32, name, &mut value);
+                self.m.sw(off, value);
+            }
+            let mut value = self.m.b(0xBC);
+            f.u8(0xBC, "b9_flashes_active", &mut value);
+            self.m.sb(0xBC, value);
+        }
         if f.all() || self.b.k20 == 11 * 4 {
             // The metal door's armed wait (class 11, 0x78A20) is the byte at +$80.
             let mut w = self.m.b(0x80);
@@ -1079,7 +1098,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 10, 14, 15, 16, 17, 18, 20, 27, 29, 34, 41, 43, 46, 48, 49, 50, 54, 55, 56, 57, 60, 81, 90, 92, 93, 96, 97]),
-    ("prop", &[0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 39, 40, 41, 42, 43, 47, 48, 49, 50, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 66, 70, 72, 73, 74, 76, 80, 81, 82, 83, 84, 85, 87, 96]),
+    ("prop", &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 39, 40, 41, 42, 43, 47, 48, 49, 50, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 66, 70, 72, 73, 74, 76, 80, 81, 82, 83, 84, 85, 87, 96]),
     (
         "item",
         &[

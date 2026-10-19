@@ -81,6 +81,20 @@ const TABLES: &[(u32, u32, &str)] = &[
     // Pool B class 10 (0x785F0), foreground fire strips. Pointers and every word the writers read.
     (0x78664, 0x15A, "B10 var 0 fire pictures (0x7863E)"),
     (0x78898, 0x128, "B10 var 4 fire pictures (0x787F4)"),
+    // Pool B class 9 (0x77E76), lightning: pause table, VRAM pointers, bolt tile pictures.
+    (0x77F38, 16, "B9 pause table (0x77E76)"),
+    (0x77F68, 12, "B9 bolt destination VRAM pointers (0x77F48)"),
+    (0x77F74, 80, "B9 bolt pictures (0x77F74)"),
+    // Pool B class 9 (0x77E76), lightning flashes: timing tables, palette tables and source palettes.
+    (0x77FF6, 16, "B9 flash sequence 1 frame counts (0x77FD2)"),
+    (0x78036, 64, "B9 flash sequence 1 palette table (0x78002)"),
+    (0x78076, 208, "B9 flash sequence 1 source pointers (0x78002)"),
+    (0x78170, 16, "B9 flash sequence 2 frame counts (0x78146)"),
+    (0x781B0, 256, "B9 flash sequence 2 palette table (0x7817C)"),
+    (0x782B0, 832, "B9 flash sequence 2 source pointers (0x7817C)"),
+    (0x0BEE52, 0x0400, "B9 lightning sequence 2 foreground palettes 1 (0x7817C)"),
+    (0x0C1492, 0x09C0, "B9 lightning sequence 2 foreground palettes 2 (0x7817C)"),
+    (0x0C36D2, 0x0F60, "B9 lightning sequence 1 sky palettes (0x78002)"),
     // score
     (0x10292, 0x90, "BCD score values (0x10036), indexed by byte offset"),
     (0x325F8, 0x28, "kill score offset by name id (0x325E6)"),
