@@ -130,6 +130,12 @@ impl HitBoxBank {
         (a >= self.base && (a as u64 + 12) <= end && a % 2 == 0).then(|| self.read(a))
     }
 
+    /// The 12 byte record at any address (a box offset that is not a multiple of 12, as a stale register can give it); `None` outside the bank.
+    pub fn try_at(&self, a: u32) -> Option<HitBox> {
+        let end = self.base as u64 + 2 * self.words.len() as u64;
+        (a >= self.base && (a as u64 + 12) <= end && a % 2 == 0).then(|| self.read(a))
+    }
+
     /// Multi-box table (obj+$4A == 1): table + i16(table + 2*index) -> (count-1, boxes...).
     pub fn multi(&self, table: u32, index: u8) -> Vec<HitBox> {
         let p = table.wrapping_add(self.word(table + 2 * index as u32) as i32 as u32);

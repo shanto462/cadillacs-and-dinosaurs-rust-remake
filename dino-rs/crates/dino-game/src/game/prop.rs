@@ -37,6 +37,9 @@ use dino_assets::enemy::Wave;
 use dino_assets::HitBox;
 
 // The tile block writer and the block table driver of the scenery props (T-B0, M2-05 / M2-06).
+// The Cadillac of Episode 3, pool B class 88 (M6-18 .. M6-20).
+#[path = "car.rs"]
+mod car;
 #[path = "prop/tile_block.rs"]
 pub mod tile_block;
 // Palette cycler, tile clock and door burst (T3-0, M3-16).
@@ -308,6 +311,7 @@ impl Game {
                 85 => self.prop_b85(&mut p, i),
                 86 => self.prop_class86(&mut p, i),
                 87 => self.prop_b87(&mut p, i),
+                88 => self.prop_car(&mut p, h, i),
                 89 => self.prop_class89(&mut p, i),
                 93 => self.prop_class93(&mut p, i),
                 33 | 79 => self.ph_starter(&mut p, h, i), // placeholders of the boss starters (placeholder.rs)

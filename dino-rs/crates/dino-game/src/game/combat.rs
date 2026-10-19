@@ -69,7 +69,16 @@ impl Game {
         self.pass_1201c();
         self.pass_120d2();
         self.pass_11e56();
-        // G.$518 special mode passes (0x121D8, 0x122D8, 0x12342, 0x12454): not ported yet.
+        // The car passes (car.rs, M6-20): only in the drive (G.$518) with the car in place (G.$77A0); the monsters hit the car only
+        // while the stage end lock G.$7B4 is set (after Hogg exists).
+        if self.spawn.g.car_mode != 0 && self.spawn.g.car_on != 0 {
+            self.pass_121d8();
+            self.pass_122d8();
+            self.pass_12342();
+            if self.cam.s2.lock78 != 0 {
+                self.pass_12454();
+            }
+        }
         if self.w.scripted == 0 {
             self.pass_115b0(); // enemy attacks vs players
             self.pass_11cec();

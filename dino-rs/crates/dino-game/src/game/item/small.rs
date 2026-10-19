@@ -197,7 +197,7 @@ impl Game {
         let v = self.assets.text.u32(0x10292, off as u32);
         self.hud_add_score_to(it.b.who, v);
         if self.w.stage == 2 && self.spawn.g.kill_all == 0 && it.b.var26 == 0xC {
-            // M6: 0x8BD24 (the radio event) goes here.
+            self.prop_car_radio(it); // 0x2A150: jsr 0x8BD24
         }
         it.set_mode_sub(6, 0);
     }

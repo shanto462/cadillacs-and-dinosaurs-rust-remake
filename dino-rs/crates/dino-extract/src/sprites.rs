@@ -17,7 +17,9 @@ const PLAYER_BOX_TABLES: u32 = 0x18CC4;
 const PLAYER_ATTACKS: u32 = 0xA26FC;
 const ATTACKS_PER_CHARACTER: u32 = 60;
 /// Region that holds every hit box table.
-const HITBOX_REGION: (u32, u32) = (0x100000, 0x11D220);
+/// It starts 0x8000 bytes before the first table (0x100000): a box test that adds a stale register word to a table (0x128F8 with the d0
+/// that the car's container pass 0x122D8 keeps between objects, M6-20) reaches back that far (`adda.w`, sign extended).
+const HITBOX_REGION: (u32, u32) = (0xF8000, 0x11D220);
 
 /// 10-byte animation tables used by non-player objects. Each address is a constant in the
 /// object's init code (stored into obj+$40); the comment names that code.
@@ -34,6 +36,7 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x438F2, // Vice T. intro, 0x425B6 (M5-09)
     0x50DFA, 0x51076, // Hogg: the rider class 31 (0x4FD6A) and the bike class 32 (0x50FD0) (M6-23)
     0x55BF6, // Hogg's bomb class 42 (0x55B30) (M6-25)
+    0x8C8D6, // the Cadillac, pool B class 88 (0x8BE24) (M6-18)
     0x2FBE2, // Vice T. hit reactions (table 0x2E68C, +$84 = 0x30)
     0x30FB0, // Vice T. held by a player (table 0x2E724, +$84 = 0x30)
     0x34892, // enemy family init 0x3388A, variant 0 (palette 13)

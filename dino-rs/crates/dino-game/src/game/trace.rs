@@ -706,6 +706,21 @@ impl Prop {
             f.u16(0xA0, "wa0", &mut wa0);
             self.m.sw(0xA0, wa0);
         }
+        if f.all() || self.b.k20 == 88 * 4 {
+            // The Cadillac and its wheels (car.rs, M6-18): the body fields +$40..+$72 and the car's own bytes.
+            self.b.trace_rest(f);
+            for (off, name) in [(0x76, "car_of_wheel"), (0x80, "car_t80"), (0xAE, "car_bump"), (0xB0, "car_tvx"), (0xB2, "car_tvz")] {
+                let mut v = self.m.w(off);
+                f.u16(off as u32, name, &mut v);
+                self.m.sw(off, v);
+            }
+            for (off, name) in [(0xA0, "car_a0"), (0xA2, "car_seat0"), (0xA3, "car_seat1"), (0xA4, "car_seat2"), (0xA5, "car_new0"), (0xA6, "car_new1"),
+                (0xA7, "car_new2"), (0xA8, "car_riders"), (0xA9, "car_bump_t"), (0xB4, "car_mate")] {
+                let mut v = self.m.b(off);
+                f.u8(off as u32, name, &mut v);
+                self.m.sb(off, v);
+            }
+        }
         if f.all() || self.b.k20 == 40 * 4 {
             let mut a7 = self.m.b(0xA7);
             f.u8(0xA7, "steam_timer", &mut a7);
@@ -1069,6 +1084,7 @@ impl Player {
         f.u8(0x115, "knees", &mut self.knees);
         f.u8(0x116, "b116", &mut self.b116);
         f.u8(0x117, "turn", &mut self.turn);
+        f.u8(0x119, "b119", &mut self.b119);
         f.u8(0x11A, "input_lock", &mut self.input_lock);
         f.u8(0x11B, "b11b", &mut self.b11b);
         f.u8(0x11C, "b11c", &mut self.b11c);
@@ -1098,7 +1114,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[2, 5, 10, 13, 14, 15, 16, 17, 18, 20, 27, 29, 31, 32, 34, 41, 42, 43, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 81, 90, 92, 93, 96, 97]),
-    ("prop", &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 39, 40, 41, 42, 43, 47, 48, 49, 50, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 66, 70, 72, 73, 74, 76, 80, 81, 82, 83, 84, 85, 87, 96]),
+    ("prop", &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 39, 40, 41, 42, 43, 47, 48, 49, 50, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 66, 70, 72, 73, 74, 76, 80, 81, 82, 83, 84, 85, 87, 88, 96]),
     (
         "item",
         &[
@@ -1303,6 +1319,9 @@ impl Game {
         f.u16(0x0500, "go_camera_x", &mut s.go_camera_x);
         f.u8(0x0518, "car_mode", &mut s.car_mode);
         f.u8(0x0502, "b502", &mut s.b502);
+        f.u8(0x0517, "car_riders", &mut s.car_riders);
+        f.u16(0x77A0, "car_on", &mut s.car_on);
+        f.u16(0x77A2, "car_obj", &mut s.car_obj);
         f.u8(0x04D5, "b4d5", &mut s.b4d5);
         f.u8(0x04F1, "b4f1", &mut s.b4f1);
         f.u8(0x04FA, "b4fa", &mut s.b4fa);
