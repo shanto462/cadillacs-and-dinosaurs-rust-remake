@@ -1532,7 +1532,16 @@ impl Game {
                 let (car_x, _, _) = self.car_fields();
                 let s = &mut self.cam.s2;
                 let d = car_x.wrapping_sub(s.cam_x.wrapping_add(0xC0)) as i16; // sub.w d3, d0
-                let step = if d < 0 { 8 } else if d > 0x14 { 0x14 } else { d.max(8) };
+                // 0x22A98..0x22ABE: a signed word; negative takes 8, above 0x14 takes 0x14, below 8 takes 8 (`bmi`, `ble`, `bge`)
+                let step: i16 = if d < 0 {
+                    8
+                } else if d > 0x14 {
+                    0x14
+                } else if d < 8 {
+                    8
+                } else {
+                    d
+                };
                 s.cam_x = s.cam_x.wrapping_add(step as u16); // add.w d0, 8(a6)
             }
         }
