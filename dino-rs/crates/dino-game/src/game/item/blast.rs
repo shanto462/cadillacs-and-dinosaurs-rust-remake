@@ -27,7 +27,7 @@ const PELLET_RECORDS: u32 = 0x2A484;
 impl Game {
     /// 0x27DD8: an explosion (class 1, kind `kind` in +$26) at the source: copies +$02 / +$03,
     /// X / Y / Z, the airborne flag, and +$70 = the source. A full pool loses it.
-    pub(super) fn item_explosion(&mut self, src: &Item, h: Handle, kind: u16) {
+    pub(crate) fn item_explosion(&mut self, src: &Item, h: Handle, kind: u16) {
         let pos = (src.b.xi(), src.b.yi(), src.b.zi());
         let Some(j) = self.items.alloc() else { return };
         let n = &mut self.items.slots[j];
@@ -43,9 +43,9 @@ impl Game {
         n.b.partner = h;
     }
 
-    /// 0x9F12: the explosion sound.
-    fn item_snd_blast(&mut self) {
-        self.sound(0x66);
+    /// 0x9F12: the explosion sound 0x66 with the side bit of the blast's facing and the pan of its X (the rumble).
+    fn item_snd_blast(&mut self, it: &Item) {
+        self.snd_rumble(it.b.xi(), it.b.facing);
     }
 
     /// `d7` of the 68000 pool loop: 23 - slot (the counter `dbra` runs down).
@@ -109,7 +109,7 @@ impl Game {
                 it.b.serial = self.w.attack_serial;
                 self.w.attack_serial = self.w.attack_serial.wrapping_add(1);
                 self.item_anim(it, anim);
-                self.item_snd_blast();
+                self.item_snd_blast(it);
                 let pos = (it.b.xi(), it.b.yi().wrapping_add(0x20), it.b.zi().wrapping_sub(1));
                 self.item_in_slot(it, h, |g| g.fx_spawn_spark_at(h, pos.0, pos.1, pos.2, 4));
                 it.b.mode += 2;
@@ -173,7 +173,7 @@ impl Game {
                 self.blast_attack(it, 0x6E);
                 Self::blast_setup(it);
                 self.item_anim(it, 2);
-                self.item_snd_blast();
+                self.item_snd_blast(it);
                 self.cam.shake_req = 3;
                 it.b.mode += 2;
                 self.blast_run(it, h, i);
@@ -201,12 +201,16 @@ impl Game {
                 };
                 self.item_anim(it, anim);
                 self.blast_attack(it, 0x6A);
-                self.item_snd_blast();
+                self.item_snd_blast(it);
                 let pos = (it.b.xi(), it.b.yi().wrapping_add(0x20), it.b.zi().wrapping_sub(1));
                 self.item_in_slot(it, h, |g| g.fx_spawn_spark_at(h, pos.0, pos.1, pos.2, 4));
                 it.b.mode += 2;
             }
-            2 => self.blast_run(it, h, i),
+            2 => {
+                // The mode 2 entry of kind 3 is 0x27EBE (table 0x27FFA), the hit stop clear before the shared run 0x27EC2 (as kind 0).
+                it.b.hitstop = 0;
+                self.blast_run(it, h, i);
+            }
             _ => self.item_free(it, i),
         }
     }
@@ -220,7 +224,7 @@ impl Game {
                 Self::blast_setup(it);
                 let anim = if it.m.w(o::W5C) != 0 { 1 } else { 2 };
                 self.item_anim(it, anim);
-                self.item_snd_blast();
+                self.item_snd_blast(it);
                 it.b.mode += 2;
             }
             2 => {
