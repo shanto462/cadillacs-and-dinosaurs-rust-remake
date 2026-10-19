@@ -459,3 +459,4 @@ MAME wins over the design text; the design documents themselves are not edited.
 - The tally task (0xB97E) uses the struct G.$735E after the stage intro task without clearing it: the intro's `+2`, `+3` and `+4` (the marker time, 0xFFEC)
   stay until the tally writes them.
 - Player 3's start and coin are bits 7 and 6 of the P3 port (IN2), so they also show in G.$18 (MAME ep3_3p frame 400); the harness script now sets them.
+- Scroll2 at the start of probe recordings (34 sweep rows, mostly Episode 5 area 1 "hit" probes and the Tyrog probes, frames 2 to 108, camera equal): MAME has tile blocks where the port is blank. A write watch on 0x90E000 (task 25 of Desktop Haiku) saw only blank writes from 0x0BA4 and 0x0AAAD0 in frames 2 to 12, not the 0x5808 code word, so the writer is not named. Likely tied to the probe's stage jump and the area load right after it; check with a recording that starts in normal play before treating it as a port difference.
