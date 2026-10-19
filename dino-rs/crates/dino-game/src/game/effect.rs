@@ -73,6 +73,9 @@ mod fx11;
 // Pool C class 21 (M5-04): the puffs and debris showers (0x94640 spawns one, it makes the pieces).
 #[path = "effect/fx21.rs"]
 mod fx21;
+// Pool C class 18 (M7-08): the splash of the Bludge acid ball.
+#[path = "effect/fx18.rs"]
+mod fx18;
 #[path = "effect/fx31.rs"]
 mod fx31;
 #[path = "effect/fx33.rs"]
@@ -113,6 +116,7 @@ pub const FX_DUST: u16 = 0x1C;
 pub const FX_DIZZY: u16 = 0x4C;
 pub const FX_DEBRIS: u16 = 0x2C;
 pub const FX_PUFF: u16 = 0x54;
+pub const FX_ACID: u16 = 0x48;
 pub const FX_RIPPLE: u16 = 0x68;
 pub const FX_TIME_OVER: u16 = 0x70;
 pub const FX_CLOUD: u16 = 0x80;
@@ -587,6 +591,7 @@ impl Game {
                 FX_DIZZY => self.fx_dizzy(i),
                 FX_DEBRIS => self.fx_debris(i),
                 FX_PUFF => self.fx_puff(i),
+                FX_ACID => self.fx_acid(i),
                 FX_RIPPLE => self.fx_ripple(i),
                 FX_TIME_OVER => self.fx_time_over(i),
                 FX_CLOUD => self.fx_cloud(i),

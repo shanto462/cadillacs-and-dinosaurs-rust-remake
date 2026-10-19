@@ -75,7 +75,6 @@ const fn cross(class: u16, what: &'static str, counted: bool) -> Spec {
 pub const SPECS: &[Spec] = &[
     // Class 3 (M6-07, M6-08), LASH T., is real (with his mace 62 and chain piece 8).
     // Class 5 (M6-09) and class 61 (M6-10), the Butcher, are real.
-    walker(6, "BLUDGE", Some(0x10), true),
     // Class 13 (M6-01 / M6-02), the poachers, is real.
     dino(22, "BRONTOSAURUS foot", None),
     // Class 24 (M6-04, M6-05), Shivat, is real. Class 25 (M7-01 .. M7-04), Slice, is real.

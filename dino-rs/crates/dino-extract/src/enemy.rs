@@ -462,7 +462,13 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x3ADE0, 224, "class 6 attack choice distribution table (0x3ADB4)"),
     (0x3AFF2, 8, "class 6 item eat chance by aggression (0x3AFA4)"),
     (0x3375C, 142, "class 0 part 0 template data (0x3356A)"),
-    (0x337EA, 12, "class 0 part 0 box table (0x333A4)"),
+    (0x337EA, 24, "class 0 part 0 box table, the records 0 and 1 (0x333A4, the box test 0x33698)"),
+    // M7-08 / M7-09 Bludge parts 2 and 3: the wake up of the +$80 timers by level, the attack scripts, the hold times, the slot kinds of the attack approach, the attack roll.
+    (0x39B7E, 64, "class 6 eat walk wait by level (0x39B4C)"),
+    (0x39CAC, 24, "class 6 attack scripts (0x39C80)"),
+    (0x39E70, 32, "class 6 lunge hold by level (0x39E46)"),
+    (0x3A9E8, 6, "class 6 attack approach slot base by script (0x3A980)"),
+    (0x3AED8, 10, "class 6 attack roll limit by script (0x3AEC0)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {

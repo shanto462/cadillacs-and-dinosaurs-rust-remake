@@ -69,6 +69,10 @@ mod class62;
 mod class5;
 mod class6;
 mod class6_ai;
+mod class6_attack;
+mod class6_eat;
+mod class6_tongue;
+mod class7_acid;
 mod class51_58;
 mod class52;
 mod class61;
@@ -260,6 +264,7 @@ impl Game {
                 3 => self.enemy_class3(&mut e, h, i),
                 5 => self.enemy_class5(&mut e, h),
                 6 => self.enemy_class6(&mut e, h, i),
+                7 => self.enemy_class7(&mut e, h, i),
                 8 => self.enemy_class8(&mut e, h, i),
                 18 => self.enemy_class18(&mut e, h, i),
                 19 => self.enemy_class19(&mut e, h, i),
@@ -1908,7 +1913,7 @@ impl Game {
             0x70 => self.c63_recover(e),            // 0x5ACAA the alternate Blade (class 63)
             0x74 | 0x90 => self.c64_recover(e),     // 0x5B2C4 the bomb carriers (class 64)
             0x54 => self.enemy_morgan_recover(e), // 0x51ACA
-            0x40 => self.enemy_c6_reset_ai(e),      // 0x396C2 Bludge (class 6)
+            0x40 => self.enemy_c6_enter_wait(e, h), // 0x396C2 Bludge (class 6): the reset and the wait state of the same frame
             _ => e.b.set_state(0x0200_0000),
         }
     }

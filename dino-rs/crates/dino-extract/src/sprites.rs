@@ -141,6 +141,7 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x2A49C, // pellets (class 10)
     0x611D2, // Zeke class 82, init 0x606E8 (M7-10)
     0x3A234, // Bludge class 6, init 0x392FE (M7-07)
+    0x3B21C, // Bludge acid spit class 7, init 0x3B11A (M7-08)
     0x2EE70, // Bludge hit reaction table (0x2A606)
     0x30CE0, // Bludge grab animation table (0x2B35A)
 ];
