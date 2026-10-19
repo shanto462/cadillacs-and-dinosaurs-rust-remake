@@ -269,3 +269,48 @@ fn explosive_barrel_fuse_counts_down_its_stages() {
     it.m.sb(o::B8, 1);
     assert!(g.container_fuse(&mut it, h));
 }
+
+/// M4-18: the weapon sounds carry the registers of their routines (0x9C76, 0x9CD8, 0x9D9C, 0xA442, 0x9E08): d1 = the mode
+/// (3, or 4 when the weapon's +$24 is set; 5 / 6 for the bazooka) in the high word, the middle byte (0x20; 0x12 for the bazooka)
+/// and the pan byte of the weapon's X, d2 a constant per routine. Synthetic tables (the pan table counts 0, 1, 2 ...).
+#[test]
+fn weapon_sounds_send_d1_and_d2() {
+    let mut g = game(vec![(0xA66A, (0..0x30).collect()), (0x9E5C, vec![0x69, 0xEB, 0xEC, 0]), (0xA498, vec![0, 0x81, 1, 2, 1, 3])], vec![]);
+    g.cam.s2.cam_x = 0;
+    g.item_snd_9c76(0x30, 0); // pan index 6
+    g.item_snd_9cd8(0x30, 1);
+    g.item_snd_9d9c(0x30, 0);
+    let mut gun = Item::default();
+    gun.b.set_xi(0x30);
+    gun.b.partner = Game::player_handle(0);
+    g.players[0].voice = 1; // the second player's bank
+    g.item_snd_a442(&gun);
+    gun.b.facing = 1;
+    g.item_snd_9e08(&gun);
+    let r: Vec<_> = g.w.snd_reqs.iter().map(|r| (r.code, r.d1, r.d2)).collect();
+    assert_eq!(
+        r,
+        vec![
+            (0xEA, 0x3_2006, 0x1500_0000),
+            (0xE7, 0x4_2006, 0x1500_0000),
+            (0xDC, 0x3_2006, 0x0240_0000),
+            (0x0102, 0x3_2006, 0x1500_0000),
+            (0xEB, 0x6_1206, 0x00C4_1240),
+        ]
+    );
+}
+
+/// 0x9F54 (eating) has d1 = mode 7 and the pan of the food, d2 = 0; the statue break 0xA396 (0x89) has the pan only.
+#[test]
+fn food_and_statue_sounds_send_d1_and_d2() {
+    let mut g = game(vec![(0xA66A, (0..0x30).collect()), (0x9FAA, vec![0, 0x7C, 0, 0xFD, 0, 0xFE])], vec![]);
+    g.cam.s2.cam_x = 0;
+    let mut food = Item::default();
+    food.b.set_xi(0x28); // pan index 5
+    food.b.partner = Game::player_handle(0);
+    g.players[0].voice = 1;
+    g.item_snd_food(&food);
+    g.item_snd_a396(0x28);
+    let r: Vec<_> = g.w.snd_reqs.iter().map(|r| (r.code, r.d1, r.d2)).collect();
+    assert_eq!(r, vec![(0xFD, 0x7_0005, 0), (0x89, 5, 0)]);
+}

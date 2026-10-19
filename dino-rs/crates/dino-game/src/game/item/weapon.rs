@@ -626,7 +626,7 @@ impl Game {
             return self.item_draw_check(it, h);
         }
         self.players[p].weapon_atk = 0;
-        self.item_snd_9c76();
+        self.item_snd_9c76(it.b.xi(), it.b.facing);
         self.weapon_spawn_flash(it);
         Self::weapon_wear(it, 0x20);
         it.b.hp = it.b.hp.wrapping_sub(1);
@@ -651,7 +651,7 @@ impl Game {
             return self.item_draw_check(it, h);
         }
         self.players[p].weapon_atk = 0;
-        self.item_snd_9cd8();
+        self.item_snd_9cd8(it.b.xi(), it.b.facing);
         self.weapon_spawn_flash(it);
         Self::weapon_wear(it, 0x20);
         it.b.hp = it.b.hp.wrapping_sub(1);
@@ -737,7 +737,7 @@ impl Game {
         if !self.weapon_auto_fire(it, p) {
             return self.item_draw_check(it, h);
         }
-        self.item_snd_9d9c();
+        self.item_snd_9d9c(it.b.xi(), it.b.facing);
         self.weapon_spawn_flash(it);
         Self::weapon_wear(it, 0x20);
         it.b.hp = it.b.hp.wrapping_sub(1);
@@ -777,7 +777,7 @@ impl Game {
         if !self.weapon_auto_fire(it, p) {
             return self.item_draw_check(it, h);
         }
-        self.item_snd_9d9c();
+        self.item_snd_9d9c(it.b.xi(), it.b.facing);
         self.weapon_spawn_flash(it);
         Self::weapon_wear(it, 0x20);
         it.b.hp = it.b.hp.wrapping_sub(1);

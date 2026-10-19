@@ -141,13 +141,15 @@ impl Game {
     }
 
     /// 0x9F54: the sound of eating: by the eater's voice bank (+$118) and character (Hannah has
-    /// her own row): table 0x9FAA / 0x9FB0.
-    fn item_snd_food(&mut self, it: &Item) {
+    /// her own row): table 0x9FAA / 0x9FB0. d1 = the mode 7 in the high word and the pan byte of the food's X (+$08, a6),
+    /// d2 = 0.
+    pub(super) fn item_snd_food(&mut self, it: &Item) {
         let Some(Slot::Player(p)) = slot_of(it.b.partner) else { return };
         let (voice, id) = (self.players[p].voice as u32, self.players[p].b.id);
         let row = if id == 2 { 0x9FB0 } else { 0x9FAA };
         let code = self.assets.enemy.t.u16(row, voice * 2);
-        self.sound(code);
+        let d1 = 0x0007_0000 | self.snd_pan_x(it.b.xi()) as u32;
+        self.sound_ex(code, d1, 0);
     }
 
     // ------------------------------------------------------------------ treasure

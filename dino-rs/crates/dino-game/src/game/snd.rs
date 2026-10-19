@@ -129,6 +129,13 @@ impl Game {
     /// The player voice and effect routines 0x95CE..0x9C0C, called with a6 = player `i`. Each request carries the pan
     /// byte of the player's X as d1 (`snd_pan_x`) and the constant d2 of its routine (`move.l #..,d2` before the call).
     pub fn snd_player(&mut self, i: usize, routine: u32) {
+        self.snd_player_d2(i, routine, 0)
+    }
+
+    /// `snd_player` for the routines that do not set d2 themselves and send what the caller left in it: 0x9C0C (the
+    /// landing) and 0x9C20 (its entry after the wading test, the pick-up voice). `d2_left` is the caller's d2 at the `jsr` (0 when the caller's value is not modelled); the other
+    /// routines ignore it.
+    pub fn snd_player_d2(&mut self, i: usize, routine: u32, d2_left: u32) {
         let (id, k20, voice, wading, y, x, tag) = {
             let p = &self.players[i];
             (p.b.id, p.b.k20 as u32, p.voice as u32, p.b.wading, p.b.yi(), p.b.xi(), 0u8)
@@ -143,10 +150,10 @@ impl Game {
             // 0x986C / 0x98CC: id 2 uses the second row of three. d2 = 0x2000000 / 0x5608D0.
             0x986C => (t.u8(0x98C6, if id == 2 { 3 } else { 0 } + voice), 0x0200_0000),
             0x98CC => (t.u8(0x9926, if id == 2 { 3 } else { 0 } + voice), 0x0056_08D0),
-            // 0x992C / 0x99E8 / 0x9A36: +$20 (character * 4) selects the row of four. d2 = 0xD000000, the pan index
-            // (the word d2 keeps after the table lookup), 0.
+            // 0x992C / 0x99E8 / 0x9A36: +$20 (character * 4) selects the row of four. d2 = 0xD000000 (special), 0 (0x99E8 and
+            // 0x9A36 end with `moveq #0,d2` before the `bra 0xA63C`: the pan index in d2 is cleared).
             0x992C => (t.u8(0x9974, k20 + voice), 0x0D00_0000),
-            0x99E8 => (t.u8(0x9A26, k20 + voice), self.snd_pan_index(x)),
+            0x99E8 => (t.u8(0x9A26, k20 + voice), 0),
             0x9A36 => (t.u8(0x9A74, k20 + voice), 0),
             // 0x9984: rows of three by id (0, 1, 2). d2 = 0xD000000.
             0x9984 => (t.u8(0x99DE, if id == 2 { 6 } else if id == 1 { 3 } else { 0 } + voice), 0x0D00_0000),
@@ -166,32 +173,53 @@ impl Game {
             // 0x9BCE: 0x71 / 0xF7 (toggle bit 5).
             0x9BCE => (if self.snd_toggle(5) { 0x71 } else { 0xF7 }, 0),
             // 0x9C0C: no sound while wading (+$53 negative) below height 0x20; players use the
-            // voice table, other objects toggle bit 6 (0xE0 / 0xE1). d2 not checked yet (M4-13 open item).
-            0x9C0C => {
-                if (wading as i8) < 0 && y < 0x20 {
+            // voice table, other objects toggle bit 6 (0xE0 / 0xE1). The routine never writes d2: the request
+            // carries the d2 the caller had (`d2_left`). 0x9C20 is the same routine after the wading test (the
+            // pick-up voice of 0x19832 calls it).
+            0x9C0C | 0x9C20 => {
+                if routine == 0x9C0C && (wading as i8) < 0 && y < 0x20 {
                     return;
                 }
                 if tag == 0 {
-                    (t.u8(0x9C72, voice), 0)
+                    (t.u8(0x9C72, voice), d2_left)
                 } else if self.snd_toggle(6) {
-                    (0xE0, 0)
+                    (0xE0, d2_left)
                 } else {
-                    (0xE1, 0)
+                    (0xE1, d2_left)
                 }
             }
             r => panic!("unknown player sound routine {r:#x}"),
         };
         // d1: the mode (the object's +$24 facing picks the second value) in the high word, then the word of the
-        // routine (the low byte is replaced by the pan byte): 0x986C 0x20xx, 0x98CC 0x06xx, 0x992C 0x7 (no word).
+        // routine (the low byte is replaced by the pan byte): 0x986C 0x20xx, 0x98CC 0x06xx, 0x992C and 0x9984 mode 7
+        // (`move.l #$70000,d1`, no word), 0x9AF4 (mode 5 or 6, 0x12xx).
         let facing_right = self.players[i].b.facing != 0;
         let hi = match routine {
             0x986C => (if facing_right { 4 } else { 3 }) << 16 | 0x2000,
             0x98CC => (if facing_right { 6 } else { 5 }) << 16 | 0x600,
-            0x992C => 7 << 16,
+            0x992C | 0x9984 => 7 << 16,
+            0x9AF4 => (if facing_right { 6 } else { 5 }) << 16 | 0x1200,
             _ => 0,
         };
         let pan = self.snd_pan_x(x) as u32;
         self.sound_ex(code as u16, hi | pan, d2);
+    }
+
+    /// 0x9A84: the kill voice of the player who owns an object (an enemy burned to death calls it from 0x2AC56 / 0x49EFA).
+    /// `who` is a6's +$02, the owner slot (negative = nobody: `bmi rts`). The code is the table 0x9AE4 by the owner's
+    /// character (+$20) and voice bank (+$118) (0x2C..0x2F, 0xA0..0xA7), d1 = the pan byte, d2 = 0. A bug of the original: the
+    /// pan position is `move.w $8(a0),d2` with a0 the table row (not the object), so the word is the ROM word 8 bytes into the
+    /// table row, minus the camera X. Slots 3 and up index past the table of three players: no sound here.
+    pub fn snd_9a84(&mut self, who: u8) {
+        if (who as i8) < 0 || who >= 3 {
+            return;
+        }
+        let (k20, voice) = (self.players[who as usize].b.k20 as u32, self.players[who as usize].voice as u32);
+        let t = &self.assets.text;
+        let code = t.u8(0x9AE4, k20 + voice);
+        let pos = t.u16(0x9AE4, k20 + 8) as i16;
+        let pan = self.snd_pan_x(pos) as u32;
+        self.sound_ex(code as u16, pan, 0);
     }
 
     /// 0x9796 (knockdown / landing thud of players and enemies): 0x72 / 0xF8, toggle bit 3. The code
@@ -233,9 +261,10 @@ impl Game {
         self.sound_ex(code as u16, (mode << 16) | 0x2000 | pan, 0x1500_0000);
     }
 
-    /// 0xA4CA: extra life jingle.
+    /// 0xA4CA: extra life jingle 0x4A. The routine computes the pan byte into d1 and then overwrites d1 with the constant
+    /// (`move.l #$72000,d1`, a bug of the original), so the pan never counts; d2 = 0x10000000.
     pub fn snd_extra_life(&mut self) {
-        self.sound(0x4A);
+        self.sound_ex(0x4A, 0x0007_2000, 0x1000_0000);
     }
 }
 
@@ -374,6 +403,113 @@ mod tests {
         assert_eq!(g.snd_pan_x(0x300 + 0x17F), 0x2F);
         assert_eq!(g.snd_pan_x(0x300 + 0x180), 0x2F, "right of the screen");
         assert_eq!(g.snd_pan_x(0x300 + 0x7000), 0x2F);
+    }
+
+    /// A game with the text tables `blobs` and a pan table 0xA66A that counts 0, 1, 2 ... (synthetic: no ROM bytes).
+    fn game_with_voice_tables(blobs: Vec<(u32, Vec<u8>)>) -> Game {
+        let mut a = AssetPack::default();
+        a.text = TextData { blobs };
+        a.enemy.t = dino_assets::enemy::ByteTables { blobs: vec![(0xA66A, (0..0x30).collect())], ..Default::default() };
+        Game::new(Box::leak(Box::new(a)))
+    }
+
+    /// Punch 3 (0x99E8) and punch 4 (0x9A36) end with `moveq #0,d2`: d1 = the pan byte, d2 = 0. The dash voice (0x9984) and
+    /// the special (0x992C) have the pan mode 7 in d1 and d2 = 0xD000000 (M4-17: MAME records of the hero chain).
+    #[test]
+    fn hero_move_voices_send_the_registers_of_their_routines() {
+        let mut g = game_with_voice_tables(vec![
+            (0x9A26, (0x40..0x50).collect()),
+            (0x9A74, (0x50..0x60).collect()),
+            (0x99DE, (0x60..0x69).collect()),
+            (0x9974, (0x70..0x80).collect()),
+        ]);
+        g.cam.s2.cam_x = 0;
+        g.players[0].b.x = 0x30 << 16; // pan index 6 (0x30 / 8)
+        g.snd_player(0, 0x99E8);
+        g.snd_player(0, 0x9A36);
+        g.snd_player(0, 0x9984);
+        g.snd_player(0, 0x992C);
+        let r: Vec<_> = g.w.snd_reqs.iter().map(|r| (r.code, r.d1, r.d2)).collect();
+        assert_eq!(r, vec![(0x40, 6, 0), (0x50, 6, 0), (0x60, 0x7_0006, 0x0D00_0000), (0x70, 0x7_0006, 0x0D00_0000)]);
+    }
+
+    /// The voice bank (0xA502) picks the column of the voice tables: with two players the higher slot has bank 1 and plays
+    /// the twin code (the real tables: Jack's punch 3 is 0x4F, 0xCA, 0xCB; D4e acceptance 8). Synthetic tables here.
+    #[test]
+    fn a_second_player_plays_the_twin_codes_of_its_bank() {
+        let mut mix = vec![0u8; 0x20];
+        mix[(4 | 8) + 1] = 1; // players 1 and 2 present: slot 1 has bank 1
+        mix[(4 | 8 | 0x10) + 2] = 2; // all three: slot 2 has bank 2
+        let mut g = game_with_voice_tables(vec![(0xA53A, mix), (0x9A26, vec![0x10, 0x11, 0x12, 0, 0x20, 0x21, 0x22, 0, 0, 0, 0, 0, 0, 0, 0, 0])]);
+        for i in 0..2 {
+            g.players[i].b.live = 1;
+        }
+        g.snd_update_voice_banks();
+        g.snd_player(0, 0x99E8);
+        g.snd_player(1, 0x99E8);
+        g.players[2].b.live = 1;
+        g.snd_update_voice_banks();
+        g.snd_player(2, 0x99E8);
+        assert_eq!(g.w.sounds, vec![0x10, 0x11, 0x12], "bank 0, 1 and 2 of the same row");
+    }
+
+    /// The landing voice 0x9C0C never writes d2: the request carries the caller's d2 (`snd_player_d2`). The pick-up voice
+    /// 0x9C20 is the same routine behind the wading test: it still sounds when the player wades below height 0x20.
+    #[test]
+    fn the_landing_and_pickup_voices_send_the_callers_d2() {
+        let mut g = game_with_voice_tables(vec![(0x9C72, vec![0x62, 0xDE, 0xDF])]);
+        g.snd_player_d2(0, 0x9C0C, 0x1F00);
+        g.snd_player_d2(0, 0x9C20, 0x35);
+        g.players[0].b.wading = 0x80; // +$53 negative and Y below 0x20: the landing is silent
+        g.snd_player_d2(0, 0x9C0C, 0x77);
+        g.snd_player_d2(0, 0x9C20, 0x36);
+        let r: Vec<_> = g.w.snd_reqs.iter().map(|r| (r.code, r.d1, r.d2)).collect();
+        assert_eq!(r, vec![(0x62, 0, 0x1F00), (0x62, 0, 0x35), (0x62, 0, 0x36)]);
+    }
+
+    /// 0xA4CA: the extra life jingle. The routine computes the pan byte and then overwrites d1 with a constant.
+    #[test]
+    fn the_extra_life_jingle_has_a_constant_d1() {
+        let mut g = game_with_voice_tables(Vec::new());
+        g.players[0].b.x = 0x80 << 16;
+        g.snd_extra_life();
+        assert_eq!(g.w.snd_reqs[0], SndRequest { code: 0x4A, d1: 0x72000, d2: 0x1000_0000 });
+    }
+
+    /// 0x9A84: the killer's voice. The code comes from the row of the owner's character and bank, the pan from the ROM
+    /// word 8 bytes into that row (a bug of the original, the position is read from the table pointer).
+    #[test]
+    fn the_kill_voice_reads_its_pan_word_from_the_table_row() {
+        let mut row = vec![0x2Cu8, 0xA0, 0xA1, 0, 0x2E, 0xA4, 0xA5, 0, 0x00, 0x30, 0, 0, 0, 0, 0, 0];
+        row.extend([0u8; 8]);
+        let mut g = game_with_voice_tables(vec![(0x9AE4, row)]);
+        g.cam.s2.cam_x = 0x10;
+        g.players[1].b.k20 = 4;
+        g.players[1].voice = 1;
+        g.snd_9a84(1);
+        // the word at row + 4 + 8 is 0 here: position 0 - camera X 0x10 is negative: pan index 0
+        // (code: table row 4, bank 1)
+        assert_eq!(g.w.snd_reqs[0], SndRequest { code: 0xA4, d1: 0, d2: 0 });
+        g.snd_9a84(0xFF); // bmi: nobody owns the object
+        g.snd_9a84(3); // past the three players
+        assert_eq!(g.w.snd_reqs.len(), 1);
+    }
+
+    /// G.$43C (the word the hit sound 0x962A reads) has no writer in the program, and it is 0 in every MAME recording
+    /// (all eight episodes, three players): the hit sounds always take the first code of their pair. `snd_hit` does not
+    /// write the word either, so a hit and the next hit send the same code.
+    #[test]
+    fn the_hit_toggle_word_g43c_is_never_written() {
+        let t = vec![0, 0, 0, 1, 0x11, 0x22];
+        let mut a = AssetPack::default();
+        a.text = TextData { blobs: vec![(0x96AA, t)] };
+        a.enemy.t = dino_assets::enemy::ByteTables { blobs: vec![(0xA66A, (0..0x30).collect())], ..Default::default() };
+        let mut g = Game::new(Box::leak(Box::new(a)));
+        assert_eq!(g.w.snd_hit_toggle, 0);
+        g.snd_hit(3, 0, 0);
+        g.snd_hit(3, 0, 0);
+        assert_eq!(g.w.sounds, vec![0x11, 0x11]);
+        assert_eq!(g.w.snd_hit_toggle, 0);
     }
 
     /// Every request keeps its d1 and d2 (the original's ring of 63 entries is drained by the Z80 flush, not here).

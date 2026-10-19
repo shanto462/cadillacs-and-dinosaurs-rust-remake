@@ -110,6 +110,7 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x9A74, 0x10, "player voice codes by character and +$118 (0x9A36)"),
     (0x9B5C, 0x03, "player voice codes by +$118 (0x9AF4)"),
     (0x9C72, 0x03, "player voice codes by +$118 (0x9C0C)"),
+    (0x9AE4, 0x18, "kill voice codes by character and +$118, 4 bytes per character (0x9A84); its pan reads the word 8 bytes on, the code bytes of 0x9AF4 (a bug of the original)"),
     (0xA53A, 0x20, "voice bank +$118 of players 1..3 by player mix (0xA502)"),
     (0xA582, 0x20, "area music id by stage and area (0xA55A)"),
     (0xA5C8, 0x0A, "alternate music id by stage (0xA55A)"),

@@ -82,6 +82,9 @@ impl Game {
             let p = &self.players[i];
             (p.b.xi(), p.b.yi(), p.b.zi(), p.held, p.pickup_cd)
         };
+        // d2 as the 68000 routine leaves it (the pick-up voice 0x9C20 sends it): the low word is written at 0x5B14
+        // (the box width), 0x5B74 (X difference) and 0x5B94 (Z difference); the high word is taken as 0.
+        let mut d2_left: u32 = 0;
         for h in self.item_list().to_vec() {
             let b = self.body(h);
             if b.live != 1 || b.mode != 2 || b.sub != 0 {
@@ -96,6 +99,7 @@ impl Game {
             }
             // X: the box is mirrored when the item faces right (+$24 != 0).
             let (mut d1, d2) = (bx.xoff, bx.xsize);
+            d2_left = d2_left & 0xFFFF_0000 | d2 as u16 as u32; // 0x5B14 move.w (a2)+,d2
             if b.facing != 0 {
                 d1 = d1.wrapping_neg().wrapping_sub(d2);
             }
@@ -118,9 +122,14 @@ impl Game {
                     continue;
                 }
                 let x_ok = if (px as u16) >= (b.xi() as u16) { stick & 2 != 0 } else { stick & 1 != 0 };
-                let z_ok = if (pz as u16) >= (b.zi() as u16) { stick & 4 != 0 } else { stick & 8 != 0 };
-                if !(x_ok || z_ok) {
-                    continue;
+                d2_left = d2_left & 0xFFFF_0000 | px.wrapping_sub(b.xi()) as u16 as u32; // 0x5B74
+                if !x_ok {
+                    // 0x5B94: the Z test runs only when the X test did not accept
+                    d2_left = d2_left & 0xFFFF_0000 | pz.wrapping_sub(b.zi()) as u16 as u32;
+                    let z_ok = if (pz as u16) >= (b.zi() as u16) { stick & 4 != 0 } else { stick & 8 != 0 };
+                    if !z_ok {
+                        continue;
+                    }
                 }
             }
             if kind > self.players[i].cand_type {
@@ -133,18 +142,19 @@ impl Game {
             p.cand_type = kind;
             p.cand = h;
         }
+        self.players[i].pickup_d2 = d2_left;
     }
 
     // ---------------------------------------------------------------------------------------
     // Pick-up state 0x14: entry 0x19832, handler 0x198B4
     // ---------------------------------------------------------------------------------------
 
-    /// 0x9C20: the landing voice without the wading test, used as the pick-up voice (the voice
-    /// table 0x9C72 by the voice bank +$118; the pan from the X position is not recorded).
+    /// 0x9C20 (called at 0x1983A): the landing voice without the wading test, used as the pick-up voice (the voice
+    /// table 0x9C72 by the voice bank +$118, d1 = the pan byte of the player's X). The routine never writes d2: the
+    /// request carries what `find_pickup` left in it (`pickup_d2`).
     fn player_snd_pickup(&mut self, i: usize) {
-        let voice = self.players[i].voice as u32;
-        let code = self.assets.text.u8(0x9C72, voice);
-        self.sound(code as u16);
+        let d2 = self.players[i].pickup_d2;
+        self.snd_player_d2(i, 0x9C20, d2);
     }
 
     /// 0x19832 pick-up entry (falls through into the handler). The candidate of `find_pickup` gets
