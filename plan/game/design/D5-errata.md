@@ -321,6 +321,13 @@ MAME wins over the design text; the design documents themselves are not edited.
   - Port: prop.rs prop_wave_wait, prop_wave_end and its type 2 branch (about line 580), script.rs script_area_end. Checked against the 68000 code: equal, no change made.
   - A new watch run from ep8_jack.txt (DINO_WATCH_WRITE=FF84DE, re/out/traces/ep8_row*) did not reproduce the episode (stage 1 area 1 at 33486), so it gives no WATCH lines for this case. ep8_watch has the same run as ep8_jack, but its record.log is gone.
 - Before 8b201fa a bot route broke two pipes at camera X 0x45F and stalled for ever: no wave controller was alive there, so nothing could end the hold. Open: why the controller of that hold was gone (or never made) on that route; the current route does not reach it. Not fixed by a debug skip.
+- Closed (task 4, 2026-10-19): there is no camera hold at 0x45F. On that route the lock G.$7B4 is 0 and no wave controller exists; the hero is stopped by the low wall
+  (pool B class 28 at X 0x520), which is passable only at the front of the walkway (Z 0x300) and blocks at Z 0x328. MAME `ep8hold_walk` (re/harness/pokes/ep8hold.txt: camera
+  0x400, Right, a punch every 30, a jump every 180) stops at X 0x51F, Z 0x328, camera 0x45F for 2600 frames, and the port stops at the same place in run mode; with Down first
+  (Z 0x300) the port walks on to the next lock at camera 0x570, as MAME `ep8_jack` does (it passes the wall at Z 0x300 in records 23935 .. 23952 while the pipe B40 steams and
+  the camera follows). The census counts the steam pieces only in the frame they appear (one frame in six); that matters only to a wave controller, and there is none at
+  0x45F. The autoplay bot punched whenever the census was not 0 (the pieces, and also an idle body with no HP), which kept the hero from walking, then retreated to the left
+  screen edge for good. Fix in the bot only (autoplay.rs: a fight needs a live enemy with HP and `+$7D` not negative, or a camera lock). The original does not soft lock here.
 
 ## From M6-09 and M6-10 (the Butcher, 2026-10-19)
 

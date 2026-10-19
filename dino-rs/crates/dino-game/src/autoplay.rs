@@ -89,7 +89,10 @@ impl Bot {
         // Jump pulses get Jack over the walls and the pits of the stages.
         // A swing takes about ten frames: attacking every twelfth frame keeps a hero from ever walking, so the bot punches that often only
         // when something is alive to hit (enemies, a locked camera) and otherwise once in a while (a gate, a barrel, a wall).
-        let fight = g.spawn.g.alive != 0 || g.cam.s2.lock78 != 0;
+        // Only an enemy that can still be hit is a fight. The census G.$4F3 also counts objects with no HP: the pieces a broken steam pipe
+        // (pool B class 40) puffs for ever in Episode 8 area 1 (D5-errata "Episode 8 area 1: steam pipe hold") and a dying or idle body.
+        // Punching for those kept the hero from walking there; the original does not hold the camera for them.
+        let fight = g.cam.s2.lock78 != 0 || g.enemies.slots.iter().any(|e| e.b.live != 0 && e.b.hp != 0 && (e.m.b(0x7D) as i8) >= 0);
         let swing = if fight { tick % 12 < 4 } else { tick % 60 < 4 };
         // A stall without a camera lock sends the hero left to retreat (see `STEP`); otherwise he walks right.
         let stalled = tick - self.best_tick;
