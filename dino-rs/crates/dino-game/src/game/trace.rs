@@ -72,7 +72,7 @@ pub type Unmapped = std::collections::HashMap<u32, (FrameId, u32)>;
 /// only indexes/counts. Retain those nulls while their native state and initialization
 /// phase stay unchanged. Discard each entry as soon as either changes, so subsequent
 /// trace records expose the newly computed pointer normally.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct DormantPointers {
     phase: [u8; 6],
     fields: Vec<(usize, usize, Vec<u8>)>,

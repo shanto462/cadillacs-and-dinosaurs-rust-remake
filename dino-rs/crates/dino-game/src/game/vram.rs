@@ -11,6 +11,7 @@ pub const CELLS: usize = 64 * 64;
 pub const ROWSCROLL_WORDS: usize = 0x1400;
 
 /// The three tile layers. Cell index = original VRAM byte offset / 4.
+#[derive(Clone)]
 pub struct Vram {
     /// 8x8 text / HUD layer (also a background in stage 6 area 1).
     pub scroll1: Vec<Cell>,
@@ -59,6 +60,7 @@ impl Vram {
 }
 
 /// Palette memory: 4 banks (sprites, scroll1, scroll2, scroll3) x 32 palettes x 16 colours.
+#[derive(Clone)]
 pub struct PaletteRam {
     pub words: Vec<u16>,
     pub dirty: bool,

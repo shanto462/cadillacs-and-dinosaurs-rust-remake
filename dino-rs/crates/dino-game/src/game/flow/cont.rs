@@ -3,7 +3,7 @@ use crate::game::enemy::Ram;
 use crate::game::{Game, POOL_C, Pool};
 use dino_assets::stage::Cell;
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Continue {
     /// G.$5CC..$5E9, with the original offsets. +8 number, +9 frames,
     /// +$A return timer, +$C..$F face animation, +$11 skip lock,

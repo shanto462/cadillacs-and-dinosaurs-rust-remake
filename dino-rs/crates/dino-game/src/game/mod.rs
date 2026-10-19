@@ -88,6 +88,7 @@ pub fn slot_of(h: Handle) -> Option<Slot> {
 /// A fixed-size object pool with the original free list: a stack of slots. The init routine
 /// pushes slot 0 first, so the first allocation returns the last slot (23 for a 24-slot pool),
 /// and freeing pushes the slot back (LIFO).
+#[derive(Clone)]
 pub struct Pool<T> {
     pub slots: Vec<T>,
     free: Vec<usize>,
@@ -132,7 +133,7 @@ impl<T> Pool<T> {
 }
 
 /// Globals of the original (work RAM at 0xFF8000 + offset), named. Modules add the ones they use.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct World {
     /// G.$0000 frame counter.
     pub frame: u16,
@@ -193,6 +194,7 @@ pub struct World {
     pub snd_reqs: Vec<snd::SndRequest>,
 }
 
+#[derive(Clone)]
 pub struct Game {
     pub assets: &'static AssetPack,
     pub w: World,

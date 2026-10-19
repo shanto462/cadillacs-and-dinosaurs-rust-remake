@@ -11,7 +11,7 @@ use super::{Game, Handle};
 /// The original's lists are stacks that grow downwards (`move.w a6,-(a4)`, e.g. 0x4BEA) and every
 /// pass walks them from the top pointer upwards (`movea.w $6726(a5),a1 ... (a1)+`), so the object
 /// pushed last is visited first. `get` returns the list in that visiting order.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Lists {
     lists: Vec<(u16, Vec<Handle>)>,
 }

@@ -7,7 +7,7 @@
 use super::Game;
 
 /// Rank struct at G.$5EC (offsets from $5EC) and the time-limit bytes.
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Rank {
     /// +$00 G.$5EC aggression 0..7.
     pub aggression: u16,

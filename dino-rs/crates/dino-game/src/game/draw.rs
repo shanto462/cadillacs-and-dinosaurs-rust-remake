@@ -71,6 +71,7 @@ pub struct DebugBox {
     pub kind: u8,
 }
 
+#[derive(Clone)]
 pub struct SpriteList {
     pub entries: Vec<ObjEntry>,
     /// Debug hit box overlay (the original's "BODY HIT / ATACK HIT" viewer draws box corners

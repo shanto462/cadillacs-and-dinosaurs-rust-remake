@@ -118,7 +118,7 @@ pub struct Intro {
     pub after: IntroAfter,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Flow {
     /// The cooked settings G.$777A..C and the named options they come from (`config.rs`).
     pub dip: Settings,
