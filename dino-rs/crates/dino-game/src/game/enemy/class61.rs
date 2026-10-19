@@ -122,12 +122,8 @@ impl Game {
         self.enemy_snap_to_floor(e); // 0x3140C
         e.m.sb(ATTACKING, 0xFF);
         e.b.b63 = 2;
-        if let Some(controller) = self.boss_spawn_controller(h) {
-            // 0x7BEDC copies the sign extended a6, not a 24 bit bus address (as in Vice's init).
-            if let Some(Slot::Prop(p)) = slot_of(controller) {
-                self.props.slots[p].m.sl(0xAA, ptr(h));
-            }
-        }
+        // 0x58604: 0x7BEDC writes the controller's +$AA (the sign extended boss); the init does not write it again.
+        self.boss_spawn_controller(h);
         e.m.sw(o::BAR, e.b.hp_bar);
         self.sound(0x0F);
         self.c61_decide(e, h);
