@@ -17,6 +17,9 @@
 //! * `0x38` respawn speech bubble / player marker and 1UP text, 0x93B28 / 0x93BF8.
 //! * `0x5C` respawn invulnerability glitter, 0x9590E.
 //! * `0x68` water ripple around a wading body, 0x9631C (player code 0x60E2), raw-list frames.
+//! * `0x14` water bubbles and wake, 0x92B7A (`effect/fx05.rs`), the leader's pose 0x6192 and the tie-up 0x61F6.
+//! * `0x50` sweat and shock beads, 0x9454E (`effect/fx20.rs`), the Rock Hopper's init 0x94522.
+//! * `0x74` ground impact smoke ring, 0x965CE (`effect/fx29.rs`), Hannah's pose 0x965A2.
 //! * `0x70` the words TIME and OVER of the stage time out, 0x96488 (`effect/fx_time_over.rs`, made by `rank_time_over`).
 //! * `0x80` cloud of the ranking screen, 0x96A7E (`effect/fx_cloud.rs`, made by the pool B class 89).
 //!
@@ -74,6 +77,13 @@ mod fx21;
 mod fx31;
 #[path = "effect/fx33.rs"]
 mod fx33;
+// Pool C classes 5, 20 and 29 (M6-14): water bubbles, sweat beads, the ground impact smoke ring.
+#[path = "effect/fx05.rs"]
+mod fx05;
+#[path = "effect/fx20.rs"]
+mod fx20;
+#[path = "effect/fx29.rs"]
+mod fx29;
 use dino_assets::effect::{EffectData, RawSprite};
 use dino_assets::{FrameId, HitBox};
 
@@ -97,6 +107,9 @@ pub const FX_TIME_OVER: u16 = 0x70;
 pub const FX_CLOUD: u16 = 0x80;
 pub const FX_TALLY_FLASH: u16 = 0x58;
 pub const FX_TALLY_WINNER: u16 = 0x88;
+pub const FX_BUBBLES: u16 = 0x14;
+pub const FX_SWEAT: u16 = 0x50;
+pub const FX_SMOKE_RING: u16 = 0x74;
 
 /// Hit spark animation table (0x924BE stores it in +$40).
 const SPARK_TABLE: u32 = 0x924F6;
@@ -561,13 +574,16 @@ impl Game {
                 FX_CLOUD => self.fx_cloud(i),
                 FX_TALLY_FLASH => self.fx_tally_flash(i),
                 FX_TALLY_WINNER => self.fx_tally_winner(i),
+                FX_BUBBLES => self.fx_bubbles(i),
+                FX_SWEAT => self.fx_sweat(i),
+                FX_SMOKE_RING => self.fx_smoke_ring(i),
                 // TODO(port): remaining classes (handler addresses from the table at 0x237E6):
-                // 0x00 0x923E0, 0x14 0x92B7A, 0x18 0x92C9A,
+                // 0x00 0x923E0, 0x18 0x92C9A,
                 // 0x24 0x93184, 0x28 0x932D2,
                 // 0x30 0x939D6, 0x34 0x93A7A, 0x3C 0x93E54, 0x40 0x93FFC,
-                // 0x44 0x94100, 0x48 0x942C6, 0x50 0x9454E,
+                // 0x44 0x94100, 0x48 0x942C6,
                 // 0x58 0x95840, 0x6C 0x963D6,
-                // 0x70 0x96488, 0x74 0x965CE, 0x78 0x966B4, 0x80 0x96A7E,
+                // 0x70 0x96488, 0x78 0x966B4, 0x80 0x96A7E,
                 // 0x88 0x96DC4, 0x8C 0x96E56, 0x90 0x96FF4, 0x94 0x9720A,
                 // 0x98 (null entry), 0x9C 0x97530, 0xA0 0x97674, 0xA4 0x97800.
                 // See re/specs/anim/HANDOFF.md. Until then they are freed on their first update.

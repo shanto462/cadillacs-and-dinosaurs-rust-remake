@@ -908,16 +908,20 @@ impl Game {
 
     /// 0x19996 state 0x18 entry: the pose (action 0x04, and the extra life pose). The animation 0xE for a hero with the flag `+$10E` (a life was won) or
     /// the leader, 0x11 for the others. Mustapha (id 1) and Hannah (id 2) in these two cases use the air states 0x418 (0x1ADA6) and 0x41A
-    /// (0x1AE62) instead. the effect of the leader (0x6192, pool C class 5) is not ported yet; the anti
-    /// tamper test 0x5124E (it never fails with the real ROM) is not ported. Falls into the handler.
+    /// (0x1AE62) instead. The leader (and not an extra life) spawns the bubbles 0x6192 before the voice; an extra life
+    /// skips that spawn. The anti tamper test 0x5124E (it never fails with the real ROM) is not ported. Falls into the handler.
     pub(super) fn player_pose_entry(&mut self, i: usize) {
         let p = &mut self.players[i];
         p.b.set_state(0x0200_0018);
         p.b.draw_flags = 0;
         let leader = p.bc0 != 0;
-        let special = p.b10e != 0 || leader;
+        let extra = p.b10e != 0;
+        let special = extra || leader;
+        // 0x199A4: +$10E skips the spawn and still voices; a leader with no extra life does jsr 0x6192 then jsr 0x9814.
+        if leader && !extra {
+            self.fx_spawn_bubbles(Game::player_handle(i));
+        }
         if special {
-            // 0x199B4: the leader's effect 0x6192 (pool C class 5): TODO(port); then the voice 0x9814
             self.player_oneup_voice(i);
         }
         let anim = if special { 0xE } else { 0x11 };
@@ -1023,15 +1027,17 @@ impl Game {
         }
     }
 
-    /// 0x1AE88 state 0x41A (Hannah's pose): step 0 plays the animation until the flag `+$2C` (then the effect 0x965A2 variant 0: TODO(port, pool C class 29), pool C
-    /// class 29); step 2 falls and bounces (`vy` = -`vy` when it lands), step 4 plays to the flag (effect variant 2), step 6 falls again and ends
-    /// with the won life effect, step 8 plays and holds like 0x18.
+    /// 0x1AE88 state 0x41A (Hannah's pose): step 0 plays the animation until the flag `+$2C` (then jmp 0x965A2, the smoke ring variant 0);
+    /// step 2 falls and bounces (`vy` = -`vy` when it lands), step 4 plays to the flag (jmp 0x965A2 variant 2), step 6 falls again and ends
+    /// with the won life effect, step 8 plays and holds like 0x18. The low-address copies of the same jumps are 0x378E and 0x37D0.
     pub(super) fn player_pose_air_hannah(&mut self, i: usize) {
         match self.players[i].b90 {
             0 => {
                 self.player_pstep(i);
                 if self.players[i].b.param_a != 0 {
-                    self.players[i].b90 += 2; // TODO(port, pool C class 29): jmp 0x965A2 with d0 = 0
+                    self.players[i].b90 += 2;
+                    self.fx_spawn_smoke_ring(Game::player_handle(i), 0); // jmp 0x965A2, d0 = 0
+                    return;
                 }
             }
             2 => {
@@ -1049,7 +1055,9 @@ impl Game {
             4 => {
                 self.player_pstep(i);
                 if self.players[i].b.param_a != 0 {
-                    self.players[i].b90 += 2; // TODO(port, pool C class 29): jmp 0x965A2 with d0 = 2
+                    self.players[i].b90 += 2;
+                    self.fx_spawn_smoke_ring(Game::player_handle(i), 2); // jmp 0x965A2, d0 = 2
+                    return;
                 }
             }
             6 => {

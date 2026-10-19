@@ -19,6 +19,9 @@ const EFFECT_TABLES: &[u32] = &[
     0x96884, // gunshot muzzle flash, effect $20 = 0x7C (0x96800), 4 animations by the gun
     0x96D06, // bullet ricochet spark, effect $20 = 0x84 (0x96B78)
     0x28904, // fuse spark of a TNT barrel, effect $20 = 0x64 (0x962AA)
+    0x92BF0, // water bubbles and wake, effect $20 = 0x14 (0x92B8E), 12 animations
+    0x945CC, // sweat and shock beads, effect $20 = 0x50 (0x9456E), 9 frames
+    0x9664E, // ground impact smoke ring, effect $20 = 0x74 (0x965E2), 1 animation
 ];
 
 /// Frame lists loaded directly with 0x160A (10-byte records, no table).

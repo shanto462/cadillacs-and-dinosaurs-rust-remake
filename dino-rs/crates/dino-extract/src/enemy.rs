@@ -226,6 +226,11 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x95B80, 0x2A8, "pool C class 24 piece lists by variant (0x95A0C)"),
     // M5-05 pool C class 19 (0x94338): the height of the dizzy stars over a head by the owner's class (a word per class).
     (0x94398, 0xCA, "pool C class 19 star height by owner class (0x94376)"),
+    // M6-14 pool C class 5 (0x6192, 0x61F6): the variant byte by (rand & 1) + the owner's class word, and by the character id.
+    (0x61E6, 0x10, "pool C class 5 bubble variant by (rand & 1) + owner class (0x61D8)"),
+    (0x6244, 4, "pool C class 5 bubble variant by character id (0x6234)"),
+    // M6-14 pool C class 29 (0x965F2): a word index by the variant byte, then dx, dy, vx, vy and the life byte.
+    (0x9665E, 0x20, "pool C class 29 smoke ring parameter blocks (0x965F2)"),
     (0x24CC6, 0x20, "gun flag by weapon variant (0x24C3A)"),
     (0x2494A, 0x10, "gun-kind flag by item kind low nibble (0x248F6)"),
     (0x2CBA0, 0x20, "weapon attack tables (0x259C8)"),
