@@ -23,6 +23,14 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x44B84, 0x40, "Vice attack chance"),
     (0x44C8C, 0x40, "Vice combo choice"),
     (0x43004, 13 * 8, "Vice combo scripts"),
+    (0x429AE, 12, "Vice counterattack chance"),
+    (0x42A24, 96, "Vice counterattack choices on screen"),
+    (0x42A84, 96, "Vice counterattack choices off screen"),
+    (0x436B4, 32, "Vice pause distribution"),
+    (0x436D4, 32, "Vice pause lengths"),
+    (0x44C06, 13 * 2, "Vice combo approach distances"),
+    (0x44D8A, 4, "Vice run brake windows"),
+    (0x44DB8, 4, "Vice run arrival windows"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {

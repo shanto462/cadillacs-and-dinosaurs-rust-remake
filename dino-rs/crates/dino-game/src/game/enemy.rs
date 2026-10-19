@@ -1776,6 +1776,7 @@ impl Game {
     pub fn enemy_recover_other(&mut self, e: &mut Enemy, h: Handle, w84: u16) {
         match w84 {
             0x0C | 0x28 | 0x2C => self.c10_reset_ai(e, h),
+            0x30 => self.enemy_vice_recover(e), // 0x2B59C -> 0x42AE4
             0x20 | 0x24 => self.c20_reset_ai(e, h), // 0x45D74
             0x18 | 0x50 => self.c14_408e8(e),       // 0x408E8 class 14
             _ => e.b.set_state(0x0200_0000),

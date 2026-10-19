@@ -1,4 +1,4 @@
-//! Vice T., class 18 variant 0: intro, decide and approach. Attacks remain partial.
+//! Vice T., class 18 variant 0: native intro, approach and melee combos.
 use super::{in_win, Enemy};
 use crate::game::{Game, Handle};
 
@@ -6,17 +6,25 @@ impl Game {
     /// 0x42590 / 0x425BC / 0x428CE: use sprites for native intro and AI states.
     pub(crate) fn enemy_vice_intro_active(b: &crate::game::body::Body) -> bool {
         b.k20 == 18 * 4 && b.var26 >> 8 == 0
-            && (b.mode == 0 || (b.mode == 2 && b.sub == 0 && b.act <= 2))
+            && (b.mode == 0 || (b.mode == 2 && (b.sub == 2
+                || (b.sub == 0 && matches!(b.act, 0 | 2 | 4 | 8)
+                    && !(b.act == 4 && matches!(b.step, 0xE | 0x12))))))
     }
 
     /// 0x42590 / 0x425A4 / 0x42884: init, intro and the ported alive states.
     pub(super) fn enemy_class18(&mut self, e: &mut Enemy, h: Handle, i: usize) {
-        // One switch for the partial port: all other modes and approach variants
-        // still use the placeholder (or snapshot hold in the harness).
+        // M5-12 rage/summon/gun and M5-13 death/Walther retain the placeholder.
         match (e.b.var26 >> 8, e.b.mode, e.b.sub, e.b.act) {
             (0, 0, _, _) => {}
-            (0, 2, 0, 0 | 2) if e.m.b(0xBD) == 0 && e.m.b(0xB1) <= 6 => {
+            (0, 2, 0, 0 | 2 | 4 | 8) if (e.m.b(0xBD) == 0 || matches!(e.b.act, 4 | 8))
+                && !(e.b.act == 4 && matches!(e.b.step, 0xE | 0x12)) => {
                 self.enemy_vice_alive(e, h);
+                return;
+            }
+            (0, 2, 2, _) => {
+                for offset in [0xBE, 0xC4] { e.m.sw(offset, e.m.w(offset).saturating_sub(1)); }
+                self.boss_hit(e, h); // 0x4385C -> 0x3262A, before the reaction
+                self.enemy_hit_reaction(e, h);
                 return;
             }
             _ => {
@@ -40,7 +48,11 @@ impl Game {
             e.m.sb(0x79, e.m.b(0x79).wrapping_sub(1));
             if e.m.b(0x79) == 0 { e.b.stun = 11; }
         }
-        if e.b.act == 0 && e.b.airborne != 0 {
+        if e.b.act == 4 {
+            self.enemy_vice_attack(e);
+        } else if e.b.act == 8 {
+            self.enemy_vice_fall(e);
+        } else if e.b.act == 0 && e.b.airborne != 0 {
             e.b.set_state(0x0200_0800); // 0x42B3E -> 0x43738
         } else if e.b.act == 2 || e.m.b(0x7A) == 0 {
             self.enemy_vice_approach(e);
@@ -54,7 +66,7 @@ impl Game {
         if e.m.b(0xC3) == 0 {
             e.m.sb(0xC3, 200);
             if e.b.wall & 0x80 != 0 {
-                // 0x4292E: prepare the obstacle combo for the unported attack state.
+                // 0x4292E: prepare the obstacle combo.
                 e.b.set_state(0x0200_0402);
                 e.m.sb(0xB6, 7); // byte write, deliberately preserves +$B7
                 e.m.sw(0xB8, 0x38);
@@ -84,7 +96,7 @@ impl Game {
                     if !near { continue; }
                     e.m.sw(0x76, Game::player_handle(i));
                     if behind {
-                        // 0x43604: the back elbow entry. Its action stays unported.
+                        // 0x43604: enter and tick the back elbow.
                         e.b.set_state(0x0200_041C);
                         self.enemy_anim(&mut e.b, 10);
                         self.enemy_begin_attack(&mut e.b, 0x35);
@@ -159,6 +171,8 @@ impl Game {
                     self.enemy_vice_face(e);
                 }
                 6 => e.m.sb(0x80, 10), // 0x42E54
+                8 => { self.enemy_vice_retreat_start(e); return; }
+                10 => { self.enemy_vice_escape_jump_start(e); return; }
                 _ => return,
             }
         }
@@ -176,6 +190,18 @@ impl Game {
                 }
             }
             6 => self.enemy_vice_approach_pause(e),
+            8 => self.enemy_vice_retreat(e), // 0x42EFC
+            10 => { // 0x42EAE: escape jump uses the same landing path
+                if e.b.airborne != 0 {
+                    if e.b.param_b == 0 { e.b.motion(); }
+                    self.enemy_step(&mut e.b);
+                } else {
+                    self.enemy_anim(&mut e.b, 3);
+                    e.m.sb(0xB1, 6);
+                    e.m.sb(0x80, 10);
+                    self.enemy_vice_approach_pause(e);
+                }
+            }
             _ => {}
         }
     }
@@ -241,14 +267,20 @@ impl Game {
         let z = self.assets.enemy.t.u16(0x44868, cell + 2);
         e.m.sw(0x88, x);
         e.m.sw(0x8A, z);
-        let mut dir = Game::enemy_angle_to(&e.b, x, z);
-        let turn = if e.m.b(0xB5) == 0 { 4u8 } else { 2u8 };
+        self.enemy_vice_turn(e, e.m.b(0xB5) != 0, false);
+    }
+
+    /// 0x44994 / 0x449C6 / 0x449F8: bounded turn toward +$88 / +$8A.
+    fn enemy_vice_turn(&self, e: &mut Enemy, fast: bool, away: bool) {
+        let mut dir = Game::enemy_angle_to(&e.b, e.m.w(0x88), e.m.w(0x8A));
+        if away { dir ^= 16; }
+        let turn = if away { 3u8 } else if fast { 2u8 } else { 4u8 };
         let d = e.b.dir.wrapping_sub(dir).wrapping_add(turn) & 31;
         if d > turn * 2 {
             dir = e.b.dir.wrapping_add(if d >= 16 + turn { turn } else { turn.wrapping_neg() }) & 31;
         }
         e.b.dir = dir;
-        if e.m.b(0xB5) == 0 { self.enemy_vice_face(e); }
+        if e.m.b(0xB5) == 0 || away { self.enemy_vice_face(e); }
         else { e.b.facing = ((dir >> 4).wrapping_add(1)) & 1; }
     }
 
@@ -265,7 +297,7 @@ impl Game {
             return;
         }
         if !charge && e.b.airborne != 0 {
-            e.b.set_state(0x0200_0800); // 0x43738, unported fall
+            e.b.set_state(0x0200_0800); // 0x43738
             return;
         }
         let old = e.m.w(0xAE);
@@ -318,28 +350,7 @@ impl Game {
 
     /// 0x42DCE / 0x43390: jump toward the cell in 56 ticks, using quotient and remainder.
     fn enemy_vice_jump_start(&self, e: &mut Enemy) {
-        e.b.airborne = 1;
-        e.b.vy = 0x700;
-        e.b.ay = -0x40;
-        let dx = (e.b.xi() as u16).wrapping_sub(e.m.w(0x88));
-        let magnitude = (dx as i16).wrapping_abs() as u16;
-        let mut q = magnitude / 56;
-        let mut r = magnitude % 56;
-        if (e.b.xi() as u16) >= e.m.w(0x88) { q = q.wrapping_neg(); r = r.wrapping_neg(); }
-        e.b.vx = (r.wrapping_add((q & 0xFF) << 8)) as i16;
-        if (q.wrapping_add(0x500)) >= 0xA00 { e.b.vx = 0x500; }
-        e.b.ax = 0;
-        let dz = (e.b.zi() as u16).wrapping_sub(e.m.w(0x8A));
-        let magnitude = (dz as i16).wrapping_abs() as u16;
-        let mut q = magnitude / 56;
-        let mut r = magnitude % 56;
-        if (e.b.zi() as u16) >= e.m.w(0x8A) {
-            q = q.wrapping_neg();
-            if q == 0 && (r as i16) < 0 { q = 0xFFFF; }
-            r = r.wrapping_neg();
-        }
-        e.b.vz = ((r << 2).wrapping_add((q & 0xFF) << 8)) as i16;
-        e.b.az = 0;
+        self.enemy_vice_jump_to(e, e.m.w(0x88), e.m.w(0x8A), false);
     }
 
     /// 0x42E60: post-jump / charge pause, borrow then pick another cell.
@@ -351,6 +362,485 @@ impl Game {
             self.enemy_vice_new_cell(e);
             e.b.act = 2;
             e.b.step = 0;
+        }
+    }
+
+    /// 0x42F48 / 0x42F8E: hit stop, then the attack-step dispatch at 0x42F6C.
+    /// 0x42922 has only six alive r6 entries (0..0xA). The extended values
+    /// 0xC..0x20 belong to this r7 table, not to the following helper code.
+    fn enemy_vice_attack(&mut self, e: &mut Enemy) {
+        if e.b.hitstop != 0 {
+            e.b.hitstop = e.b.hitstop.wrapping_sub(1);
+            if e.b.hitstop != 0 { return; }
+            e.b.timer = 1;
+        }
+        match e.b.step {
+            0 => {
+                if e.b.wall & 0x80 != 0 { e.b.set_state(0x0200_0000); return; }
+                e.b.step = 2;
+                let r = self.rand() & 31; // 0x44C5A, exactly one draw even when charged
+                let combo = if e.m.b(0xB5) != 0 { 5 + (r >> 4) }
+                    else { self.assets.enemy.t.u8(0x44C8C, r as u32) as u16 };
+                e.m.sw(0xB6, combo);
+                e.m.sw(0xB8, combo << 3);
+            }
+            2 => self.enemy_vice_combo_next(e),
+            4 => self.enemy_vice_combo_approach(e),
+            6 => self.enemy_vice_dash(e),
+            8 | 0xA | 0x10 => {
+                if self.enemy_step(&mut e.b) { self.enemy_vice_combo_pause(e); }
+            }
+            0xC | 0x1E => self.enemy_vice_combo_jump(e),
+            0x14 => self.enemy_vice_combo_run(e),
+            0x16 | 0x18 | 0x1A => self.enemy_vice_combo_brake(e),
+            0x1C => {
+                if self.enemy_step(&mut e.b) { e.b.set_state(0x0200_0000); }
+            }
+            0x20 => {
+                let t = e.m.b(0x80);
+                e.m.sb(0x80, t.wrapping_sub(1));
+                if t == 0 { self.enemy_vice_combo_next(e); }
+            }
+            _ => {}
+        }
+    }
+
+    /// 0x42FAE / 0x4306C: advance one script byte and enter that action in this frame.
+    fn enemy_vice_combo_next(&mut self, e: &mut Enemy) {
+        let target = e.m.w(0x76);
+        if self.body(target).live == 0 || matches!(self.enemy_vice_hero_action(target), 0x22 | 0x23) {
+            e.b.set_state(0x0200_0000);
+            return;
+        }
+        e.m.sb(0xA9, 0);
+        let cursor = e.m.w(0xB8);
+        if (cursor as i16) < 0 { e.b.set_state(0x0200_0400); return; }
+        let action = self.assets.enemy.t.u8(0x43004, cursor as u32);
+        if (action as i8) < 0 { e.b.set_state(0x0200_0400); return; }
+        e.m.sw(0xB8, cursor.wrapping_add(1));
+        match action {
+            0 => { // 0x4308A
+                e.b.step = 4;
+                self.enemy_anim(&mut e.b, if e.m.b(0xBD) == 0 { 1 } else { 6 });
+                self.enemy_vice_walk_speed(e);
+                self.enemy_vice_face(e);
+                self.enemy_vice_combo_destination(e);
+                e.m.sb(0xB0, 120);
+                self.enemy_vice_combo_approach(e);
+            }
+            2 => { // 0x430EC
+                e.b.step = 6;
+                self.enemy_anim(&mut e.b, 15);
+                self.enemy_set_speed(&mut e.b, 22);
+                e.m.sb(0x80, 30);
+                e.m.sb(0xBA, 0);
+                e.b.dir = if (e.b.xi() as u16) < (self.body(target).xi() as u16) { 24 } else { 8 };
+                e.m.sb(0xB0, 120);
+                self.enemy_vice_face(e);
+                self.enemy_vice_dash(e);
+            }
+            4 | 6 => { // 0x43160 / 0x431AA
+                e.b.step = if action == 4 { 8 } else { 10 };
+                self.enemy_vice_face(e);
+                self.enemy_anim(&mut e.b, if action == 4 { 7 } else { 9 });
+                self.enemy_begin_attack(&mut e.b, if action == 4 { 0x12 } else { 0x13 });
+                if (self.assets.enemy.t.u8(0x43004, e.m.w(0xB8) as u32) as i8) < 0 { e.b.knock = 1; }
+                if self.enemy_step(&mut e.b) { self.enemy_vice_combo_pause(e); }
+            }
+            8 | 24 => { // 0x43208 / 0x4364C
+                self.enemy_vice_combo_jump_start(e, action == 24);
+            }
+            10 | 14 => { // 0x433BE / 0x43476: gun and its bullet belong to M5-12
+                e.b.step = if action == 10 { 0xE } else { 0x12 };
+            }
+            12 => { // 0x4344C, carry is the unsigned camera window
+                let d = (self.cam.s2.cam_x as i16).wrapping_add(0xC0).wrapping_sub(e.b.xi());
+                if !in_win(d, 0xE0) {
+                    e.m.sw(0xB8, 0xFFFF);
+                    self.enemy_vice_combo_next(e);
+                } else {
+                    e.b.step = 0x10;
+                    self.enemy_anim(&mut e.b, 12);
+                    if self.enemy_step(&mut e.b) { self.enemy_vice_combo_pause(e); }
+                }
+            }
+            16 => { // 0x434AA / 0x44DBC
+                let dx = self.body(target).xi().wrapping_sub(e.b.xi());
+                if in_win(dx, 0x70) {
+                    let combo = e.m.w(0xB6).wrapping_sub(5);
+                    e.m.sw(0xB6, combo);
+                    e.m.sw(0xB8, combo << 3);
+                    self.enemy_vice_combo_next(e);
+                } else {
+                    e.b.step = 0x14;
+                    self.enemy_vice_face(e);
+                    e.m.sb(0xB5, 1);
+                    e.m.sb(0xBC, 20);
+                    self.enemy_anim(&mut e.b, 4);
+                    self.enemy_set_speed(&mut e.b, 25);
+                    self.enemy_vice_target_destination(e);
+                    self.enemy_vice_track_target(e);
+                    self.enemy_move_dir(&mut e.b);
+                    self.enemy_vice_combo_run(e);
+                }
+            }
+            18 | 20 | 22 => { // 0x43564 / 0x435B2 (RTS) / 0x435B4
+                if action == 20 { return; }
+                e.b.step = if action == 18 { 0x18 } else { 0x1A };
+                self.enemy_anim(&mut e.b, if action == 18 { 17 } else { 18 });
+                self.enemy_begin_attack(&mut e.b, if action == 18 { 0x15 } else { 0x16 });
+                self.enemy_vice_combo_brake(e);
+            }
+            26 => self.enemy_vice_combo_pause(e), // 0x4367E
+            _ => {}
+        }
+    }
+
+    /// 0x42FBA / 0x42FC4: player +$C8 is separate from the common body.
+    fn enemy_vice_hero_action(&self, h: Handle) -> u8 {
+        if let Some(crate::game::Slot::Player(i)) = crate::game::slot_of(h) { self.players[i].action } else { 0 }
+    }
+
+    /// 0x44F2E: level-dependent speed id.
+    fn enemy_vice_walk_speed(&self, e: &mut Enemy) {
+        self.enemy_set_speed(&mut e.b, self.assets.enemy.t.u16(0x44F4E, (self.w.level as u32 & 31) * 2));
+    }
+
+    /// 0x44BC4: combo-specific distance from the target, then turn and face.
+    fn enemy_vice_combo_destination(&self, e: &mut Enemy) {
+        let p = self.body(e.m.w(0x76));
+        let mut d = self.assets.enemy.t.u16(0x44C06, e.m.w(0xB6) as u32 * 2);
+        if (e.b.xi() as u16) < (p.xi() as u16) { d = d.wrapping_neg(); }
+        e.m.sw(0x88, (p.xi() as u16).wrapping_add(d));
+        e.m.sw(0x8A, p.zi() as u16);
+        self.enemy_vice_turn(e, e.m.b(0xB5) != 0, false);
+        self.enemy_vice_face(e);
+    }
+
+    /// 0x430B2: approach, then run the next action immediately on arrival.
+    fn enemy_vice_combo_approach(&mut self, e: &mut Enemy) {
+        if e.b.airborne != 0 { e.b.set_state(0x0200_0800); return; }
+        if self.enemy_vice_back_elbow(e) { return; }
+        if Game::enemy_stuck_check(e) { e.b.set_state(0x0200_0000); return; }
+        let t = e.m.b(0xB0);
+        e.m.sb(0xB0, t.wrapping_sub(1));
+        if t == 0 { e.b.set_state(0x0200_0000); return; }
+        if in_win(e.b.xi().wrapping_sub(e.m.w(0x88) as i16), 4)
+            && in_win(e.b.zi().wrapping_sub(e.m.w(0x8A) as i16), 7) {
+            self.enemy_vice_combo_next(e);
+        } else {
+            self.enemy_vice_combo_destination(e);
+            self.enemy_move_dir(&mut e.b);
+            self.enemy_step(&mut e.b);
+        }
+    }
+
+    /// 0x44E52 / 0x43604 / 0x4362C: scan P3 to P1, enter and tick the back elbow.
+    fn enemy_vice_back_elbow(&mut self, e: &mut Enemy) -> bool {
+        for i in (0..3).rev() {
+            let p = &self.players[i].b;
+            if p.live == 0 || p.sub != 0 { continue; }
+            let dx = if e.b.facing == 0 { 60i16 } else { -60i16 };
+            if in_win(e.b.xi().wrapping_add(dx).wrapping_sub(p.xi()), 24)
+                && in_win(p.zi().wrapping_sub(e.b.zi()), 5) {
+                e.m.sw(0x76, Game::player_handle(i));
+                e.b.set_state(0x0200_041C);
+                self.enemy_anim(&mut e.b, 10);
+                self.enemy_begin_attack(&mut e.b, 0x35);
+                if self.enemy_step(&mut e.b) { e.b.set_state(0x0200_0000); }
+                return true;
+            }
+        }
+        false
+    }
+
+    /// 0x4312C / 0x44CF6: dash away, latch a stop at the camera or target window.
+    fn enemy_vice_dash(&mut self, e: &mut Enemy) {
+        let t = e.m.b(0x80);
+        e.m.sb(0x80, t.wrapping_sub(1));
+        if t == 0 { self.enemy_vice_combo_next(e); return; }
+        if e.m.b(0xBA) != 0 { return; }
+        let center = (self.cam.s2.cam_x as i16).wrapping_add(0xC0).wrapping_sub(e.b.xi());
+        let p = self.body(e.m.w(0x76));
+        let offset = if (p.xi() as u16) < (e.b.xi() as u16) { 0x60i16 } else { -0x60 };
+        if !in_win(center, 0xA0) || !in_win(p.xi().wrapping_add(offset).wrapping_sub(e.b.xi()), 0x60) {
+            e.m.sb(0xBA, 1);
+            return;
+        }
+        if Game::enemy_stuck_check(e) { e.b.set_state(0x0200_0000); return; }
+        let t = e.m.b(0xB0);
+        e.m.sb(0xB0, t.wrapping_sub(1));
+        if t == 0 { e.b.set_state(0x0200_0000); return; }
+        self.enemy_move_dir(&mut e.b);
+        self.enemy_step(&mut e.b);
+    }
+
+    /// 0x4324C / 0x432D6 / 0x43390: divide absolute word differences, retain remainder.
+    fn enemy_vice_jump_to(&self, e: &mut Enemy, x: u16, z: u16, short: bool) {
+        e.b.airborne = 1;
+        e.b.vy = if short { 0x580 } else { 0x700 };
+        e.b.ay = -0x40;
+        let n = if short { 44u16 } else { 56 };
+        let velocity = |position: u16, target: u16, depth: bool| {
+            let d = position.wrapping_sub(target) as i16;
+            let magnitude = d.wrapping_abs() as u16;
+            let (mut q, mut r) = (magnitude / n, magnitude % n);
+            if position >= target {
+                q = q.wrapping_neg();
+                if depth && q == 0 && (r as i16) < 0 { q = 0xFFFF; }
+                r = r.wrapping_neg();
+            }
+            if depth { r <<= 2; }
+            let v = ((r & 0xFF) | (((r >> 8).wrapping_add(q) & 0xFF) << 8)) as i16;
+            if !depth && q.wrapping_add(0x500) >= 0xA00 { 0x500 } else { v }
+        };
+        e.b.vx = velocity(e.b.xi() as u16, x, false);
+        e.b.vz = velocity(e.b.zi() as u16, z, true);
+        e.b.ax = 0;
+        e.b.az = 0;
+    }
+
+    /// 0x43208 / 0x4364C: jump attack setup, one roll only for the normal jump.
+    fn enemy_vice_combo_jump_start(&mut self, e: &mut Enemy, charge: bool) {
+        e.b.step = if charge { 0x1E } else { 0xC };
+        e.m.sb(0xA9, 2);
+        self.enemy_anim(&mut e.b, if charge { 24 } else { 11 });
+        self.enemy_begin_attack(&mut e.b, 0x14);
+        self.enemy_vice_face(e);
+        let short = !charge && (self.rand() & 15) < 3;
+        let p = self.body(e.m.w(0x76));
+        let (x, z) = (p.xi() as u16, p.zi() as u16);
+        self.enemy_vice_jump_to(e, x, z, short);
+    }
+
+    /// 0x43360 / 0x43378 / 0x43384: airborne motion, landing animation, pause.
+    fn enemy_vice_combo_jump(&mut self, e: &mut Enemy) {
+        if e.m.b(0xA9) == 0 {
+            self.enemy_vice_combo_jump_start(e, e.b.step == 0x1E);
+            return;
+        }
+        if e.m.b(0xA9) == 2 {
+            if e.b.airborne != 0 {
+                if e.b.param_b == 0 { e.b.motion(); }
+                self.enemy_step(&mut e.b);
+                return;
+            }
+            e.m.sb(0xA9, 4);
+            self.enemy_anim(&mut e.b, 3);
+        }
+        if self.enemy_step(&mut e.b) { self.enemy_vice_combo_pause(e); }
+    }
+
+    /// 0x44974: copy the target coordinates and set the direction immediately.
+    fn enemy_vice_target_destination(&self, e: &mut Enemy) {
+        let p = self.body(e.m.w(0x76));
+        e.m.sw(0x88, p.xi() as u16);
+        e.m.sw(0x8A, p.zi() as u16);
+        e.b.dir = Game::enemy_angle_to(&e.b, e.m.w(0x88), e.m.w(0x8A));
+    }
+
+    /// 0x44C20: track the hero, retaining the original gradual turn.
+    fn enemy_vice_track_target(&self, e: &mut Enemy) {
+        let p = self.body(e.m.w(0x76));
+        e.m.sw(0x88, p.xi() as u16);
+        e.m.sw(0x8A, p.zi() as u16);
+        self.enemy_vice_turn(e, e.m.b(0xBD) != 0, false);
+    }
+
+    /// 0x434E6 / 0x44D60 / 0x44D8E / 0x4351A: charge, brake on entry to the hit window.
+    fn enemy_vice_combo_run(&mut self, e: &mut Enemy) {
+        e.m.sb(0xBC, e.m.b(0xBC).saturating_sub(1));
+        let row = e.m.w(0xB6).wrapping_sub(5) as u32 * 2;
+        let dx = self.body(e.m.w(0x76)).xi().wrapping_sub(e.b.xi());
+        let brake = self.assets.enemy.t.u16(0x44D8A, row);
+        if in_win(dx, brake) {
+            e.b.ax = e.b.vx.wrapping_neg() >> 5;
+            e.b.az = e.b.vz.wrapping_neg() >> 5;
+            let arrival = self.assets.enemy.t.u16(0x44DB8, row);
+            if in_win(dx, arrival) && e.m.b(0xBC) == 0 { self.enemy_vice_combo_pause(e); }
+            else {
+                e.b.step = 0x16;
+                self.enemy_anim(&mut e.b, 3);
+                self.enemy_vice_combo_brake(e);
+            }
+        } else {
+            self.enemy_vice_track_target(e);
+            self.enemy_move_dir(&mut e.b);
+            self.enemy_step(&mut e.b);
+        }
+    }
+
+    /// 0x43542 / 0x4358A / 0x435DA: stop under the unsigned velocity window.
+    fn enemy_vice_combo_brake(&mut self, e: &mut Enemy) {
+        if (e.b.vx.wrapping_add(48) as u16) < 96 {
+            e.m.sb(0xB5, 0);
+            e.m.sw(0xB8, 0xFFFF);
+            self.enemy_vice_combo_pause(e);
+        } else {
+            e.b.motion();
+            if e.b.step != 0x16 { self.enemy_step(&mut e.b); }
+        }
+    }
+
+    /// 0x4367E / 0x436AA: one RNG draw for the level-scaled pause, then tick it now.
+    fn enemy_vice_combo_pause(&mut self, e: &mut Enemy) {
+        e.b.step = 0x20;
+        let r = self.rand() & 31;
+        let slot = self.assets.enemy.t.u8(0x436B4, r as u32) as u32;
+        e.m.sb(0x80, self.assets.enemy.t.u8(0x436D4, (self.w.level as u32 & 0x18) + slot));
+        self.enemy_anim(&mut e.b, 0);
+        let t = e.m.b(0x80);
+        e.m.sb(0x80, t.wrapping_sub(1));
+        if t == 0 { self.enemy_vice_combo_next(e); }
+    }
+
+    /// 0x43742: the fall state reached when a ground action loses its floor.
+    fn enemy_vice_fall(&mut self, e: &mut Enemy) {
+        match e.b.step {
+            0 => {
+                e.b.step = 2;
+                self.enemy_anim(&mut e.b, 22);
+                e.b.vx = 0; e.b.ax = 0; e.b.vy = 0; e.b.ay = -0x20; e.b.vz = 0; e.b.az = 0;
+            }
+            2 if e.b.airborne != 0 => { e.b.motion(); self.enemy_step(&mut e.b); }
+            2 => { e.b.step = 4; self.enemy_anim(&mut e.b, 3);
+                if self.enemy_step(&mut e.b) { self.enemy_vice_recover(e); }
+            }
+            _ => { if self.enemy_step(&mut e.b) { self.enemy_vice_recover(e); } }
+        }
+    }
+
+    /// 0x42AE4..0x42B14: restore the AI after a generic reaction or fall.
+    /// The summon body and rage checks remain the M5-12 placeholder boundary.
+    pub(super) fn enemy_vice_recover(&mut self, e: &mut Enemy) {
+        e.b.set_state(0x0200_0000);
+        self.enemy_anim(&mut e.b, 0);
+        if e.m.b(0x7A) == 0 { e.m.sb(0x7A, 2); }
+        e.m.sb(0x7D, 0xFF);
+        e.m.sw(0xB2, 600);
+        e.m.sb(0xB4, 60);
+        e.m.sb(0xB1, 0);
+        // 0x44EBA leaves d0 from the animation loader unless it divides the
+        // initial HP by the summon count. 0x4295A deliberately uses that d0.
+        let frame = self.assets.sprites.frame(e.b.frame);
+        let mut d0 = if (frame.w0 as i16) < 0 { frame.w0 & 0x7FFF }
+            else if (frame.w1 as i16) >= 0 { frame.w1 } else { frame.w0 };
+        if e.b.reaction == 4 {
+            let count = e.m.b(0xC2);
+            if (count as i8) < 5 {
+                d0 = if count == 0 { 0 } else { e.m.w(0xC0) / count as u16 };
+                if (d0 as i16) >= (e.b.hp as i16) {
+                    e.m.sb(0xC2, count.wrapping_add(1));
+                    e.b.act = 0xA; // 0x437A8, M5-12 owns the summon body
+                    return;
+                }
+            }
+            let initial = e.m.w(0xC0);
+            let row = if (d0 as i16) <= ((initial >> 2) as i16) { 0 }
+                else if (d0 as i16) <= ((initial >> 1) as i16) { 2 } else { 4 };
+            let chance = self.assets.enemy.t.u16(0x429AE, row);
+            if ((self.rand() & 31) as i16) < (chance as i16) {
+                self.enemy_vice_counterattack(e);
+                return;
+            }
+        }
+        // 0x42B52 / 0x42B88: rage initiation and expiry remain M5-12.
+    }
+
+    /// 0x44908: signed X differences, deliberately not absolute distances.
+    fn enemy_vice_leftmost_target(&self, e: &mut Enemy) {
+        let mut d = [0x7FFFi16; 3];
+        for (i, p) in self.players.iter().enumerate() {
+            if p.b.live != 0 { d[i] = p.b.xi().wrapping_sub(e.b.xi()); }
+        }
+        let i = if d[0] < d[1] { if d[0] < d[2] { 0 } else { 2 } }
+            else if d[1] < d[2] { 1 } else { 2 };
+        e.m.sw(0x76, Game::player_handle(i));
+    }
+
+    /// 0x429BA / 0x429CA / 0x42E78 / 0x42ED0: choose a counter or escape.
+    fn enemy_vice_counterattack(&mut self, e: &mut Enemy) {
+        let center = (self.cam.s2.cam_x as i16).wrapping_add(0xC0).wrapping_sub(e.b.xi());
+        let table = if in_win(center, 0xC0) { 0x42A24 } else { 0x42A84 };
+        self.enemy_vice_leftmost_target(e);
+        let mut dx = self.body(e.m.w(0x76)).xi().wrapping_sub(e.b.xi()).wrapping_abs();
+        if dx >= 0x60 { dx = 0x40; }
+        let row = (dx as u16 & 0x60) as u32;
+        let r = self.rand() & 31;
+        match self.assets.enemy.t.u8(table, row + r as u32) {
+            0 => {
+                e.b.set_state(0x0200_0402);
+                e.m.sw(0xB6, 12);
+                e.m.sw(0xB8, 0x48); // intentional combo 9 script cursor
+                self.enemy_vice_combo_next(e);
+            }
+            1 => {
+                self.enemy_vice_escape_jump_start(e);
+            }
+            _ => self.enemy_vice_retreat_start(e),
+        }
+    }
+
+    /// 0x42E78 / 0x42EAE: initialize the escape jump and move in the same frame.
+    fn enemy_vice_escape_jump_start(&mut self, e: &mut Enemy) {
+        e.b.act = 2; e.b.step = 2;
+        e.m.sb(0xB1, 10);
+        // 0x4488C: furthest arena cell, scan descending; ties retain the first.
+        let mut distance = 0i16;
+        let mut cell = e.m.b(0x7C);
+        for i in (0..9u32).rev() {
+            let x = self.assets.enemy.t.u16(0x44868, i * 4) as i16;
+            let z = self.assets.enemy.t.u16(0x44868, i * 4 + 2) as i16;
+            let d = x.wrapping_sub(e.b.xi()).wrapping_abs()
+                .wrapping_add(z.wrapping_sub(e.b.zi()).wrapping_abs());
+            if d > distance { distance = d; cell = i as u8; }
+        }
+        e.m.sb(0x7C, cell);
+        self.enemy_vice_destination(e);
+        self.enemy_vice_jump_start(e);
+        self.enemy_anim(&mut e.b, 26);
+        self.enemy_vice_face(e);
+        // 0x42EAE is reached in the entry frame as well.
+        if e.b.param_b == 0 { e.b.motion(); }
+        self.enemy_step(&mut e.b);
+    }
+
+    /// 0x42ED0: initialize retreat and select the signed leftmost target.
+    fn enemy_vice_retreat_start(&mut self, e: &mut Enemy) {
+        e.b.act = 2; e.b.step = 2;
+        e.m.sb(0xB1, 8);
+        self.enemy_anim(&mut e.b, 25);
+        self.enemy_vice_walk_speed(e);
+        e.m.sb(0x7D, 0xFF);
+        e.m.sw(0xAE, 0);
+        e.m.sb(0xB0, 200);
+        self.enemy_vice_leftmost_target(e);
+    }
+
+    /// 0x42EFC / 0x448EC / 0x44A88: retreat until 80 Manhattan pixels away.
+    fn enemy_vice_retreat(&mut self, e: &mut Enemy) {
+        if e.b.airborne != 0 { e.b.set_state(0x0200_0800); return; }
+        let p = self.body(e.m.w(0x76));
+        e.m.sw(0x88, p.xi() as u16);
+        e.m.sw(0x8A, p.zi() as u16);
+        self.enemy_vice_turn(e, false, true);
+        let mut arrived = Game::enemy_stuck_check(e);
+        if !arrived {
+            let t = e.m.b(0xB0);
+            e.m.sb(0xB0, t.wrapping_sub(1));
+            let p = self.body(e.m.w(0x76));
+            let d = p.xi().wrapping_sub(e.b.xi()).wrapping_abs()
+                .wrapping_add(p.zi().wrapping_sub(e.b.zi()).wrapping_abs());
+            arrived = t == 0 || d >= 80;
+        }
+        if arrived {
+            e.m.sb(0xB0, 120);
+            self.enemy_vice_new_cell(e);
+            e.b.act = 2; e.b.step = 0;
+            e.m.sb(0xB1, 0);
+        } else {
+            self.enemy_move_dir(&mut e.b);
+            self.enemy_step(&mut e.b);
         }
     }
 
@@ -634,9 +1124,9 @@ mod tests {
     }
 
     /// 0x428CE: step the recorded world with its input and pokes, then compare
-    /// every modeled Vice byte on AI frames. Hit/grab entry belongs to Part B.
+    /// every modeled Vice byte in native AI and generic reaction frames.
     #[test]
-    fn vice_decide_approach_matches_mame_in_step() {
+    fn vice_native_fight_matches_mame_in_step() {
         let rom = Path::new("../../../dino.zip");
         let directory = Path::new("../../../re/out/traces");
         if !rom.exists() || !directory.exists() {
@@ -648,6 +1138,7 @@ mod tests {
             "m600_bs_v1_v1_nat", "boss_vice_2p_r0", "boss_vice_2p_r24",
             "boss_vice_3p_r0", "boss_vice_3p_r24",
             "m600_bs_v3_v2_dmg", "m600_bs_v3_v6_dmg",
+            "m511b_vice_pinned",
         ] {
             let path = directory.join(format!("{name}.mame.trc"));
             if !path.exists() {
@@ -656,7 +1147,7 @@ mod tests {
             let mut reader = TraceReader::open(path.to_str().unwrap()).unwrap();
             let mut previous: Option<(Vec<u8>, Vec<u8>)> = None;
             let mut g = Game::new(assets);
-            let input = if name.starts_with("m600_") {
+            let input = if !name.starts_with("boss_") {
                 directory.join(format!("{name}.input.txt"))
             } else { Path::new("../../../re/harness/scripts").join(format!("{name}.txt")) };
             let script = crate::input::Script::parse(&std::fs::read_to_string(input).unwrap());
@@ -674,9 +1165,18 @@ mod tests {
                         let h = g.enemies.handle(i);
                         let a = h as usize;
                         let e = &g.enemies.slots[i];
-                        if ram[a + 5] != 0 { continue; } // hit / grab entry is outside Part A
+                        if ram[a + 0xA8] != old[a + 0xA8] { continue; } // M5-12 rage entry
+                        if ram[a + 5] == 0 && (ram[a + 6] == 0xA || (ram[a + 6] == 4 && matches!(ram[a + 7], 0xE | 0x12))) { continue; } // M5-12 gun/summon entry
                         if e.b.live == 0 || e.b.k20 != 72 || e.b.var26 >> 8 != 0 || e.b.mode != 2
-                            || e.b.sub != 0 || e.b.act > 2 || e.m.b(0xBD) != 0 || e.m.b(0xB1) > 6 {
+                            || !(e.b.sub == 2 || (e.b.sub == 0 && matches!(e.b.act, 0 | 2 | 4 | 8)
+                            && (e.m.b(0xBD) == 0 || matches!(e.b.act, 4 | 8)) && !(e.b.act == 4 && matches!(e.b.step, 0xE | 0x12)))) {
+                            continue;
+                        }
+                        // M7-12 owns the Hopper's hostile AI. The held placeholder
+                        // does not register its monster attack in this frame.
+                        let attacker = u16::from_be_bytes([ram[a + 0x68], ram[a + 0x69]]) as usize;
+                        if ram[a + 5] == 2 && old[a + 5] == 0 && attacker + 0x21 < ram.len()
+                            && u16::from_be_bytes([ram[attacker + 0x20], ram[attacker + 0x21]]) == 29 * 4 {
                             continue;
                         }
                         pokes.apply(&mut g, frame, false).unwrap();
@@ -701,7 +1201,7 @@ mod tests {
                 previous = Some((ram, gfx));
             }
 
-            eprintln!("{name}: {checked} Vice decide/approach invocations equal MAME");
+            eprintln!("{name}: {checked} Vice native fight invocations equal MAME");
             frames += checked;
         }
         assert!(frames > 0, "no Vice reference recordings found");
