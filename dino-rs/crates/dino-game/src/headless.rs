@@ -33,6 +33,57 @@ impl<'a> Cpu<'a> {
         self.rasterize();
     }
 
+    /// The test menu over the picture: a dark box and the same lines as the window (lower case is drawn as capitals).
+    pub fn menu(&mut self, menu: &mut crate::menu::Menu, god: bool) {
+        use crate::menu::{FOOTER, Style};
+        let (w, h) = (SCREEN_W as i32, SCREEN_H as i32);
+        self.darken(6, 4, w - 12, h - 8, 0.88);
+        self.text(14, 10, "Test menu", [255, 255, 255]);
+        for (k, line) in menu.lines(19, god).iter().enumerate() {
+            let col = match line.style {
+                Style::Heading => [140, 205, 255],
+                Style::Selected => [255, 217, 51],
+                Style::Normal => [235, 235, 235],
+            };
+            self.text(14, 24 + 9 * k as i32, &line.text, col);
+        }
+        for (k, f) in FOOTER.iter().enumerate() {
+            self.text(14, h - 24 + 9 * k as i32, f, [180, 180, 180]);
+        }
+    }
+
+    /// Blacks out a box: each colour channel keeps `1 - alpha` of its value.
+    fn darken(&mut self, x: i32, y: i32, w: i32, h: i32, alpha: f32) {
+        for yy in y.max(0)..(y + h).min(SCREEN_H as i32) {
+            for xx in x.max(0)..(x + w).min(SCREEN_W as i32) {
+                let o = ((yy * SCREEN_W as i32 + xx) * 4) as usize;
+                for c in &mut self.pixels[o..o + 3] {
+                    *c = (*c as f32 * (1.0 - alpha)) as u8;
+                }
+            }
+        }
+    }
+
+    /// Draws `s` with the 5 x 7 font (one pixel per dot), 6 pixels per character.
+    fn text(&mut self, x: i32, y: i32, s: &str, rgb: [u8; 3]) {
+        for (k, c) in s.chars().enumerate() {
+            let Some(rows) = crate::font5x7::rows(c) else { continue };
+            for (r, row) in rows.iter().enumerate() {
+                for (col, ch) in row.bytes().enumerate() {
+                    if ch != b'#' {
+                        continue;
+                    }
+                    let (px, py) = (x + 6 * k as i32 + col as i32, y + r as i32);
+                    if px < 0 || py < 0 || px >= SCREEN_W as i32 || py >= SCREEN_H as i32 {
+                        continue;
+                    }
+                    let o = ((py * SCREEN_W as i32 + px) * 4) as usize;
+                    self.pixels[o..o + 3].copy_from_slice(&rgb);
+                }
+            }
+        }
+    }
+
     fn rasterize(&mut self) {
         for p in self.pixels.chunks_exact_mut(4) {
             p.copy_from_slice(&[0, 0, 0, 255]);

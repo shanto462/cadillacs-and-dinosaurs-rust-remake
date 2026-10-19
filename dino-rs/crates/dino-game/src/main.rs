@@ -7,7 +7,8 @@
 //!         [--headless | --windowed] [--mute] [--load-state FILE] [--trace FILE --frames N]
 //!         [--step-from MAME.trc] [--follow-rng MAME.trc]
 //!         [--poke FRAME:ADDR:SIZE:VALUE]... [--poke-file FILE]... [--poke-clock power|game]
-//!         [--episode 1..8 | --stage 0..7] [--area 0..3] [--camx X] [--autoplay] [--debug-keys] [--list-placeholders]`
+//!         [--episode 1..8 | --stage 0..7] [--area 0..3] [--camx X] [--autoplay] [--debug-keys] [--list-placeholders]
+//!         [--jump NAME] [--list-jumps] [--test]`
 //! Without `--stage`, `--episode` and `--chars` the game starts from power on (the boot screens and the attract
 //! mode); `--stage N` / `--episode N` / `--chars` start directly in a stage (development). `--area` and `--camx` (hex or
 //! decimal) start that area with the camera at X. `--autoplay` is the bot of `autoplay.rs`: from power on through the eight episodes
@@ -16,6 +17,11 @@
 //! `--config FILE` reads the settings file (`key = value` lines: difficulty, coin mode, free play ...; without the
 //! option `dino.cfg` next to the ROM is read, see `game/flow/config.rs`), `--print-config` prints the factory settings file.
 //! `--mute` (windowed runs) opens no audio device: the game runs silent, the same as `sound = off` in `dino.cfg`.
+//! `--jump NAME` starts at a named point (episode start, area start or the place before a boss fight; `--list-jumps` prints them):
+//! the same start as `--episode E --area A --camx X`, and it takes `--chars`. It cannot be combined with those flags.
+//! `--test` is a windowed run with the debug keys on and the test menu open (`menu.rs`); `--test --headless --screenshots F --shot-dir DIR`
+//! draws the menu in the picture. With the debug keys on, F1 opens and closes the menu at any time (without them F1 shows the hit boxes).
+//! The menu: Up / Down choose, Enter jumps, Left / Right change the hero and the players, Esc or F1 closes it; the game is paused while it is open.
 //! `--poke` / `--poke-file` write RAM values into the running game at a frame (the lines of MAME's
 //! `DINO_POKES`: `frame hexaddr size value`, power frames unless `--poke-clock game`; see
 //! `harness.rs`, `PokeSet`). An address the port has no field for is an error.
@@ -25,10 +31,13 @@
 mod audio;
 mod autoplay;
 mod debug;
+mod font5x7;
 mod game;
 mod harness;
 mod headless;
 mod input;
+mod jumps;
+mod menu;
 mod present;
 mod render;
 mod viewer;
@@ -81,6 +90,8 @@ struct Args {
     pokes: harness::PokeSet,
     /// `--mute`: no audio device (windowed runs only).
     mute: bool,
+    /// `--test`: the debug keys are on and the test menu is open at start.
+    test: bool,
 }
 
 fn args() -> Args {
@@ -110,6 +121,12 @@ fn args() -> Args {
             None => v.parse().ok(),
         }
     };
+    let jump = value("--jump").map(|n| {
+        jumps::find(&n).unwrap_or_else(|| fail(&format!("unknown jump point `{n}`; the points are: {}", jumps::names())))
+    });
+    if jump.is_some() && ["--episode", "--stage", "--area", "--camx"].iter().any(|f| value(f).is_some()) {
+        fail("--jump cannot be combined with --episode, --stage, --area or --camx");
+    }
     let episode = value("--episode").map(|v| v.parse::<u8>().ok().filter(|e| (1..=8).contains(e)).unwrap_or_else(|| fail("--episode must be 1 to 8")));
     if episode.is_some() && value("--stage").is_some() {
         fail("--episode and --stage cannot be combined");
@@ -120,7 +137,13 @@ fn args() -> Args {
         fail("--area above 0 is not meaningful in Episode 3 (its camera has one area): use --camx");
     }
     let camx = value("--camx").map(|v| num(v).filter(|x| *x <= 0xFFFF).unwrap_or_else(|| fail("--camx must be 0 to 0xFFFF")));
-    let direct = ["--stage", "--chars", "--episode", "--area", "--camx"].iter().any(|f| value(f).is_some());
+    // `--jump NAME` is the same start as the flags it stands for (the jump list, `jumps.rs`).
+    let (stage, area, camx) = match jump {
+        Some(j) => (j.episode - 1, Some(j.area), Some(j.camx as u32)),
+        None => (stage, area, camx),
+    };
+    let direct = jump.is_some() || ["--stage", "--chars", "--episode", "--area", "--camx"].iter().any(|f| value(f).is_some());
+    let test = a.iter().any(|x| x == "--test");
     let viewer = view.is_some() || a.iter().any(|x| x == "--viewer");
     let explicit_headless = a.iter().any(|x| x == "--headless");
     let windowed = a.iter().any(|x| x == "--windowed");
@@ -144,7 +167,8 @@ fn args() -> Args {
         camx: camx.unwrap_or(0) as u16,
         goto: area.filter(|&a| a > 0).map(|a| (a, camx.unwrap_or(0) as u16)),
         autoplay: a.iter().any(|x| x == "--autoplay").then(autoplay::Bot::default),
-        debug: debug::Debug::new(a.iter().any(|x| x == "--debug-keys")),
+        debug: debug::Debug::new(a.iter().any(|x| x == "--debug-keys") || test),
+        test,
         chars: value("--chars").map(|v| v.split(',').filter_map(|c| c.parse().ok()).collect()).unwrap_or(vec![0]),
         config: value("--config"),
         script: match value("--input-file") {
@@ -237,6 +261,10 @@ fn main() {
         print!("{}", game::placeholder::list_text());
         return;
     }
+    if std::env::args().any(|a| a == "--list-jumps") {
+        print!("{}", jumps::list_text());
+        return;
+    }
     if std::env::args().any(|a| a == "--print-config") {
         print!("{}", game::flow::Config::default().to_text());
         return;
@@ -269,21 +297,34 @@ fn main() {
     macroquad::Window::from_config(window_conf(), windowed(args, config));
 }
 
-fn start_game(assets: &'static dino_assets::AssetPack, args: &mut Args, config: game::flow::Config) -> game::Game {
+/// The start of a direct run (`--jump`, `--episode`, `--stage`, `--area`, `--camx`, `--chars`) and of a menu jump: a new game in
+/// the stage with the camera X and the heroes, from the settings of `config`. Returns the game and the area still to reach
+/// (`tick_game` walks there); a stage start always begins in area 0.
+fn enter_target(assets: &'static dino_assets::AssetPack, config: &game::flow::Config, stage: u8, area: u8, camx: u16, chars: &[u8]) -> (game::Game, Option<(u8, u16)>) {
     let mut game = game::Game::new(assets);
-    game.flow_apply_config(config);
-    match &args.load_state {
-        Some(p) => match harness::load_state(&mut game, p) {
-            Ok(warnings) => warnings.iter().for_each(|w| eprintln!("load-state: {w}")),
-            Err(e) => {
-                eprintln!("error: {e}");
-                std::process::exit(1);
-            }
-        },
-        // a later area is reached in play (`tick_game`): the stage start always begins in area 0
-        None if args.direct => game.start_stage_at(args.stage, 0, if args.goto.is_some() { 0 } else { args.camx }, &args.chars),
-        None => game.flow_boot(), // power on: the boot screens, then the attract mode
-    }
+    game.flow_apply_config(config.clone());
+    game.start_stage_at(stage, 0, if area > 0 { 0 } else { camx }, chars);
+    (game, (area > 0).then_some((area, camx)))
+}
+
+fn start_game(assets: &'static dino_assets::AssetPack, args: &mut Args, config: game::flow::Config) -> game::Game {
+    let mut game = if args.direct && args.load_state.is_none() {
+        enter_target(assets, &config, args.stage, args.area, args.camx, &args.chars).0
+    } else {
+        let mut game = game::Game::new(assets);
+        game.flow_apply_config(config);
+        match &args.load_state {
+            Some(p) => match harness::load_state(&mut game, p) {
+                Ok(warnings) => warnings.iter().for_each(|w| eprintln!("load-state: {w}")),
+                Err(e) => {
+                    eprintln!("error: {e}");
+                    std::process::exit(1);
+                }
+            },
+            None => game.flow_boot(), // power on: the boot screens, then the attract mode
+        }
+        game
+    };
     // Pokes (`--poke`): the same clocks as a headless run, where tick n is trace record n.
 
     let poke_fail = |e: String| -> ! {
@@ -339,13 +380,20 @@ fn run_headless(mut args: Args, config: game::flow::Config) {
     let assets = load_assets(args.load_state.as_deref(), None);
     let mut game = start_game(assets, &mut args, config);
     let mut cpu = headless::Cpu::new(assets);
+    // `--test`: the menu is open, so the game does not run (headless runs have no keys, the picture shows the menu over the start)
+    let mut menu = menu::Menu::new(args.chars[0], args.chars.len() as u8, args.test);
     for tick in 0..args.frames {
-        tick_game(&mut game, &mut args, tick, input::Frame::default(), &mut None);
+        if !menu.open {
+            tick_game(&mut game, &mut args, tick, input::Frame::default(), &mut None);
+        }
         if args.autoplay.as_ref().is_some_and(|b| b.done()) && args.shots.is_empty() && !args.frames_given {
             break;
         }
         if args.shots.iter().any(|s| s.0 == tick + 1) {
             cpu.draw(&mut game);
+            if menu.open {
+                cpu.menu(&mut menu, args.debug.is_god());
+            }
             for (_, path) in args.shots.iter().filter(|s| s.0 == tick + 1) {
                 cpu.save(path).unwrap_or_else(|e| fail(&e));
             }
@@ -361,7 +409,9 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
 
     let mut viewer = args.viewer.then(|| viewer::Viewer::new(assets, args.view));
     let mut inputs = input::Inputs::new();
-    let mut game = start_game(assets, &mut args, config);
+    let mut game = start_game(assets, &mut args, config.clone());
+    // The test menu (`menu.rs`): open at start with `--test`, F1 opens and closes it with the debug keys on. No menu in viewer runs.
+    let mut menu = menu::Menu::new(args.chars[0], args.chars.len() as u8, args.test);
     let mut tick_no = 0u32;
     if viewer.is_some() {
         gpu.upload_palettes(&viewer::Viewer::palettes(assets).words);
@@ -372,11 +422,57 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
     let screenshot_run = !args.shots.is_empty();
     loop {
         acc += get_frame_time() as f64;
+        let menu_ok = viewer.is_none() && args.debug.enabled;
+        if menu_ok && is_key_pressed(KeyCode::F1) {
+            menu.toggle();
+        }
+        if menu.open && menu_ok {
+            // Menu keys: the game is paused, the picture stays
+            if is_key_pressed(KeyCode::Escape) {
+                menu.open = false;
+            }
+            if is_key_pressed(KeyCode::Up) {
+                menu.up();
+            }
+            if is_key_pressed(KeyCode::Down) {
+                menu.down();
+            }
+            if is_key_pressed(KeyCode::Left) {
+                menu.side(-1);
+            }
+            if is_key_pressed(KeyCode::Right) {
+                menu.side(1);
+            }
+            if is_key_pressed(KeyCode::Enter) || is_key_pressed(KeyCode::KpEnter) {
+                match menu.enter() {
+                    menu::Enter::Jump(j) => {
+                        // the same start as the command line (`enter_target`), in place: a new game object, the sound goes on
+                        let (next, goto) = enter_target(assets, &config, j.episode - 1, j.area, j.camx, &menu.chars());
+                        game = next;
+                        args.goto = goto;
+                        menu.open = false;
+                    }
+                    menu::Enter::God => args.debug.toggle_god(&game),
+                    menu::Enter::Nothing => {}
+                }
+            }
+        }
+        let paused = menu.open && menu_ok;
+        if paused {
+            // the game stands still; the sound keeps running at 60 Hz (no game tick, no requests)
+            acc = acc.min(TICK * 4.0);
+            while acc >= TICK {
+                acc -= TICK;
+                if let Some(a) = &mut audio {
+                    a.frame(&mut game);
+                }
+            }
+        }
         // Screenshots run exactly one tick per rendered frame, so they are reproducible.
         let mut ticks = if screenshot_run {
             args.shots.iter().find(|s| s.0 > frame).map_or(1, |s| s.0 - frame)
         } else { 0 };
-        while !screenshot_run && acc >= TICK && ticks < 4 {
+        while !screenshot_run && !paused && acc >= TICK && ticks < 4 {
             acc -= TICK;
             ticks += 1;
         }
@@ -393,7 +489,8 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
                 }
             }
         }
-        if is_key_pressed(KeyCode::F1) {
+        // F1 is the hit box overlay when the debug keys are off (with them on, F1 is the menu)
+        if is_key_pressed(KeyCode::F1) && !args.debug.enabled {
             game.sprites.debug_boxes = !game.sprites.debug_boxes; // hit box overlay
         }
         if viewer.is_none() {
@@ -406,6 +503,9 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
         gpu.present();
         if let Some(v) = &viewer {
             draw_text(&v.label, 8.0, 20.0, 20.0, WHITE);
+        }
+        if menu.open && menu_ok {
+            menu::draw_window(&mut menu, args.debug.is_god());
         }
 
         frame += if screenshot_run { ticks } else { 1 };

@@ -40,14 +40,24 @@ impl Debug {
             g.rank_set_time(0x0500);
         }
         if is_key_pressed(KeyCode::F5) {
-            self.god = match self.god {
-                Some(_) => None,
-                None => Some(std::array::from_fn(|i| g.players[i].b.hp)),
-            };
+            self.toggle_god(g);
         }
         if is_key_pressed(KeyCode::F6) {
             next_area(g);
         }
+    }
+
+    /// God mode on or off (F5 and the test menu): on keeps the HP the players have now as their minimum.
+    pub fn toggle_god(&mut self, g: &Game) {
+        self.god = match self.god {
+            Some(_) => None,
+            None => Some(std::array::from_fn(|i| g.players[i].b.hp)),
+        };
+    }
+
+    /// Is god mode on?
+    pub fn is_god(&self) -> bool {
+        self.god.is_some()
     }
 
     /// God mode on (the autoplay bot): every present player keeps 100 HP.

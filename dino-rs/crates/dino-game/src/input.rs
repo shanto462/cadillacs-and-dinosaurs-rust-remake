@@ -9,7 +9,7 @@
 //! * Move: arrows or W A S D.
 //! * Attack: J or Z. Jump: K or X.
 //! * Start 1/2/3: keys 1/2/3 (Enter also starts player 1). Coin 1/2/3: keys 5/6/7. SERVICE: key 9 (MAME's key for it too).
-//! * F1: hit box overlay (debug).
+//! * F1: hit box overlay. With the debug keys on (`--debug-keys`, `--test`) F1 opens the test menu instead (`menu.rs`).
 //!
 //! Players 2 and 3 use gamepads. Gamepads: the first three pads drive players 1-3. D-pad or left stick moves, South (A / Cross)
 //! attacks, East (B / Circle) jumps, Start = start, Select / Back = coin.
