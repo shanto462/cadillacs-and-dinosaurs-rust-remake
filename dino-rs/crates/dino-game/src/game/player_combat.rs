@@ -359,8 +359,8 @@ impl Game {
         if self.player_enemy_b87(e) != 0 && p.b.kind != 6 && p.action != 0x13 && p.action != 0x12 {
             self.players[i].b.hitstop = 1;
             // 0x10B50[enemy +$84]: guard handler; carry = blocked (sound 0x9732, spark type 2).
-            // Ported: BLADE / RAZOR (0x404CA). TODO(enemy port): the entries 0x3DFC6 (names 8, 0x48, 0x4C).
-            if self.enemy_has_guard_c14(e) && self.enemy_guard_c14(e) {
+            // Ported: BLADE / RAZOR (0x404CA), the poachers (0x3DFC6, names 8, 0x48, 0x4C).
+            if (self.enemy_has_guard_c14(e) && self.enemy_guard_c14(e)) || (self.enemy_has_guard_c13(e) && self.enemy_guard_c13(e)) {
                 self.snd_9732(self.body(e).xi());
                 self.spawn_hit_spark(me, e, ha, hb, 2); // 0x10B42 -> 0x12720 with d5 = 2
                 return;

@@ -10,6 +10,12 @@ use super::body::Body;
 use super::{Game, Handle, Slot, slot_of};
 
 mod claim;
+// The poachers (M6-01 / M6-02): POACHER J. / SKINNER / GUTTER.
+mod class13;
+mod class13_ai;
+mod class13_attack;
+#[cfg(test)]
+mod class13_tests;
 mod class14;
 mod class14_ai;
 mod class14_entry;
@@ -199,6 +205,7 @@ impl Game {
                 10 => self.enemy_class10(&mut e, h),
                 11 => self.enemy_class11(&mut e, h),
                 12 => self.enemy_class12(&mut e, h),
+                13 => self.enemy_class13(&mut e, h),
                 14 => self.enemy_class14(&mut e, h),
                 15 => self.enemy_class15(&mut e, h),
                 16 => self.enemy_class16(&mut e, h),
@@ -1796,6 +1803,7 @@ impl Game {
             0x30 => self.enemy_vice_recover(e), // 0x2B59C -> 0x42AE4
             0x20 | 0x24 => self.c20_reset_ai(e, h), // 0x45D74
             0x18 | 0x50 => self.c14_408e8(e),       // 0x408E8 class 14
+            0x08 | 0x48 | 0x4C => self.enemy_c13_3e504(e), // 0x3E504 the poachers (class 13)
             0x3C => self.c61_decide(e, h),          // 0x58D40 the Butcher (class 61)
             _ => e.b.set_state(0x0200_0000),
         }

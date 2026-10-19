@@ -76,7 +76,7 @@ pub const SPECS: &[Spec] = &[
     walker(3, "LASH T. (mace)", Some(0x0E), true),
     // Class 5 (M6-09) and class 61 (M6-10), the Butcher, are real.
     walker(6, "BLUDGE", Some(0x10), true),
-    walker(13, "POACHER", Some(0x02), true),
+    // Class 13 (M6-01 / M6-02), the poachers, is real.
     Spec { class: 18, what: "VICE T. / WALTHER", name: Some(0x0C), name_v2: Some(0x0D), counted: true, dino: false, hazard: false, still: false, boss: boss(0, true) },
     dino(22, "BRONTOSAURUS foot", None),
     dino(24, "SHIVAT", Some(0x07)),

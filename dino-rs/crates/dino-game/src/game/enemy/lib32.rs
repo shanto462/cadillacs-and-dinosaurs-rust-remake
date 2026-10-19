@@ -170,6 +170,22 @@ impl Game {
                 break (d0, d4);
             }
         };
+        self.lib_slot6_point(e, d0);
+        d4
+    }
+
+    /// 0x32C54 (M6-01, class 13): the point of the slot kept in `+$BD`, a new slot (0x32C5E) when it is 0.
+    pub(super) fn lib_slot6_keep(&mut self, e: &mut Enemy) {
+        let d0 = e.m.b(lib::SLOT_NO);
+        if d0 == 0 {
+            let _ = self.lib_slot6_new(e);
+            return;
+        }
+        self.lib_slot6_point(e, d0);
+    }
+
+    /// 0x32C92: the point (+$88, +$8A) of slot `d0` (tables 0x32CF0 / 0x32CFE), mirrored by the side of the target.
+    fn lib_slot6_point(&mut self, e: &mut Enemy, d0: u8) {
         let tab = &self.assets.enemy.t;
         let (ox, oz) = (tab.i16(0x32CF0, d0 as u32 * 2), tab.i16(0x32CFE, d0 as u32 * 2));
         let t = self.lib_target(e);
@@ -177,7 +193,6 @@ impl Game {
         e.m.sw(DEST_X, tx.wrapping_add(ox) as u16);
         e.m.sw(DEST_Z, tz.wrapping_add(oz) as u16);
         self.lib_slot_mirror(e, ox);
-        d4
     }
 
     /// 0x9D44: the sound of a thrown knife or blade: 0xE3 / 0x64 by the toggle bit 7 of G.$43A.
