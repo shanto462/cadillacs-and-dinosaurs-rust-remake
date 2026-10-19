@@ -413,6 +413,17 @@ MAME wins over the design text; the design documents themselves are not edited.
 - D3c 6.5 (the afterimage `+$26`): d1 at the call is the act / step table word of the dispatch before it: 0xB2 in the route run (act 2), 0x3A0 in the running slash
   (act 4), or what the re-target left in that frame.
 - The intro sounds 0x23 and 0x11 have d1 = 8 (the mode table word of 0x4BE74); d2 is left from the object updated before him.
-- Port flow (not Slice): after a boss defeat (0xACEE sets G.$4D6 = 4) the game task of the original sleeps the new count before the next game frame; `flow_game_task`
-  takes `wait` from `speed` before it runs the mode, so the port runs one game frame more right after the killing hit (m700_bs_s1_s1_nat run mode: equal through
-  5414, then G.$0 one ahead at 5415). Owner: flow.
+- Port flow (not Slice): after a boss defeat (0xACEE sets G.$4D6 = 4) the game task of the original sleeps the new count before the next game frame (the
+  sleep at 0xA92A reads G.$4D6 at the top of the loop, after the mode ran); `flow_game_task` took `wait` from `speed` before the mode, so the port ran one game
+  frame more right after the killing hit (and one more at the end of the slow motion, 0xAB44). Fixed in Task 9: after the mode, a speed the mode changed sets the
+  wait unless the mode slept on its own. m700_bs_s1_s1_nat run mode is now equal through 5498; the Butcher's b7_kill moved from 1381 (the defeat) to 3489 (the
+  flow item `intro_w4` of M6-12); Hogg's h4_foot keeps MAME's game frame phase in the slow motion (frames 2168 .. 2185).
+
+## Episode 8 area 1: the bot's punch loop (Task 9, 2026-10-19)
+
+- On the bot route of the Slice merge (43bd747) Jack stopped for good at X 0xA30 / 0xA3D, Z 0x306 / 0x301, camera 0x970 / 0x97D. Not the terrain: he never
+  walked there (states idle and jab only, the walk input held), and MAME `ep8wedge` (re/harness/pokes/ep8wedge.txt: Jack put at (0xA30, 0x306), walk right and down into (0xA3B, 0x300), then left, up, right,
+  down and a jump) moves freely, the port the same (run mode, equal hero track). The bot's fight rule was on: a steam pipe (pool B class 40) makes a new piece
+  (pool A class 15) every 6 frames, and in its first frame (mode 0) the piece still has the HP word of the slot's last object (the free 0x48FC clears `+$00` ..
+  `+$27`, not `+$6C`) while `+$7D` is 0. In step with the bot's 12 frame swing the hero jabbed, stood, jabbed and never walked. Fix in the bot only (autoplay.rs:
+  an object in mode 0 is no fight). The original has no such loop for a player.

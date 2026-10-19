@@ -1,0 +1,12 @@
+# Task 9 (Episode 8 area 1 wedge, D5-errata): on a bot route the port's hero stopped for good at X 0xA3D, Z 0x301 (camera 0x97D, floor 0x10).
+# Jack is put at (0xA30, 0x306) as the bot was, walks right and down into the spot, then tries left, up, right, down and a jump in turn.
+# Every enemy is killed all the time, so nothing pushes him. Does the original let him leave?
+segment ep8wedge
+jump 8 1 0x970 char=jack
+god on
+hold 0xFF850E 1 2
+poke 0xFFB27C 2 0x0A30
+poke 0xFFB284 2 0x0306
+0 snapshot keep
+0-12:R,0-12:D,60-119:L,120-179:U,180-239:R,240-299:D,300-307:J,300-359:R,360-419:L
+trace 450
