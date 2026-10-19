@@ -294,7 +294,7 @@ mod tests {
         g.flow_boot();
         let (mut debug, mut bot) = (Debug::new(false), Bot::default());
         let mut seen: Vec<(u8, u8)> = Vec::new();
-        for tick in 0..400_000 {
+        for tick in 0..600_000 {
             let f = bot.frame(&mut g, tick, &mut debug);
             g.w.input = f.players;
             g.w.system = f.system | 0x08;
