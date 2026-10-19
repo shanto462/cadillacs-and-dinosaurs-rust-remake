@@ -194,7 +194,7 @@ mod tests {
                 (0x7906E, words(&codes)),
                 (0x79152, shard_blob()),
                 (0x79200, words(&[0, 0, 0, 0, 0, 0, 0xFFD0, 80, 0, 48, 0xFFD0, 136])),
-            ],
+            ], ..Default::default()
         };
         Game::new(Box::leak(Box::new(a)))
     }

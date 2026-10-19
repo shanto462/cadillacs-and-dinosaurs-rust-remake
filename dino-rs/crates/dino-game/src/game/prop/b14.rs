@@ -91,7 +91,7 @@ mod tests {
         let hole: Vec<u16> = (0..28).map(|k| 0x4100 + k).collect();
         let door: Vec<u16> = (0..36).map(|k| 0x5100 + k).collect();
         let mut a = AssetPack::default();
-        a.enemy.t = ByteTables { blobs: vec![(0x7B14A, words(&hole)), (0x7B2E6, words(&door))] };
+        a.enemy.t = ByteTables { blobs: vec![(0x7B14A, words(&hole)), (0x7B2E6, words(&door))], ..Default::default() };
         Game::new(Box::leak(Box::new(a)))
     }
 

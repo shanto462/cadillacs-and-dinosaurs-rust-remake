@@ -124,7 +124,7 @@ mod tests {
 
     fn game() -> Game {
         let mut a = AssetPack::default();
-        a.enemy.t = ByteTables { blobs: vec![(PTRS1, synthetic_blob())] };
+        a.enemy.t = ByteTables { blobs: vec![(PTRS1, synthetic_blob())], ..Default::default() };
         Game::new(Box::leak(Box::new(a)))
     }
 
