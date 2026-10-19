@@ -356,6 +356,16 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0xBDD52, 32, "B62 scroll2 palette phase 0 set (0x86824)"),
     (0xBDE12, 32, "B62 scroll2 palette phase 0 set (0x8680A)"),
     (0xC0E52, 0x1E0, "B62 scroll2 palette phases 1 to 5 (0x866D2)"),
+    // Barrel class 65 (0x5BA70, 0x5B912) and biker class 70 (0x5C39E, 0x5C586) (M6-29).
+    (0x5BB80, 6, "barrel hop vx vy ay (0x5BA70)"),
+    (0x5BB86, 4, "barrel fall vy ay (0x5B912)"),
+    (0x5C802, 6, "biker speed vx vy ay (0x5C39E)"),
+    (0x5C808, 16, "biker kick chance (0x5C586)"),
+    // Rock class 66 (0x5BBC0, 0x5BCAC, 0x5BCF8, 0x5BD3A) (M6-30).
+    (0x5BDFC, 6, "rock speed vx vy ay (0x5BBC0)"),
+    (0x5BE02, 16, "rock bounce hold (0x5BCAC)"),
+    (0x5BE13, 16, "rock bounce facing (0x5BCF8)"),
+    (0x5BE24, 64, "rock roll vz (0x5BD3A)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {

@@ -27,20 +27,24 @@ const PELLET_RECORDS: u32 = 0x2A484;
 impl Game {
     /// 0x27DD8: an explosion (class 1, kind `kind` in +$26) at the source: copies +$02 / +$03,
     /// X / Y / Z, the airborne flag, and +$70 = the source. A full pool loses it.
-    pub(super) fn item_explosion(&mut self, src: &Item, h: Handle, kind: u16) {
-        let pos = (src.b.xi(), src.b.yi(), src.b.zi());
+    pub fn item_explosion_body(&mut self, b: &Body, h: Handle, kind: u16) {
+        let pos = (b.xi(), b.yi(), b.zi());
         let Some(j) = self.items.alloc() else { return };
         let n = &mut self.items.slots[j];
         n.b.live = 1;
-        n.b.who = src.b.who;
-        n.b.id = src.b.id;
+        n.b.who = b.who;
+        n.b.id = b.id;
         n.b.k20 = class::BLAST * 4;
         put_hi(&mut n.b.x, pos.0);
         put_hi(&mut n.b.y, pos.1);
         put_hi(&mut n.b.z, pos.2);
         n.b.var26 = kind;
-        n.b.airborne = src.b.airborne;
+        n.b.airborne = b.airborne;
         n.b.partner = h;
+    }
+
+    pub(super) fn item_explosion(&mut self, src: &Item, h: Handle, kind: u16) {
+        self.item_explosion_body(&src.b, h, kind);
     }
 
     /// 0x9F12: the explosion sound.

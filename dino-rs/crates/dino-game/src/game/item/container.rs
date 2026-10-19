@@ -466,17 +466,7 @@ impl Game {
     /// 0x292A6: two debris pieces (class 0x2C, pictures 2 and 4) fly out of the broken container,
     /// 0x60 and 0x10 above it, with half its horizontal speed.
     fn container_two_pieces(&mut self, it: &Item) {
-        for (dy, vy, ay, var) in [(0x60i16, 0x1C0i16, -0x12i16, 2u16), (0x10, 0x140, -0x10, 4)] {
-            let pos = (it.b.xi(), it.b.yi().wrapping_add(dy), it.b.zi());
-            if let Some(j) = self.item_spawn_effect(0x2C, pos) {
-                let e = &mut self.effects.slots[j];
-                e.b.facing = it.b.facing;
-                e.b.vx = it.b.vx >> 1;
-                e.b.vy = vy;
-                e.b.ay = ay;
-                e.b.var26 = var;
-            }
-        }
+        self.item_two_pieces(&it.b);
     }
 
     /// 0x29348 (variant 4): breaks on the first wall or floor contact into a puff (0x2943C).
@@ -504,7 +494,7 @@ impl Game {
         self.item_terrain(it, h);
         if it.b.wall != 0 || it.b.airborne == 0 {
             self.cam.shake_req = 2;
-            self.container_debris(it, table);
+            self.container_debris(&it.b, table);
             it.set_mode_sub(6, 0);
             return self.item_drop_from_container(it);
         }
@@ -530,8 +520,8 @@ impl Game {
     /// A piece may carry a bonus (+$5C = 1): the chance depends on the pieces that already do
     /// (masks 0x29552, G.$4F1 = the number of explosive weapons on the field). The `rand()` call
     /// happens for every piece while that number is below 3.
-    fn container_debris(&mut self, it: &Item, table: u32) {
-        self.item_snd_9ff8(it.b.xi());
+    pub(super) fn container_debris(&mut self, b: &Body, table: u32) {
+        self.item_snd_9ff8(b.xi());
         let mut d5 = self.spawn.g.b4f1 as u32;
         let mut a = 0u32;
         for _ in 0..16 {
@@ -539,10 +529,10 @@ impl Game {
             let (dx, dy, vx, vy, var) = (t.i16(table, a), t.i16(table, a + 2), t.i16(table, a + 4), t.i16(table, a + 6), t.u16(table, a + 8));
             let next = t.i16(table, a + 10);
             a += 10;
-            let pos = (it.b.xi().wrapping_add(dx), it.b.yi().wrapping_add(dy), it.b.zi());
+            let pos = (b.xi().wrapping_add(dx), b.yi().wrapping_add(dy), b.zi());
             let Some(j) = self.item_spawn_effect(0x2C, pos) else { break };
-            self.effects.slots[j].b.facing = it.b.facing;
-            self.effects.slots[j].b.vx = if it.b.facing != 0 { vx } else { vx.wrapping_neg() };
+            self.effects.slots[j].b.facing = b.facing;
+            self.effects.slots[j].b.vx = if b.facing != 0 { vx } else { vx.wrapping_neg() };
             self.effects.slots[j].b.vy = vy;
             self.effects.slots[j].b.ay = -0x14;
             self.effects.slots[j].b.var26 = var;
@@ -553,7 +543,7 @@ impl Game {
                 if mask >> r & 1 != 0 {
                     d5 += 1;
                     self.effects.slots[j].w5c = 1;
-                    if it.b.var26 == 6 {
+                    if b.var26 == 6 {
                         self.effects.slots[j].b.var26 = 0x1A;
                     }
                 }
@@ -594,7 +584,7 @@ impl Game {
             }
             6 | 8 => {
                 self.item_score_500(it.b.who);
-                self.container_debris(it, if it.b.var26 == 6 { DEBRIS_B } else { DEBRIS_C });
+                self.container_debris(&it.b, if it.b.var26 == 6 { DEBRIS_B } else { DEBRIS_C });
                 self.item_drop_from_container(it);
                 self.item_free(it, i);
             }

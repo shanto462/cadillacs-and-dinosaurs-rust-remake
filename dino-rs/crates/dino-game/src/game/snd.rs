@@ -55,6 +55,13 @@ impl Game {
         old
     }
 
+    /// `bchg.b #bit,$43E(a5)`: the biker's engine and fall (0xA128, 0xA164). Returns the old bit (`bne` when it was set).
+    pub fn snd_toggle_e(&mut self, bit: u8) -> bool {
+        let old = self.w.snd_toggle_e >> bit & 1 != 0;
+        self.w.snd_toggle_e ^= 1 << bit;
+        old
+    }
+
     /// 0xA63C with its three registers (d0 = code, d1, d2): the same as `sound_ex`.
     pub fn snd_request(&mut self, code: u16, d1: u32, d2: u32) {
         self.sound_ex(code, d1, d2);
