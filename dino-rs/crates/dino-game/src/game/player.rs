@@ -3767,6 +3767,10 @@ impl Game {
         let anim = rd16(row + 6);
         let p = &mut self.players[i];
         let x = eb.xi().wrapping_add(if eb.facing != 0 { dx.wrapping_neg() } else { dx });
+        // 0x1D512: `move.w $8(a0),$8(a6)` copies the integer words only, the hero keeps his own fractions.
+        Player::set_hi(&mut p.b.x, eb.xi());
+        Player::set_hi(&mut p.b.y, eb.yi());
+        Player::set_hi(&mut p.b.z, eb.zi());
         Player::set_hi(&mut p.b.x, x);
         let y = eb.yi().wrapping_add(dy);
         Player::set_hi(&mut p.b.y, y);

@@ -13,11 +13,11 @@ const SMOKE_PARAMS: u32 = 0x9665E;
 
 impl Effect {
     /// The long +$5C (vy of the smoke ring): +$5C / +$5E / +$5F as one big-endian long.
-    fn p5c(&self) -> u32 {
+    pub(super) fn p5c(&self) -> u32 {
         ((self.w5c as u32) << 16) | ((self.b5e as u32) << 8) | self.b5f as u32
     }
 
-    fn set_p5c(&mut self, a: u32) {
+    pub(super) fn set_p5c(&mut self, a: u32) {
         self.w5c = (a >> 16) as u16;
         self.b5e = (a >> 8) as u8;
         self.b5f = a as u8;

@@ -25,6 +25,7 @@ const EFFECT_TABLES: &[u32] = &[
     0x97150, // the Cadillac's seat drawers, effect $20 = 0x90 (0x97008), 8 animations (character * 2, + 1 for the third seat)
     0x9786E, // the Cadillac's dust and smoke, effect $20 = 0xA4 (0x97814)
     0x972B2, // the teammate who delivers the car, effect $20 = 0x94 (0x9721E), 8 animations (jump by character, then stand)
+    0x96770, // the Z mark of a sleeping dinosaur, effect $20 = 0x78 (0x966C8), 1 animation
 ];
 
 /// Frame lists loaded directly with 0x160A (10-byte records, no table).

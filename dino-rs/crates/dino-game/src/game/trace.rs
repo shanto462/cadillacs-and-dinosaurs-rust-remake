@@ -966,7 +966,10 @@ impl Effect {
             return;
         }
         f.i16(0x62, "off_x", &mut self.off_x);
-        if self.b.k20 == 0x44 {
+        if self.b.k20 == 0x78 {
+            f.i16(0x64, "off_y", &mut self.off_y);
+            f.u16(0x66, "w66", &mut self.w66);
+        } else if self.b.k20 == 0x44 {
             f.u32(0x64, "scatter64", &mut self.scatter64);
         } else {
             f.i16(0x64, "off_y", &mut self.off_y);
@@ -1120,7 +1123,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 /// `pool_c_update`, `pool_e_update`.
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
-    ("enemy", &[2, 5, 10, 13, 14, 15, 16, 17, 18, 20, 27, 29, 31, 32, 34, 41, 42, 43, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 63, 64, 65, 66, 70, 77, 81, 82, 83, 90, 92, 93, 96, 97]),
+    ("enemy", &[2, 5, 10, 13, 14, 15, 16, 17, 18, 20, 24, 27, 29, 31, 32, 34, 38, 41, 42, 43, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 63, 64, 65, 66, 70, 77, 78, 80, 81, 82, 83, 90, 92, 93, 96, 97]),
     ("prop", &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 39, 40, 41, 42, 43, 45, 47, 48, 49, 50, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 66, 70, 71, 72, 73, 74, 76, 80, 81, 82, 83, 84, 85, 87, 88, 96]),
     (
         "item",
@@ -1139,7 +1142,7 @@ pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
             class::ATTACK_BOX,
         ],
     ),
-    ("effect", &[0x04 / 4, 0x10 / 4, 0x14 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x2C / 4, 0x38 / 4, 0x50 / 4, 0x54 / 4, 0x0C / 4, 0x1C / 4, 0x4C / 4, 0x60 / 4, 0x64 / 4, 0x3C / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x74 / 4, 0x88 / 4, 0x08 / 4, 0x7C / 4, 0x84 / 4, 0x90 / 4, 0x94 / 4, 0xA4 / 4]),
+    ("effect", &[0x04 / 4, 0x10 / 4, 0x14 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x2C / 4, 0x38 / 4, 0x50 / 4, 0x54 / 4, 0x0C / 4, 0x1C / 4, 0x4C / 4, 0x60 / 4, 0x64 / 4, 0x3C / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x74 / 4, 0x88 / 4, 0x08 / 4, 0x7C / 4, 0x84 / 4, 0x90 / 4, 0x94 / 4, 0xA4 / 4, 0x78 / 4]),
     // a pool D slot has no class word: the diff tool reads +$20 of the slot, which is 0 for the clock's slot (a sprite word)
     ("special", &[0]),
 ];
@@ -1361,6 +1364,7 @@ impl Game {
         self.trace_camera(f);
         self.trace_terrain(f);
         self.trace_item_list(f);
+        self.trace_hurt_list(f);
         // Sprite list builder state.
         f.u16(n(0x7126), "splash_timer", &mut self.sprites.splash_timer);
         f.u16(n(0x7124), "splash_phase", &mut self.sprites.splash_phase);
@@ -1423,6 +1427,28 @@ impl Game {
             for &h in loaded.iter().take((count as usize).min(24)) {
                 self.combat.push(0x69EE, h);
             }
+        }
+    }
+
+    /// Last frame's list of enemies the players could hit, G.$69BA (count) and $69BC (pointer into the stack of 0x4BEA): read by the AI of the
+    /// monsters (0x491A4, 0x491F8, 0x5F324) and the player (0x64F6). It is only loaded (a `--step-from` run starts every frame from MAME's state);
+    /// the port's trace does not write it, so the diff ignores it.
+    fn trace_hurt_list(&mut self, f: &mut F) {
+        if !f.loading() {
+            return;
+        }
+        let (mut count, mut ptr) = (0u16, 0u16);
+        f.u16(0x69BA, "hurt_count", &mut count);
+        f.u16(0x69BC, "hurt_ptr", &mut ptr);
+        let mut mem = Vec::new();
+        for k in 0..count.min(32) as u32 {
+            let mut h = 0u16;
+            f.u16((ptr as u32).wrapping_sub(0x8000).wrapping_add(2 * k) & 0xFFFF, "hurt_slot", &mut h);
+            mem.push(h);
+        }
+        self.combat.clear(0x69BA);
+        for &h in mem.iter().rev() {
+            self.combat.push(0x69BA, h);
         }
     }
 

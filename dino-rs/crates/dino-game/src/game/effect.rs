@@ -90,6 +90,8 @@ mod fx36_37;
 // Pool C class 41 (M6-22): the dust and smoke of the Cadillac.
 #[path = "effect/fx41.rs"]
 mod fx41;
+#[path = "effect/fx30.rs"]
+mod fx30;
 use dino_assets::effect::{EffectData, RawSprite};
 use dino_assets::{FrameId, HitBox};
 
@@ -119,6 +121,7 @@ pub const FX_SMOKE_RING: u16 = 0x74;
 pub const FX_SEAT: u16 = 0x90;
 pub const FX_MATE: u16 = 0x94;
 pub const FX_CAR_PUFF: u16 = 0xA4;
+pub const FX_Z_MARK: u16 = 0x78;
 
 /// Hit spark animation table (0x924BE stores it in +$40).
 const SPARK_TABLE: u32 = 0x924F6;
@@ -148,6 +151,8 @@ pub struct Effect {
     /// +$62 / +$64 offset from the owner (X mirrored by the owner's facing).
     pub off_x: i16,
     pub off_y: i16,
+    /// +$66 the low word of the long +$64 (class 30, the Z mark).
+    pub w66: u16,
     /// +$60 (long) speed of a cloud of the ranking screen, added to X every frame.
     pub speed60: i32,
     /// +$64 ROM pointer to the digit scatter offsets (0x94150, class 17 only).
@@ -589,6 +594,7 @@ impl Game {
                 FX_SEAT => self.fx_seat(i),
                 FX_MATE => self.fx_mate(i),
                 FX_CAR_PUFF => self.fx_car_puff(i),
+                FX_Z_MARK => self.fx_z_mark(i),
                 // TODO(port): remaining classes (handler addresses from the table at 0x237E6):
                 // 0x00 0x923E0, 0x18 0x92C9A,
                 // 0x24 0x93184, 0x28 0x932D2,

@@ -31,6 +31,9 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     // (0x2E724) tables.
     0x3906A, 0x5727A, 0x57682, 0x57F44, 0x6FDEC, 0x6F8A6, 0x30750, 0x311C4,
     0x4F4E4, // Rock Hopper init 0x4DD2A (M5-10)
+    0x53BE4, // Mack init 0x53430 (M6-03)
+    0x49574, // Shivat init 0x483B2 (M6-04)
+    0x5F4F8, 0x600E0, // ground critters A78 (0x5F1AC) and A80 (0x5FF42) (M6-03)
     0x6FB1A, // enemy bullet class 59, init 0x57FC8
     0x2FDC6, 0x30FFC, // Walther hit / held tables, 0x2E68C / 0x2E724 +$34
     0x43E54, // Walther, 0x425F8
