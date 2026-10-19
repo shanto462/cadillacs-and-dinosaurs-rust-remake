@@ -15,10 +15,13 @@ const ALIVE_LIMIT: u32 = 0x7BFEE;
 /// Copied only from the user's ROM at extraction time into EnemyData::t.
 pub const TABLES: &[(u32, u32, &str)] = &[
     (0x44370, 0x36, "Vice retarget weights"),
+    (0x444C0, 32, "Walther initial cell"),
+    (0x44572, 8 * 32, "Walther cell transitions"),
+    (0x44812, 16 * 4, "Walther target offsets"),
     (0x44672, 9 * 32, "Vice arena cell transitions"),
     (0x44868, 9 * 4, "Vice arena destinations"),
     (0x44ADE, 16, "Vice approach choice"),
-    (0x44F4E, 32 * 2, "Vice walk speed ids"),
+    (0x44F4E, 3 * 32 * 2, "Vice walk speed ids"),
     (0x442E0, 0x36, "Vice initial target weights"),
     (0x44B84, 0x40, "Vice attack chance"),
     (0x44C8C, 0x40, "Vice combo choice"),

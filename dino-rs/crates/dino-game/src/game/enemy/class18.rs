@@ -1,51 +1,92 @@
-//! Vice T., class 18 variant 0: native intro, fight, revolver, summons and rage.
+//! Class 18 (0x42590): Vice T. and Walther, including death and scores.
 use super::{in_win, Enemy};
 use crate::game::{Game, Handle};
 
 impl Game {
-    /// 0x42590 / 0x425BC / 0x428CE: use sprites for native intro and AI states.
+    /// 0x42590: class 18 always uses its native sprites, including Walther.
     pub(crate) fn enemy_vice_intro_active(b: &crate::game::body::Body) -> bool {
-        b.k20 == 18 * 4 && b.var26 >> 8 == 0
-            && (b.mode == 0 || (b.mode == 2 && (matches!(b.sub, 2 | 6)
-                || (b.sub == 0 && matches!(b.act, 0 | 2 | 4 | 6 | 8 | 0xA)))))
+        b.k20 == 18 * 4
     }
 
-    /// 0x42590 / 0x425A4 / 0x42884: init, intro and the ported alive states.
+    /// 0x42590 / 0x425A4 / 0x42884 / 0x43892 / 0x438EC.
     pub(super) fn enemy_class18(&mut self, e: &mut Enemy, h: Handle, i: usize) {
-        // M5-13 owns death and Walther.
-        match (e.b.var26 >> 8, e.b.mode, e.b.sub, e.b.act) {
-            (0, 0, _, _) => {}
-            (0, 2, 0, 0 | 2 | 4 | 6 | 8 | 0xA) => {
-                self.enemy_vice_alive(e, h);
-                return;
-            }
-            (0, 2, 2 | 6, _) => {
-                for offset in [0xBE, 0xC4] { e.m.sw(offset, e.m.w(offset).saturating_sub(1)); }
-                if e.b.sub == 6 {
-                    self.enemy_grabbed(e, h); // 0x428CA -> 0x2B35A
+        match e.b.mode {
+            0 => {
+                if e.b.sub == 0 { self.enemy_vice_init(e, h); }
+                if e.b.var26 >> 8 != 0 {
+                    self.enemy_vice_fight_start(e, h); // 0x42694 -> 0x42864
                 } else {
-                    self.boss_hit(e, h); // 0x4385C -> 0x3262A, before the reaction
-                    self.enemy_hit_reaction(e, h);
+                    self.enemy_vice_intro(e, h);
                 }
-                return;
+                self.enemy_draw_check(&mut e.b, h);
             }
-            _ => {
-                self.enemy_class_unported(e, h, i);
-                return;
+            2 => {
+                // 0x42884 tests the whole variant word, unlike the byte tests.
+                if e.b.var26 != 0 { self.enemy_kill_all_check(e); }
+                for offset in [0xBE, 0xC4] {
+                    e.m.sw(offset, e.m.w(offset).saturating_sub(1));
+                }
+                match e.b.sub {
+                    0 => self.enemy_vice_alive(e, h),
+                    2 => {
+                        // 0x4385C: only Vice runs the boss services and fade.
+                        if e.b.var26 >> 8 == 0 {
+                            self.boss_hit(e, h);
+                        }
+                        self.enemy_hit_reaction(e, h);
+                    }
+                    6 => self.enemy_grabbed(e, h), // 0x428CA -> 0x2B35A
+                    _ => {} // 0x43890: sub 4 is an rts in the ROM.
+                }
+                if e.b.var26 >> 8 != 0 { self.enemy_clamp_to_playfield(e, i); }
             }
+            4 => self.enemy_vice_dying(e, h),
+            _ => self.enemy_free_pool_a(e, i),
         }
+    }
+
+    /// 0x42864..0x42880: only Vice owns the controller and HUD boss bar.
+    fn enemy_vice_fight_start(&mut self, e: &mut Enemy, h: Handle) {
+        if e.b.var26 >> 8 == 0 {
+            if let Some(controller) = self.boss_spawn_controller(h) {
+                if let Some(crate::game::Slot::Prop(i)) = crate::game::slot_of(controller) {
+                    self.props.slots[i].m.sl(0xAA, 0xFFFF_0000 | h as u32);
+                }
+            }
+            self.hud.boss = h;
+        }
+        e.b.mode = e.b.mode.wrapping_add(2);
+        e.b.sub = 0;
+        e.b.act = 0;
+        e.b.step = 0;
+        self.enemy_vice_approach(e);
+    }
+
+    /// 0x43892..0x438EA: score once; Vice stays, Walther blinks then frees.
+    fn enemy_vice_dying(&mut self, e: &mut Enemy, h: Handle) {
         if e.b.sub == 0 {
-            self.enemy_vice_init(e, h);
+            self.enemy_award_kill_score(&e.b);
+            e.b.sub = e.b.sub.wrapping_add(2);
+            e.m.sb(0x80, 0x78);
+            if e.b.var26 >> 8 == 0 { self.enemy_boss_leader(e.b.who); }
         }
-        self.enemy_vice_intro(e, h);
-        self.enemy_draw_check(&mut e.b, h); // 0x426A6 -> 0x49CA
+        if e.b.var26 >> 8 == 0 {
+            self.enemy_draw_check(&mut e.b, h);
+        } else {
+            let timer = e.m.b(0x80);
+            if timer == 0 {
+                e.b.mode = e.b.mode.wrapping_add(2);
+            } else {
+                let timer = timer.wrapping_sub(1);
+                e.m.sb(0x80, timer);
+                if timer & 1 != 0 { self.enemy_draw_check(&mut e.b, h); }
+            }
+        }
     }
 
     /// 0x42884 / 0x428CE: alive timers, poise refill, terrain and obstacle attack.
     fn enemy_vice_alive(&mut self, e: &mut Enemy, h: Handle) {
-        for offset in [0xBE, 0xC4, 0xAA] {
-            e.m.sw(offset, e.m.w(offset).saturating_sub(1));
-        }
+        e.m.sw(0xAA, e.m.w(0xAA).saturating_sub(1));
         if e.m.b(0x79) != 0 {
             e.m.sb(0x79, e.m.b(0x79).wrapping_sub(1));
             if e.m.b(0x79) == 0 { e.b.stun = 11; }
@@ -142,7 +183,7 @@ impl Game {
                 if e.b.airborne != 0 { e.m.sb(0xB4, 0); }
                 else {
                     e.m.sb(0xB4, 60);
-                    if self.enemy_vice_attack_roll() {
+                    if self.enemy_vice_attack_roll(e) {
                         e.b.act = 4;
                         e.b.step = 0;
                         return;
@@ -162,9 +203,14 @@ impl Game {
                     // 0x44AEE compares the horizontal half of two directions.
                     let p = self.body(e.m.w(0x76));
                     let a = Game::enemy_angle_to(&e.b, p.xi() as u16, p.zi() as u16);
-                    let cell = e.m.b(0x7C) as u32 * 4;
-                    let b = Game::enemy_angle_to(&e.b, self.assets.enemy.t.u16(0x44868, cell),
-                        self.assets.enemy.t.u16(0x44868, cell + 2));
+                    let cell = e.m.b(0x7C) as u32;
+                    let (x, z) = if e.b.var26 >> 8 == 0 {
+                        (self.assets.enemy.t.u16(0x44868, cell * 4), self.assets.enemy.t.u16(0x44868, cell * 4 + 2))
+                    } else {
+                        // 0x44B0E doubles once, rather than indexing a pair.
+                        (self.assets.enemy.t.u16(0x44812, cell * 2).wrapping_add(p.xi() as u16), p.zi() as u16)
+                    };
+                    let b = Game::enemy_angle_to(&e.b, x, z);
                     e.m.sb(0x90, 0);
                     if (a ^ b) & 16 != 0 {
                         e.m.sb(0xB1, 0);
@@ -174,7 +220,7 @@ impl Game {
                         e.m.sw(0xC4, 600);
                         self.enemy_anim(&mut e.b, 4);
                         self.enemy_set_speed(&mut e.b, 13);
-                        e.m.sb(0x7D, 0xFF);
+                        e.m.sb(0x7D, if e.b.var26 >> 8 == 0 { 0xFF } else { 0 });
                         e.m.sw(0xAE, 0);
                         e.m.sb(0xB0, 120);
                     }
@@ -222,8 +268,8 @@ impl Game {
     }
 
     /// 0x44B5A: one RNG draw, signed byte compare, every 61 eligible updates.
-    fn enemy_vice_attack_roll(&mut self) -> bool {
-        let threshold = self.assets.enemy.t.u8(0x44B84, self.w.level as u32);
+    fn enemy_vice_attack_roll(&mut self, e: &Enemy) -> bool {
+        let threshold = self.assets.enemy.t.u8(0x44B84, ((e.b.var26 >> 8) as u32 * 16) + self.w.level as u32);
         ((self.rand() & 31) as i8) < threshold as i8
     }
 
@@ -257,20 +303,47 @@ impl Game {
         }
     }
 
-    /// 0x444E8 (Vice branch): roll a relative arena cell, retaining byte wrap.
+    /// 0x44478: Walther's initial cell takes two random draws.
+    fn enemy_vice_initial_cell(&mut self, e: &mut Enemy) {
+        if e.b.var26 >> 8 == 0 { e.m.sb(0x7C, 4); return; }
+        let mut side = if (e.b.xi() as u16) < self.body(e.m.w(0x76)).xi() as u16 { 0u8 } else { 8 };
+        if self.rand() & 15 >= 11 { side = side.wrapping_add(8) & 15; }
+        let r = self.rand() & 31;
+        e.m.sb(0x7C, side.wrapping_add(self.assets.enemy.t.u8(0x444C0, r as u32)));
+        self.enemy_vice_cell_screen(e);
+    }
+
+    /// 0x444E8..0x44570: retain the unused middle RNG draw for Walther.
     fn enemy_vice_new_cell(&mut self, e: &mut Enemy) {
         let cell = e.m.b(0x7C);
-        let r = self.rand() & 31;
-        let delta = self.assets.enemy.t.u8(0x44672, cell as u32 * 32 + r as u32);
-        e.m.sb(0x7C, cell.wrapping_add(delta));
+        if e.b.var26 >> 8 != 0 {
+            let mut side = if (e.b.xi() as u16) < self.body(e.m.w(0x76)).xi() as u16 { 0u8 } else { 8 };
+            if self.rand() & 15 >= 11 { side = side.wrapping_add(8) & 15; }
+            self.rand(); // 0x44518: masked but overwritten before the table read
+            let r = self.rand() & 31;
+            let delta = self.assets.enemy.t.u8(0x44572, (cell as u32 & 7) * 32 + r as u32);
+            e.m.sb(0x7C, side.wrapping_add(delta) & 15);
+            self.enemy_vice_cell_screen(e);
+        } else {
+            let r = self.rand() & 31;
+            let delta = self.assets.enemy.t.u8(0x44672, cell as u32 * 32 + r as u32);
+            e.m.sb(0x7C, cell.wrapping_add(delta));
+        }
+    }
+
+    /// 0x44792: the original indexes words, even though the cell records are pairs.
+    fn enemy_vice_cell_screen(&self, e: &mut Enemy) {
+        let x = self.assets.enemy.t.u16(0x44812, e.m.b(0x7C) as u32 * 2)
+            .wrapping_add(self.body(e.m.w(0x76)).xi() as u16);
+        let delta = self.cam.s2.cam_x.wrapping_add(0xC0).wrapping_sub(x).wrapping_add(0xA0);
+        if delta >= 0x140 { e.m.sb(0x7C, e.m.b(0x7C).wrapping_add(8) & 15); }
     }
 
     /// 0x42C50 / 0x44F2E: walking animation and difficulty-dependent speed.
     fn enemy_vice_walk_start(&self, e: &mut Enemy) {
         self.enemy_anim(&mut e.b, 1);
-        let speed = self.assets.enemy.t.u16(0x44F4E, (self.w.level as u32 & 31) * 2);
-        self.enemy_set_speed(&mut e.b, speed);
-        e.m.sb(0x7D, 0xFF);
+        self.enemy_vice_walk_speed(e);
+        e.m.sb(0x7D, if e.b.var26 >> 8 == 0 { 0xFF } else { 0 });
         e.m.sw(0xAE, 0);
         e.m.sb(0xB0, 120);
     }
@@ -278,8 +351,13 @@ impl Game {
     /// 0x447CE / 0x44852 / 0x44994 / 0x449C6 / 0x44CCC / 0x44CE4.
     fn enemy_vice_destination(&self, e: &mut Enemy) {
         let cell = e.m.b(0x7C) as u32 * 4;
-        let x = self.assets.enemy.t.u16(0x44868, cell);
-        let z = self.assets.enemy.t.u16(0x44868, cell + 2);
+        let (x, z) = if e.b.var26 >> 8 == 0 {
+            (self.assets.enemy.t.u16(0x44868, cell), self.assets.enemy.t.u16(0x44868, cell + 2))
+        } else {
+            let p = self.body(e.m.w(0x76));
+            (self.assets.enemy.t.u16(0x44812, cell).wrapping_add(p.xi() as u16),
+                self.assets.enemy.t.u16(0x44812, cell + 2).wrapping_add(p.zi() as u16))
+        };
         e.m.sw(0x88, x);
         e.m.sw(0x8A, z);
         self.enemy_vice_turn(e, e.m.b(0xB5) != 0, false);
@@ -395,7 +473,7 @@ impl Game {
                 e.b.step = 2;
                 let r = self.rand() & 31; // 0x44C5A, exactly one draw even when charged
                 let combo = if e.m.b(0xB5) != 0 { 5 + (r >> 4) }
-                    else { self.assets.enemy.t.u8(0x44C8C, r as u32) as u16 };
+                    else { self.assets.enemy.t.u8(0x44C8C, r as u32 + if e.b.var26 >> 8 != 0 { 0x20 } else { 0 }) as u16 };
                 e.m.sw(0xB6, combo);
                 e.m.sw(0xB8, combo << 3);
             }
@@ -528,7 +606,8 @@ impl Game {
 
     /// 0x44F2E: level-dependent speed id.
     fn enemy_vice_walk_speed(&self, e: &mut Enemy) {
-        self.enemy_set_speed(&mut e.b, self.assets.enemy.t.u16(0x44F4E, (self.w.level as u32 & 31) * 2));
+        let speed = self.assets.enemy.t.u16(0x44F4E, (e.b.var26 >> 8) as u32 * 64 + (self.w.level as u32 & 31) * 2);
+        self.enemy_set_speed(&mut e.b, speed);
     }
 
     /// 0x44BC4: combo-specific distance from the target, then turn and face.
@@ -849,7 +928,7 @@ impl Game {
         e.b.set_state(0x0200_0000);
         self.enemy_anim(&mut e.b, 0);
         if e.m.b(0x7A) == 0 { e.m.sb(0x7A, 2); }
-        e.m.sb(0x7D, 0xFF);
+        e.m.sb(0x7D, if e.b.var26 >> 8 == 0 { 0xFF } else { 0 });
         e.m.sw(0xB2, 600);
         e.m.sb(0xB4, 60);
         e.m.sb(0xB1, 0);
@@ -860,7 +939,7 @@ impl Game {
             else if (frame.w1 as i16) >= 0 { frame.w1 } else { frame.w0 };
         if e.b.reaction == 4 {
             let count = e.m.b(0xC2);
-            if (count as i8) < 5 {
+            if e.b.var26 >> 8 == 0 && (count as i8) < 5 {
                 d0 = if count == 0 { 0 } else { e.m.w(0xC0) / count as u16 };
                 if (d0 as i16) >= (e.b.hp as i16) {
                     e.m.sb(0xC2, count.wrapping_add(1));
@@ -922,9 +1001,10 @@ impl Game {
         // 0x4488C: furthest arena cell, scan descending; ties retain the first.
         let mut distance = 0i16;
         let mut cell = e.m.b(0x7C);
-        for i in (0..9u32).rev() {
-            let x = self.assets.enemy.t.u16(0x44868, i * 4) as i16;
-            let z = self.assets.enemy.t.u16(0x44868, i * 4 + 2) as i16;
+        let (table, count) = if e.b.var26 >> 8 == 0 { (0x44868, 9) } else { (0x44812, 16) };
+        for i in (0..count).rev() {
+            let x = self.assets.enemy.t.u16(table, i * 4) as i16;
+            let z = self.assets.enemy.t.u16(table, i * 4 + 2) as i16;
             let d = x.wrapping_sub(e.b.xi()).wrapping_abs()
                 .wrapping_add(z.wrapping_sub(e.b.zi()).wrapping_abs());
             if d > distance { distance = d; cell = i as u8; }
@@ -945,7 +1025,7 @@ impl Game {
         e.m.sb(0xB1, 8);
         self.enemy_anim(&mut e.b, 25);
         self.enemy_vice_walk_speed(e);
-        e.m.sb(0x7D, 0xFF);
+        e.m.sb(0x7D, if e.b.var26 >> 8 == 0 { 0xFF } else { 0 });
         e.m.sw(0xAE, 0);
         e.m.sb(0xB0, 200);
         self.enemy_vice_leftmost_target(e);
@@ -980,14 +1060,22 @@ impl Game {
 
     /// 0x425B6..0x4268C: Vice's init. 0x939B6 is the optional debug marker.
     fn enemy_vice_init(&mut self, e: &mut Enemy, h: Handle) {
-        self.enemy_vice_hopper(e, h); // 0x4DCC6, before selecting a target
-        e.b.id = 0x0C;
-        e.m.sw(0x84, 0x30);
+        if e.b.var26 >> 8 == 0 {
+            self.enemy_vice_hopper(e, h); // 0x4DCC6, before selecting a target
+            e.b.id = 0x0C;
+            e.m.sw(0x84, 0x30);
+            e.b.b63 = 2;
+            e.b.anim_table = 0x438F2;
+            self.enemy_set_boss_hp(&mut e.b, 0);
+            e.m.sw(0xC0, e.b.hp);
+        } else {
+            e.b.id = 0x0D;
+            e.m.sw(0x84, 0x34);
+            e.b.b63 = 0;
+            e.b.anim_table = 0x43E54;
+            self.enemy_set_hp(&mut e.b);
+        }
         e.b.b72 = 60;
-        e.b.b63 = 2;
-        e.b.anim_table = 0x438F2;
-        self.enemy_set_boss_hp(&mut e.b, 0);
-        e.m.sw(0xC0, e.b.hp);
         self.enemy_anim(&mut e.b, 0);
         e.b.box_table = 0x103000;
         e.b.multi_box = false;
@@ -1002,9 +1090,9 @@ impl Game {
         e.m.sb(0xC2, 2);
         e.m.sw(0x76, self.enemy_pick_target(&e.b)); // 0x32032
         self.enemy_snap_to_floor(e); // 0x3140C
-        e.m.sb(0x7D, 0xFF); // 0x44EEC
+        e.m.sb(0x7D, if e.b.var26 >> 8 == 0 { 0xFF } else { 0 }); // 0x44EEC
         self.enemy_vice_initial_target(e); // 0x44298, one RNG call
-        e.m.sb(0x7C, 4); // 0x44478, Vice branch has no RNG
+        self.enemy_vice_initial_cell(e); // 0x44478
         e.b.sub = e.b.sub.wrapping_add(2);
     }
 
@@ -1103,20 +1191,7 @@ impl Game {
                     self.sound(0x0E);
                 }
             }
-            0x12 => { // 0x42864..0x4287C; alive AI entry is M5-11
-                if let Some(controller) = self.boss_spawn_controller(h) {
-                    // 0x7BEDC copies sign-extended a6, not a 24-bit bus address.
-                    if let Some(crate::game::Slot::Prop(i)) = crate::game::slot_of(controller) {
-                        self.props.slots[i].m.sl(0xAA, 0xFFFF_0000 | h as u32);
-                    }
-                }
-                self.hud.boss = h;
-                e.b.mode = e.b.mode.wrapping_add(2);
-                e.b.sub = 0;
-                e.b.act = 0;
-                e.b.step = 0;
-                self.enemy_vice_approach(e); // 0x42880 falls into 0x42B96
-            }
+            0x12 => self.enemy_vice_fight_start(e, h),
             _ => {}
         }
     }
@@ -1273,6 +1348,7 @@ mod tests {
             "boss_vice_3p_r0", "boss_vice_3p_r24",
             "m600_bs_v3_v2_dmg", "m600_bs_v3_v6_dmg",
             "m511b_vice_pinned", "m600_bs_v2_v9_alt",
+            "m600_h10_ks_wal", "m513_wal_ai_l0", "m513_wal_ai_l31",
         ] {
             let path = directory.join(format!("{name}.mame.trc"));
             if !path.exists() {
@@ -1299,8 +1375,9 @@ mod tests {
                         let h = g.enemies.handle(i);
                         let a = h as usize;
                         let e = &g.enemies.slots[i];
-                        if e.b.live == 0 || e.b.k20 != 72 || e.b.var26 >> 8 != 0 || e.b.mode != 2
-                            || !(matches!(e.b.sub, 2 | 6) || (e.b.sub == 0 && matches!(e.b.act, 0 | 2 | 4 | 6 | 8 | 0xA))) {
+                        if e.b.live == 0 || e.b.k20 != 72 { continue; }
+                        if e.b.var26 >> 8 == 0 && (e.b.mode != 2
+                            || !(matches!(e.b.sub, 2 | 6) || (e.b.sub == 0 && matches!(e.b.act, 0 | 2 | 4 | 6 | 8 | 0xA)))) {
                             continue;
                         }
                         // M7-12 owns the Hopper's hostile AI. The held placeholder
@@ -1355,6 +1432,90 @@ mod tests {
             frames += checked;
         }
         assert!(frames > 0, "no Vice reference recordings found");
+    }
+
+    /// 0x43892: replay every recorded Vice/Walther death invocation and score.
+    #[test]
+    fn vice_and_walther_death_matches_mame() {
+        let rom = Path::new("../../../dino.zip");
+        if !rom.exists() { return; }
+        let assets = Box::leak(Box::new(dino_extract::extract(rom).unwrap()));
+        let mut checked = 0;
+        for name in ["m600_bs_v1_v1_nat", "m600_bs_v2_v9_alt", "m600_h10_ks_wal"] {
+            let path = format!("../../../re/out/traces/{name}.mame.trc");
+            if !Path::new(&path).exists() { continue; }
+            let mut reader = TraceReader::open(&path).unwrap();
+            let mut previous: Option<(Vec<u8>, Vec<u8>)> = None;
+            let mut g = Game::new(assets);
+            let mut count = 0;
+            while let Some(frame) = reader.next() {
+                let ram = reader.region("ram").unwrap().data.clone();
+                let gfx = reader.region("gfx").unwrap().data.clone();
+                if let Some((old, video)) = &previous {
+                    g.trace_load(old, video);
+                    for i in 0..g.enemies.slots.len() {
+                        let h = g.enemies.handle(i);
+                        let a = h as usize;
+                        let e = &g.enemies.slots[i];
+                        if e.b.live == 0 || e.b.k20 != 72 || e.b.mode != 4 { continue; }
+                        // Area teardown frees all pools after the object update.
+                        if ram[a] == 0 && old[0x84D9..0x84DB] != ram[0x84D9..0x84DB] { continue; }
+                        let mut e = std::mem::take(&mut g.enemies.slots[i]);
+                        g.enemy_class18(&mut e, h, i);
+                        let mut image = Collect::default();
+                        e.trace_visit(&mut F::new(&mut image, 0xFF0000 | h as u32, assets));
+                        for offset in 0..0xE0 {
+                            if image.mask[a + offset] != 0 {
+                                assert_eq!(image.ram[a+offset], ram[a+offset], "{name} frame {frame} death +{offset:02X}");
+                            }
+                        }
+                        if old[a+5] == 0 {
+                            for j in 0..3 {
+                                let p = Game::player_handle(j) as usize;
+                                let expected = u32::from_be_bytes(ram[p+0x100..p+0x104].try_into().unwrap());
+                                assert_eq!(g.players[j].score, expected, "{name} frame {frame} score P{j}");
+                            }
+                        }
+                        g.enemies.slots[i] = e;
+                        count += 1;
+                    }
+                }
+                previous = Some((ram, gfx));
+            }
+            eprintln!("{name}: {count} death invocations equal MAME");
+            checked += count;
+        }
+        assert!(checked > 0);
+    }
+
+    /// 0x31E14 / 0x31424: BS-A1 HP and H10's hit plus kill score.
+    #[test]
+    fn vice_hp_and_walther_score_acceptance() {
+        let rom = Path::new("../../../dino.zip");
+        if !rom.exists() { return; }
+        let assets = Box::leak(Box::new(dino_extract::extract(rom).unwrap()));
+        let mut g = Game::new(assets);
+        g.w.level = 12;
+        for (players, hp) in [(0, 500), (1, 600), (2, 700)] {
+            g.w.players_minus_one = players;
+            let mut e = Enemy::default();
+            g.enemy_set_boss_hp(&mut e.b, 0);
+            assert_eq!(e.b.hp, hp);
+        }
+        let mut e = Enemy::default();
+        e.b.id = 0x0D;
+        e.b.mode = 4;
+        e.b.var26 = 0x200;
+        e.b.who = 0;
+        g.enemy_add_score(0, 0x100); // 0x325A4: one ordinary hit, packed BCD
+        g.enemy_vice_dying(&mut e, 0);
+        assert_eq!(g.players[0].score, 0x8100);
+        assert_eq!((e.b.sub, e.m.b(0x80)), (2, 119));
+        for _ in 0..119 { g.enemy_vice_dying(&mut e, 0); }
+        assert_eq!(e.m.b(0x80), 0);
+        g.enemy_vice_dying(&mut e, 0);
+        assert_eq!(e.b.mode, 6);
+        assert_eq!(g.players[0].score, 0x8100);
     }
 
     /// 0x42B52 / 0x42B88: signed HP comparisons and expiry on recovery only.
