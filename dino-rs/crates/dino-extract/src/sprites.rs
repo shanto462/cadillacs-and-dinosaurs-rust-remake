@@ -15,7 +15,9 @@ const COMP_EXTRA: u32 = 0x11D220;
 const PLAYER_SETS: [u32; 6] = [0x163E, 0x164E, 0x165E, 0x166E, 0x167E, 0x168E];
 const PLAYER_BOX_TABLES: u32 = 0x18CC4;
 const PLAYER_ATTACKS: u32 = 0xA26FC;
-const ATTACKS_PER_CHARACTER: u32 = 60;
+/// Records copied per character. The original indexes the table by the attack id / 2 with no bound (an id is a byte), so all 128 are
+/// copied: an id past the character's own table reads the bytes that follow, as the original does (Mustapha's 0x7A in the attract demo).
+const ATTACKS_PER_CHARACTER: u32 = 128;
 /// Region that holds every hit box table.
 /// It starts 0x8000 bytes before the first table (0x100000): a box test that adds a stale register word to a table (0x128F8 with the d0
 /// that the car's container pass 0x122D8 keeps between objects, M6-20) reaches back that far (`adda.w`, sign extended).
