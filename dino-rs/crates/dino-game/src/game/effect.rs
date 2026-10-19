@@ -70,6 +70,10 @@ mod fx11;
 // Pool C class 21 (M5-04): the puffs and debris showers (0x94640 spawns one, it makes the pieces).
 #[path = "effect/fx21.rs"]
 mod fx21;
+#[path = "effect/fx31.rs"]
+mod fx31;
+#[path = "effect/fx33.rs"]
+mod fx33;
 use dino_assets::effect::{EffectData, RawSprite};
 use dino_assets::{FrameId, HitBox};
 
@@ -79,6 +83,8 @@ pub const FX_CAVE_DROP: u16 = 0x08;
 pub const FX_WATER_SPLASH: u16 = 0x10;
 pub const FX_FLAMES: u16 = 0x20;
 pub const FX_BURN_PIECE: u16 = 0x3C;
+pub const FX_MUZZLE: u16 = 0x7C;
+pub const FX_RICOCHET: u16 = 0x84;
 pub const FX_BLAST: u16 = 0x60;
 pub const FX_FUSE_SPARK: u16 = 0x64;
 pub const FX_SHOCKWAVE: u16 = 0x0C;
@@ -124,6 +130,9 @@ pub struct Effect {
     pub speed60: i32,
     /// +$64 ROM pointer to the digit scatter offsets (0x94150, class 17 only).
     pub scatter64: u32,
+    /// +$64 (long) the X speed of a bullet spark (class 33, 16.16 px per update), +$68 (long) its Y speed (class 33).
+    pub vx64: i32,
+    pub vy68: i32,
 }
 
 /// A pool D slot (allocator 0x48A8, free 0x4994, 0x80 bytes, `Game::draw_special_alloc`): a passive record that the
@@ -538,6 +547,8 @@ impl Game {
                 FX_WATER_SPLASH => self.fx_water_splash(i),
                 FX_FLAMES => self.fx_flames(i),
                 FX_BURN_PIECE => self.fx_burn_piece(i),
+                FX_MUZZLE => self.fx_muzzle(i),
+                FX_RICOCHET => self.fx_ricochet(i),
                 FX_BLAST => self.fx_blast(i),
                 FX_FUSE_SPARK => self.fx_fuse_spark(i),
                 FX_SHOCKWAVE => self.fx_shockwave(i),
@@ -556,8 +567,8 @@ impl Game {
                 // 0x30 0x939D6, 0x34 0x93A7A, 0x3C 0x93E54, 0x40 0x93FFC,
                 // 0x44 0x94100, 0x48 0x942C6, 0x50 0x9454E,
                 // 0x58 0x95840, 0x6C 0x963D6,
-                // 0x70 0x96488, 0x74 0x965CE, 0x78 0x966B4, 0x7C 0x96800, 0x80 0x96A7E,
-                // 0x84 0x96B78, 0x88 0x96DC4, 0x8C 0x96E56, 0x90 0x96FF4, 0x94 0x9720A,
+                // 0x70 0x96488, 0x74 0x965CE, 0x78 0x966B4, 0x80 0x96A7E,
+                // 0x88 0x96DC4, 0x8C 0x96E56, 0x90 0x96FF4, 0x94 0x9720A,
                 // 0x98 (null entry), 0x9C 0x97530, 0xA0 0x97674, 0xA4 0x97800.
                 // See re/specs/anim/HANDOFF.md. Until then they are freed on their first update.
                 other => {

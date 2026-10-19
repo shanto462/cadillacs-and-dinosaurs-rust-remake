@@ -508,7 +508,7 @@ impl Game {
         true
     }
 
-    /// 0x96B40: the muzzle flash (effect class 0x21) at the weapon, +$60 = the weapon's kind.
+    /// 0x96B40: the shot's bullet spark (pool C class 33, 0x84, `effect/fx33.rs`) at the weapon, +$24 = the weapon's facing, +$60 = its kind word.
     fn weapon_spawn_flash(&mut self, it: &Item) {
         let pos = (it.b.xi(), it.b.yi(), it.b.zi());
         if let Some(j) = self.item_spawn_effect(0x84, pos) {

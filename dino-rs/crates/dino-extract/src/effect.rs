@@ -16,6 +16,8 @@ const EFFECT_TABLES: &[u32] = &[
     0x937AA, // debris, effect $20 = 0x2C (0x93590)
     0x951AC, // puff pieces, effect $20 = 0x54 (0x94776)
     0x944DC, // dizzy stars, effect $20 = 0x4C (0x94476)
+    0x96884, // gunshot muzzle flash, effect $20 = 0x7C (0x96800), 4 animations by the gun
+    0x96D06, // bullet ricochet spark, effect $20 = 0x84 (0x96B78)
     0x28904, // fuse spark of a TNT barrel, effect $20 = 0x64 (0x962AA)
 ];
 

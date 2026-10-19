@@ -137,6 +137,8 @@ pub struct World {
     pub water_phase: u16,
     /// G.$14 state of rand() (0x119C).
     pub rng: u16,
+    /// G.$515 counter of the bullet sparks (class 33, 0x96BA0): +1 and & 3 at each spark's first update.
+    pub ricochet_seq: u8,
     /// G.$4D9 stage (0-7). The area lives in the camera (G.$786).
     pub stage: u8,
     /// G.$4DC vertical scene (stage 6 elevator): sprites use camera Y 0.
