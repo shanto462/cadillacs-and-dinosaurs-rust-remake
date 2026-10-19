@@ -473,8 +473,23 @@ MAME wins over the design text; the design documents themselves are not edited.
   values there, so the X and Z speeds of speed id 9 always turn round (the port does that; MAME damage recordings equal in step mode).
 - D3d 3.7: class 4's hit (0x38CC6) for forms 2 and 1 sets G.$4D6 = 3 and G.$50E = 2 at HP 0 or below and never calls 0xACEE; the host is
   rewritten into the same slot (`+$04..+$07` = 0, class word 0x120, the variant's high byte - 1).
-- Port bridge until M8-10: pool A class 72 (the host) is a placeholder (placeholder.rs `enemy_ph_host`): 250 frames, then class 4 with the same
-  variant. Without it the chain stopped at the first host and the autoplay could not finish Episode 6.
+- (M8-10 done) The host placeholder `enemy_ph_host` is gone: class 72 is ported (`class72.rs`).
+
+## Tyrog's host and Tyrog 2 (M8-10 .. M8-12, Task 12, 2026-10-19)
+- D3d 3.7 ("the host lasts 250 frames"): the host has no timer. It runs a 30 frame intro, a punch (state 4, 20 frames), a jump to the screen edge
+  (state 6, about 57 frames) and the change (state 8, 140 frames), then the slot becomes class 4 (class word 0x10, the same variant). A hit delays
+  that by the reaction time. G.-$704A, the palette of its flicker, is only written by a class 72 variant 2, which never exists; it stays 0.
+- The host's hit reactions and held poses (by `+$84` 0x6C) are the tables 0x309EA and 0x3125C (now extracted); without them the first hit on the
+  host stopped the port.
+- D3d 3.8 (Tyrog 2): the init ends in a state 6 that class 4 does not have (0x6599C: 15 frames facing the target, then the hop of action 3). The
+  recover entry (0x658A2) also sets the form palette (0x9F for variant 0, so the init's 0x9D lasts one frame); its off screen branch is a breath start
+  with animation 0x1F (0x668F6, the same as class 4's unreached 0x37EDA), not the off screen pounce. The decision without a pending attack takes the X
+  class of 0x3293C. The sidestep (0x6645E) uses 0x3293C's leftover d2 (the last Z window's distance) as part of the X table index and adds the index
+  to the X step word before the sign test, so vx is nearly always +0x300; it does not turn the X and Z steps toward the target. The pounce has no
+  X speed minimum. The hit is the common 0x2A606 (no damage credit, no G.$4D6 / G.$50E / 0xACEE).
+- Not checked by a recording: Tyrog 2's hit, death and 1,000 points (ty91-dmg never hits it; the score is checked by a unit test of the table), and
+  the Tyrog fight with 3 players (no 3 player recording; HP by player count is a unit test).
+
 ## M6-17 (Episode 2 acceptance, dsonnet)
 Recordings: `ep2_jack` and `ep2_3p` (42,000 frames each, natural walk with the inputs of `re/harness/scripts/ep2_*.txt`), `m328_e2a0n`, `m328_e2a1n`, `m516_e2_start`, `m516_e2_pearl`,
 `m516_e2_diamond`, `m307_e2a0_x400_*`, `m307_e2a2_x1a0_walk`. `ep2_3p` leaves Episode 2 in record 22271 (stage 2 from 22,300, stage 3 from 29,000: those parts are the acceptance of M7 and

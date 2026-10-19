@@ -76,6 +76,8 @@ mod class61_moves;
 mod class61_states;
 // Tyrog (M8-07 / M8-08): the boss (4, states in class4_states.rs); his chest blades (74) and the bosses' fire (26) (M8-09).
 mod class74;
+mod class72;
+mod class91;
 mod class4;
 mod class4_states;
 // The Tyrog scene (M8-06): the actors (75) and the creature of the crate (76).
@@ -266,7 +268,8 @@ impl Game {
                 4 => self.enemy_class4(&mut e, h, i),
                 26 => self.enemy_class26(&mut e, h, i),
                 74 => self.enemy_class74(&mut e, h, i),
-                72 => self.enemy_ph_host(&mut e, h, i), // placeholder until M8-10 (placeholder.rs)
+                72 => self.enemy_class72(&mut e, h, i),
+                91 => self.enemy_class91(&mut e, h, i),
                 75 => self.enemy_class75(&mut e, h, i),
                 76 => self.enemy_class76(&mut e, h, i),
                 25 => self.enemy_class25(&mut e, h, i),
@@ -1905,6 +1908,8 @@ impl Game {
             0x3C => self.c61_decide(e, h),          // 0x58D40 the Butcher (class 61)
             0x14 => self.c25_alive_start(e, h),     // 0x4C072 Slice (class 25)
             0x64 => self.c4_recover(e, h),          // 0x36E7C Tyrog (class 4)
+            0x6C => self.c72_recover(e),            // 0x5DFDE Tyrog's host (class 72)
+            0x8C => self.c4_recover(e, h),          // 0x658A2 Tyrog 2 (class 91)
             0x70 => self.c63_recover(e),            // 0x5ACAA the alternate Blade (class 63)
             0x74 | 0x90 => self.c64_recover(e),     // 0x5B2C4 the bomb carriers (class 64)
             0x54 => self.enemy_morgan_recover(e), // 0x51ACA

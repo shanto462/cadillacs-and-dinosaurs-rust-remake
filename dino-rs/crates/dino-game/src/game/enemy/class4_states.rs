@@ -22,6 +22,7 @@ mod t {
     pub const CHAIN_A: u32 = 0x74EE2;
     pub const CHAIN_B: u32 = 0x74F22;
     pub const LEVEL_DELAY: u32 = 0x74B82;
+    pub const LEVEL_DELAY_T2: u32 = 0x74BA2;
     pub const ROCKS: u32 = 0x37ECA;
 }
 
@@ -29,6 +30,7 @@ impl Game {
     /// 0x36C7A: the state routine of `+$06`.
     pub(super) fn c4_state(&mut self, e: &mut Enemy, h: Handle) {
         match e.b.act {
+            0x06 if Self::c4_is_t2(e) => self.c91_wait(e, h),
             0x02 => {
                 // 0x36F6A
                 let w = e.m.b(WAIT);
@@ -206,7 +208,8 @@ impl Game {
             e.m.sw(o::TIMER, 0x3C);
             self.enemy_set_speed(&mut e.b, 5);
             e.m.sb(o::BUSY, 0);
-            let (xc, _, _, _) = self.c4_classes(e);
+            // Tyrog 2 (0x67586) takes the class of 0x3293C.
+            let xc = if Self::c4_is_t2(e) { self.lib_distance_class(e).0 } else { self.c4_classes(e).0 };
             e.m.sb(o::XCLASS, xc as u8);
             let st = if e.m.b(o::PHASE) & 1 != 0 { 0x2C } else { 0x2E };
             return self.c4_crouch(e, 0x4D, st, 0x14);
@@ -215,7 +218,7 @@ impl Game {
         self.enemy_set_speed(&mut e.b, 5);
         let (xc, _) = self.lib_distance_class(e); // 0x3293C
         e.m.sb(o::XCLASS, xc as u8);
-        let action = self.boss_action_pick(e, BossAi::Tyrog);
+        let action = self.boss_action_pick(e, Self::c4_ai(e));
         match action & 7 {
             0 | 1 => self.c4_claw(e),
             2 => self.c4_crouch(e, 0x4D, 0x32, 0x14), // 0x385F2
@@ -312,7 +315,10 @@ impl Game {
 
     /// 0x37A10: the sidestep (state 4): aim 0x30 beside the target (0x32A88), face, in the air; the sideways and depth steps from the tables
     /// 0x74BE2 and 0x74C62 by the classes of 0x329B8 (with the registers it leaves), vy 0x400, gravity -0x60, animation 0x15.
-    fn c4_sidestep_start(&mut self, e: &mut Enemy) {
+    pub(super) fn c4_sidestep_start(&mut self, e: &mut Enemy) {
+        if Self::c4_is_t2(e) {
+            return self.c91_sidestep_start(e);
+        }
         e.m.sb(o::OLD_DIR, e.b.dir);
         self.lib_aim_beside_target(e, 0x30);
         self.lib_face_target(e);
@@ -471,7 +477,7 @@ impl Game {
     /// `+$AC` 0xA, the state, in the air, `+$CC`; the X and Z speeds are the distances / 0x2800 (counted, +1 when the count has bit 7), vy 0x380,
     /// gravity -0x40, animation 0x15. Action 6 jumps into action 3's loops after its first step (`bpl.w 0x38A2A`), so its own face call at
     /// 0x38B7C is never reached.
-    fn c4_hop(&mut self, e: &mut Enemy, _h: Handle, state: u8, side: i32, repeat: u16) {
+    pub(super) fn c4_hop(&mut self, e: &mut Enemy, _h: Handle, state: u8, side: i32, repeat: u16) {
         e.m.sb(o::BUSY, 1);
         e.m.sw(o::TIMER, 0xA);
         e.b.act = state;
@@ -523,7 +529,7 @@ impl Game {
         } else if e.b.airborne == 0 {
             return match e.b.act {
                 0x2A => self.c4_blades_twice(e),
-                0x3C => self.c4_breath_start(e, h),
+                0x3C => self.c4_breath_start(e, h, 7),
                 _ => {
                     // 0x37D78
                     self.lib_face_target(e);
@@ -634,7 +640,7 @@ impl Game {
 
     /// 0x37E6E (action 3 at its landing): with a live target: the rocks count from 0x37ECA (unused here), attack 0x4F, busy, state 0x1E,
     /// `+$AC` 0x3C, face, aim (0x32A58), animation 7.
-    fn c4_breath_start(&mut self, e: &mut Enemy, h: Handle) {
+    pub(super) fn c4_breath_start(&mut self, e: &mut Enemy, h: Handle, anim: u16) {
         if self.lib_target(e).live != 1 {
             return self.c4_decide(e, h);
         }
@@ -646,7 +652,7 @@ impl Game {
         e.m.sw(o::TIMER, 0x3C);
         self.lib_face_target(e);
         self.lib_aim_at_target(e);
-        self.enemy_anim(&mut e.b, 7);
+        self.enemy_anim(&mut e.b, anim);
     }
 
     /// 0x3754E: the breath (state 0x1E): at the end the decision (0x38B8A); on frames with `+$2D` a fireball (class 26 variant 3) 0x24 behind
@@ -804,8 +810,8 @@ impl Game {
         let qx = dx >> 2;
         e.m.sl(o::QX, qx as u32);
         let mut vx = Self::c4_steps(dx.wrapping_sub(qx), 0x1E00);
-        if vx < 0x80 {
-            vx = 0x80;
+        if vx < 0x80 && !Self::c4_is_t2(e) {
+            vx = 0x80; // (not in Tyrog 2: 0x3731A, 0x384B6)
         }
         e.b.vx = vx;
         let dz = e.b.z.wrapping_sub(tgt.z);
@@ -837,8 +843,8 @@ impl Game {
             self.enemy_anim(&mut e.b, 0x19);
             e.m.sb(o::APEX, 1);
             let mut vx = Self::c4_steps(e.m.l(o::QX) as i32, 0xF00);
-            if vx < 0x80 {
-                vx = 0x80;
+            if vx < 0x80 && !Self::c4_is_t2(e) {
+                vx = 0x80; // (not in Tyrog 2: 0x3731A, 0x384B6)
             }
             e.b.vx = vx;
             e.b.vz = Self::c4_steps(e.m.l(o::QZ) as i32, 0xF00);
@@ -898,7 +904,8 @@ impl Game {
         if moved {
             // 0x36D76: the delay from 0x74B82 by level while `+$A3` is set.
             if e.m.b(o::RELOAD) != 0 {
-                let v = self.assets.enemy.t.u8(t::LEVEL_DELAY, self.w.level as u32);
+                let table = if Self::c4_is_t2(e) { t::LEVEL_DELAY_T2 } else { t::LEVEL_DELAY }; // 0x657A8
+                let v = self.assets.enemy.t.u8(table, self.w.level as u32);
                 e.m.sb(o::DELAY, v);
                 e.m.sb(o::RELOAD, 0);
             }
