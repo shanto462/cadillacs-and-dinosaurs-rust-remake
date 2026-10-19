@@ -704,7 +704,9 @@ impl Game {
 
     /// 0x18B9A
     fn player_respawn_reset(&mut self, i: usize) {
-        self.player_physics_reset(i); // 0x18C82 (also 0x162AE, palette: not ported)
+        // 0x18C82: jsr 0x162AE first (the HUD blocks and scores; its palette call 0x101E6 is not ported), then the reset
+        self.hud_redraw();
+        self.player_physics_reset(i); // 0x18C88
         {
             let p = &mut self.players[i];
             p.respawn_t = 0x168;
