@@ -121,6 +121,15 @@ mod b5;
 mod b6;
 #[path = "prop/b10.rs"]
 mod b10;
+// Episode 5 events (M7-25): fire palettes B62, cliff no-op B48, wall burst B49, decorative rifle B70.
+#[path = "prop/b48.rs"]
+mod b48;
+#[path = "prop/b49.rs"]
+mod b49;
+#[path = "prop/b62.rs"]
+mod b62;
+#[path = "prop/b70.rs"]
+mod b70;
 #[path = "prop/b57.rs"]
 mod b57;
 // Pool B class 1 (M3-19): chain-link fence / gate (0x75238).
@@ -258,17 +267,21 @@ impl Game {
                 38 => self.prop_b38(&mut p, i),
                 43 => self.prop_b43(&mut p, i),
                 47 => self.prop_b47(&mut p, i),
+                48 => self.prop_b48(&mut p, i),
+                49 => self.prop_b49(&mut p, i),
                 50 => self.prop_b50(&mut p, h, i),
                 53 => self.prop_b53(&mut p, i),
                 52 => self.prop_b52(&mut p, i),
                 54 => self.prop_b54(&mut p, i),
                 61 => self.prop_b61(&mut p, i),
+                62 => self.prop_b62(&mut p, i),
                 63 => self.prop_b63(&mut p, i),
                 76 => self.prop_b76(&mut p, i),
                 66 => self.prop_class66(&mut p, i),
                 67 => self.prop_class67(&mut p, i),
                 68 => self.prop_class68(&mut p, i),
                 69 => self.prop_debug_object(&mut p, i),
+                70 => self.prop_b70(&mut p, h, i),
                 72 => self.prop_class72(&mut p, i),
                 73 => self.prop_bird_spawner(&mut p, i),
                 74 => self.prop_class74(&mut p, i),
