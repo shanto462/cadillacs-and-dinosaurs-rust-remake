@@ -369,11 +369,6 @@ impl Game {
         self.hud.ring_w[ring] = w.wrapping_add(0x10);
     }
 
-    fn hud_msg_of(&self, kind: u8, e: Handle, w6: u16) -> Msg {
-        let b = self.body(e);
-        [((kind as u16) << 8) | b.id as u16, b.hp_bar, b.hp_prev, w6, 0x00FF, e, 0, 0]
-    }
-
     /// 0x16B18: enemy `e` was hit by its last attacker (+$68); if that is a player (other than
     /// `e`), queue `kind` (0 enemy hit, 1 follow while grabbed, 2 player hit) in its HUD.
     pub fn hud_hit(&mut self, e: Handle, kind: u8) {
@@ -395,7 +390,11 @@ impl Game {
         if (who as i8) < 0 || who > 2 {
             return;
         }
-        let m = self.hud_msg_of(kind, e, self.body(e).hp);
+        // 0x16B3E: the same message as `enemy_hud_hit` (the words 6 and 7 of the slot are not written).
+        let b = self.body(e);
+        let w = self.hud.ring_w[who as usize];
+        let old = self.hud.rings[who as usize][(w >> 4) as usize];
+        let m = [((kind as u16) << 8) | b.id as u16, b.hp_bar, b.hp_prev, b.hp, 0xFFFF, e, old[6], old[7]];
         self.hud_ring_push(who as usize, m);
     }
 
@@ -412,7 +411,9 @@ impl Game {
         if who > 2 {
             return;
         }
-        let m = [(3u16 << 8) | b.id as u16, b.hp_bar, b.hp_prev, b.hp, b.var26, 0x00FF, item, 0];
+        // The word 5 is 0xFFFF and the word 7 of the slot is not written (the recording ep2_3p, frame 8133).
+        let old = self.hud.rings[who as usize][(self.hud.ring_w[who as usize] >> 4) as usize];
+        let m = [(3u16 << 8) | b.id as u16, b.hp_bar, b.hp_prev, b.hp, b.var26, 0xFFFF, item, old[7]];
         if b.id == 2 {
             self.body_mut(item).hp_bar = 0x64;
         }
@@ -430,7 +431,9 @@ impl Game {
         if who > 2 {
             return;
         }
-        let m = [(4u16 << 8) | b.id as u16, b.hp_bar, b.hp_prev, b.var26, 0x00FF, item, 0, 0];
+        // The word 4 is 0xFFFF and the words 6 and 7 of the slot are not written (the recording ep2_3p, frame 2458).
+        let old = self.hud.rings[who as usize][(self.hud.ring_w[who as usize] >> 4) as usize];
+        let m = [(4u16 << 8) | b.id as u16, b.hp_bar, b.hp_prev, b.var26, 0xFFFF, item, old[6], old[7]];
         self.hud_ring_push(who as usize, m);
     }
 

@@ -167,7 +167,8 @@ impl Game {
             let p = ab.partner;
             if p != 0 { self.body_mut(p).hitstop = rec.hit_stop; }
         }
-        if rec.sound != 0 { self.snd_hit(rec.sound, self.body(a).xi(), self.body(a).facing); }
+        // 0x11C0A: a6 holds the table address 0x11CC4 here (0x11BEC), so 0x962A reads the byte 0x11CE8 as the facing: 0.
+        if rec.sound != 0 { self.snd_hit(rec.sound, self.body(a).xi(), 0); }
         self.enemy_hit_score(ab.who, rec.score);
         self.spawn_hit_spark(a, d, ha, hb, rec.spark);
         if hero && counter {
@@ -882,6 +883,24 @@ impl Game {
         }
     }
 
+    /// 0x606E (also called by the player states, `player_splash_check`): a body that falls into water (+$53 positive, in the air, rising speed
+    /// negative, height below 0x20) that has not splashed yet (+$83) and shows no splash (+$25 bit 5) makes the splash effect (pool C class 4) at its X and
+    /// depth, sets +$83 and requests the sound 0x9AF4 (the enemy branch: +$82 is set).
+    pub(super) fn enemy_splash_check(&mut self, e: &mut Enemy, h: Handle) {
+        let b = &e.b;
+        if e.m.b(B83) != 0 || b.draw_flags & 0x20 != 0 || (b.wading as i8) <= 0 || b.airborne == 0 {
+            return;
+        }
+        if b.vy >= 0 || b.yi() >= 0x20 {
+            return;
+        }
+        let (x, z, class, facing) = (b.xi(), b.zi(), b.k20, b.facing);
+        if self.fx_spawn_water_splash_at(h, x, z, class) {
+            e.m.sb(B83, 1);
+            self.snd_splash_object(x, facing);
+        }
+    }
+
     /// 0x2A6C2 (type 4: anim 2, launch 0x2CBB0) / 0x2A84C (type 6: anim 3, launch 0x2CBC0).
     fn enemy_knockdown(&mut self, e: &mut Enemy, h: Handle, ty: u8) {
         e.b.act = ty;
@@ -907,7 +926,7 @@ impl Game {
                 e.b.step += 2;
             }
             2 => {
-                // 0x606E water splash: effects port.
+                self.enemy_splash_check(e, h); // 0x2A784 / 0x2A90E: jsr 0x606E
                 self.combat.push(0x6AC2, h);
                 e.b.motion();
                 self.enemy_screen_bounce(e);
@@ -1030,6 +1049,7 @@ impl Game {
             return;
         }
         self.combat.push(0x6B30, h); // 0x4BB0
+        self.enemy_splash_check(e, h); // 0x2AB00: jsr 0x606E
         self.combat.push(0x6AC2, h);
         e.b.motion();
         self.enemy_screen_bounce(e);
@@ -1138,6 +1158,7 @@ impl Game {
     }
 
     fn enemy_burn_fly(&mut self, e: &mut Enemy, h: Handle) {
+        self.enemy_splash_check(e, h); // 0x2AD1A: jsr 0x606E
         self.combat.push(0x6AC2, h);
         e.b.motion();
         self.enemy_screen_bounce(e);

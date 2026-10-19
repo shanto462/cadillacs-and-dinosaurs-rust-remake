@@ -188,10 +188,19 @@ impl Game {
             0x986C => (if facing_right { 4 } else { 3 }) << 16 | 0x2000,
             0x98CC => (if facing_right { 6 } else { 5 }) << 16 | 0x600,
             0x992C => 7 << 16,
+            0x9AF4 => (if facing_right { 6 } else { 5 }) << 16 | 0x1200, // moveq #5 / #6,d1 ; swap ; move.w #$1200,d1
             _ => 0,
         };
         let pan = self.snd_pan_x(x) as u32;
         self.sound_ex(code as u16, hi | pan, d2);
+    }
+
+    /// 0x9AF4 for an object that is not a hero (+$82 set: an enemy): the splash of 0x606E. Code 0xEF, or 0xF0 when bit 4 of G.$43A was clear (`bchg`, the
+    /// player voices flip the same bit), d1 = (5, or 6 when +$24 is nonzero) << 16 | 0x1200 | the pan byte of its X, d2 = 0xC41240.
+    pub fn snd_splash_object(&mut self, x: i16, facing: u8) {
+        let code = if self.snd_toggle(4) { 0xEF } else { 0xF0 };
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(code, ((if facing != 0 { 6 } else { 5 }) << 16) | 0x1200 | pan, 0x00C4_1240);
     }
 
     /// 0x9796 (knockdown / landing thud of players and enemies): 0x72 / 0xF8, toggle bit 3. The code

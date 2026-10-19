@@ -167,6 +167,7 @@ def main():
     ap.add_argument("--first", type=int, default=40, help="fields listed for the first differing frame")
     ap.add_argument("--field", help="print this field (key pattern) every frame it differs")
     ap.add_argument("--snd-table", action="store_true", help="per sound code: MAME (d1, d2) and port (d1, d2) counts (M4-13)")
+    ap.add_argument("--frame-list", action="store_true", help="print every differing frame with its number of differing items (M6-17)")
     ap.add_argument("--at", type=int, action="append", default=[], help="list every difference at this frame (repeatable)")
     ap.add_argument("--rom-image", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "out", "dino_68k.bin"),
                     help="68000 program image, only used to print handler addresses (optional)")
@@ -208,6 +209,8 @@ def main():
     video = {k: [0, None, None] for k in ("scroll1", "scroll2", "scroll3", "palette", "rowscroll", "sprites", "sounds")}
     changed = np.zeros(0x10000, dtype=bool)
     lag_frames = []
+    snd_arg_frames = []  # --frame-list: frame:code of the sound requests whose d1 / d2 differ
+    diff_frame_counts = {}  # --frame-list: frame -> number of differing items
     prev_ram = None
     frames = 0
     watch = []
@@ -384,6 +387,9 @@ def main():
             if cm == cp and cpd:
                 sound_args[2] += len(cm)
                 md = [(d1, d2) for _, d1, d2 in sounds_m]
+                if os.environ.get('SNDALL'):
+                    for c, m_, p_ in zip(cm, md, cpd):
+                        if c in [int(x, 16) for x in os.environ['SNDALL'].split(',')]: print(f'SND {f} {c:X} MAME {m_[0]:X}/{m_[1]:X} port {p_[0]:X}/{p_[1]:X}')
                 if args.snd_table:
                     for c, m, pp in zip(cm, md, cpd):
                         e = snd_tab.setdefault(c, {"m": defaultdict(int), "p": defaultdict(int)})
@@ -395,6 +401,8 @@ def main():
                         sound_args[1] = (f, "MAME " + " ".join(f"{c:X}:{a:X}/{b:X}" for c, (a, b) in zip(cm, md)) + " port " + " ".join(f"{c:X}:{a:X}/{b:X}" for c, (a, b) in zip(cp, cpd)))
                     for c, (a, b), (pa, pb) in zip(cm, md, cpd):
                         if (a, b) != (pa, pb):
+                            if args.frame_list:
+                                snd_arg_frames.append(f"{f}:{c:X}({a:X}/{b:X}|{pa:X}/{pb:X})")
                             sound_codes.setdefault(c, [0, 0])
                             sound_codes[c][0] += 1
                             sound_codes[c][1] = f"MAME {a:X}/{b:X} port {pa:X}/{pb:X}"
@@ -421,11 +429,23 @@ def main():
 
         if f in args.at:
             at_lists[f] = sorted(frame_diffs)
+        if frame_diffs and args.frame_list:
+            diff_frame_counts[f] = len(frame_diffs)
         if frame_diffs and first_frame is None:
             first_frame = f
             first_list = sorted(frame_diffs)
 
     # ---------------------------------------------------------------- report
+    if args.frame_list:
+        runs = []
+        for fr in sorted(diff_frame_counts):
+            if runs and fr == runs[-1][1] + 1:
+                runs[-1][1] = fr
+                runs[-1][2] += diff_frame_counts[fr]
+            else:
+                runs.append([fr, fr, diff_frame_counts[fr]])
+        print("SOUND ARGUMENT DIFFERENCES (frame:code): " + " ".join(snd_arg_frames))
+        print("DIFFERING FRAMES (first-last: items): " + ", ".join(f"{a}-{b}: {n}" if a != b else f"{a}: {n}" for a, b, n in runs))
     print(f"MAME  {args.mame}: sync vblank {tm.header.get('sync_vblank')}, input {os.path.basename(tm.header.get('input', ''))}")
     print(f"port  {args.port}")
     for w in hdr.get("warnings", []):

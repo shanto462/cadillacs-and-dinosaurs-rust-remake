@@ -67,6 +67,8 @@ pub struct Player {
     /// +$A7 facing last frame, +$AB frames since the facing changed.
     pub last_facing: u8,
     pub facing_age: u8,
+    /// +$97 frames until the next water ripple (0x60E2, Episode 2 area 1).
+    pub ripple_t: u8,
     /// +$A9 grab push-away timer / run release grace.
     pub ba9: u8,
     /// +$AA frames attack held (stops counting when bit 7 is set).
@@ -359,6 +361,25 @@ impl Game {
     fn player_height(&self, i: usize) -> i16 {
         let b = &self.players[i].b;
         b.yi().wrapping_sub(b.floor).wrapping_sub(b.floor2)
+    }
+
+    /// 0x60E2 (called from the walk, the gun walk and the run in Episode 2 area 1: G.$4D9 and G.$786 are 1): a wading hero on the ground at height 0x18 makes a
+    /// ripple (pool C class 26) every 8th frame (+$97 counts 7 .. 0). G.$4 is 0 in play, so the ripple stands 0x10 to the left of the hero.
+    pub(super) fn player_water_ripple(&mut self, i: usize) {
+        if self.w.stage != 1 || self.cam.s2.area != 1 {
+            return;
+        }
+        let p = &mut self.players[i];
+        if (p.b.wading as i8) <= 0 || p.b.airborne != 0 || p.b.yi() != 0x18 {
+            return;
+        }
+        let (t, borrow) = p.ripple_t.overflowing_sub(1);
+        p.ripple_t = t;
+        if !borrow {
+            return;
+        }
+        p.ripple_t = 7;
+        self.fx_spawn_water_ripple(Game::player_handle(i), 0);
     }
 
     /// 0x606E: water splash when falling into water (effect TODO). Only sets the done flag.
@@ -688,7 +709,8 @@ impl Game {
 
     /// 0x18B9A
     fn player_respawn_reset(&mut self, i: usize) {
-        self.player_physics_reset(i); // 0x18C82 (also 0x162AE, palette: not ported)
+        self.hud_redraw(); // 0x18C82: jsr 0x162AE (the HUD blocks and scores of the present players: the new life count), then 0x18C88
+        self.player_physics_reset(i);
         {
             let p = &mut self.players[i];
             p.respawn_t = 0x168;
@@ -1185,7 +1207,8 @@ impl Game {
         {
             let p = &mut self.players[i];
             if p.b.wading != 0 && (p.b.yi() as u16) < 0x20 {
-                // stage 1 area 1 hook 0x60E2 (water ripples): effects TODO.
+                self.player_water_ripple(i); // 0x19304 (and 0x1C28): stage 1 area 1 hook 0x60E2
+                let p = &mut self.players[i];
                 let t = p.b80().wrapping_sub(1);
                 p.set_b80(t);
                 if t == 0xFF {
@@ -1902,7 +1925,7 @@ impl Game {
                         p.set_b80(0x14);
                         self.player_sfx(i, 0x9B60);
                     }
-                    // stage 1 area 1: 0x60E2 water ripples (effects TODO)
+                    self.player_water_ripple(i); // 0x1A05A (and 0x2934): stage 1 area 1 hook 0x60E2
                 }
             } else {
                 let t = p.b80().wrapping_sub(1);
@@ -2645,7 +2668,8 @@ impl Game {
             }
             self.player_panim(i, 2, anim);
             self.player_sfx(i, 0x98CC);
-            // 0x16B18(2) face icon (not ported), then 0x16446 HP bar: HUD port reads +$6C / +$6E.
+            // 0x1C0BA: 0x16B18 with d0 = 2 (the HUD message of the hero hit, for the hero who hit him), then 0x16446 HP bar.
+            self.hud_hit(Game::player_handle(i), 2);
             self.hud_life_bar(i);
             let p = &mut self.players[i];
             p.action = 0x20;
@@ -2666,7 +2690,8 @@ impl Game {
             }
             self.player_panim(i, 2, 6);
             self.player_sfx(i, 0x98CC);
-            // 0x1CBC2 / 0x1FD06: 0x16446 HP bar after the face icon
+            // 0x1CBBC / 0x1FD00: 0x16B18 (2), then 0x16446 HP bar (0x1CBC2 / 0x1FD06)
+            self.hud_hit(Game::player_handle(i), 2);
             self.hud_life_bar(i);
             let p = &mut self.players[i];
             p.action = 0x20;
@@ -2815,7 +2840,8 @@ impl Game {
                     self.players[i].slow = 2;
                     self.player_sfx(i, 0x986C);
                 }
-                // 0x1C266 / 0x1C446 (copies 0x1F3E0 / 0x1F5BC): 0x16446 HP bar after the face icon, before the state set-up
+                // 0x1C260 / 0x1C440 (copies 0x1F3DA / 0x1F5B6): 0x16B18 (2), then 0x16446 HP bar, before the state set-up
+                self.hud_hit(Game::player_handle(i), 2);
                 self.hud_life_bar(i);
                 self.player_kd_common(i);
                 self.player_kd_air1(i, kind);
@@ -2944,7 +2970,8 @@ impl Game {
                     p.slow = 2;
                     self.player_sfx(i, 0x986C);
                 }
-                // 0x1CC90 / 0x1FDD4: 0x16446 HP bar, then the state set-up
+                // 0x1CC8A / 0x1FDCE: 0x16B18 (2), then 0x16446 HP bar (0x1CC90 / 0x1FDD4), then the state set-up
+                self.hud_hit(Game::player_handle(i), 2);
                 self.hud_life_bar(i);
                 self.player_kd_common(i);
                 self.player_kb_air1(i);
@@ -3084,8 +3111,9 @@ impl Game {
         self.player_pmove(i);
         self.players[i].b.step += 2;
         self.player_pstep(i);
-        // 0x1C696 / 0x1F808: 0x16446 HP bar after the animation tick, before the sound 0x9796
+        // 0x1C696 / 0x1F808: 0x16446 HP bar after the animation tick, then 0x16B18 (2) (0x1C69E / 0x1F810) and the sound 0x9796
         self.hud_life_bar(i);
+        self.hud_hit(Game::player_handle(i), 2);
         self.player_sfx(i, 0x9796);
     }
 
@@ -3214,7 +3242,8 @@ impl Game {
                 p.b.vz = 0;
                 p.b.az = 0;
                 self.player_sfx(i, 0x98CC);
-                // 0x1C9B4 / 0x1CB16 (copies 0x1FB1E / 0x1FC5A): 0x16446 HP bar after the face icon
+                // 0x1C9AE / 0x1CB10 (copies 0x1FB18 / 0x1FC54): 0x16B18 (2), then 0x16446 HP bar
+                self.hud_hit(Game::player_handle(i), 2);
                 self.hud_life_bar(i);
                 let p = &mut self.players[i];
                 p.action = 0x20;

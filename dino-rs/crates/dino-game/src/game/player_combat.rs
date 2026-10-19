@@ -233,7 +233,8 @@ impl Game {
                 vp.b.hitstop = rec.hit_stop;
                 self.players[ai].b.hitstop = rec.hit_stop;
                 if rec.sound != 0 {
-                    let (ax, vf) = (self.players[ai].b.xi(), self.players[ai].b.facing);
+                    // 0x107D8: the same stale a6 as in the hero hit pass 0x10A94: +$24 reads 0 (mode 3).
+                    let (ax, vf) = (self.players[ai].b.xi(), 0u8);
                     self.snd_hit(rec.sound, ax, vf); // 0x962A
                 }
                 self.players[vi].b.b9a = rec.b7;
@@ -407,7 +408,9 @@ impl Game {
             self.enemies.slots[ei].m.sb(super::enemy::off::WAIT, 0);
         }
         if rec.sound != 0 {
-            let (ax, vf) = (self.players[i].b.xi(), self.body(e).facing); // a6 = a3 = the enemy (movea.l a3,a6 at 0x10A12)
+            // 0x10A94: a6 is not set by the pass (0x10546 keeps the a6 of the caller; only the guard path 0x10A12 loads it): the byte +$24 it reads is 0
+            // in every recording (Episode 2 to 3 solo and 3 players), so the mode of the sound is 3.
+            let (ax, vf) = (self.players[i].b.xi(), 0u8);
             self.snd_hit(rec.sound, ax, vf); // 0x962A
         }
         self.player_add_score(i, rec.score);
