@@ -422,7 +422,7 @@ impl Game {
     /// 0x32762 (`with_class0`) and 0x327CA: a floor item is around when a pool E object of the class 0 (only 0x32762), 2, 4, 5 or 9
     /// (`+$20` = 0, 8, 0x10, 0x14, 0x24: weapons, food, containers, treasure) is in the mode 0 to 2 and its sub is 0 or 0xC (lying around, not
     /// being picked up or broken).
-    fn script_floor_items(&self, with_class0: bool) -> bool {
+    pub(crate) fn script_floor_items(&self, with_class0: bool) -> bool {
         self.items.slots.iter().any(|it| {
             let b = &it.b;
             b.live != 0

@@ -48,6 +48,8 @@ mod class18;
 mod class29;
 // The Butcher (M6-09): the starter (5), the carcass and helpers (51, 53, 58), the fighter (61).
 mod class5;
+mod class6;
+mod class6_ai;
 mod class51_58;
 mod class52;
 mod class61;
@@ -206,6 +208,7 @@ impl Game {
             let h = self.enemies.handle(i);
             let mut e = std::mem::take(&mut self.enemies.slots[i]);
             match e.b.k20 / 4 {
+                0 => self.enemy_class0_part(&mut e, h, i),
                 2 => self.enemy_class2(&mut e, h),
                 10 => self.enemy_class10(&mut e, h),
                 11 => self.enemy_class11(&mut e, h),
@@ -216,6 +219,7 @@ impl Game {
                 16 => self.enemy_class16(&mut e, h),
                 17 => self.enemy_class17(&mut e, h),
                 5 => self.enemy_class5(&mut e, h),
+                6 => self.enemy_class6(&mut e, h, i),
                 18 => self.enemy_class18(&mut e, h, i),
                 20 => self.enemy_class20(&mut e, h),
                 27 => self.enemy_class27(&mut e, h),
@@ -1814,6 +1818,7 @@ impl Game {
             0x18 | 0x50 => self.c14_408e8(e),       // 0x408E8 class 14
             0x08 | 0x48 | 0x4C => self.enemy_c13_3e504(e), // 0x3E504 the poachers (class 13)
             0x3C => self.c61_decide(e, h),          // 0x58D40 the Butcher (class 61)
+            0x40 => self.enemy_c6_reset_ai(e),      // 0x396C2 Bludge (class 6)
             _ => e.b.set_state(0x0200_0000),
         }
     }

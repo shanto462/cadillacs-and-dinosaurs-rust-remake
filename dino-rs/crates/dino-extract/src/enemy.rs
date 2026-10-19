@@ -393,6 +393,22 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x6143C, 160, "Zeke attack choice table (0x606D4)"),
     (0x614DC, 40, "Zeke approach table (0x606D4)"),
     (0x61504, 40, "Zeke physics tables (0x606D4)"),
+    // Bludge class 6 (0x39272, M7-07) and Part 0 (0x33334)
+    (0x3957E, 64, "class 6 entrance 4 crouch wait timer table (0x3955A)"),
+    (0x3A59C, 54, "class 6 target slot candidate offsets table (0x3A56A)"),
+    (0x3A634, 56, "class 6 target direction offsets table (0x3A5F2)"),
+    (0x3A7F8, 192, "class 6 approach slot circle table 1 (0x3A7B2)"),
+    (0x3A8B8, 192, "class 6 approach slot circle table 2 (0x3A7B2)"),
+    (0x3AA2E, 48, "class 6 approach distance steps table (0x3A9FC)"),
+    (0x3AA9E, 24, "class 6 slot step offsets table (0x3AA6C)"),
+    (0x3AC5A, 64, "class 6 hop move choice table (0x3AC44)"),
+    (0x3ACC8, 64, "class 6 speed table by level (0x3ACB2)"),
+    (0x3AD52, 32, "class 6 taunt / decision table (0x3AD3E)"),
+    (0x3ADA4, 16, "class 6 attack choice gate table (0x3AD9E)"),
+    (0x3ADE0, 224, "class 6 attack choice distribution table (0x3ADB4)"),
+    (0x3AFF2, 8, "class 6 item eat chance by aggression (0x3AFA4)"),
+    (0x3375C, 142, "class 0 part 0 template data (0x3356A)"),
+    (0x337EA, 12, "class 0 part 0 box table (0x333A4)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {
