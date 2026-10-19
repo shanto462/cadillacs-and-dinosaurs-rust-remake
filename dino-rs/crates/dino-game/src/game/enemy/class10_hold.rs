@@ -14,7 +14,14 @@ impl Game {
         match e.m.w(f::HOLD_STATE) {
             0 => self.c10_hold0(e, h),
             2 => self.c10_claim(e, h),
-            v => panic!("class 10 hold machine {v:#x}"),
+            // The table 0x3C61A has only the entries 0 and 2. Any other `+$AC` (a stale word of the slot's previous object, e.g. 3 from a
+            // class 20 thug, when a kill-all of the wave timer meets a drop entrance in the same frame) makes the original read the table
+            // at that offset: an odd one is an address error (vector 3, 0xD0: the register dump screen, the game stops), an even one jumps
+            // into code. The port leaves the object idle for that update instead of stopping the game (D5 errata, class 10).
+            v => {
+                static ONCE: std::sync::Once = std::sync::Once::new();
+                ONCE.call_once(|| eprintln!("class 10 hold machine {v:#x}: the original stops here (address error 0xD0); the object stays idle"));
+            }
         }
     }
 
