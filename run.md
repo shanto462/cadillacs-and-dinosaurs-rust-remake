@@ -69,13 +69,12 @@ Jump points. The boss points are the snapshot positions just before each fight. 
 | ep1a1 | Episode 1 area 1: the building | 1 | 1 | 0x0000 |
 | ep1a2 | Episode 1 area 2: 47th street | 1 | 2 | 0x0000 |
 | vice | Episode 1: Vice T. | 1 | 2 | 0x00A0 |
-| walther | Episode 1: Walther | 1 | 2 | 0x01B0 |
 | ep2 | Episode 2 start: swamp forest | 2 | 0 | 0x0000 |
 | ep2a1 | Episode 2 area 1: forest | 2 | 1 | 0x0000 |
 | ep2a2 | Episode 2 area 2: Butcher yard | 2 | 2 | 0x0000 |
 | butcher | Episode 2: Butcher | 2 | 2 | 0x01A0 |
 | ep3 | Episode 3 start: hell road | 3 | 0 | 0x0000 |
-| car | Episode 3: Cadillac drive | 3 | 0 | 0x0300 |
+| car | Episode 3: Cadillac drive | 3 | 0 | 0x0140 |
 | hogg | Episode 3: Hogg | 3 | 0 | 0x2D00 |
 | ep4 | Episode 4 start: Jack's garage | 4 | 0 | 0x0000 |
 | ep4a1 | Episode 4 area 1: inside the garage | 4 | 1 | 0x0000 |
@@ -97,7 +96,7 @@ Jump points. The boss points are the snapshot positions just before each fight. 
 | ep8a1 | Episode 8 area 1 | 8 | 1 | 0x0000 |
 | ep8a2 | Episode 8 area 2 | 8 | 2 | 0x0000 |
 | ep8a3 | Episode 8 area 3 | 8 | 3 | 0x0000 |
-| fessenden | Episode 8: Fessenden | 8 | 3 | 0x10A0 |
+| fessenden | Episode 8: Fessenden | 8 | 3 | 0x0F30 |
 
 ## 4. Headless runs (no window)
 

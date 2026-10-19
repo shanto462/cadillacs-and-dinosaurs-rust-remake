@@ -20,13 +20,12 @@ pub const JUMPS: &[Jump] = &[
     Jump { name: "ep1a1", title: "Episode 1 area 1: the building", episode: 1, area: 1, camx: 0, note: "hall with the armour statues" },
     Jump { name: "ep1a2", title: "Episode 1 area 2: 47th street", episode: 1, area: 2, camx: 0, note: "street with the ruined wall" },
     Jump { name: "vice", title: "Episode 1: Vice T.", episode: 1, area: 2, camx: 0xA0, note: "just before the Vice T. fight (BS-V1 snapshot)" },
-    Jump { name: "walther", title: "Episode 1: Walther", episode: 1, area: 2, camx: 0x1B0, note: "end chain of area 2, Walther" },
     Jump { name: "ep2", title: "Episode 2 start: swamp forest", episode: 2, area: 0, camx: 0, note: "forest edge, the Cadillac at the left" },
     Jump { name: "ep2a1", title: "Episode 2 area 1: forest", episode: 2, area: 1, camx: 0, note: "forest sub-area" },
     Jump { name: "ep2a2", title: "Episode 2 area 2: Butcher yard", episode: 2, area: 2, camx: 0, note: "dusk, tyre pile and crates" },
     Jump { name: "butcher", title: "Episode 2: Butcher", episode: 2, area: 2, camx: 0x1A0, note: "just before the Butcher fight (BS-B1 snapshot)" },
     Jump { name: "ep3", title: "Episode 3 start: hell road", episode: 3, area: 0, camx: 0, note: "open desert, the only area" },
-    Jump { name: "car", title: "Episode 3: Cadillac drive", episode: 3, area: 0, camx: 0x300, note: "the car drive (BS-C1 snapshot)" },
+    Jump { name: "car", title: "Episode 3: Cadillac drive", episode: 3, area: 0, camx: 0x0140, note: "just before the car arrives (ep3 natural recording: car alive at camera X 0x1A1)" },
     Jump { name: "hogg", title: "Episode 3: Hogg", episode: 3, area: 0, camx: 0x2D00, note: "just before the Hogg fight on foot (BS-H1 snapshot)" },
     Jump { name: "ep4", title: "Episode 4 start: Jack's garage", episode: 4, area: 0, camx: 0, note: "rubble and sea at night" },
     Jump { name: "ep4a1", title: "Episode 4 area 1: inside the garage", episode: 4, area: 1, camx: 0, note: "tyres and pipes" },
@@ -48,7 +47,7 @@ pub const JUMPS: &[Jump] = &[
     Jump { name: "ep8a1", title: "Episode 8 area 1", episode: 8, area: 1, camx: 0, note: "area 1 start" },
     Jump { name: "ep8a2", title: "Episode 8 area 2", episode: 8, area: 2, camx: 0, note: "area 2 start" },
     Jump { name: "ep8a3", title: "Episode 8 area 3", episode: 8, area: 3, camx: 0, note: "area 3 start" },
-    Jump { name: "fessenden", title: "Episode 8: Fessenden", episode: 8, area: 3, camx: 0x10A0, note: "the Fessenden intro (BT-F94 snapshot)" },
+    Jump { name: "fessenden", title: "Episode 8: Fessenden", episode: 8, area: 3, camx: 0x0F30, note: "the Fessenden scene starts (ep8 natural recording: scripted from camera X 0xF36)" },
 ];
 
 /// The point with this name (lower case, as listed by `--list-jumps`).
