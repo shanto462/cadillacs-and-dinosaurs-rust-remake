@@ -3766,14 +3766,11 @@ impl Game {
         let fac = rd16(row + 4) as u8;
         let anim = rd16(row + 6);
         let p = &mut self.players[i];
+        // 0x1D512: `move.w $8(a0),$8(a6)` (and +$0C, +$10) copies the integer words only, the hero keeps his own fractions; then the
+        // offsets of the row are added (the X one negated for a facing holder).
         let x = eb.xi().wrapping_add(if eb.facing != 0 { dx.wrapping_neg() } else { dx });
-        // 0x1D512: `move.w $8(a0),$8(a6)` copies the integer words only, the hero keeps his own fractions.
-        Player::set_hi(&mut p.b.x, eb.xi());
-        Player::set_hi(&mut p.b.y, eb.yi());
-        Player::set_hi(&mut p.b.z, eb.zi());
         Player::set_hi(&mut p.b.x, x);
-        let y = eb.yi().wrapping_add(dy);
-        Player::set_hi(&mut p.b.y, y);
+        Player::set_hi(&mut p.b.y, eb.yi().wrapping_add(dy));
         Player::set_hi(&mut p.b.z, eb.zi());
         p.b.facing = if eb.facing != 0 { fac ^ 1 } else { fac };
         let r = p.b.reaction;
