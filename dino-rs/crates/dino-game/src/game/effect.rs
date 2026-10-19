@@ -1017,3 +1017,10 @@ mod tests {
         assert_eq!((b.frame, b.timer), (7, 9));
     }
 }
+
+impl Game {
+    /// 0x967C4: cross-area entry for the vent sparks.
+    pub(crate) fn fx_prop_muzzle(&mut self, pos: (i16, i16, i16), sel: u16, off: u32, dir: u8) {
+        self.fx_spawn_muzzle(pos, sel, off, dir);
+    }
+}

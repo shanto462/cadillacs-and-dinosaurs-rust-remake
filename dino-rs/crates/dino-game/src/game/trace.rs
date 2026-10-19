@@ -693,7 +693,7 @@ impl Prop {
             f.u32(0xAC, "b59_dest", &mut ac);
             self.m.sl(0xAC, ac);
         }
-        if f.all() || matches!(self.b.k20 / 4, 1 | 3 | 40) {
+        if f.all() || matches!(self.b.k20 / 4, 1 | 3 | 40 | 45) {
             f.u32(0x44, "box_table", &mut self.b.box_table);
             f.u8(0x48, "body_box", &mut self.b.body_box);
             f.u8(0x49, "attack_box", &mut self.b.attack_box);
@@ -720,6 +720,13 @@ impl Prop {
                 f.u8(off as u32, name, &mut v);
                 self.m.sb(off, v);
             }
+        }
+        if f.all() || self.b.k20 == 45 * 4 {
+            self.m.trace_list(f, &[(0xA7, 1, "vent_direction"), (0xA8, 2, "vent_length_timer"),
+                (0xAA, 1, "vent_pulse"), (0xAB, 1, "vent_period"), (0xAC, 2, "vent_increment"), (0xAE, 2, "vent_max")]);
+        }
+        if f.all() || self.b.k20 == 71 * 4 {
+            self.m.trace_list(f, &[(0x84, 2, "lair_timer"), (0x86, 4, "lair_phase"), (0x8A, 2, "lair_remaining")]);
         }
         if f.all() || self.b.k20 == 40 * 4 {
             let mut a7 = self.m.b(0xA7);
@@ -1113,8 +1120,8 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 /// `pool_c_update`, `pool_e_update`.
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
-    ("enemy", &[2, 5, 10, 13, 14, 15, 16, 17, 18, 20, 27, 29, 31, 32, 34, 41, 42, 43, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 63, 64, 65, 66, 70, 77, 81, 82, 90, 92, 93, 96, 97]),
-    ("prop", &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 39, 40, 41, 42, 43, 47, 48, 49, 50, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 66, 70, 72, 73, 74, 76, 80, 81, 82, 83, 84, 85, 87, 88, 96]),
+    ("enemy", &[2, 5, 10, 13, 14, 15, 16, 17, 18, 20, 27, 29, 31, 32, 34, 41, 42, 43, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 63, 64, 65, 66, 70, 77, 81, 82, 83, 90, 92, 93, 96, 97]),
+    ("prop", &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 39, 40, 41, 42, 43, 45, 47, 48, 49, 50, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 66, 70, 71, 72, 73, 74, 76, 80, 81, 82, 83, 84, 85, 87, 88, 96]),
     (
         "item",
         &[

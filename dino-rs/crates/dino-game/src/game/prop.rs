@@ -147,6 +147,10 @@ mod b3;
 // Pool B class 40 (M5-14): steam pipes (0x836A4).
 #[path = "prop/b40.rs"]
 mod b40;
+#[path = "prop/b45.rs"]
+mod b45;
+#[path = "prop/b71.rs"]
+mod b71;
 
 #[path = "prop/b50.rs"]
 mod b50;
@@ -278,6 +282,7 @@ impl Game {
                 32 => self.prop_class32(&mut p, i),
                 35 => self.prop_b35(&mut p, i),
                 40 => self.prop_b40(&mut p, h, i),
+                45 => self.prop_b45(&mut p, h, i),
                 42 => self.prop_b42(&mut p, i),
                 41 => self.prop_b41(&mut p, i),
                 36 => self.prop_b36(&mut p, i),
@@ -300,6 +305,7 @@ impl Game {
                 68 => self.prop_class68(&mut p, i),
                 69 => self.prop_debug_object(&mut p, i),
                 70 => self.prop_b70(&mut p, h, i),
+                71 => self.prop_b71(&mut p, i),
                 72 => self.prop_class72(&mut p, i),
                 73 => self.prop_bird_spawner(&mut p, i),
                 74 => self.prop_class74(&mut p, i),

@@ -64,6 +64,7 @@ mod class77;
 // Hazards (M6-29, M6-30): the barrel (65), the rock (66) and the biker (70).
 mod class65;
 mod class66;
+mod class83;
 mod class70;
 // The opening scene actors (M3-20): the Cadillac (16), the Episode 4 men (27) and leader (43).
 mod scene_actors;
@@ -255,6 +256,7 @@ impl Game {
                 61 => self.enemy_class61(&mut e, h, i),
                 65 => self.enemy_class65(&mut e, h, i),
                 66 => self.enemy_class66(&mut e, h, i),
+                83 => self.enemy_class83(&mut e, h, i),
                 69 => self.enemy_class69(&mut e, h),
                 70 => self.enemy_class70(&mut e, h, i),
                 81 => self.enemy_class81(&mut e, h),
