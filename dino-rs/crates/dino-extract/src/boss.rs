@@ -70,6 +70,9 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0xC6252, 0x2000, "Hogg car mode cell transitions"),
     (0xC861A, 0x40, "Hogg car mode cruise times"),
     (0xC865A, 0x40, "Hogg car mode re-aim times"),
+    // Hogg's bomb, class 42 (M6-25): the landing cell list by rand() & 15 (0x55EB0) and the nine landing offsets around the car (0x55EB6).
+    (0x55ED4, 0x20, "Hogg bomb landing cells"),
+    (0x55EF4, 0x24, "Hogg bomb landing offsets"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {
