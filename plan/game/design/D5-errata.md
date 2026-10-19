@@ -397,3 +397,9 @@ MAME wins over the design text; the design documents themselves are not edited.
 - D2b 5.2 "thug (name 9) at level 31 row value 58": the ROM row for name 9 at level 31 is 72 (D2b 5.3 agrees); 58 is name 0 (Ferris). The measured outputs [14, 14, 15, 13] and [10, 10, 10, 9] come out with name 0, so the probe probably hit another enemy than the text says. Open: one MAME probe with a thug at level 31.
 - D2b 5.2 "HP 20: HP factor 31": the factor for HP 16 to 23 is 27 (the words of 0x2C996); the stated outputs 5, 5, 5, 4 come out with 27.
 - D2b 5.3 the power table $C6 (0x2C9B6): row 1 has 26 set cells of 32 (the text says 25), row 2 has 25 (the text says 22).
+
+## Open checks from Desktop Haiku (2026-10-19)
+
+- The camera chase step test failed only in release with `if d < 0 { 8 } else if d > 0x14 { 0x14 } else { d.max(8) }` (a print showed d 21, step 21); the same logic as three explicit tests passes in both profiles. The two forms are equal for an i16, so the release result is not explained (a compiler issue is possible). Keep the explicit form; if a release-only difference shows up again, look here first.
+- The hit sound mode (bits 16..23 of d1 of 0x39 / 0x3A / 0x3B, helper 0x962A: mode 3, or 4 when +$24 of a6 is set) depends on a stale a6 in the attack pass 0x10DCC (a6 is not set there). MAME has mode 3 in most requests (the m610 Butcher runs only 3; c14c_mustapha and m600_bs_v3_v6_dmg also 4). Open: name the object behind a6 with a MAME watch (task 12 report, re/out/desk/dhaiku/report.md).
+- The hero's HP bar 0x16446: about 20 call sites in the player code (0x1C0C0 .. 0x1FDD4); the port has 3 of them (task 13). The rest is a follow-up task.
