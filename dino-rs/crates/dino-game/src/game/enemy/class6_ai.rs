@@ -41,7 +41,7 @@ impl Game {
     }
 
     /// 0x396DC: State 0 wait timer, check eat, fall into State 2.
-    fn enemy_c6_state_wait(&mut self, e: &mut Enemy, h: Handle) {
+    pub(super) fn enemy_c6_state_wait(&mut self, e: &mut Enemy, h: Handle) {
         let wait = e.m.b(0x7A);
         if wait != 0 {
             let next_w = wait.wrapping_sub(1);
@@ -106,7 +106,8 @@ impl Game {
         }
 
         // 0x39744: step check
-        if e.b.step == 0 {
+        let first = e.b.step == 0;
+        if first {
             // 0x3974C: init step 2
             e.b.set_state(0x0200_0202);
             e.m.sb(0x7D, 0);
@@ -118,25 +119,28 @@ impl Game {
         }
 
         // 0x39780: step 2 update
-        self.enemy_c6_step2_update(e, h);
+        self.enemy_c6_step2_update(e, h, first);
     }
 
-    /// 0x39780: update movement step 2.
-    fn enemy_c6_step2_update(&mut self, e: &mut Enemy, h: Handle) {
+    /// 0x39780: update movement step 2. `first` is the frame that chose the hop type (0x3977C, the table 0x397AC: the start of each type);
+    /// every later frame enters the type at its update (0x39780 -> 0x3978A, the table 0x397C2).
+    fn enemy_c6_step2_update(&mut self, e: &mut Enemy, h: Handle, first: bool) {
         match e.m.b(0xAB) {
-            0 => self.enemy_c6_hop_type0(e),
+            0 => self.enemy_c6_hop_type0(e, first),
             2 => self.enemy_c6_hop_type2(e, h),
             4 => self.enemy_c6_hop_type4(e, h),
             6 => self.enemy_c6_hop_type6(e, h),
-            _ => self.enemy_c6_hop_type0(e),
+            _ => self.enemy_c6_hop_type0(e, first),
         }
     }
 
-    /// 0x397F8: Hop Type 0 creep / walk on ground.
-    fn enemy_c6_hop_type0(&mut self, e: &mut Enemy) {
-        if e.m.b(0xAC) != e.m.b(0xAB) {
-            e.m.sb(0xAC, e.m.b(0xAB));
-            self.enemy_anim(&mut e.b, 0);
+    /// 0x397F8: Hop Type 0 creep / walk on ground. The start (0x397F8 .. 0x39816) runs in the first frame only: the animation 0 when +$AC (not
+    /// written here, 0xFF from 0x3975A) differs from the type, the speed by level, +$7D = 0, +$A0 = 0. The update (0x39818) runs every frame.
+    fn enemy_c6_hop_type0(&mut self, e: &mut Enemy, first: bool) {
+        if first {
+            if e.m.b(0xAC) != e.m.b(0xAB) {
+                self.enemy_anim(&mut e.b, 0);
+            }
             self.enemy_c6_set_speed_by_level(e);
             e.m.sb(0x7D, 0);
             e.m.sw(0xA0, 0);
@@ -150,9 +154,10 @@ impl Game {
             self.enemy_c6_steer_to_dest(e);
         }
 
-        let aa = e.m.b(0xAA).wrapping_sub(1);
+        // 0x39828: `subq.b #1,$AA ; bcs`: the counter is unsigned (0xF0 at the start), only a borrow ends the walk.
+        let (aa, borrow) = e.m.b(0xAA).overflowing_sub(1);
         e.m.sb(0xAA, aa);
-        if (aa as i8) < 0 || self.enemy_c6_arrived_at_slot(e) {
+        if borrow || self.enemy_c6_arrived_at_slot(e) {
             self.enemy_c6_advance_slot(e); // 0x3A7AA
             e.b.act = 2;
             e.b.step = 0; // loop back to 0x0200
@@ -178,7 +183,7 @@ impl Game {
                 self.enemy_c6_compute_dir_to_slot(e);
                 e.b.dir &= 0xFE;
                 let aa = e.m.b(0xAA).wrapping_sub(1);
-                e.m.sb(0xAA, if (aa as i8) < 0 { 0 } else { aa });
+                e.m.sb(0xAA, if aa == 0xFF { 0 } else { aa }); // bcc / clr.b: a borrow (AA was 0) clears it
                 self.enemy_c6_hop_flight(e, 2);
             }
             2 => self.enemy_c6_hop_flight(e, 2),
@@ -205,7 +210,7 @@ impl Game {
                 self.enemy_c6_compute_dir_to_slot(e);
                 e.b.dir &= 0xFE;
                 let aa = e.m.b(0xAA).wrapping_sub(1);
-                e.m.sb(0xAA, if (aa as i8) < 0 { 0 } else { aa });
+                e.m.sb(0xAA, if aa == 0xFF { 0 } else { aa }); // bcc / clr.b: a borrow (AA was 0) clears it
                 self.enemy_c6_hop_flight(e, 4);
             }
             2 => self.enemy_c6_hop_flight(e, 4),
@@ -220,7 +225,7 @@ impl Game {
     /// 0x39896 / 0x3993E: in flight for hop types 2 and 4.
     fn enemy_c6_hop_flight(&mut self, e: &mut Enemy, _hop_type: u8) {
         let aa = e.m.b(0xAA).wrapping_sub(1);
-        e.m.sb(0xAA, if (aa as i8) < 0 { 0 } else { aa });
+        e.m.sb(0xAA, if aa == 0xFF { 0 } else { aa }); // bcc / clr.b: a borrow (AA was 0) clears it
 
         if e.b.airborne != 0 {
             if e.b.param_b == 0 {
@@ -237,12 +242,12 @@ impl Game {
     /// 0x398C2 / 0x3996A: landing for hop types 2 and 4.
     fn enemy_c6_hop_landing(&mut self, e: &mut Enemy) {
         let aa = e.m.b(0xAA).wrapping_sub(1);
-        e.m.sb(0xAA, if (aa as i8) < 0 { 0 } else { aa });
+        e.m.sb(0xAA, if aa == 0xFF { 0 } else { aa }); // bcc / clr.b: a borrow (AA was 0) clears it
 
         if self.enemy_step(&mut e.b) {
-            let aa_cnt = e.m.b(0xAA).wrapping_sub(1);
+            let (aa_cnt, borrow) = e.m.b(0xAA).overflowing_sub(1); // 0x398D6: subq.b #1,$AA ; bcs
             e.m.sb(0xAA, aa_cnt);
-            if (aa_cnt as i8) < 0 || self.enemy_c6_arrived_at_slot(e) {
+            if borrow || self.enemy_c6_arrived_at_slot(e) {
                 self.enemy_c6_advance_slot(e);
                 e.b.act = 2;
                 e.b.step = 0;
