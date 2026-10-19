@@ -26,10 +26,11 @@ impl Game {
         }
     }
 
-    /// 0x654F8: name 0x23, `+$84` 0x8C, the table 0x702C4, palette 0x9D, animation 1, the box table 0x103C00, speed id 7, direction 0x18; HP of
+    /// 0x654F8: mode 2, name 0x23, `+$84` 0x8C, the table 0x702C4, palette 0x9D, animation 1, the box table 0x103C00, speed id 7, direction 0x18; HP of
     /// 0x31424; the target; poise 11; `+$72` 0x1E; `+$AC` 0x14; aggressive with the phase timer 1; the floor (0x3140C); `+$7D` 0, `+$63` 0; a slot
     /// (0x32C5E); then 0x6643E: not busy, `+$A8` 6, `+$AC` 0xF, state 6, animation 0.
     fn c91_init(&mut self, e: &mut Enemy) {
+        e.b.mode = 2;
         e.b.live = 1;
         e.m.sb(B87, 0);
         e.b.id = 0x23;
