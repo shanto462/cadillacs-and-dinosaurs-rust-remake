@@ -1499,6 +1499,18 @@ impl Game {
         if f.loading() {
             s.next_event = (p.wrapping_sub(ev_base) / 16) as usize;
             s.map_area = s.area;
+            // +$42 names the map in use: an area reached by walking keeps the map of the area before it (0x207CA runs only at an
+            // area start; Episode 5 area 1 has no map of its own, w = 0), so the area byte alone can name an empty map.
+            let mut p = 0u32;
+            f.u32(b + 0x42, "map_ptr", &mut p);
+            if let Some(areas) = self.assets.stages.stages.get(self.w.stage as usize).map(|x| &x.areas) {
+                let by_ptr = |m: &dino_assets::stage::AreaMap| m.w != 0 && m.screens_addr == p;
+                if !areas.get(s.area as usize).is_some_and(|a| by_ptr(&a.scroll2)) {
+                    if let Some(i) = areas.iter().position(|a| by_ptr(&a.scroll2)) {
+                        s.map_area = i as u8;
+                    }
+                }
+            }
         }
         // +$42: the screen array of the scroll2 map. Stage 2 has two copies of the map header (the controller's own, 0x22AFA, and the
         // table's, used by the demo): the pointer tells which one was loaded last (`Scroll2::own_map`).
@@ -1546,6 +1558,17 @@ impl Game {
         f.u8(b + 0x5F, "cam3_shift5f", &mut t.shift5f);
         if f.loading() {
             t.map_area = self.cam.s2.area;
+            // +$42: the far layer keeps the map of the area before it too (see the scroll2 map above)
+            let mut p = 0u32;
+            f.u32(b + 0x42, "cam3_map_ptr", &mut p);
+            if let Some(areas) = self.assets.stages.stages.get(self.w.stage as usize).map(|x| &x.areas) {
+                let by_ptr = |m: &dino_assets::stage::AreaMap| m.w != 0 && m.screens_addr == p;
+                if !areas.get(t.map_area as usize).is_some_and(|a| by_ptr(&a.scroll3)) {
+                    if let Some(i) = areas.iter().position(|a| by_ptr(&a.scroll3)) {
+                        t.map_area = i as u8;
+                    }
+                }
+            }
         }
         f.u16(0x06C4, "cam1_x", &mut self.cam.cam1_x);
         f.u16(0x06C8, "cam1_y", &mut self.cam.cam1_y);
