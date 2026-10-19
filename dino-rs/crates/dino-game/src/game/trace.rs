@@ -1078,7 +1078,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 /// `pool_c_update`, `pool_e_update`.
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
-    ("enemy", &[2, 10, 14, 15, 16, 17, 18, 20, 27, 34, 41, 43, 46, 48, 49, 50, 54, 55, 56, 57, 60, 81, 90, 92, 93, 96, 97]),
+    ("enemy", &[2, 5, 10, 14, 15, 16, 17, 18, 20, 27, 34, 41, 43, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 60, 61, 81, 90, 92, 93, 96, 97]),
     ("prop", &[0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 14, 15, 18, 20, 21, 22, 25, 27, 28, 29, 31, 35, 36, 37, 38, 40, 41, 42, 43, 47, 50, 52, 53, 54, 55, 56, 57, 59, 60, 61, 63, 64, 66, 72, 73, 74, 76, 80, 81, 82, 83, 84, 85, 87, 96]),
     (
         "item",
@@ -1248,6 +1248,8 @@ impl Game {
         f.u16(0x05EE, "level", &mut w.level);
         f.u16(0x05F0, "rank", &mut w.rank);
         f.u8(0x67BE, "attack_serial", &mut w.attack_serial);
+        f.u32(n(0x704E), "leap_dx", &mut w.leap_dx);
+        f.u32(n(0x7052), "leap_dz", &mut w.leap_dz);
         // Rank struct G.$5EC and the time limit (enemy port).
         let r = &mut self.rank;
         f.u16(0x05EC, "aggression", &mut r.aggression);

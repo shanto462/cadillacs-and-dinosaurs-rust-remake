@@ -74,7 +74,7 @@ const fn cross(class: u16, what: &'static str, counted: bool) -> Spec {
 /// Every pool A class of `stage_scripts.txt` that the port does not run yet.
 pub const SPECS: &[Spec] = &[
     walker(3, "LASH T. (mace)", Some(0x0E), true),
-    Spec { boss: boss(1, true), ..walker(5, "BUTCHER", Some(0x0F), true) },
+    // Class 5 (M6-09) and class 61 (M6-10), the Butcher, are real.
     walker(6, "BLUDGE", Some(0x10), true),
     walker(13, "POACHER", Some(0x02), true),
     Spec { class: 18, what: "VICE T. / WALTHER", name: Some(0x0C), name_v2: Some(0x0D), counted: true, dino: false, hazard: false, still: false, boss: boss(0, true) },

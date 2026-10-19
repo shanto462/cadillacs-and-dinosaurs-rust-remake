@@ -18,6 +18,28 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x44B84, 0x40, "Vice attack chance"),
     (0x44C8C, 0x40, "Vice combo choice"),
     (0x43004, 13 * 8, "Vice combo scripts"),
+    // The Butcher (M6-09): the knife holder offsets (0x57EA2, both tables), the turn table of the state "stand and wait"
+    // (0x59822, read at byte offsets up to 0x1E and a word more) and the slot offsets of the library 0x32E0A (X and Z, 7 words each).
+    (0x57F0E, 0x30, "Butcher knife holder offsets"),
+    (0x5986C, 0x24, "Butcher stand and wait turn table"),
+    (0x32EA4, 0x1C, "Butcher slot offsets (0x32E0A)"),
+    // The Butcher's alive code (M6-10): the leap roll limits (0x58AB8), the aggression toggle timers (0x58916), the decision chances (0x5A1AC)
+    // and the decision rows by knives held (0x5A1EA: three tables of 256), the combo rows (0x59F0C, 0x5948C), the hop speeds (0x598F2), the
+    // bounce counts (0x59B70), the ring of hop points (0x32AE4), the pause tables of the walk (0x589FA) and of the combo (0x59796) and the
+    // knife offsets of the hand (0x5A2A4: two tables of 27 rows of 8 bytes).
+    (0x58B0C, 4, "Butcher leap roll limits"),
+    (0x74502, 0x30, "Butcher aggression toggle timers"),
+    (0x73E94, 0x40, "Butcher decision chances"),
+    (0x73ED4, 0x300, "Butcher decision rows by knives held"),
+    (0x59FAA, 0x10, "Butcher combo start rows"),
+    (0x5951E, 0x14, "Butcher combo animations"),
+    (0x59988, 0x28, "Butcher hop speeds"),
+    (0x59CFC, 0x10, "Butcher bounce counts"),
+    (0x57480, 0x1B0, "Butcher knife offsets by frame"),
+    (0x32B48, 0x18, "ring of hop points (0x32AE4)"),
+    (0x744DA, 0x30, "Butcher walk pause tables"),
+    (0x74DA2, 0x40, "Butcher combo pause by random"),
+    (0x74DE2, 0x40, "Butcher combo pause by level"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {

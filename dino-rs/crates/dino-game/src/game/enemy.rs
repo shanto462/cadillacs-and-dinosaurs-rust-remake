@@ -38,6 +38,13 @@ mod class57;
 mod class17;
 mod class18;
 mod class29;
+// The Butcher (M6-09): the starter (5), the carcass and helpers (51, 53, 58), the fighter (61).
+mod class5;
+mod class51_58;
+mod class52;
+mod class61;
+mod class61_moves;
+mod class61_states;
 // The opening scene actors (M3-20): the Cadillac (16), the Episode 4 men (27) and leader (43).
 mod scene_actors;
 mod class20;
@@ -195,6 +202,7 @@ impl Game {
                 15 => self.enemy_class15(&mut e, h),
                 16 => self.enemy_class16(&mut e, h),
                 17 => self.enemy_class17(&mut e, h),
+                5 => self.enemy_class5(&mut e, h),
                 18 => self.enemy_class18(&mut e, h, i),
                 20 => self.enemy_class20(&mut e, h),
                 27 => self.enemy_class27(&mut e, h),
@@ -207,11 +215,16 @@ impl Game {
                 48 => self.enemy_class48(&mut e, h),
                 49 => self.enemy_class49(&mut e, h),
                 50 => self.enemy_class50(&mut e, h),
+                51 => self.enemy_class51(&mut e, h),
+                52 => self.enemy_class52(&mut e, h, i),
+                53 => self.enemy_class53(&mut e, h),
                 54 => self.enemy_class54(&mut e, h),
                 55 => self.enemy_class55(&mut e, h),
                 56 => self.enemy_class56(&mut e, h),
                 57 => self.enemy_class57(&mut e, h),
+                58 => self.enemy_class58(&mut e, h),
                 60 => self.enemy_class60(&mut e, h),
+                61 => self.enemy_class61(&mut e, h, i),
                 69 => self.enemy_class69(&mut e, h),
                 81 => self.enemy_class81(&mut e, h),
                 90 => self.enemy_class90(&mut e, h),
@@ -1778,6 +1791,7 @@ impl Game {
             0x0C | 0x28 | 0x2C => self.c10_reset_ai(e, h),
             0x20 | 0x24 => self.c20_reset_ai(e, h), // 0x45D74
             0x18 | 0x50 => self.c14_408e8(e),       // 0x408E8 class 14
+            0x3C => self.c61_decide(e, h),          // 0x58D40 the Butcher (class 61)
             _ => e.b.set_state(0x0200_0000),
         }
     }

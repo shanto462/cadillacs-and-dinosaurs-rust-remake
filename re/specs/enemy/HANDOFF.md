@@ -132,3 +132,45 @@ Things found while building it:
   (`Vram::index3` is right).
 - The hero's attack box is not always 8 deep: the jab and kick boxes are about 8 deep, the others differ per frame. The rule
   "Z + 8 >= start and Z <= end" of D3e part 3 section 2.6 is the summary for the jab; the pass runs the real box test.
+
+## M6-09 and M6-10: the Butcher (classes 5, 51, 52, 53, 58, 61)
+
+Code: `game/enemy/class5.rs` (0x38DDE the starter), `class51_58.rs` (0x5717E carcass, 0x57630 machete helper, 0x57E5E knife holder),
+`class52.rs` (0x57298 the knife), `class61.rs` (0x58498: init, mode dispatch, the alive handler, the checks and decisions, hit, death, knife drop and
+follow), `class61_states.rs` (the state bodies, table 0x588E0) and `class61_moves.rs` (the move entry blocks 0x5988C .. 0x5A186). The class 5 and 61 entries
+of the placeholder registry are gone (`--list-placeholders`). Check: `re/harness/m610_check.sh` (recordings of `re/harness/pokes/m610_butcher.txt`).
+- **Result.** Nine scenarios of the Butcher alone (b1, b4, c1 to c7: heroes Jack, Hannah, Mess, Mustapha, standing, walking, fleeing, 4500 to 7000
+  frames, one with his death) are equal to MAME in every frame (0 fields of any class, 0 globals), and so are `m516_butcher_*` and `m600_bs_b1_b10_nat2`
+  up to the first Poacher. The mutation test (vx of the far slash + 1) shows the check sees a one byte difference. Left: the sound arguments (below).
+- **The harness limit.** The Poachers of the boss controller (class 13, not run by the port) draw one random number each frame, before the Butcher in slot
+  order, so the m600 scenarios stop being comparable at the first group (about 1100 frames after the start; `m600_bs_b1_b10_nat2` at 1585: MAME draws
+  3 numbers in the frame, the port 1, and the Butcher's decision uses the second). The m610 scenarios hold the Butcher's `+$AA` at 0x1E (it asks the
+  controller for a group by G.$502 each time it runs out), so no group comes. After M6-01 / M6-02 (Poachers) the m600 scenarios can be used again.
+- **Frame facts (b10_nat2).** The stage record makes the object in frame 441, the init runs in 442, the chop wait is 180 updates (`+$A2` 0xB4 .. 0), the talk
+  step (B50 var 1, sound 0x59 with the pan of X) in 623, the turn (carcass `+$A2` = 1: it slides right 4 px a frame until `0x173C` frees it) in 804, the
+  camera mover B76 in 865, the change in 926. The class 61 init runs in the next frame (927), no frame in between.
+- **Pointers** between objects are sign extended RAM addresses: `0xFFFF0000 | handle` (`class5::ptr`). The words `+$B0` / `+$B2` / `+$A6` / `+$A8` /
+  `+$B4` / `+$B6` are plain handles. The boss controller's `+$AA` is `0xFFFF0000 | boss` too (`boss_spawn_controller` writes `0x00FF0000`: Vice and the
+  Butcher overwrite it).
+- **Knife holder A58** draws and moves only while the Butcher's `+$AC` is not 0 (the talk step); its offsets are rows of 8 bytes by the Butcher's frame byte
+  `+$2C` (tables 0x57F0E / 0x57F26). In the class 61 init the knife holders are freed by their own mode 4 in frame 927 and the two A52 knives take their
+  slots (free list order: the holder that frees last gives its slot to the first knife).
+- **The decision 0x58D40** is the init's tail and the get-up entry of the table 0x2B56C (name 0x3C; `enemy_recover_other` calls `c61_decide`).
+  The roll tables are 0x73ED4 / 0x73FD4 / 0x740D4 (no / one / two knives, 32 rows of 8 by the X class): 1 to 4 a combo, 5 the spin, 6 / 7 the leap,
+  8 the first leap, 9 the dash (the word after the table 0x5A26C). With two knives and class 0 the rows 0 to 15 are the spin.
+- **State machine.** Acts reached in play: 0 (slash), 2 and 0x1A (leaps), 4 / 0x34 (wait), 6 (stand), 0xA (landing), 0xC (spin), 0x10 (re-arm), 0x12 (dash),
+  0x18 (walk), 0x1C (pause), 0x1E / 0x20 (far slash), 0x2A (crouch), mode 4 (death) and mode 6. Dead code kept (never reached, only read): 0xE, 0x14 / 0x16, 0x22, 0x24, 0x26,
+  0x28 with sub 4, 0x2C, 0x2E (a chain that starts in the unreferenced block 0x59D12: the Butcher never grabs a hero) and 0x30 / 0x32 (their table words point at the table
+  itself; 0x5A090 is reached only through `+$CA`, which nothing sets). They are ported from the listing and not exercised.
+- **Register leftovers.** 0x32AE4 (`c61_598f2`) reads `move.b $B0,d1; tst.w d1`: the port takes the upper byte as 0. `0x5A1AC` compares with the word d1 of
+  `move.b table,d1`: the upper byte is taken as 0. Both ran without a difference in all recordings.
+- **Globals.** G.-$704E and G.-$7052 (`World::leap_dx`, `leap_dz`, traced) keep a quarter of the distance at the start of a leap for the apex (0x592EE).
+- **Death.** Mode 4: the music fade, G.$4D6 = 1, `+$80` = 0x78, the kill score; sub 2 counts 120 frames, then 0x6148 (`enemy_boss_leader`: the leader flags `+$C0`) and
+  mode 6. Mode 6 only draws: the body is never freed by itself (D3c 3.6 was wrong).
+- **Known differences.** (1) The sounds 0x21 (d1 0x12) and 0x0F (d2 0x10000) of the inits carry register leftovers; the port sends 0 / 0. (2) Sound arguments of the
+  attack object hit sounds (0x62, 0x39, 0x3E) are the shared pass of M5-02, not the Butcher. (3) `m610_c5_jump` frame 1166: two HUD cells of scroll1 (a score digit of
+  Mustapha) for 5 frames: a frame cut in the HUD draw of a busy frame, no object field differs. (4) `hud.rs`: the boss bar message word 4 is 0xFFFF
+  (`move.l a3,(a4)` with a sign extended a3), it was 0x00FF.
+- **For M6-11 / M6-12.** Class 52 is complete here (init, held, the drop 0x573DE / 0x5743C / 0x57368, the item class 0 var 0x12 made at the landing, the follow tail 0x5A280);
+  what is left of M6-11 is the check of the knife item in play (pick up by heroes, D2c 5.3) and the helper groups (the Poachers of the controller). The target rule 0x58CD6 is in
+  `c61_pick_target`. M6-12 has the acceptance runs (and the death scores, which are already in `c61_dying`).

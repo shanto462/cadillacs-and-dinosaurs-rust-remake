@@ -68,8 +68,10 @@ mod tests {
     use super::*;
 
     /// Needs the user's ROM set at `../dino.zip` (skipped otherwise). A frame record that no
-    /// registered table reaches (0x57F4A, an animation of the opening scene class 58) is decoded on
-    /// demand; an address that is not a frame record is skipped.
+    /// registered table reaches is decoded on demand; an address that is not a frame record is skipped.
+    /// The candidates are frame records of classes that may not be ported yet (0x57F4A was the first animation of the
+    /// Butcher's knife holder until M6-09 registered its table; 0x6FB20 is the first frame of the Vice bullet table
+    /// 0x6FB1A); the first one that the base set does not have is used.
     #[test]
     fn extra_frames_are_decoded_on_demand() {
         let path = Path::new("../../../dino.zip");
@@ -77,11 +79,13 @@ mod tests {
             return;
         }
         let base = extract(path).unwrap();
-        assert!(!base.sprites.frame_by_addr.contains_key(&0x57F4A));
-        let extra = ExtraFrames { sprite: vec![0x57F4A, 0x10, 0x56C61], effect: vec![0x9252C, 0x10], raw: vec![0x10] };
+        let Some(addr) = [0x57F4Au32, 0x6FB20].into_iter().find(|a| !base.sprites.frame_by_addr.contains_key(a)) else {
+            return; // every candidate is registered by now
+        };
+        let extra = ExtraFrames { sprite: vec![addr, 0x10, 0x56C61], effect: vec![0x9252C, 0x10], raw: vec![0x10] };
         let pack = extract_with(path, &extra).unwrap();
-        let id = pack.sprites.frame_by_addr[&0x57F4A];
-        assert_eq!(pack.sprites.frame(id).rom_addr, 0x57F4A);
+        let id = pack.sprites.frame_by_addr[&addr];
+        assert_eq!(pack.sprites.frame(id).rom_addr, addr);
         assert!(!pack.sprites.frame_by_addr.contains_key(&0x10));
         assert!(!pack.sprites.frame_by_addr.contains_key(&0x56C61));
         assert!(pack.effects.frame_by_addr.contains_key(&0x9252C));
