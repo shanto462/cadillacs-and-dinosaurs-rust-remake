@@ -89,6 +89,9 @@ pub struct Player {
     /// +$B8 pickup candidate object, +$BA its type (0x8000 = none).
     pub cand: Handle,
     pub cand_type: u16,
+    /// Not an original field: the d2 register `find_pickup` (0x5AA2) leaves for the pick-up voice 0x9C20 that the
+    /// pick-up entry 0x19832 calls next (the routine does not set d2). The high word is taken as 0.
+    pub pickup_d2: u32,
     /// +$BC double-tap timer, +$BD stick nibble at the last walk start.
     pub dtap: u8,
     pub walk_in: u8,
@@ -240,6 +243,19 @@ impl Game {
         p.b.atk = id;
         p.b.hitstop = 0;
         p.b.serial = serial;
+    }
+
+    /// d2 as the frame loader 0x143E leaves it after an animation start: the first frame's long at +4 (the bytes
+    /// +$2C, +$2D, +$2E and the timer +$2F with bit 7 cleared, `andi.b #$7f,d2`). The landing sound 0x9C0C does not set d2,
+    /// so a caller that starts the animation right before it sends this long.
+    fn player_frame_long(&self, i: usize) -> u32 {
+        let b = &self.players[i].b;
+        u32::from_be_bytes([b.param_a, b.param_b, b.kind, b.timer])
+    }
+
+    /// The landing sound 0x9C0C with the caller's d2 (the routine never writes it, `snd_player_d2`).
+    fn player_sfx_land(&mut self, i: usize, d2: u32) {
+        self.snd_player_d2(i, 0x9C0C, d2);
     }
 
     /// Player voice / effect routines 0x95CE..0x9C0C (`snd.rs`): `i` is the player (a6).
@@ -2121,7 +2137,7 @@ impl Game {
     fn player_landing_entry(&mut self, i: usize) {
         self.player_panim(i, 0, 6);
         self.players[i].b.set_state(0x0200_0404);
-        self.player_sfx(i, 0x9C0C);
+        self.player_sfx_land(i, self.player_frame_long(i)); // d2 = the first frame's long left by 0x143E
         self.player_landing(i);
     }
 
@@ -2259,7 +2275,7 @@ impl Game {
                 // 0x1BD56 dive landing
                 self.player_panim(i, 0, 0x1E);
                 self.players[i].b.set_state(0x0200_0436);
-                self.player_sfx(i, 0x9C0C);
+                self.player_sfx_land(i, self.player_frame_long(i)); // d2 = the first frame's long left by 0x143E
                 if self.player_pstep(i) {
                     self.player_idle_entry(i);
                 }

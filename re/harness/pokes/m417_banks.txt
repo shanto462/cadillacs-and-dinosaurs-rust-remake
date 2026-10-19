@@ -1,0 +1,61 @@
+# M4-17 hero voice banks with Jack as player 2 / 3 (D4e acceptance 8: first jab 0xA8, punch 3 0xCA, punch 4 0xCC)
+# Player base addresses: P1 0xFFB274, P2 0xFFB3F4, P3 0xFFB574 (X = +8, Z = +0x10).
+
+segment m417_b1_chain_jack
+jump 1 0 897 char=hannah,jack
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 900
+8 poke 0xFFB284 2 330
+8 poke 0xFFB3FC 2 993
+8 poke 0xFFB404 2 296
+9 snapshot
+0-9:
+10-10:2A
+22-22:2A
+34-34:2A
+46-46:2A
+trace 100
+
+segment m417_b2_chain_jack
+jump 1 0 897 char=hannah,mess,jack
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 900
+8 poke 0xFFB284 2 330
+8 poke 0xFFB3FC 2 900
+8 poke 0xFFB404 2 262
+8 poke 0xFFB57C 2 993
+8 poke 0xFFB584 2 296
+9 snapshot
+0-9:
+10-10:3A
+22-22:3A
+34-34:3A
+46-46:3A
+trace 100
+
+segment m417_b1_special_jack
+jump 1 0 897 char=hannah,jack
+rank 0 ; level 0
+3 spawn A 2 var=0 ax=1027 z=296
+8 objset A:2 hp 100
+8 poke 0xFFB27C 2 900
+8 poke 0xFFB284 2 330
+8 poke 0xFFB3FC 2 993
+8 poke 0xFFB404 2 296
+9 snapshot
+0-9:
+10-10:2AJ
+trace 120
+
+segment m417_b1_dash_jack
+jump 1 0 897 char=hannah,jack
+9 snapshot
+0-9:
+10-10:2R
+13-35:2R
+35-35:2A
+trace 150

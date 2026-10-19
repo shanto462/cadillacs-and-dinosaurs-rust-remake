@@ -590,7 +590,7 @@ impl Game {
             }
             0xA => {
                 self.item_score_500(it.b.who);
-                self.sound(0x89); // 0xA396
+                self.item_snd_a396(it.b.xi()); // 0xA396
                 self.container_puff(it, 0, it.b.facing ^ 1);
                 self.item_drop_from_container(it);
                 self.item_free(it, i);

@@ -1072,12 +1072,13 @@ impl Game {
             0 => {
                 if e.b.hp == 0 && (e.m.b(ATTACKING) as i8) >= 0 && e.b.reaction == 0xC {
                     // Charred death 0x2AC42: the pieces (0x93D48), the body is not drawn any more (clr.b $25) and shows the charred frame 0x2AC1C (0x1236),
-                    // then 0x9A84 (the voice of the killer: sound port, M4-13 part 3, not called here yet).
+                    // then 0x9A84 (the voice of the killer, +$02 of the enemy: `snd_9a84`).
                     let b = e.b.clone();
                     self.fx_spawn_burn_pieces(&b);
                     e.b.draw_flags = 0;
                     let id = self.assets.sprites.frame_at(0x2AC1C);
                     e.b.load_frame(&self.assets.sprites, id);
+                    self.snd_9a84(e.b.who); // 0x2AC56
                     let b = e.b.clone();
                     self.enemy_hud_hit(h, &b, 0);
                     self.item_drop_from_enemy(e);

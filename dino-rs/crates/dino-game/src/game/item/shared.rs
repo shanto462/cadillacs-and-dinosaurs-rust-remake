@@ -35,14 +35,25 @@ impl Game {
         self.sound_ex(if old { 0x74 } else { 0xFA }, pan, 0);
     }
 
-    /// 0x9C76: the thrower's shot sound; for an item (+$82 != 0) the fixed code 0xEA.
-    pub(super) fn item_snd_9c76(&mut self) {
-        self.sound(0xEA);
+    /// d1 of the gun sounds 0x9C76, 0x9CD8, 0x9D44, 0x9D9C and 0xA442: the mode 3, or 4 when the object's +$24 is nonzero, in the
+    /// high word, the middle byte 0x20, and the pan byte of the object's X (`x`, +$08) in the low byte.
+    fn item_snd_gun_d1(&self, x: i16, facing: u8) -> u32 {
+        let mode = if facing != 0 { 4 } else { 3 };
+        (mode << 16) | 0x2000 | self.snd_pan_x(x) as u32
     }
 
-    /// 0x9CD8: 0xE7 for an item.
-    pub(super) fn item_snd_9cd8(&mut self) {
-        self.sound(0xE7);
+    /// 0x9C76: the shot sound of the rifle. For an object with +$82 != 0 (every item: the pool tag) the fixed code 0xEA; the
+    /// player row (table 0x9CD4 by the owner's voice bank) is only for an object with +$82 == 0, which no caller is (the six
+    /// callers are the weapon items and the Slice / Morgan style enemies, all with a tag). d1 = `item_snd_gun_d1`, d2 = 0x15000000.
+    pub(super) fn item_snd_9c76(&mut self, x: i16, facing: u8) {
+        let d1 = self.item_snd_gun_d1(x, facing);
+        self.sound_ex(0xEA, d1, 0x1500_0000);
+    }
+
+    /// 0x9CD8: the pistol, 0xE7 for an item (the player row 0x9D40 is for +$82 == 0, no caller). d2 = 0x15000000.
+    pub fn item_snd_9cd8(&mut self, x: i16, facing: u8) {
+        let d1 = self.item_snd_gun_d1(x, facing);
+        self.sound_ex(0xE7, d1, 0x1500_0000);
     }
 
     /// 0x9D44: 0x64 / 0xE3 (bit 7 of G.$43A, shared with the player voices).
@@ -55,23 +66,34 @@ impl Game {
         self.sound_ex(if old { 0x64 } else { 0xE3 }, (mode << 16) | 0x2000 | pan, 0x0240_0000);
     }
 
-    /// 0x9D9C: 0xDC for an item.
-    pub(super) fn item_snd_9d9c(&mut self) {
-        self.sound(0xDC);
+    /// 0x9D9C: the Uzi / M-16, 0xDC for an item (the player row 0x9E04 is for +$82 == 0, no caller). d2 = 0x2400000.
+    pub(super) fn item_snd_9d9c(&mut self, x: i16, facing: u8) {
+        let d1 = self.item_snd_gun_d1(x, facing);
+        self.sound_ex(0xDC, d1, 0x0240_0000);
     }
 
-    /// 0x9E08: the bazooka: by the voice bank (+$118) of the owner (+$70), table 0x9E5C.
+    /// 0x9E08: the bazooka: by the voice bank (+$118) of the owner (+$70), table 0x9E5C. d1 = the mode 5 (6 when +$24 is
+    /// nonzero) in the high word, the middle byte 0x12 and the pan byte of the weapon's X; d2 = 0xC41240.
     pub(super) fn item_snd_9e08(&mut self, it: &Item) {
         let voice = self.item_owner_voice(it);
         let code = self.assets.enemy.t.u8(0x9E5C, voice);
-        self.sound(code as u16);
+        let mode = if it.b.facing != 0 { 6 } else { 5 };
+        let d1 = (mode << 16) | 0x1200 | self.snd_pan_x(it.b.xi()) as u32;
+        self.sound_ex(code as u16, d1, 0x00C4_1240);
     }
 
-    /// 0xA442: the shotgun: by the owner's voice bank, words at 0xA498.
+    /// 0xA442: the shotgun: by the owner's voice bank, words at 0xA498. d1 = `item_snd_gun_d1`, d2 = 0x15000000.
     pub(super) fn item_snd_a442(&mut self, it: &Item) {
         let voice = self.item_owner_voice(it);
         let code = self.assets.enemy.t.u16(0xA498, voice * 2);
-        self.sound(code);
+        let d1 = self.item_snd_gun_d1(it.b.xi(), it.b.facing);
+        self.sound_ex(code, d1, 0x1500_0000);
+    }
+
+    /// 0xA396: the statue break, code 0x89. d1 = the pan byte of `x`, d2 = 0.
+    pub(super) fn item_snd_a396(&mut self, x: i16) {
+        let pan = self.snd_pan_x(x) as u32;
+        self.sound_ex(0x89, pan, 0);
     }
 
     fn item_owner_voice(&self, it: &Item) -> u32 {

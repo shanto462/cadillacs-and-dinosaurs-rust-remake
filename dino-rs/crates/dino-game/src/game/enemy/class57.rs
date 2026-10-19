@@ -29,7 +29,7 @@ impl Game {
                 if e.b.var26 != 0 {
                     self.enemy_anim(&mut e.b, 1);
                 } else {
-                    self.sound(0xE7); // jsr 0x9CD8: the fixed code of a pool A object
+                    self.item_snd_9cd8(e.b.xi(), e.b.facing); // jsr 0x9CD8: the fixed code 0xE7 of a pool A object, d1 / d2 as the item row
                     self.enemy_anim(&mut e.b, 0);
                 }
                 e.b.mode += 2; // 0x57DEC, then the frame at once
