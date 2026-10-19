@@ -480,7 +480,29 @@ impl TraceWriter {
 pub struct Start<'a> {
     pub boot: bool,
     pub stage: u8,
+    /// Area of the start (`--area`, or the point of `--jump`); later areas are walked to before the trace starts (`goto_area`).
+    pub area: u8,
+    /// Camera X of the start (`--camx`, or the point of `--jump`); 0 = the area start.
+    pub camx: u16,
     pub chars: &'a [u8],
+}
+
+/// `--area` above 0 (or a jump point in a later area): the same walk as `tick_game` in `main.rs`, with no input, before the trace
+/// starts. The game's own area change (the debug key F6 logic, `debug::next_area`) once the hero has control, then the camera X.
+fn goto_area(game: &mut crate::game::Game, area: u8, camx: u16) -> Result<(), String> {
+    for _ in 0..40_000 {
+        if game.cam.s2.area >= area {
+            if camx != 0 {
+                game.flow_jump_camera(camx);
+            }
+            return Ok(());
+        }
+        if game.flow.mode == 0xC && game.w.scripted == 0 && game.cam.s2.mode == 0 {
+            crate::debug::next_area(game);
+        }
+        game.tick();
+    }
+    Err(format!("the game did not reach area {area} (the walk to it did not end)"))
 }
 
 /// The headless run: load or start, then `frames` ticks with scripted input, tracing each.
@@ -528,7 +550,12 @@ pub fn run(
         }
         (None, Some(p)) => warnings = load_state(&mut game, p)?,
         (None, None) if start.boot => game.flow_boot(),
-        (None, None) => game.start_stage(start.stage, start.chars),
+        (None, None) => {
+            game.start_stage_at(start.stage, 0, if start.area > 0 { 0 } else { start.camx }, start.chars);
+            if start.area > 0 {
+                goto_area(&mut game, start.area, start.camx)?;
+            }
+        }
     }
     for w in &warnings {
         eprintln!("load-state: {w}");

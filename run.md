@@ -55,13 +55,14 @@ Debug keys (with `--debug-keys` or `--test`):
 A jump starts the game at a named place: an episode start, an area start, or the place just before a boss fight.
 
     cargo run --release -p dino-game -- --rom ../dino.zip --list-jumps
-    cargo run --release -p dino-game -- --rom ../dino.zip --jump tyrog --chars 2
+    cargo run --release -p dino-game -- --rom ../dino.zip --jump slice --chars 2
 
 - `--list-jumps` prints every point (name, title, episode, area, camera X) and exits.
 - `--jump NAME` starts at that point. It takes `--chars` (the heroes, for example `--chars 0,2` for Jack and Hannah). An unknown name prints the list and exits with an error.
 - You can also start with the flags that a jump stands for: `--episode E --area A --camx X --chars 0`. `--episode 1..8`, `--area 0..3` and `--camx` (hex with 0x, or decimal) start that area with the camera at X. `--jump` cannot be combined with these flags.
 
 Jump points. The boss points are the snapshot positions just before each fight. The fight starts when the hero walks on, so a headless run with no input may not show the boss yet.
+Hogg (Episode 3) and Tyrog (Episode 6 area 2) are not listed: a right walk from their camera X never reaches the fight (Hogg's camera stops at 0x300 in the car stage; Tyrog's camera goes back to 0x180 in the first frames).
 
 | Name | Title | Episode | Area | Camera X |
 | --- | --- | ---: | ---: | ---: |
@@ -75,7 +76,6 @@ Jump points. The boss points are the snapshot positions just before each fight. 
 | butcher | Episode 2: Butcher | 2 | 2 | 0x01A0 |
 | ep3 | Episode 3 start: hell road | 3 | 0 | 0x0000 |
 | car | Episode 3: Cadillac drive | 3 | 0 | 0x0140 |
-| hogg | Episode 3: Hogg | 3 | 0 | 0x2D00 |
 | ep4 | Episode 4 start: Jack's garage | 4 | 0 | 0x0000 |
 | ep4a1 | Episode 4 area 1: inside the garage | 4 | 1 | 0x0000 |
 | ep4a2 | Episode 4 area 2: boiler hall | 4 | 2 | 0x0000 |
@@ -86,7 +86,6 @@ Jump points. The boss points are the snapshot positions just before each fight. 
 | ep6 | Episode 6 start: jungle and mine | 6 | 0 | 0x0000 |
 | ep6a1 | Episode 6 area 1: jungle swamp | 6 | 1 | 0x0000 |
 | ep6a2 | Episode 6 area 2: giant head | 6 | 2 | 0x0000 |
-| tyrog | Episode 6: Tyrog | 6 | 2 | 0x0EF0 |
 | ep7 | Episode 7 start: the vault | 7 | 0 | 0x0000 |
 | ep7a1 | Episode 7 area 1: elevator | 7 | 1 | 0x0000 |
 | lift | Episode 7: the lift | 7 | 1 | 0x0000 |

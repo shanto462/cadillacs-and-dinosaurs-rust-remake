@@ -305,6 +305,7 @@ impl Game {
     pub fn tick(&mut self) {
         // 0x71C: G.$868 takes the camera Y at the start of the pass (the shake routine may overwrite it later in the pass)
         self.cam.display_y2 = self.cam.s2.cam_y;
+        self.cam.display_y1 = self.cam.cam1_y; // 0x708: G.$860 takes camera Y 1 too
         self.w.sounds.clear();
         self.w.snd_reqs.clear();
         self.flow_frame();

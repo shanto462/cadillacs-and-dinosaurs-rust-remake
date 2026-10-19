@@ -1584,12 +1584,8 @@ impl Game {
         self.cam.shake_sign = sign as i8;
         f.i16(0x7560, "shake_amp", &mut self.cam.shake_amp);
         f.u16(0x07B8, "shake_scroll1_y", &mut self.cam.shake_scroll1_y);
-        let mut y1 = self.cam.cam1_y.wrapping_add(self.cam.shake_dy1 as u16);
-        f.u16(0x0860, "display_y1", &mut y1);
+        f.u16(0x0860, "display_y1", &mut self.cam.display_y1);
         f.u16(0x0868, "display_y2", &mut self.cam.display_y2);
-        if f.loading() {
-            self.cam.shake_dy1 = y1.wrapping_sub(self.cam.cam1_y) as i16;
-        }
     }
 
     fn trace_flow(&mut self, f: &mut F) {
@@ -1860,13 +1856,19 @@ impl Game {
                 // The task sleeps once inside 0xCC58 (`jsr 0xA76`, then the HUD redraw 0x162AE): in the first frame after it saw G.$4E3 the
                 // sleep counter of the snapshot is the same as in the next one. The redraw is still to come while the rank of the hero
                 // (+$10A, 0x33 at the start, set by the redraw) is untouched.
+                // 0xCC58 sleeps once (`jsr 0xA76`) after G.$4E3 is set by the (4, 2) step: the first record with sub 4 holds that sleep.
+                let first_sub4 = it.state == 4 && it.sub == 4 && !it.sub4_seen;
+                it.sub4_seen = it.state == 4 && it.sub == 4;
                 it.after = if it.state == 4
                     && it.sub == 4
-                    && it.w6 == 0
-                    && self.players.iter().any(|p| p.b10a == 0x33 && p.b.live != 0)
+                    && ((it.w6 == 0 && self.players.iter().any(|p| p.b10a == 0x33 && p.b.live != 0)) || (first_sub4 && ram[0x84E3] != 0))
                 {
                     super::flow::IntroAfter::Redraw
-                } else if it.state == 2 && it.sub == 2 && it.b2 == 0x14 && it.b3 == 0 && it.w4 == 0x78 && !self.props.slots.iter().any(|p| p.b.live != 0 && p.b.k20 == 0x68) {
+                } else if it.state == 4 && it.sub == 0 && cnt == 1 && ram[0x84D5] == 0 {
+                    // 0xCA94: the 60 frame wait after the blink (state 4 sub 0, `jsr 0xA82`) ends when the task's sleep counter reaches 1; the wait
+                    // sets G.$4D5 = 1 (0xCA9A), so the wait is pending while G.$4D5 is still 0 (`ram` is the snapshot's RAM image).
+                    super::flow::IntroAfter::Wait60
+} else if it.state == 2 && it.sub == 2 && it.b2 == 0x14 && it.b3 == 0 && it.w4 == 0x78 && !self.props.slots.iter().any(|p| p.b.live != 0 && p.b.k20 == 0x68) {
                     // 0xC6A8: the slide in set sub 2 and slept one frame; the title (0xC6AC, the typewriter) is the next step, and the
                     // blink (0xCA20) starts after it (it sets b3 when b2 = 0x14). Not in RAM, so it is read from the blink counter, and
                     // only while the blink countdown G.$7362 (w4) is still at its start value 0x78 (the blink has not run) and no typewriter
