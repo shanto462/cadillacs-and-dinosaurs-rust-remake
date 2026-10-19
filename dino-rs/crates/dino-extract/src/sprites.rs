@@ -24,6 +24,7 @@ const HITBOX_REGION: (u32, u32) = (0x100000, 0x11D220);
 pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x93F42, // burn death pieces, pool C class 15, 0x93E68 (M5-07)
     0x4F4E4, // Rock Hopper init 0x4DD2A (M5-10)
+    0x6FB1A, // enemy bullet class 59, init 0x57FC8
     0x438F2, // Vice T. intro, 0x425B6 (M5-09)
     0x2FBE2, // Vice T. hit reactions (table 0x2E68C, +$84 = 0x30)
     0x30FB0, // Vice T. held by a player (table 0x2E724, +$84 = 0x30)

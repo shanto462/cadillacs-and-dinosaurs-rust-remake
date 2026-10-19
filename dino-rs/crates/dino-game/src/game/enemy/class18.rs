@@ -1,4 +1,4 @@
-//! Vice T., class 18 variant 0: native intro, approach and melee combos.
+//! Vice T., class 18 variant 0: native intro, fight, revolver, summons and rage.
 use super::{in_win, Enemy};
 use crate::game::{Game, Handle};
 
@@ -6,25 +6,27 @@ impl Game {
     /// 0x42590 / 0x425BC / 0x428CE: use sprites for native intro and AI states.
     pub(crate) fn enemy_vice_intro_active(b: &crate::game::body::Body) -> bool {
         b.k20 == 18 * 4 && b.var26 >> 8 == 0
-            && (b.mode == 0 || (b.mode == 2 && (b.sub == 2
-                || (b.sub == 0 && matches!(b.act, 0 | 2 | 4 | 8)
-                    && !(b.act == 4 && matches!(b.step, 0xE | 0x12))))))
+            && (b.mode == 0 || (b.mode == 2 && (matches!(b.sub, 2 | 6)
+                || (b.sub == 0 && matches!(b.act, 0 | 2 | 4 | 6 | 8 | 0xA)))))
     }
 
     /// 0x42590 / 0x425A4 / 0x42884: init, intro and the ported alive states.
     pub(super) fn enemy_class18(&mut self, e: &mut Enemy, h: Handle, i: usize) {
-        // M5-12 rage/summon/gun and M5-13 death/Walther retain the placeholder.
+        // M5-13 owns death and Walther.
         match (e.b.var26 >> 8, e.b.mode, e.b.sub, e.b.act) {
             (0, 0, _, _) => {}
-            (0, 2, 0, 0 | 2 | 4 | 8) if (e.m.b(0xBD) == 0 || matches!(e.b.act, 4 | 8))
-                && !(e.b.act == 4 && matches!(e.b.step, 0xE | 0x12)) => {
+            (0, 2, 0, 0 | 2 | 4 | 6 | 8 | 0xA) => {
                 self.enemy_vice_alive(e, h);
                 return;
             }
-            (0, 2, 2, _) => {
+            (0, 2, 2 | 6, _) => {
                 for offset in [0xBE, 0xC4] { e.m.sw(offset, e.m.w(offset).saturating_sub(1)); }
-                self.boss_hit(e, h); // 0x4385C -> 0x3262A, before the reaction
-                self.enemy_hit_reaction(e, h);
+                if e.b.sub == 6 {
+                    self.enemy_grabbed(e, h); // 0x428CA -> 0x2B35A
+                } else {
+                    self.boss_hit(e, h); // 0x4385C -> 0x3262A, before the reaction
+                    self.enemy_hit_reaction(e, h);
+                }
                 return;
             }
             _ => {
@@ -50,6 +52,10 @@ impl Game {
         }
         if e.b.act == 4 {
             self.enemy_vice_attack(e);
+        } else if e.b.act == 0xA {
+            self.enemy_vice_summon(e);
+        } else if e.b.act == 6 {
+            self.enemy_vice_rage(e);
         } else if e.b.act == 8 {
             self.enemy_vice_fall(e);
         } else if e.b.act == 0 && e.b.airborne != 0 {
@@ -108,6 +114,15 @@ impl Game {
                 }
             }
         }
+        if e.m.b(0xBD) != 0 {
+            self.enemy_vice_rage(e);
+            return;
+        }
+        self.enemy_vice_approach_normal(e);
+    }
+
+    /// 0x42BB4..0x42C44: ordinary approach after the rage gate.
+    fn enemy_vice_approach_normal(&mut self, e: &mut Enemy) {
         let old = e.m.w(0xB2);
         if self.body(e.m.w(0x76)).live == 0 || old == 0 {
             e.m.sw(0xB2, 600);
@@ -390,6 +405,7 @@ impl Game {
             8 | 0xA | 0x10 => {
                 if self.enemy_step(&mut e.b) { self.enemy_vice_combo_pause(e); }
             }
+            0xE | 0x12 => self.enemy_vice_shoot_frame(e),
             0xC | 0x1E => self.enemy_vice_combo_jump(e),
             0x14 => self.enemy_vice_combo_run(e),
             0x16 | 0x18 | 0x1A => self.enemy_vice_combo_brake(e),
@@ -450,8 +466,17 @@ impl Game {
             8 | 24 => { // 0x43208 / 0x4364C
                 self.enemy_vice_combo_jump_start(e, action == 24);
             }
-            10 | 14 => { // 0x433BE / 0x43476: gun and its bullet belong to M5-12
+            10 | 14 => { // 0x433BE / 0x43476
                 e.b.step = if action == 10 { 0xE } else { 0x12 };
+                if action == 10 && !in_win(self.body(target).zi().wrapping_sub(e.b.zi()), 6) {
+                    e.m.sw(0xB8, 0xFFFF);
+                    self.enemy_vice_combo_pause(e);
+                } else {
+                    if action == 14 { self.enemy_vice_face(e); }
+                    self.enemy_anim(&mut e.b, if action == 10 { 14 } else { 16 });
+                    if action == 10 { self.enemy_vice_face(e); }
+                    self.enemy_vice_shoot_frame(e);
+                }
             }
             12 => { // 0x4344C, carry is the unsigned camera window
                 let d = (self.cam.s2.cam_x as i16).wrapping_add(0xC0).wrapping_sub(e.b.xi());
@@ -694,6 +719,115 @@ impl Game {
         if t == 0 { self.enemy_vice_combo_next(e); }
     }
 
+
+    /// 0x433E8 / 0x43490: consume the shot flag before ticking the animation.
+    fn enemy_vice_shoot_frame(&mut self, e: &mut Enemy) {
+        if e.b.param_b != 0 {
+            e.b.param_b = 0;
+            self.enemy_vice_gun_sound(e);
+            self.enemy_spawn_bullet(e, 2, 0x33, 0x46);
+            self.enemy_vice_muzzle(e, false);
+        }
+        if self.enemy_step(&mut e.b) { self.enemy_vice_combo_pause(e); }
+    }
+
+    /// 0x9CD8: enemy revolver sound with facing channel and horizontal pan.
+    fn enemy_vice_gun_sound(&mut self, e: &Enemy) {
+        let pan = self.snd_pan_x(e.b.xi()) as u32;
+        let channel = if e.b.facing == 0 { 3 } else { 4 };
+        self.snd_request(0xE7, (channel << 16) | 0x2000 | pan, 0x1500_0000);
+    }
+
+    /// 0x43420 / 0x4382A, including the facing form of 0x92422.
+    fn enemy_vice_muzzle(&mut self, e: &Enemy, air: bool) {
+        if air { self.enemy_vice_gun_sound(e); }
+        let dx: i16 = if air { if e.b.facing == 0 { 0x29 } else { -0x29 } }
+            else if e.b.facing == 0 { -0x2B } else { 0x2B };
+        let x = e.b.xi().wrapping_add(dx);
+        let y = e.b.yi().wrapping_add(if air { 0x6D } else { 0x45 });
+        // The enemy updater takes the owner out of its slot. Pass its facing
+        // directly in this 0x92422 entry instead of looking up the empty slot.
+        if let Some(i) = self.effects.alloc() {
+            let b = &mut self.effects.slots[i].b;
+            b.live = 1;
+            b.k20 = crate::game::effect::FX_SPARK;
+            b.who = 0;
+            b.facing = e.b.facing;
+            b.set_xi_keep(x);
+            b.set_yi_keep(y);
+            b.set_zi_keep(e.b.zi());
+            b.var26 = if air { 0x17 } else { 0xF };
+        }
+        self.fx_spawn_spark_jitter(x, y.wrapping_add(8), e.b.zi(), 6);
+    }
+
+    /// 0x437AE..0x43826: retreat jump, land, then fire into the air.
+    fn enemy_vice_summon(&mut self, e: &mut Enemy) {
+        match e.b.step {
+            0 => {
+                e.b.step = 2;
+                e.m.sb(0x7C, 3);
+                self.enemy_vice_destination(e);
+                self.enemy_vice_jump_start(e);
+                self.enemy_anim(&mut e.b, 0x17);
+                self.enemy_vice_face(e);
+                return;
+            }
+            2 if e.b.airborne != 0 => {
+                if e.b.param_b == 0 { e.b.motion(); }
+                self.enemy_step(&mut e.b);
+                return;
+            }
+            2 => {
+                e.b.step = 4;
+                e.b.facing = 0;
+                self.enemy_anim(&mut e.b, 13);
+                self.spawn.g.b502 = 1;
+            }
+            _ => {}
+        }
+        if e.b.param_b != 0 {
+            e.b.param_b = 0;
+            self.enemy_vice_muzzle(e, true);
+        }
+        if self.enemy_step(&mut e.b) { e.b.set_state(0x0200_0000); }
+    }
+
+    /// 0x42B52 / 0x42B88: two charges at one half and one quarter of +$6A.
+    fn enemy_vice_rage_check(&mut self, e: &mut Enemy) {
+        if e.m.b(0xBD) != 0 {
+            if e.m.w(0xAA) == 0 { e.m.sb(0xBD, 0); }
+        } else {
+            let charges = e.m.b(0xA8);
+            let quarter = e.b.hp_bar >> 2;
+            if charges != 0 && ((e.b.hp as i16) <= quarter as i16
+                || (charges == 2 && (e.b.hp as i16) <= quarter.wrapping_mul(2) as i16)) {
+                e.m.sb(0xA8, charges.wrapping_sub(1));
+                e.m.sb(0xBD, 2);
+                e.m.sw(0xAA, 0x708);
+            }
+        }
+    }
+
+    /// 0x436F4: while charged, bypass the approach attack roll on the ground.
+    fn enemy_vice_rage(&mut self, e: &mut Enemy) {
+        let target = e.m.w(0x76);
+        if self.body(target).live == 0 || matches!(self.enemy_vice_hero_action(target), 0x22 | 0x23) {
+            // 0x42BB4 uses the ordinary approach without rechecking rage.
+            self.enemy_vice_approach_normal(e);
+            return;
+        }
+        let old = e.m.w(0xB2);
+        e.m.sw(0xB2, old.wrapping_sub(1));
+        if old == 0 {
+            e.m.sw(0xB2, 600);
+            self.enemy_vice_retarget(e);
+            self.enemy_vice_new_cell(e);
+        }
+        if e.b.airborne != 0 { self.enemy_vice_approach_normal(e); }
+        else { e.b.act = 4; e.b.step = 0; }
+    }
+
     /// 0x43742: the fall state reached when a ground action loses its floor.
     fn enemy_vice_fall(&mut self, e: &mut Enemy) {
         match e.b.step {
@@ -711,7 +845,6 @@ impl Game {
     }
 
     /// 0x42AE4..0x42B14: restore the AI after a generic reaction or fall.
-    /// The summon body and rage checks remain the M5-12 placeholder boundary.
     pub(super) fn enemy_vice_recover(&mut self, e: &mut Enemy) {
         e.b.set_state(0x0200_0000);
         self.enemy_anim(&mut e.b, 0);
@@ -731,7 +864,8 @@ impl Game {
                 d0 = if count == 0 { 0 } else { e.m.w(0xC0) / count as u16 };
                 if (d0 as i16) >= (e.b.hp as i16) {
                     e.m.sb(0xC2, count.wrapping_add(1));
-                    e.b.act = 0xA; // 0x437A8, M5-12 owns the summon body
+                    e.b.act = 0xA; // 0x437A8 falls into the summon entry
+                    self.enemy_vice_summon(e);
                     return;
                 }
             }
@@ -744,7 +878,7 @@ impl Game {
                 return;
             }
         }
-        // 0x42B52 / 0x42B88: rage initiation and expiry remain M5-12.
+        self.enemy_vice_rage_check(e);
     }
 
     /// 0x44908: signed X differences, deliberately not absolute distances.
@@ -1138,7 +1272,7 @@ mod tests {
             "m600_bs_v1_v1_nat", "boss_vice_2p_r0", "boss_vice_2p_r24",
             "boss_vice_3p_r0", "boss_vice_3p_r24",
             "m600_bs_v3_v2_dmg", "m600_bs_v3_v6_dmg",
-            "m511b_vice_pinned",
+            "m511b_vice_pinned", "m600_bs_v2_v9_alt",
         ] {
             let path = directory.join(format!("{name}.mame.trc"));
             if !path.exists() {
@@ -1165,11 +1299,8 @@ mod tests {
                         let h = g.enemies.handle(i);
                         let a = h as usize;
                         let e = &g.enemies.slots[i];
-                        if ram[a + 0xA8] != old[a + 0xA8] { continue; } // M5-12 rage entry
-                        if ram[a + 5] == 0 && (ram[a + 6] == 0xA || (ram[a + 6] == 4 && matches!(ram[a + 7], 0xE | 0x12))) { continue; } // M5-12 gun/summon entry
                         if e.b.live == 0 || e.b.k20 != 72 || e.b.var26 >> 8 != 0 || e.b.mode != 2
-                            || !(e.b.sub == 2 || (e.b.sub == 0 && matches!(e.b.act, 0 | 2 | 4 | 8)
-                            && (e.m.b(0xBD) == 0 || matches!(e.b.act, 4 | 8)) && !(e.b.act == 4 && matches!(e.b.step, 0xE | 0x12)))) {
+                            || !(matches!(e.b.sub, 2 | 6) || (e.b.sub == 0 && matches!(e.b.act, 0 | 2 | 4 | 6 | 8 | 0xA))) {
                             continue;
                         }
                         // M7-12 owns the Hopper's hostile AI. The held placeholder
@@ -1190,6 +1321,25 @@ mod tests {
                             if image.mask[a + offset] == 0 {
                                 continue;
                             }
+                            // The hostile Hopper (M7-12) runs before Vice and
+                            // rolls twice in its attack state. Its held AI cannot
+                            // supply the pause RNG, so check the timer separately.
+                            if offset == 0x80 && old[a+6] == 4
+                                && matches!(old[a+7], 0xE | 0x12)
+                                && ram[a+7] == 0x20 && g.w.rng != u16::from_be_bytes([ram[0x8014], ram[0x8015]])
+                                && (0..i).any(|j| { let q = crate::game::POOL_A.0 as usize + j * 0xE0;
+                                    old[q] != 0 && old[q+0x21] == 29*4 && old[q+4..q+8] == [2,0,4,0] }) {
+                                let mut isolated = Game::new(assets);
+                                isolated.w.level = g.w.level;
+                                isolated.w.rng = u16::from_be_bytes([old[0x8014], old[0x8015]]);
+                                isolated.rand();
+                                isolated.rand(); // two upstream Hopper rolls
+                                let mut vice = e.clone();
+                                isolated.enemy_vice_combo_pause(&mut vice);
+                                assert_eq!(vice.m.b(0x80), ram[a+0x80], "{name} frame {frame} isolated gun pause");
+                                assert_eq!(isolated.w.rng, u16::from_be_bytes([ram[0x8014], ram[0x8015]]));
+                                continue;
+                            }
                             assert_eq!(image.ram[a + offset], ram[a + offset],
                                 "{name} frame {frame} Vice +{offset:02X} old {:02X?} new {:02X?} vx {} vz {} dest {:02X?}",
                                 &old[a+4..a+8], &ram[a+4..a+8], e.b.vx, e.b.vz, &old[a+0x88..a+0x8C]);
@@ -1205,6 +1355,33 @@ mod tests {
             frames += checked;
         }
         assert!(frames > 0, "no Vice reference recordings found");
+    }
+
+    /// 0x42B52 / 0x42B88: signed HP comparisons and expiry on recovery only.
+    #[test]
+    fn vice_rage_uses_two_thresholds_and_recovery_expiry() {
+        let mut g = Game::new(Box::leak(Box::new(dino_assets::AssetPack::default())));
+        let mut e = Enemy::default();
+        e.b.hp_bar = 100;
+        e.m.sb(0xA8, 2);
+        e.b.hp = 51;
+        g.enemy_vice_rage_check(&mut e);
+        assert_eq!(e.m.b(0xA8), 2);
+        e.b.hp = 50;
+        g.enemy_vice_rage_check(&mut e);
+        assert_eq!((e.m.b(0xA8), e.m.b(0xBD), e.m.w(0xAA)), (1, 2, 1800));
+        e.b.hp = 25;
+        g.enemy_vice_rage_check(&mut e);
+        assert_eq!(e.m.b(0xA8), 1);
+        e.m.sw(0xAA, 0);
+        g.enemy_vice_rage_check(&mut e);
+        assert_eq!(e.m.b(0xBD), 0);
+        e.b.hp = 26;
+        g.enemy_vice_rage_check(&mut e);
+        assert_eq!(e.m.b(0xA8), 1);
+        e.b.hp = 25;
+        g.enemy_vice_rage_check(&mut e);
+        assert_eq!((e.m.b(0xA8), e.m.b(0xBD), e.m.w(0xAA)), (0, 2, 1800));
     }
 
     /// 0x4270A tests zero, while 0x4274A and 0x4284C test borrow.

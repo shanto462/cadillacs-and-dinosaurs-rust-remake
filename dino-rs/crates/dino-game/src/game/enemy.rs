@@ -35,6 +35,7 @@ mod class69;
 mod class46;
 mod class48;
 mod class57;
+mod class59;
 mod class17;
 mod class18;
 mod class29;
@@ -211,6 +212,7 @@ impl Game {
                 55 => self.enemy_class55(&mut e, h),
                 56 => self.enemy_class56(&mut e, h),
                 57 => self.enemy_class57(&mut e, h),
+                59 => self.enemy_class59(&mut e, h, i),
                 60 => self.enemy_class60(&mut e, h),
                 69 => self.enemy_class69(&mut e, h),
                 81 => self.enemy_class81(&mut e, h),
@@ -574,10 +576,12 @@ impl Game {
         }
     }
 
-    /// 0x173C: free next frame (+$04 = 6) when far off screen.
+    /// 0x173C: free next frame (+$04 = 6) when far off screen. In a vertical scene (G.$4DC, 0x1782) the limits are |X| and Z + Y.
     pub fn enemy_despawn_if_far(&mut self, e: &mut Enemy, _i: usize) {
         if self.w.vertical_scene != 0 {
-            if (e.b.xi().wrapping_add(0x80) as u16) >= 0x280 {
+            if (e.b.xi().wrapping_add(0x80) as u16) >= 0x280
+                || (e.b.zi().wrapping_add(e.b.yi()).wrapping_add(0x80) as u16) >= 0x200
+            {
                 e.b.mode = 6;
             }
             return;
