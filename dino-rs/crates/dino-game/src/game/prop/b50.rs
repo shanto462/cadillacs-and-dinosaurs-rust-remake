@@ -6,10 +6,19 @@ use crate::game::{Game, Handle};
 impl Game {
     /// 0x844B4 / 0x844C8 / 0x84562 / 0x84F4A: dialogue dispatch and fades.
     pub fn prop_b50(&mut self, p: &mut Prop, h: Handle, i: usize) {
-        if !matches!(p.b.var26, 0 | 1 | 2 | 4) {
+        // Variant 3 (Episode 5 chief scene) runs its start fade (mode 0, 0x844E2) and its exit fade (mode 4,
+        // 0x84F4A) like the others: the original has no variant test there. Its dialogue (mode 2) is not ported.
+        let fade_only = p.b.var26 == 3 && matches!(p.b.mode, 0 | 4);
+        if !(matches!(p.b.var26, 0 | 1 | 2 | 4) || fade_only) {
             // Other conversations, including ending variant 7, have separate task owners.
             if !self.trace_hold(h, &p.b) {
-                self.prop_free(p, i);
+                if p.b.var26 == 3 && p.b.mode == 2 {
+                    // The chief's dialogue (mode 2) is not ported: go on to the exit fade (mode 4), so the screen comes back
+                    // from the start fade of mode 0 in free play.
+                    p.b.mode = 4;
+                } else {
+                    self.prop_free(p, i);
+                }
             }
             return;
         }
