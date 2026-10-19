@@ -48,11 +48,8 @@ impl Game {
     /// 0x42864..0x42880: only Vice owns the controller and HUD boss bar.
     fn enemy_vice_fight_start(&mut self, e: &mut Enemy, h: Handle) {
         if e.b.var26 >> 8 == 0 {
-            if let Some(controller) = self.boss_spawn_controller(h) {
-                if let Some(crate::game::Slot::Prop(i)) = crate::game::slot_of(controller) {
-                    self.props.slots[i].m.sl(0xAA, 0xFFFF_0000 | h as u32);
-                }
-            }
+            // 0x7BEDC (inside boss_spawn_controller) writes the controller's +$AA; the original init does not write it again.
+            self.boss_spawn_controller(h);
             self.hud.boss = h;
         }
         e.b.mode = e.b.mode.wrapping_add(2);
