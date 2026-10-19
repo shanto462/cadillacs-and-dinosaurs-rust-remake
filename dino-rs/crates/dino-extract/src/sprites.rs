@@ -132,6 +132,9 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x2A00A, // projectiles (class 8)
     0x2A49C, // pellets (class 10)
     0x611D2, // Zeke class 82, init 0x606E8 (M7-10)
+    0x3A234, // Bludge class 6, init 0x392FE (M7-07)
+    0x2EE70, // Bludge hit reaction table (0x2A606)
+    0x30CE0, // Bludge grab animation table (0x2B35A)
 ];
 
 /// Single frame records items load directly (0x1236): the ammo box picture.
