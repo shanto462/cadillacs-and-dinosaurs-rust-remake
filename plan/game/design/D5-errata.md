@@ -397,9 +397,22 @@ MAME wins over the design text; the design documents themselves are not edited.
 - D2b 5.2 "thug (name 9) at level 31 row value 58": the ROM row for name 9 at level 31 is 72 (D2b 5.3 agrees); 58 is name 0 (Ferris). The measured outputs [14, 14, 15, 13] and [10, 10, 10, 9] come out with name 0, so the probe probably hit another enemy than the text says. Open: one MAME probe with a thug at level 31.
 - D2b 5.2 "HP 20: HP factor 31": the factor for HP 16 to 23 is 27 (the words of 0x2C996); the stated outputs 5, 5, 5, 4 come out with 27.
 - D2b 5.3 the power table $C6 (0x2C9B6): row 1 has 26 set cells of 32 (the text says 25), row 2 has 25 (the text says 22).
-
 ## Open checks from Desktop Haiku (2026-10-19)
-
 - The camera chase step test failed only in release with `if d < 0 { 8 } else if d > 0x14 { 0x14 } else { d.max(8) }` (a print showed d 21, step 21); the same logic as three explicit tests passes in both profiles. The two forms are equal for an i16, so the release result is not explained (a compiler issue is possible). Keep the explicit form; if a release-only difference shows up again, look here first.
 - The hit sound mode (bits 16..23 of d1 of 0x39 / 0x3A / 0x3B, helper 0x962A: mode 3, or 4 when +$24 of a6 is set) depends on a stale a6 in the attack pass 0x10DCC (a6 is not set there). MAME has mode 3 in most requests (the m610 Butcher runs only 3; c14c_mustapha and m600_bs_v3_v6_dmg also 4). Open: name the object behind a6 with a MAME watch (task 12 report, re/out/desk/dhaiku/report.md).
 - The hero's HP bar 0x16446: about 20 call sites in the player code (0x1C0C0 .. 0x1FDD4); the port has 3 of them (task 13). The rest is a follow-up task.
+## Slice, classes 25, 19 and pool C 27 (M7-01 .. M7-04, 2026-10-19)
+- D3c 6.3 "the wake-up roll w = 11 / 5 / 3 by HP": 0x4C0B6 compares the quarter and the half of `+$BE` with d0, and d0 is what 0x120E left (the frame word of
+  animation 0's first frame, 0x1E48), not the HP. So the chance is 11 in 32 at every HP. It runs only from 0x4C072 (the end of the intro and the recover entry of
+  `+$84` 0x14, tables 0x2B56C / 0x4A7FC) with reaction 4.
+- D3c 6.3 (the script choice 0x4D288): the distance is (target X - X) as an unsigned word clamped at 0x80, so a target on his left is always "far" (row 2).
+- D3c 6.3: act 6 (0x4C3D4, animation 0xA, 120 frames) has no caller. The act dispatch is 0 the wait `+$7A`, 2 the decision, 4 the attack script.
+- D3c 6.4 ("`+$B3` = 8 ticks, the anim speed"): `+$B2` / `+$B3` are the spin sound timer and its period (8 for a single, 4 for the fan); the sound is 0xA21E
+  (0x7E, or 0x101 when bit 5 of G.$43B was clear, with the pan of X), made only by singles and the fan member of row 0. Variant 4 homes in on the target (vy / vz
+  +-0x100) on the way back or once 0x40 px from the throw X; variants 0 and 2 do not (variant 0 reverses its vy at the turn). The catch test starts after 10 frames.
+- D3c 6.5 (the afterimage `+$26`): d1 at the call is the act / step table word of the dispatch before it: 0xB2 in the route run (act 2), 0x3A0 in the running slash
+  (act 4), or what the re-target left in that frame.
+- The intro sounds 0x23 and 0x11 have d1 = 8 (the mode table word of 0x4BE74); d2 is left from the object updated before him.
+- Port flow (not Slice): after a boss defeat (0xACEE sets G.$4D6 = 4) the game task of the original sleeps the new count before the next game frame; `flow_game_task`
+  takes `wait` from `speed` before it runs the mode, so the port runs one game frame more right after the killing hit (m700_bs_s1_s1_nat run mode: equal through
+  5414, then G.$0 one ahead at 5415). Owner: flow.

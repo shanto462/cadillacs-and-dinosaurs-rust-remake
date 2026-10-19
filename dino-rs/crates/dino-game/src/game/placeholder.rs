@@ -78,8 +78,7 @@ pub const SPECS: &[Spec] = &[
     walker(6, "BLUDGE", Some(0x10), true),
     // Class 13 (M6-01 / M6-02), the poachers, is real.
     dino(22, "BRONTOSAURUS foot", None),
-    // Class 24 (M6-04, M6-05), Shivat, is real.
-    Spec { boss: boss(0, true), ..walker(25, "SLICE", Some(0x05), true) },
+    // Class 24 (M6-04, M6-05), Shivat, is real. Class 25 (M7-01 .. M7-04), Slice, is real.
     Spec { boss: Some(Boss { hp_row: 4, controller: true, score: false, rebirth: Some(40), group: false }), ..walker(35, "MORGAN", Some(0x15), true) },
     // Class 38 (M6-03), Mack, is real.
     walker(45, "MORGAN villager", None, true),

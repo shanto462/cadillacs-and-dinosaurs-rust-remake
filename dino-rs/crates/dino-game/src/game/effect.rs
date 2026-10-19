@@ -92,6 +92,9 @@ mod fx36_37;
 mod fx41;
 #[path = "effect/fx30.rs"]
 mod fx30;
+// Pool C class 27 (M7-03): the afterimage of a running Slice.
+#[path = "effect/fx27.rs"]
+mod fx27;
 use dino_assets::effect::{EffectData, RawSprite};
 use dino_assets::{FrameId, HitBox};
 
@@ -122,6 +125,7 @@ pub const FX_SEAT: u16 = 0x90;
 pub const FX_MATE: u16 = 0x94;
 pub const FX_CAR_PUFF: u16 = 0xA4;
 pub const FX_Z_MARK: u16 = 0x78;
+pub const FX_AFTERIMAGE: u16 = 0x6C;
 
 /// Hit spark animation table (0x924BE stores it in +$40).
 const SPARK_TABLE: u32 = 0x924F6;
@@ -595,12 +599,13 @@ impl Game {
                 FX_MATE => self.fx_mate(i),
                 FX_CAR_PUFF => self.fx_car_puff(i),
                 FX_Z_MARK => self.fx_z_mark(i),
+                FX_AFTERIMAGE => self.fx_afterimage(i),
                 // TODO(port): remaining classes (handler addresses from the table at 0x237E6):
                 // 0x00 0x923E0, 0x18 0x92C9A,
                 // 0x24 0x93184, 0x28 0x932D2,
                 // 0x30 0x939D6, 0x34 0x93A7A, 0x3C 0x93E54, 0x40 0x93FFC,
                 // 0x44 0x94100, 0x48 0x942C6,
-                // 0x58 0x95840, 0x6C 0x963D6,
+                // 0x58 0x95840,
                 // 0x70 0x96488, 0x78 0x966B4, 0x80 0x96A7E,
                 // 0x88 0x96DC4, 0x8C 0x96E56, 0x90 0x96FF4, 0x94 0x9720A,
                 // 0x98 (null entry), 0x9C 0x97530, 0xA0 0x97674, 0xA4 0x97800.

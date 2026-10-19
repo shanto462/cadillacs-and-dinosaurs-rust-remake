@@ -92,6 +92,14 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x5B326, 0x08, "bomb carrier first lists"),
     (0x5B4E6, 0x08, "bomb carrier run lists"),
     (0x5EF2A, 0x80, "dynamite hand offsets"),
+    // Slice (M7-01 .. M7-04, class 25, 0x4BE70..0x4D48A): the whole handler, whose tables sit between its routines (the wake-up roll 0x4C0FC,
+    // the scripts 0x4C4AE, the boomerang and fan tables 0x4C61A / 0x4C79A / 0x4C7BA, the kick pauses 0x4C870 / 0x4C890, the hero tables
+    // 0x4CBC6 / 0x4CC56, the points 0x4CDBE / 0x4CEF2 / 0x4CF52 / 0x4CF72 / 0x4CFD2, the run kinds 0x4D194, the gate 0x4D268, the scripts by HP
+    // and distance 0x4D2E8, the speeds 0x4D448 / 0x4D476). The boomerang, class 19 (0x45082..0x45706): the fan speeds 0x453FE and the catch
+    // box 0x45694. The afterimage palettes (0x9644A).
+    (0x4BE70, 0x161A, "Slice handler and tables"),
+    (0x45082, 0x684, "boomerang handler and tables"),
+    (0x9644A, 0x06, "afterimage palettes"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {
