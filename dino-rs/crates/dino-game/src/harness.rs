@@ -591,11 +591,22 @@ pub fn run(
         // the lag and the pass after them
         // A skip (hold attack or jump in a scripted scene, `flow/skip.rs`) keeps the CPU busy: its area change is one record (at most 64 ticks).
         let mut joined = 0;
+        // `tick` clears the sound requests of the tick before: a joined record keeps the requests of all its ticks (the original queues
+        // them in the one game frame that overran, `0xA63C`; M4-16: the fade and the area music of an area change are in the joined ticks)
+        let (mut joined_sounds, mut joined_reqs) = (Vec::new(), Vec::new());
         while game.flow.game_clock
             && (game.flow.lag > 0 || game.flow.lag_tick || game.flow.ending.cont.is_some() || (game.skip_join_more() && joined < 64))
         {
+            joined_sounds.append(&mut game.w.sounds);
+            joined_reqs.append(&mut game.w.snd_reqs);
             game.tick();
             joined += 1;
+        }
+        if joined > 0 {
+            joined_sounds.append(&mut game.w.sounds);
+            joined_reqs.append(&mut game.w.snd_reqs);
+            game.w.sounds = joined_sounds;
+            game.w.snd_reqs = joined_reqs;
         }
         pokes.apply(&mut game, k as i32, true)?; // power clock: after the tick, before the record
         tw.record(&mut game, k as i32)?;

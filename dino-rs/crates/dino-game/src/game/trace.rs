@@ -960,6 +960,7 @@ impl Effect {
     pub fn trace_visit(&mut self, f: &mut F) {
         self.b.trace_header(f, true);
         f.u32(0x40, "anim_table", &mut self.b.anim_table);
+        f.u8(0x51, "airborne", &mut self.b.airborne); // M7-06: 0x12DAC's flag (the debris pieces bounce on it); a step run did not load it
         f.u16(0x58, "owner58", &mut self.owner58);
         f.u16(0x5A, "owner_class", &mut self.owner_class);
         f.u16(0x5C, "w5c", &mut self.w5c);

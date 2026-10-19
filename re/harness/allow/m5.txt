@@ -1,0 +1,28 @@
+# Approved known differences of the hero move scenarios (M5-18): D2a A1 to A14 for the four heroes (`m515_a1_idle_*` ... `m515_a14_wj_*`: 55 scenarios, A14 for Jack,
+# Mustapha and Hannah), in step mode and in run mode.
+#   MODE=step re/harness/port.sh re/harness/scripts/NAME.txt NAME FRAMES      (and MODE=run), then
+#   re/.venv/bin/python -I re/harness/diff.py re/out/traces/NAME.mame.trc re/out/traces/NAME.step.trc --allow re/harness/allow/m5.txt
+# Result (the traces were made with names a416_NAME, so that no old trace was overwritten): 55 of 55 scenarios have 0 differences with this file, in both modes.
+# Without it 45 of 55 are equal and the other 10 differ only in the field below: a4_dtap (4 heroes), a7_rjump (4 heroes), a12_dash (Hannah, Mustapha).
+#
+# 1. G.$868 (display_y2), the main loop's copy of the camera Y at the start of a pass (0x6C0 .. 0x71C): one frame behind the camera. The port derives it from the camera of the same
+#    frame, so it is one step ahead in every record in which the camera moves in Y (the camera follows the height of a jumping hero in Episode 1 area 0: A4 double tap, A7
+#    running jump, A12 dash). Nothing reads G.$868 but the scroll register copy of the video, which the port latches by two frames (`camera::VIDEO_LATENCY`). The same
+#    rule as allow/m313.txt and allow/m6.txt.
+global.display_y2
+#
+# What was fixed in M5-18 (all found by these scenarios and by the natural recordings ep4_jack / ep4_3p):
+#   - A14 wall jump (Hannah, Mustapha): the first frame of the wall jump has no terrain pass and no screen clamp. The check 0x1A744 is reached by `bra` from the jump handlers
+#     (0x1A6E2, 0x1A990), which the sub state table enters by `jmp`, and on a start it pops the return address of the `jsr (a0)` at 0x18E76: the frame ends in 0x18A3E without 0x12CAC
+#     and 0x4FCE (MAME: no write to +$50 and no slide along the slanted wall in that frame, found with DINO_WATCH_WRITE on the wall byte). `Player::skip_post`.
+#   - A7 running jump kick: the weakness pair of the enemy (table 0xA32FA + enemy +$84) sets G.$4F5, the second byte of the counter word G.$4F4 that the hit pass tests as a word
+#     (`tst.w $4F4(a5)`, 0x10AAE). The port took the counter hit only from the "enemy is attacking" branch, so a weakness hit (Jack's running jump kick on a Ferris) had one spark
+#     and 100 points where the original has two sparks (the second of type 5) and 500 points.
+#
+# The wall jump spots (D2a section 19, open item P-D2a-5), read from the natural recordings (ep1_3p and the one hero recordings m517_ep1_*, G.$4D9 = 0, wall byte +$50 of a living hero):
+#   Episode 1 area 0: wall 4 at x 0x5F3 .. 0x640, z 0x125 .. 0x14D (the wall at the east end of the street; 321 of 632 records of Jack and 398 of 962 of the three players are at a
+#     height of 0x20 or more, so a wall jump there is what a player can do)
+#   Episode 1 area 1: wall 4 at x 0x34F .. 0x37E, z 0x20 .. 0x4F (the east wall of the hall; 666 of 2009 records at height 0x20 or more); wall 8 alone at x 0x37F (no jump)
+#   Episode 1 area 2: no record of a hero at a wall in 18,128 (three players) and 23,393 (Jack) records. The only bit 4 wall of the area is the slanted wall at x 0xA5 .. 0xB3 along
+#     z 0x138 .. 0x13E (A14), at the west end where the camera starts: a player reaches it only by walking back left. It is the one recorded and compared (Hannah and Mustapha,
+#     step and run mode, 0 differences); the check reads +$50 and the height only, so the other spots use the same code.

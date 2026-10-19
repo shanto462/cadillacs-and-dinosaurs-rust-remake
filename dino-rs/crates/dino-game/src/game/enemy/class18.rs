@@ -273,23 +273,66 @@ impl Game {
         ((self.rand() & 31) as i8) < threshold as i8
     }
 
-    /// 0x44316 / 0x44416: rotate the packed target list using the ROM weights.
+    /// 0x44416: the list of the present heroes in +$A2, +$A4, +$A6 (P1, P2, P3 in that order, the rest cleared) and d1 = their number - 1.
+    /// With no hero d1 = 0, the first cell keeps what it had, and only an empty first cell gets player 1.
+    fn enemy_vice_target_list(&self, e: &mut Enemy) -> u16 {
+        let mut n = 0u16;
+        let mut cell = 0xA2usize;
+        for i in 0..3 {
+            if self.players[i].b.live != 0 {
+                e.m.sw(cell, Game::player_handle(i));
+                cell += 2;
+                n += 1;
+            }
+        }
+        let mut d1 = n as i16 - 1;
+        if d1 < 0 {
+            d1 = 0;
+            cell += 2; // addq.w #2,a1: the first cell is not cleared
+        }
+        while cell <= 0xA6 {
+            e.m.sw(cell, 0); // clr.w (a1)+ while a1 <= a2
+            cell += 2;
+        }
+        if e.m.w(0xA2) == 0 {
+            e.m.sw(0xA2, Game::player_handle(0));
+        }
+        d1 as u16
+    }
+
+    /// 0x44316: rotate the packed target list using the ROM weights. When the present target is a fallen hero (+$C8 = 0x23) it goes to 0x443A6
+    /// instead (M7-06: ep4_3p 6562, a hero dies while the Walther fights him): the next hero of the list, by a random choice only with three.
     fn enemy_vice_retarget(&mut self, e: &mut Enemy) {
         let target = e.m.w(0x76);
         if let Some(crate::game::Slot::Player(i)) = crate::game::slot_of(target) {
-            if self.players[i].action == 0x23 { return; }
-        }
-        let r = self.rand() & 15;
-        let mut count = 0usize;
-        for i in 0..3 {
-            if self.players[i].b.live != 0 {
-                e.m.sw(0xA2 + count * 2, Game::player_handle(i));
-                count += 1;
+            if self.players[i].action == 0x23 {
+                // 0x443A6
+                let d1 = self.enemy_vice_target_list(e);
+                match d1 {
+                    0 => {
+                        e.m.sw(0x76, e.m.w(0xA2));
+                        e.m.sb(0xA0, 0);
+                    }
+                    1 => {
+                        let d0 = e.m.b(0xA0).wrapping_add(1) & 1; // 0x443BA
+                        e.m.sw(0x76, e.m.w(0xA2 + 2 * d0 as usize));
+                        e.m.sb(0xA0, d0);
+                    }
+                    _ => {
+                        let r = self.rand() & 15; // 0x443E0
+                        let mut d2 = e.m.b(0xA0).wrapping_add(if r & 8 != 0 { 2 } else { 1 });
+                        if (d2 as i8) > 2 {
+                            d2 = d2.wrapping_sub(3);
+                        }
+                        e.m.sb(0xA0, d2);
+                        e.m.sw(0x76, e.m.w(0xA2 + 2 * d2 as usize));
+                    }
+                }
+                return;
             }
         }
-        for i in count..3 { e.m.sw(0xA2 + i * 2, 0); }
-        if count == 0 { e.m.sw(0xA2, Game::player_handle(0)); }
-        let last = count.saturating_sub(1) as u16;
+        let r = self.rand() & 15;
+        let last = self.enemy_vice_target_list(e);
         let row = self.assets.enemy.t.u16(0x44370, last as u32 * 2);
         let mut n = e.m.b(0xA0).wrapping_add(self.assets.enemy.t.u8(0x44370, row as u32 + r as u32)) as u16;
         if n as i16 > last as i16 { n = n.wrapping_sub(last + 1); }
@@ -951,7 +994,8 @@ impl Game {
             let initial = e.m.w(0xC0);
             let row = if (d0 as i16) <= ((initial >> 2) as i16) { 0 }
                 else if (d0 as i16) <= ((initial >> 1) as i16) { 2 } else { 4 };
-            let chance = self.assets.enemy.t.u16(0x429AE, row);
+            // 0x42980..0x42994: the row is 3 * the type byte +$26 (0 Vice, 2 Walther) plus the HP step (M7-06: Walther's chances are 6, 14, 24)
+            let chance = self.assets.enemy.t.u16(0x429AE, 3 * (e.b.var26 >> 8) as u32 + row);
             if ((self.rand() & 31) as i16) < (chance as i16) {
                 self.enemy_vice_counterattack(e);
                 return;
@@ -1003,10 +1047,15 @@ impl Game {
         let mut cell = e.m.b(0x7C);
         let (table, count) = if e.b.var26 >> 8 == 0 { (0x44868, 9) } else { (0x44812, 16) };
         for i in (0..count).rev() {
-            let x = self.assets.enemy.t.u16(table, i * 4) as i16;
-            let z = self.assets.enemy.t.u16(table, i * 4 + 2) as i16;
-            let d = x.wrapping_sub(e.b.xi()).wrapping_abs()
-                .wrapping_add(z.wrapping_sub(e.b.zi()).wrapping_abs());
+            // 0x1926: `sub.w` of the spot (the table holds the offsets round the target, a negative one is a big unsigned word) and `neg.w`
+            // on the borrow, so a spot left of the thug is "far" on the unsigned side and its sum is negative for the signed `cmp.w` / `ble`
+            // of 0x448AE (M7-06: the Walther of ep4_jack 4256 picks cell 12, not the farthest by the signed distance).
+            let x = self.assets.enemy.t.u16(table, i * 4);
+            let z = self.assets.enemy.t.u16(table, i * 4 + 2);
+            let (sx, sz) = (e.b.xi() as u16, e.b.zi() as u16);
+            let dx = if x < sx { sx - x } else { x - sx };
+            let dz = if z < sz { sz - z } else { z - sz };
+            let d = dx.wrapping_add(dz) as i16;
             if d > distance { distance = d; cell = i as u8; }
         }
         e.m.sb(0x7C, cell);
@@ -1260,6 +1309,25 @@ mod tests {
     use crate::game::trace::{Collect, F};
     use crate::harness::TraceReader;
     use std::path::Path;
+
+    /// 0x44316 with a fallen target (+$C8 = 0x23) goes to 0x443A6 (M7-06, ep4_3p 6562): the list of the present heroes and the next one of it, no
+    /// weights. With the first hero gone and two present the cursor +$A0 goes 0 -> 1 and the target is the second cell of the list.
+    #[test]
+    fn a_fallen_target_is_replaced_by_the_next_hero_of_the_list() {
+        let mut g = Game::new(Box::leak(Box::new(dino_assets::AssetPack::default())));
+        g.players[0].b.live = 0;
+        g.players[0].action = 0x23;
+        g.players[1].b.live = 1;
+        g.players[2].b.live = 1;
+        let mut e = Enemy::default();
+        e.m.sw(0x76, Game::player_handle(0));
+        let before = g.w.rng;
+        g.enemy_vice_retarget(&mut e);
+        assert_eq!(g.w.rng, before, "two heroes: no random number");
+        assert_eq!(e.m.w(0x76), Game::player_handle(2));
+        assert_eq!(e.m.b(0xA0), 1);
+        assert_eq!((e.m.w(0xA2), e.m.w(0xA4), e.m.w(0xA6)), (Game::player_handle(1), Game::player_handle(2), 0));
+    }
 
     /// The recordings and ROM stay outside source control. Check each invocation
     /// against MAME, including the init RNG roll and all modeled object bytes.
