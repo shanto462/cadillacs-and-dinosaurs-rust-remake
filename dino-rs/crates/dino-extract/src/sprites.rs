@@ -23,6 +23,10 @@ const HITBOX_REGION: (u32, u32) = (0x100000, 0x11D220);
 /// object's init code (stored into obj+$40); the comment names that code.
 pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x93F42, // burn death pieces, pool C class 15, 0x93E68 (M5-07)
+    // The Butcher (M6-09): the starter class 5 (0x38E20), the carcass class 51 (0x5719E), the machete helper class 53 (0x57650), the knife
+    // holder class 58 (0x57E78), the fighter class 61 (0x584C4), the knives class 52 (0x572C0) and his hit (0x2E68C, +$84 = 0x3C) / held
+    // (0x2E724) tables.
+    0x3906A, 0x5727A, 0x57682, 0x57F44, 0x6FDEC, 0x6F8A6, 0x30750, 0x311C4,
     0x4F4E4, // Rock Hopper init 0x4DD2A (M5-10)
     0x6FB1A, // enemy bullet class 59, init 0x57FC8
     0x438F2, // Vice T. intro, 0x425B6 (M5-09)

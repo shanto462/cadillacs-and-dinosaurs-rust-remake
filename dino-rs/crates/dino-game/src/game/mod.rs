@@ -175,6 +175,10 @@ pub struct World {
     pub coins: u8,
     /// G.$67BE global attack serial counter.
     pub attack_serial: u8,
+    /// G.-$704E / G.-$7052: a quarter of the X and Z distance to the hero at the start of the Butcher's leap (long words; the apex of
+    /// the flight, 0x592EE, reads them).
+    pub leap_dx: u32,
+    pub leap_dz: u32,
     /// G.$5EE level (difficulty row, 0..31) and G.$5F0 rank.
     pub level: u16,
     pub rank: u16,

@@ -1738,3 +1738,16 @@ the words (y 100 to 150) for all ten frames; the rest of the picture differs by 
 - Pictures: `dino-game --headless --load-state re/out/traces/m308_row300.state --poke-file re/out/traces/m308_row300.pokes.txt --input-file re/out/traces/m308_row300.input.txt --screenshots 12 --shot-dir DIR`
   equals the probe snapshot `re/out/probe/m308-rec/m308_row300/snap/0001.png`: the snapshot is at t = 10, so the picture of probe time t is the port's frame t - 10 (t = 22, frame 12; the first
   two frames after a load show the video latency of the loaded state, so take later ones). One headless run, then a pixel compare with the PNG (`PIL`, as `shot_check.sh`).
+
+
+## The Butcher alone (M6-10)
+
+`re/harness/pokes/m610_butcher.txt` has nine segments of the Butcher's fight (Episode 2 area 2 from camera X 0x1A0, the class 5 object already made at the snapshot): the scenes of
+`m600_bs_b1_b1_nat` and `m600_bs_b2_b4_face` and seven more (a standing, walking, fleeing hero; Hannah, Mess, Mustapha, Jack). In every segment the group timer of the Butcher (`+$AA`,
+enemy slot 23 = 0xDD14) is held at 0x1E, so the boss controller never gets a group and no Poacher (class 13, not run by the port yet, one random number a frame) disturbs the Butcher's
+frames. Record (one MAME process, about 40 seconds) and check:
+
+```sh
+PR_SNAPS=none PR_SHEET=0 re/harness/probe/probe_record.sh re/harness/pokes/m610_butcher.txt all
+re/harness/m610_check.sh                    # every scenario in step mode: 0 fields expected
+```

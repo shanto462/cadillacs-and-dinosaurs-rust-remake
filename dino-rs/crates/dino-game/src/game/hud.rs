@@ -953,7 +953,8 @@ impl Game {
         }
         self.hud.slots[i].tracked = boss;
         let b = self.body(boss);
-        let m = [b.id as u16, b.hp_bar, b.hp_prev, b.hp, 0x00FF, boss, 0, 0];
+        // 0x17204: `move.l a3,(a4)` with a3 = `movea.w G.-$70BC`, a sign extended word, so the high word is 0xFFFF (MAME, M6-09).
+        let m = [b.id as u16, b.hp_bar, b.hp_prev, b.hp, 0xFFFF, boss, 0, 0];
         self.hud.boss_msg = m;
         if m[3] == 0 {
             self.hud.boss = 0;
