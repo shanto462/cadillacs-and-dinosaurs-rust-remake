@@ -6,7 +6,6 @@
 
 use super::class4::o;
 use super::{off::*, Enemy};
-use super::boss_common::BossAi;
 use crate::game::{Game, Handle};
 
 /// The tables of the states (read at run time through `enemy.t`).

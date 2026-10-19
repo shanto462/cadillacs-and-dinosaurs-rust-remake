@@ -166,7 +166,7 @@ impl Game {
     }
 
     /// 0x84E2E: replace the portrait palette RGB, preserving each brightness nibble.
-    fn prop_b50_palette(&mut self, row: u32) {
+    pub(in crate::game) fn prop_b50_palette(&mut self, row: u32) {
         for n in 0..16 {
             let k = PaletteRam::SCROLL1 + 0x1C0 + n;
             self.pal.words[k] = (self.pal.words[k] & 0xF000)

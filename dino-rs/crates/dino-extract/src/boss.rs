@@ -130,6 +130,12 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     // offsets 0x5E6D4.
     (0x4D49E, 0x100, "boss fire landing spots"),
     (0x5E6D4, 0x20, "chest blade spark offsets"),
+    // Fessenden form 1, class 94 (M8-27, 0x67D2C..0x6995E): the handler with its tables (the roar limits 0x68222, the remap 0x68714, the step
+    // times 0x68E96, the grid rows 0x68EB6, the flurry animations 0x691AC and waits 0x6923C / 0x692C8 / 0x69354), Morgue's grid directions
+    // 0x53034 and the swing waits by level 0x74F62.
+    (0x67D2C, 0x1C32, "Fessenden form 1 handler and tables"),
+    (0x53034, 0x110, "Morgue grid directions"),
+    (0x74F42, 0x60, "Fessenden swing waits by level"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {

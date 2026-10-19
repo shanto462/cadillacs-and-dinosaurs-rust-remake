@@ -54,6 +54,7 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x4C90E, 0x45706, // Slice class 25 (0x4BEA8) and his boomerang class 19 (0x450B4) (M7-01, M7-03)
     0x702C4, 0x2ED42, 0x30C94, // Tyrog class 4 (0x36A98), his hit reactions and held poses (by name 0x19) (M8-07)
     0x309EA, 0x3125C, // Tyrog's host class 72 (+$84 0x6C): hit reactions and held poses (M8-10)
+    0x6EA48, 0x30568, 0x31178, // Fessenden form 1, class 94 (0x67D5A, the Morgue table), his hit reactions and held poses (+$84 0x94) (M8-27)
     0x71408, 0x71936, // the bosses' fire class 26 (0x4D5EE) and the chest blades class 74 (0x5E520) (M8-09)
     0x71A4E, 0x71D66, // the Tyrog scene: the actors class 75 (0x5E722) and the creature class 76 (0x5EC46) (M8-06)
     0x302BA, 0x310E0, // Slice's hit reactions and held poses (by name 5 in the reaction tables) (M7-01)
