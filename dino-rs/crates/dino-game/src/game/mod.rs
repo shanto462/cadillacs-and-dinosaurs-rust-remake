@@ -303,6 +303,8 @@ impl Game {
     /// counted by the game task (0xA914) and the demo (0x99EC4) only: it stays 0 through the boot
     /// and the title, as in the original.
     pub fn tick(&mut self) {
+        // 0x71C: G.$868 takes the camera Y at the start of the pass (the shake routine may overwrite it later in the pass)
+        self.cam.display_y2 = self.cam.s2.cam_y;
         self.w.sounds.clear();
         self.w.snd_reqs.clear();
         self.flow_frame();

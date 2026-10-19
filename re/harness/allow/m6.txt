@@ -5,9 +5,7 @@
 # One rule per line: a key pattern (fnmatch) and an optional record range, then a "# reason". The recording specific causes (lag records, the stream columns past the
 # edge of an area) are listed with their record numbers in D5-errata.md (section M6-17); `diff.py --frame-list` prints the differing records.
 
-# 1. G.$868 (display_y2), the main loop's copy of the camera Y at the start of a pass (0x6C0 .. 0x71C): one frame behind the camera. The port derives it from the camera of
-#    the same frame, so it is one step ahead in every record in which the camera moves in Y (the hill of area 1, the slope of area 2). The same rule as m313.txt.
-global.display_y2
+# 1. (G.$868 display_y2 was rule 1; it is a port field now, written at the pass start and by the shake routine, so the rule is gone.)
 
 # 2. The sound arguments d1 / d2 of a few requests are registers that the original does not set (a stale d2 of the caller): the landing 0x62 (d2 = 7 for Jack, 0xA Hannah, 3 Mess, set by
 #    the animation start 0x13A0 before 0x9C0C), the punch 3 0x4F (d2 = the stale distance), the GO sound 0x3E (d2 = 1). `diff.py` prints them as "SOUND ARGUMENTS", they are not

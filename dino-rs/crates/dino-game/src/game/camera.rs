@@ -166,6 +166,9 @@ pub struct Camera {
     /// Display-only offsets, included in the video latch, never in object coordinates.
     pub shake_dy1: i16,
     pub shake_dy2: i16,
+    /// G.$868 (display_y2): the layer 2 scroll Y the hardware reads at the start of a pass (0x714). 0x71C copies the camera Y there at
+    /// the start of each pass; the shake routine (0x22340..0x22368) writes camera Y + its offset on the frames it runs.
+    pub display_y2: u16,
     /// G.$7B8: scroll1 Y shadow copied when 0x22388 stops the shake.
     pub shake_scroll1_y: u16,
     /// The shadows of the last frames (see [`VIDEO_LATENCY`]).
@@ -175,7 +178,7 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         Camera { s2: Scroll2::default(), s3: Scroll3::default(), row: RowScroll::default(), car: 0, cam1_x: 0, cam1_y: 0, cam1_y_frac: 0, shake_req: 0, shake_state: 0, shake_strength: 0, shake_timer: 0, shake_sign: 0, shake_amp: 0,
-            shake_dy1: 0, shake_dy2: 0, shake_scroll1_y: 0, latch: ScrollLatch::default() }
+            shake_dy1: 0, shake_dy2: 0, display_y2: 0, shake_scroll1_y: 0, latch: ScrollLatch::default() }
     }
 }
 
@@ -215,6 +218,8 @@ impl Camera {
             self.shake_dy1 = off;
         } else {
             self.shake_dy2 = off;
+            // 0x22364: move.w d0,$868(a5) with d0 = the offset + G.$748 (the camera Y of this frame)
+            self.display_y2 = self.s2.cam_y.wrapping_add(off as u16);
         }
         let (timer, borrow) = self.shake_timer.overflowing_sub(1);
         self.shake_timer = timer;
@@ -235,7 +240,7 @@ impl Camera {
 
     /// The shadows now.
     fn scroll_now(&self) -> ScrollShadows {
-        ScrollShadows { cam1: (self.cam1_x, self.cam1_y.wrapping_add(self.shake_dy1 as u16)), s2: (self.s2.cam_x, self.s2.cam_y.wrapping_add(self.shake_dy2 as u16)), s3: (self.s3.cam_x, self.s3.cam_y) }
+        ScrollShadows { cam1: (self.cam1_x, self.cam1_y.wrapping_add(self.shake_dy1 as u16)), s2: (self.s2.cam_x, self.display_y2), s3: (self.s3.cam_x, self.s3.cam_y) }
     }
 
     /// The end of a frame: remember the shadows. The first call fills the whole history, so a game that
