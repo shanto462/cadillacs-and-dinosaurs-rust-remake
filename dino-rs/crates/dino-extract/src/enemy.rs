@@ -95,6 +95,16 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x0BEE52, 0x0400, "B9 lightning sequence 2 foreground palettes 1 (0x7817C)"),
     (0x0C1492, 0x09C0, "B9 lightning sequence 2 foreground palettes 2 (0x7817C)"),
     (0x0C36D2, 0x0F60, "B9 lightning sequence 1 sky palettes (0x78002)"),
+    // Pool B class 13 (0x79218), burning huts. Each blob is the pointer table and the four pictures.
+    (0x79400, 0x2E0, "B13 var 0 fire pictures (0x79270)"),
+    (0x79812, 0x250, "B13 var 2 fire pictures (0x796E6)"),
+    (0x79B5E, 0x1C0, "B13 var 4 fire pictures (0x79A62)"),
+    (0x79EAE, 0x2E0, "B13 var 6 fire pictures (0x79D1E)"),
+    (0x7A21A, 0x310, "B13 var 8 fire pictures (0x7A18E)"),
+    (0x7A5A4, 0x310, "B13 var A fire pictures (0x7A52A)"),
+    (0x7A93A, 0x2B0, "B13 var C fire pictures (0x7A8B4)"),
+    (0x7AC64, 0x310, "B13 var E fire pictures (0x7ABEA)"),
+    (0x7AFEE, 0xD0, "B13 var 10 fire pictures (0x7AF74)"),
     // score
     (0x10292, 0x90, "BCD score values (0x10036), indexed by byte offset"),
     (0x325F8, 0x28, "kill score offset by name id (0x325E6)"),
