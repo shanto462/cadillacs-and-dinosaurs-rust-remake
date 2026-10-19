@@ -407,8 +407,8 @@ impl Game {
     }
 
     /// 0x1693C with kind 3: food `item` was eaten by its +$70 player. Record: +6 = item +$6C
-    /// (100 healed, 99 = points instead), +8 = food id (+$26), +$A = item pointer.
-    /// Quirk kept: for name id 2 the item's +$6A is set to 100.
+    /// (100 healed, 99 = points instead), +8 = food id (+$26), +$A = item pointer, a long: `a6` is sign extended on both paths (0x28AE2
+    /// `movea.w`, and the pool E loop), so its high word is 0xFFFF; word 7 is not written. Quirk kept: for name id 2 the item's +$6A is set to 100.
     pub fn hud_food(&mut self, item: Handle) {
         let p = self.body(item).partner;
         if !Self::hud_is_player(p) {
@@ -426,7 +426,8 @@ impl Game {
         self.hud_ring_push(who as usize, m, 7);
     }
 
-    /// 0x16A5A with kind 4: treasure `item` picked up by its +$70 player. +6 = treasure id.
+    /// 0x16A5A with kind 4: treasure `item` picked up by its +$70 player. +6 = treasure id, +8 the item pointer (a long, `a6` of the pool E
+    /// loop, sign extended: high word 0xFFFF; MAME ep3_hannah frame 1780); words 6 and 7 are not written.
     pub fn hud_treasure(&mut self, item: Handle) {
         let p = self.body(item).partner;
         if !Self::hud_is_player(p) {

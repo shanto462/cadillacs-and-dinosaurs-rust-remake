@@ -441,7 +441,21 @@ MAME wins over the design text; the design documents themselves are not edited.
 - D4e s4.1 and S12 (weapon sounds, M4-18): every caller of 0x9C76, 0x9CD8 and 0x9D9C is a pool object (the weapon items and two enemy classes), whose +$82 is the pool tag, so the item rows 0xEA, 0xE7, 0xDC are the only ones played and the player rows (0x9CD4, 0x9D40, 0x9E04) have no caller. All of the item rows have d1 = (3, or 4 when the weapon's +$24 is set) << 16 | 0x2000 | pan, d2 = 0x15000000 (rifle, pistol, shotgun) or 0x2400000 (Uzi, M-16); the bazooka 0x9E08 has the mode 5 / 6, the middle byte 0x12 and d2 = 0xC41240; eating 0x9F54 has d1 = 0x70000 | pan, d2 = 0; the statue break 0xA396 (0x89) has the pan only. Treasure has no sound of its own (the pick-up voice 0x9C20 is the only sound of a treasure).
 
 ## Open exactness items (M10), 2026-10-19
-
 - c14c_mustapha record 2052: the port's treasure collect (pool E mode 2 sub 8, item 99B4, item_treasure_collect -> 0x16A5A) pushes a ring message; MAME runs the same collect at the same record but writes no ring word (watched FFEBFE / FFEBD8), although the conditions of 0x16A5A seem to hold. Needs a MAME breakpoint on 0x16A5A (or the jsr at 0x2A110) at vblank 3885.
 - c14c_mustapha records 354 .. 388: G.$868 display_y2 MAME 0100, port 00FF: the port has a shake offset of -1 that MAME does not have there; no shake request (G.$755C) in either trace near record 354.
 - The m600 / m700 / m800 probe recordings without a NAME.pokes.txt sidecar cannot replay the probe's holds (the god hold writes +$F9 = 0x7F before each tick): 25 recordings; being regenerated (Desktop Haiku task 23).
+## Episode 3 acceptance (M6-31 / M6-32, Task 10, 2026-10-19)
+- B95 (the sky blend, 0x92220): the init reads the target colours and the palette address from 0x922D0 by variant * 4 and the period from 0x922C8 by variant / 2
+  (15, 15, 2, 2, 2, 2, 2); the first round runs in the frame after the init; after 16 rounds it frees itself (MAME m631_blend_1200: gone between 214 and 216).
+- Walther (class 18, variant high byte set): the init goes straight to the fight start and the approach (0x42690 -> 0x42864 -> 0x42B96) and skips the draw check
+  0x426A6 of the intro path: `+$01` stays 0 in that frame.
+- The HUD ring records of food (0x1693C) and treasure (0x16A5A) store `a6` as a long: sign extended (0xFFFF high word; the pool E loop's `a6` and the
+  `movea.w` at 0x28AE2), and they leave the words after it (food: word 7, treasure: words 6 and 7) as an older message left them.
+- 0x12720 (the hit spark): `add.l d2,d0 ; lsr.l #1,d0` brings the low bit of the upper words into bit 15 of X. The player passes leave 0 there; the car's
+  container pass 0x122D8 calls its box test with a leftover d0, and the `mulu.w #$c,d0` of 0x12916 leaves the product's high word, so its sparks can have X
+  bit 15 set (ep3_jack 2446).
+- The wave controller that the car ends in its wait (0x7B39A -> 0x7B4DE) keeps its group's own address in `+$A0`; only the end step (sub 4) leaves the end word
+  + 6. The free 0x4938 keeps `+$A0`.
+- The tally task (0xB97E) uses the struct G.$735E after the stage intro task without clearing it: the intro's `+2`, `+3` and `+4` (the marker time, 0xFFEC)
+  stay until the tally writes them.
+- Player 3's start and coin are bits 7 and 6 of the P3 port (IN2), so they also show in G.$18 (MAME ep3_3p frame 400); the harness script now sets them.

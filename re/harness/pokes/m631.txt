@@ -1,0 +1,40 @@
+# M6-31 (Episode 3 scenery): the sky blend B95 (D3e part 2 A204: variant 0 at camera 0x1200, variant 2 at 0x2500) and the tire stacks (A206: E5 variant 0xC,
+# HP 4, puffs, no item), as the d3e2 run3 / run4 segments e3-blend-timer, e3-sky-2500, e3a0-hit-b00-14 and e3a0-hit-d80-14, with snapshots and traces.
+segment m631_blend_1200
+jump 3 0 0x1200
+god on
+time 10:00
+0 snapshot keep
+trace 300
+segment m631_sky_2500
+jump 3 0 0x2500
+god on
+time 10:00
+0 snapshot keep
+trace 300
+segment m631_tire_b00
+jump 3 0 0x901
+god on
+time 10:00
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+3 poke 0xFFB27C 2 0xaf8
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x14
+3 poke 0xFFB298 1 1
+4 snapshot keep
+20-22:A,38-40:A,56-58:A,74-76:A,92-94:A,110-112:A
+trace 180
+segment m631_tire_d80
+jump 3 0 0xB80
+god on
+time 10:00
+hold 0xFF850E 1 2
+hold 0xFF8506 1 1
+3 poke 0xFFB27C 2 0xd78
+3 poke 0xFFB280 2 0
+3 poke 0xFFB284 2 0x14
+3 poke 0xFFB298 1 1
+4 snapshot keep
+20-22:A,38-40:A,56-58:A,74-76:A,92-94:A,110-112:A
+trace 180

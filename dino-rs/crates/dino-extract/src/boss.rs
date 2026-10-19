@@ -116,6 +116,8 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x74A42, 0x40, "Fessenden aggression gate"),
     (0x74A82, 0x100, "Fessenden action choices"),
     (0x32D7E, 0x0E, "boss four-slot offsets including six-slot carryover"),
+    // The Episode 3 sky blend, pool B 95 (M6-31, 0x92220): the periods by variant / 2 (0x922C8) and the target / palette address pairs (0x922D0).
+    (0x922C8, 0x40, "sky blend periods and targets"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {

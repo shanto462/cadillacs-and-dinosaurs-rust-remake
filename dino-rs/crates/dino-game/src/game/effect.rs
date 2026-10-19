@@ -801,6 +801,12 @@ impl Game {
     /// X = middle of the overlap (unsigned compares with a +0x400 bias), Y = (max of the bottoms
     /// + max of the tops) / 2 (as coded, not the overlap middle), depth = min - 1 (>= 0).
     pub fn spawn_hit_spark(&mut self, attacker: Handle, defender: Handle, ha: HitBox, hb: HitBox, spark: u8) -> bool {
+        self.spawn_hit_spark_d0(attacker, defender, ha, hb, spark, 0)
+    }
+
+    /// 0x12720 with the upper word of d0 the caller leaves (`d0_hi`): the `add.l d2,d0 ; lsr.l #1,d0` brings its low bit into bit 15 of X.
+    /// The player passes leave 0 there; the car's container pass leaves the high word of the `mulu.w #$c,d0` of its box test (`car.rs`).
+    pub fn spawn_hit_spark_d0(&mut self, attacker: Handle, defender: Handle, ha: HitBox, hb: HitBox, spark: u8, d0_hi: u16) -> bool {
         let (a, d) = (self.body(attacker), self.body(defender));
         let al = collide::left(a, &ha);
         let bl = collide::left(d, &hb);
@@ -808,8 +814,9 @@ impl Game {
         let (r0, r1) = (al.wrapping_add(ha.xsize).wrapping_add(0x400) as u16, bl.wrapping_add(hb.xsize).wrapping_add(0x400) as u16);
         let l = if l1 < l0 { l0 } else { l1 }; // cmp.w d0,d1 ; bcs
         let r = if r1 > r0 { r0 } else { r1 }; // cmp.w d2,d4 ; bhi
-        // add.l d2,d0 ; lsr.l #1,d0 (upper words are 0 at this call) ; subi.w #$400,d0
-        let x = (((l as u32 + r as u32) >> 1) as u16).wrapping_sub(0x400) as i16;
+        // add.l d2,d0 ; lsr.l #1,d0 (the upper word of d2 is 0 here, that of d0 is the caller's) ; subi.w #$400,d0
+        let sum = ((d0_hi as u32) << 16).wrapping_add(l as u32).wrapping_add(r as u32);
+        let x = ((sum >> 1) as u16).wrapping_sub(0x400) as i16;
         let y = hit_y(a, &ha, d, &hb);
         let mut z = a.zi();
         if d.zi() < z {
