@@ -233,10 +233,11 @@ impl Bot {
 
     /// The state of the game in one line: the camera, the first hero, the live enemies (class, X, Z, mode), the clock.
     fn state_line(g: &Game) -> String {
-        let live: Vec<String> = g.enemies.slots.iter().filter(|e| e.b.live != 0).map(|e| format!("{}@{:x}:{:x}:m{:x}.{:x}h{:x}", e.b.k20 / 4, e.b.xi(), e.b.zi(), e.b.mode, e.b.sub, e.b.hp)).collect();
+        let live: Vec<String> = g.enemies.slots.iter().filter(|e| e.b.live != 0).map(|e| format!("{}@{:x}:{:x}:{:x}:m{:x}.{:x}.{:x}.{:x}h{:x}a{:x}t{:x}", e.b.k20 / 4, e.b.xi(), e.b.zi(), e.b.yi(), e.b.mode, e.b.sub, e.b.act, e.b.step, e.b.hp, e.b.airborne, e.m.b(0x7D))).collect();
+        let props: Vec<String> = g.props.slots.iter().filter(|p| p.b.live != 0).map(|p| format!("{}:m{:x}.{:x}", p.b.k20 / 4, p.b.mode, p.b.sub)).collect();
         let p = &g.players[0];
         format!(
-            "episode {} area {} cam x {:x} y {:x} mode {:x}.{:x} lock {} go {} scripted {:x} | p0 x {:x} z {:x} y {:x} hp {} live {} st {:x} wall {:x} vx {:x} | alive {} wave {} enemies {:?} time {:x}:{:02x}",
+            "episode {} area {} cam x {:x} y {:x} mode {:x}.{:x} lock {} go {} scripted {:x} | p0 x {:x} z {:x} y {:x} hp {} live {} st {:x} wall {:x} vx {:x} | alive {} wave {} enemies {:?} props {:?} time {:x}:{:02x}",
             g.w.stage + 1,
             g.cam.s2.area,
             g.cam.s2.cam_x,
@@ -257,6 +258,7 @@ impl Bot {
             g.spawn.g.alive,
             g.spawn.g.wave_timer,
             live,
+            props,
             g.rank.time_min,
             g.rank.time_sec
         )
