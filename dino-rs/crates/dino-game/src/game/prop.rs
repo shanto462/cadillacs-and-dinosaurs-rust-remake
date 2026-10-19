@@ -178,6 +178,11 @@ mod b4;
 mod b60;
 #[path = "prop/b55_56.rs"]
 mod b55_56;
+// Episode 6 swamp scenery (M8-05): swamp water surface (8) and end of forest swamp water (39).
+#[path = "prop/b8.rs"]
+mod b8;
+#[path = "prop/b39.rs"]
+mod b39;
 
 #[derive(Clone, Debug, Default)]
 pub struct Prop {
@@ -232,6 +237,8 @@ impl Game {
                 3 => self.prop_b3(&mut p, h, i),
                 4 => self.prop_b4(&mut p, i),
                 7 => self.prop_b7(&mut p, i),
+                8 => self.prop_b8(&mut p, i),
+                39 => self.prop_b39(&mut p, i),
                 55 => self.prop_b55(&mut p, i),
                 56 => self.prop_b56(&mut p, i),
                 60 => self.prop_b60(&mut p, i),

@@ -291,4 +291,35 @@ mod tests {
         g.pool_b_update();
         assert_eq!(live(&g).unwrap().b.mode, 4);
     }
+
+    /// Var 0: 5 pictures every 24 frames, then 96 frame pause, then picture 0 again.
+    #[test]
+    fn var0_five_pictures_then_pause_of_96_frames() {
+        let mut g = game();
+        paint(&mut g);
+        g.spawn_prop(7, 0, None).unwrap();
+        // Update 1 (mode 0) + 15 updates: 16th update writes picture 0 (offset 0x0A -> 0x1100)
+        for _ in 0..16 {
+            g.pool_b_update();
+        }
+        assert_eq!(cell2(&g, NEAR_AT).0, 0x1100);
+
+        // Pictures 1..4 (indexes 2, 4, 6, 8), one every 24 frames
+        let expected = [0x1110u16, 0x1120, 0x1110, 0x1120];
+        for exp in expected {
+            for _ in 0..24 {
+                g.pool_b_update();
+            }
+            assert_eq!(cell2(&g, NEAR_AT).0, exp);
+        }
+        let p = live(&g).unwrap();
+        assert_eq!((p.m.b(0xA0), p.m.w(0xA2)), (0x60, 0), "fifth picture starts 96-frame pause");
+
+        for _ in 0..95 {
+            g.pool_b_update();
+        }
+        assert_eq!(cell2(&g, NEAR_AT).0, 0x1120, "pause holds last picture");
+        g.pool_b_update();
+        assert_eq!(cell2(&g, NEAR_AT).0, 0x1100, "cycle restarts at picture 0");
+    }
 }

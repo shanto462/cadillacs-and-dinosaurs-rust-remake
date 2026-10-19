@@ -57,6 +57,11 @@ const TABLES: &[(u32, u32, &str)] = &[
     // Pool B class 7 (0x76CD2), near pictures (var 0) and far-layer pictures (var 4) (M6-16).
     (0x76D64, 0x22, "B7 var 0 picture offsets and tiles (0x76CD2)"),
     (0x76DF6, 0x18, "B7 var 4 far-layer pictures (0x76CD2)"),
+    // Pool B class 8 (0x76E0E), swamp water surface phase, records and tile codes (M8-05).
+    (0x76ECE, 0xEA, "B8 water phase and records (0x76E0E)"),
+    (0x770F6, 0xD80, "B8 water tile codes (0x76E0E)"),
+    // Pool B class 39 (0x830C6), swamp water surface pictures (M8-05).
+    (0x831BE, 0x4E0, "B39 swamp water pictures (0x830C6)"),
     // Pool B classes 61, 63, 41, 52, 54 (M8-17): Episode 7 lab and library events.
     (0x865BA, 0x36, "B61 lab lights A step pointers (0x864DA)"),
     (0x86AD8, 0x64, "B63 lab lights B step pointers (0x869E6)"),
