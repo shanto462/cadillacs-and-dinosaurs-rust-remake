@@ -1,0 +1,4 @@
+# M9-02: Mess, the partner of Mustapha, holds the stick and attacks in the flight (air attack 0x10)
+0-139:
+145-175:2R
+150-152:2A

@@ -1,0 +1,6 @@
+# M9-02: Hannah picks up a knife (item var 4), ties up with Jack, and attacks in the run with 2R held
+0-4:
+5-6:2A
+7-99:
+100-200:2R
+134-135:2A

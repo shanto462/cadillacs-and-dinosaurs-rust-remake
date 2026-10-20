@@ -1,0 +1,8 @@
+# P1 Mess, P2 Mustapha (M9-01 / M9-02): power on, two players, P1 and P2 choose their heroes.
+600-607:1C
+640-647:2C
+700-705:1S
+740-745:2S   # join while character select is open
+800-803:1L
+820-823:2R
+900-905:1A2A

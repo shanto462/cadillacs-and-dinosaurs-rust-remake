@@ -1,0 +1,4 @@
+# M9-02: Hannah holds left in the run (the first 20 frames still go straight ahead), attacks with a direction held
+0-99:
+100-170:2L
+134-135:2A

@@ -1,0 +1,4 @@
+# M5: Hannah attacks without direction held (standing jab)
+0-125:
+126-127:2A
+128-239:

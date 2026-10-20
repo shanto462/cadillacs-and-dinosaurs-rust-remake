@@ -1068,6 +1068,8 @@ impl Player {
         f.u8(0xBF, "mash_cd", &mut self.mash_cd);
         f.u8(0xC0, "bc0", &mut self.bc0);
         f.u8(0xC1, "bc1", &mut self.bc1);
+        f.u8(0xC2, "tag_c2", &mut self.c2);
+        f.u8(0xC3, "tag_c3", &mut self.c3);
         f.u8(0xC4, "weapon_atk", &mut self.weapon_atk);
         f.u8(0xC5, "drop", &mut self.drop);
         f.u8(0xC6, "power", &mut self.power);

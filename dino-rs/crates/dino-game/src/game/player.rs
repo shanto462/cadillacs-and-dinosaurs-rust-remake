@@ -18,6 +18,9 @@ use dino_assets::player::PlayerData;
 
 #[path = "player_weapon.rs"]
 mod weapon;
+// The tag team move (M9-01, M9-02): the trigger, the swing and the partner states.
+#[path = "player_tag.rs"]
+mod tag;
 // The scripted control of the heroes (M2-08, M2-09): a child module, it runs the scripted player states (0x2A, 0x2C, 0x18, 0x34 ...).
 #[path = "script.rs"]
 pub mod script;
@@ -107,6 +110,9 @@ pub struct Player {
     /// +$C0, +$C1 (set by stage code) [U].
     pub bc0: u8,
     pub bc1: u8,
+    /// +$C2 / +$C3 the tag team counters, one for each of the other two players (0x6728, `player_tag.rs`).
+    pub c2: u8,
+    pub c3: u8,
     /// +$C4 weapon attack active, +$C5 drop weapon request.
     pub weapon_atk: u8,
     pub drop: u8,
@@ -1089,7 +1095,7 @@ impl Game {
             0x18 => self.player_pose(i), // 0x19A0A the pose (scripted scenes, extra life)
             0x2A => self.player_hops(i), // 0x19EB2 two small hops (script action 0x3A)
             0x2C => self.player_chest_pose(i), // 0x19F6A the pose with an effect (script action 0x3E)
-            // 0x1A (the second extra life state, 0x19A7C) is M2-17.
+            0x1A => self.player_tag_swing(i), // 0x19A7C the swing of the tag team initiator
             _ => self.player_idle_entry(i),
         }
     }
@@ -1849,7 +1855,8 @@ impl Game {
         match self.players[i].b.step {
             0 => self.player_run(i),
             2 => self.player_run_swing(i),
-            // 0x04 (the two-player tie-up, entered from 0x6866) and 0x06 (0x1E1EE): not ported.
+            0x04 => self.player_tag_run(i), // 0x1A330 the partner of Jack's tag team (entered from 0x686E)
+            // 0x06 (0x1E1EE): not ported.
             _ => self.player_idle_entry(i),
         }
     }
@@ -2019,7 +2026,9 @@ impl Game {
                     self.player_idle_entry(i);
                 }
             }
-            // 0x22..0x26 partner moves: TODO.
+            0x22 => self.player_tag_air(i, 0x1B), // 0x1B0F6 Hannah's partner (Jump)
+            0x24 => self.player_tag_air(i, 0x1A), // 0x1B226 Mustapha's partner (Let's Roll)
+            0x26 => self.player_tag_air(i, 0x1C), // 0x1B356 Mess's partner (Let's Fly)
             _ => self.player_fall_entry(i),
         }
     }

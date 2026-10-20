@@ -348,7 +348,7 @@ impl Game {
         self.pool_c_update(); // 0x237B2 effects
         self.held_players_update(); // 0x188DA
         self.terrain_obstacles_swap(); // 0xE9B0: this frame's obstacles are the next frame's list
-        // 0x670C: not ported yet.
+        self.tag_trigger(); // 0x670C: the tag team trigger
         self.hud_objects_tail(); // 0x100DA score display, 0x1667E low vitality blink
         self.background_update(); // 0x2042E
         self.terrain_advance(); // 0x12C90
