@@ -1391,16 +1391,22 @@ impl Game {
             f.u32(0x0674, "spawn_list1", &mut p1);
             f.u32(0x0678, "spawn_list2", &mut p2);
             if f.loading() {
-                // a loaded pointer is an index into the list it belongs to (the base kept, else the current stage's list)
-                let (k1, k2) = (list_index(p1, b1, 14), list_index(p2, b2, 16));
-                (self.spawn.base1, self.spawn.l1) = match k1 {
-                    Some(k) => (b1, k),
-                    None => (sc.list1_addr, (p1.wrapping_sub(sc.list1_addr) / 14) as usize),
-                };
-                (self.spawn.base2, self.spawn.l2) = match k2 {
-                    Some(k) => (b2, k),
-                    None => (sc.list2_addr, (p2.wrapping_sub(sc.list2_addr) / 16) as usize),
-                };
+                // A loaded pointer is an index into the list that CONTAINS it (its record or the end record): the current area's list
+                // first, then the kept one, then any other area's. Being on the record grid of the kept base is not enough: the next
+                // area's list follows in ROM, so its pointers are on that grid too, and the kept (parsed) list would end too early.
+                let kept1 = a.enemy.stages.iter().flat_map(|x| x.areas.iter()).find(|x| x.list1_addr == b1);
+                let kept2 = a.enemy.stages.iter().flat_map(|x| x.areas.iter()).find(|x| x.list2_addr == b2);
+                let all = || a.enemy.stages.iter().flat_map(|x| x.areas.iter());
+                let in1 = |x: &dino_assets::enemy::AreaScript| list_index(p1, x.list1_addr, 14).filter(|&k| k <= x.list1.len()).map(|k| (x.list1_addr, k));
+                let in2 = |x: &dino_assets::enemy::AreaScript| list_index(p2, x.list2_addr, 16).filter(|&k| k <= x.list2.len()).map(|k| (x.list2_addr, k));
+                (self.spawn.base1, self.spawn.l1) = in1(sc)
+                    .or_else(|| kept1.and_then(in1))
+                    .or_else(|| all().find_map(in1))
+                    .unwrap_or((sc.list1_addr, (p1.wrapping_sub(sc.list1_addr) / 14) as usize));
+                (self.spawn.base2, self.spawn.l2) = in2(sc)
+                    .or_else(|| kept2.and_then(in2))
+                    .or_else(|| all().find_map(in2))
+                    .unwrap_or((sc.list2_addr, (p2.wrapping_sub(sc.list2_addr) / 16) as usize));
                 self.spawn.area = self.cam.s2.area;
             }
         }
@@ -1430,17 +1436,22 @@ impl Game {
         let mut p = base + 12 * t.seg as u32;
         f.u32(0x06AC, "floor_ptr", &mut p);
         if f.loading() {
-            match list_index(p, base, 12) {
-                Some(k) => {
-                    t.list = base;
+            // As the spawn pointers: the floor list that contains the pointer (the current area's, the kept one, then any other).
+            let floor = &self.assets.terrain.floor;
+            let fit = |l: &dino_assets::terrain::FloorList| list_index(p, l.addr, 12).filter(|&k| k < l.segs.len()).map(|k| (l.addr, k));
+            let cur = floor.get(self.w.stage as usize).and_then(|x| x.get(self.cam.s2.area as usize)).and_then(fit);
+            let kept = floor.iter().flatten().find(|l| l.addr == base).and_then(fit);
+            match cur.or(kept).or_else(|| floor.iter().flatten().find_map(fit)) {
+                Some((addr, k)) => {
+                    t.list = addr;
                     t.seg = k;
                 }
                 None => {
                     t.list = list;
                     t.seg = if list == 0 { 0 } else { (p.wrapping_sub(list) / 12) as usize };
+                    t.seg = t.seg.min(len.saturating_sub(1));
                 }
             }
-            t.seg = t.seg.min(len.saturating_sub(1));
         }
         f.i16(0x06B0, "floor_base", &mut t.base);
         if f.loading() && t.scene.is_empty() && vertical {
