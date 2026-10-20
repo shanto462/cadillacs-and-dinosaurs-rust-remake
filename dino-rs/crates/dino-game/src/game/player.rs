@@ -3869,7 +3869,8 @@ impl Game {
                 p.b.live = 2;
                 p.set_b80(0x3C);
                 p.b.sub = 2;
-                // every 32 frames 0x5DD30 (voice). Not ported.
+                // 0x1BF68: every 32 frames 0x5DD30, a ROM checksum (bytes 0x30..0x41A against 0x137E8; a bad sum corrupts the stack).
+                // It passes for an original dump, so it does nothing here.
             }
             2 => {
                 if self.w.stage_clear != 0 {
