@@ -51,6 +51,8 @@ pub struct Terrain {
     /// G.$6AC: the floor segment the lookup starts from, as an index into the list of the
     /// current stage and area (the original keeps the ROM address).
     pub seg: usize,
+    /// ROM address of the floor list `seg` indexes (set at the area start, see `terrain_area_start`). 0 = not set yet.
+    pub list: u32,
     /// G.$6B0: height of the lower level used by the street edge shapes (table 0x12C40).
     pub base: i16,
     /// G.$6A2A..$6A58: the obstacle list storage. Pushes (0x4A96) fill it from the top, slot 0 =
@@ -68,7 +70,7 @@ pub struct Terrain {
 
 impl Default for Terrain {
     fn default() -> Self {
-        Terrain { seg: 0, base: 0, buf: [0; OBSTACLE_SLOTS], scene: Vec::new(), count: 0, prev: 0 }
+        Terrain { seg: 0, list: 0, base: 0, buf: [0; OBSTACLE_SLOTS], scene: Vec::new(), count: 0, prev: 0 }
     }
 }
 
@@ -540,6 +542,12 @@ impl Game {
     /// The floor segment list of the current stage and area.
     fn terrain_segs(&self) -> &'static [FloorSegment] {
         let t = &self.assets.terrain;
+        // The list G.$6AC points to: the one of the area start (`terrain.list`), not the current stage's (a stage change does not move it).
+        if self.terrain.list != 0 {
+            if let Some(l) = t.floor.iter().flatten().find(|l| l.addr == self.terrain.list) {
+                return l.segs.as_slice();
+            }
+        }
         t.floor
             .get(self.w.stage as usize)
             .and_then(|a| a.get(self.cam.s2.area as usize))
@@ -563,6 +571,7 @@ impl Game {
     pub fn terrain_area_start(&mut self) {
         self.terrain.base = self.assets.terrain.floor_base[self.w.stage as usize & 7];
         self.terrain.seg = 0;
+        self.terrain.list = self.terrain_list_addr();
         if self.w.vertical_scene != 0 {
             self.terrain.scene = self.assets.terrain.scene_map.clone();
         }

@@ -1372,13 +1372,23 @@ impl Game {
         let st = self.w.stage as usize;
         let area = self.cam.s2.area as usize & 3;
         if let Some(sc) = a.enemy.stages.get(st).and_then(|s| s.areas.get(area)) {
-            let mut p1 = sc.list1_addr.wrapping_add(14u32.wrapping_mul(self.spawn.l1 as u32)); // wraps: a snapshot poked to another stage holds a stale pointer
-            let mut p2 = sc.list2_addr.wrapping_add(16u32.wrapping_mul(self.spawn.l2 as u32));
+            // The pointers are the bases of the lists (set at the area start) plus the index: a stage change moves neither.
+            let (b1, b2) = if self.spawn.base1 != 0 { (self.spawn.base1, self.spawn.base2) } else { (sc.list1_addr, sc.list2_addr) };
+            let mut p1 = b1.wrapping_add(14u32.wrapping_mul(self.spawn.l1 as u32)); // wraps: a snapshot poked to another stage holds a stale pointer
+            let mut p2 = b2.wrapping_add(16u32.wrapping_mul(self.spawn.l2 as u32));
             f.u32(0x0674, "spawn_list1", &mut p1);
             f.u32(0x0678, "spawn_list2", &mut p2);
             if f.loading() {
-                self.spawn.l1 = (p1.wrapping_sub(sc.list1_addr) / 14) as usize;
-                self.spawn.l2 = (p2.wrapping_sub(sc.list2_addr) / 16) as usize;
+                // a loaded pointer is an index into the list it belongs to (the base kept, else the current stage's list)
+                let (k1, k2) = (list_index(p1, b1, 14), list_index(p2, b2, 16));
+                (self.spawn.base1, self.spawn.l1) = match k1 {
+                    Some(k) => (b1, k),
+                    None => (sc.list1_addr, (p1.wrapping_sub(sc.list1_addr) / 14) as usize),
+                };
+                (self.spawn.base2, self.spawn.l2) = match k2 {
+                    Some(k) => (b2, k),
+                    None => (sc.list2_addr, (p2.wrapping_sub(sc.list2_addr) / 16) as usize),
+                };
                 self.spawn.area = self.cam.s2.area;
             }
         }
@@ -1404,10 +1414,20 @@ impl Game {
         let (list, len) = (self.terrain_list_addr(), self.terrain_list_len());
         let (vertical, scene) = (self.w.vertical_scene != 0, &self.assets.terrain.scene_map);
         let t = &mut self.terrain;
-        let mut p = list + 12 * t.seg as u32;
+        let base = if t.list != 0 { t.list } else { list }; // the list of the area start (G.$6AC keeps its address)
+        let mut p = base + 12 * t.seg as u32;
         f.u32(0x06AC, "floor_ptr", &mut p);
         if f.loading() {
-            t.seg = if list == 0 { 0 } else { (p.wrapping_sub(list) / 12) as usize };
+            match list_index(p, base, 12) {
+                Some(k) => {
+                    t.list = base;
+                    t.seg = k;
+                }
+                None => {
+                    t.list = list;
+                    t.seg = if list == 0 { 0 } else { (p.wrapping_sub(list) / 12) as usize };
+                }
+            }
             t.seg = t.seg.min(len.saturating_sub(1));
         }
         f.i16(0x06B0, "floor_base", &mut t.base);
@@ -1501,11 +1521,21 @@ impl Game {
         f.u16(b + 0x50, "push50", &mut s.push50);
         f.u16(b + 0x52, "up52", &mut s.up52);
         f.u16(b + 0x54, "down54", &mut s.down54);
-        let ev_base = self.assets.stages.stages.get(self.w.stage as usize).map(|x| x.camera_events_addr).unwrap_or(0);
+        let ev_stage = self.assets.stages.stages.get(self.w.stage as usize).map(|x| x.camera_events_addr).unwrap_or(0);
+        let ev_base = if s.event_base != 0 { s.event_base } else { ev_stage }; // the list of the last event load (0x2099A)
         let mut p = ev_base.wrapping_add(16u32.wrapping_mul(s.next_event as u32));
         f.u32(b + 0x56, "next_event", &mut p);
         if f.loading() {
-            s.next_event = (p.wrapping_sub(ev_base) / 16) as usize;
+            match list_index(p, ev_base, 16) {
+                Some(k) => {
+                    s.event_base = ev_base;
+                    s.next_event = k;
+                }
+                None => {
+                    s.event_base = ev_stage;
+                    s.next_event = (p.wrapping_sub(ev_stage) / 16) as usize;
+                }
+            }
             s.map_area = s.area;
             // +$42 names the map in use: an area reached by walking keeps the map of the area before it (0x207CA runs only at an
             // area start; Episode 5 area 1 has no map of its own, w = 0), so the area byte alone can name an empty map.
@@ -2279,6 +2309,13 @@ impl<T> Pool<T> {
         let d = h.wrapping_sub(self.base);
         (h >= self.base && d % self.stride == 0 && ((d / self.stride) as usize) < self.slots.len()).then(|| (d / self.stride) as usize)
     }
+}
+
+/// The index of the record at pointer `p` in a list at `base` with records of `stride` bytes (`None` when `p` is not one of
+/// its records: no base, below it, off the record grid, or far beyond any list).
+fn list_index(p: u32, base: u32, stride: u32) -> Option<usize> {
+    let d = p.wrapping_sub(base);
+    (base != 0 && p >= base && d % stride == 0 && d / stride < 0x1000).then_some((d / stride) as usize)
 }
 
 #[cfg(test)]
