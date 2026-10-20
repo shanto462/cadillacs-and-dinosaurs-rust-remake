@@ -636,6 +636,9 @@ impl Game {
             self.flow.cont.level3.clear();
         }
         self.sprites.wipe();
+        // 0xEF44 / 0xEF4A: the far scroll base of the normal backdrop (move.w #$9100,$2e(a5)), then the saved mode is restored.
+        // (G.$2C = 0x90C0 is not modelled.) Without this G.$2E stays at the flash value 0x9200 after the continue (MAME at 6230 of ep6_jack).
+        self.w.scroll3_base = 0x9100;
         let saved = self.flow.saved_mode;
         self.flow.mode = 0xC;
         self.flow.sub = saved[1];
