@@ -137,11 +137,10 @@ impl Game {
     }
 
     /// 0x85B04: pool B class 56 mode 4 update (exit phase).
-    fn prop_b56_mode4(&mut self, p: &mut Prop, i: usize) {
+    fn prop_b56_mode4(&mut self, p: &mut Prop, _i: usize) {
         // 0x85B04: cmpi.w #$580, $744(a5) ; bgt 0x85B56
         if self.cam.s2.cam_x > 0x580 {
-            p.b.mode = 6;
-            self.prop_free(p, i);
+            p.b.mode = 6; // 0x85B56: move.b #$6, $4(a6); rts. The free runs in the next tick (mode 6 -> 0x4938)
             return;
         }
 
@@ -152,8 +151,7 @@ impl Game {
         let a2 = p.m.w(0xA2).wrapping_sub(1);
         p.m.sw(0xA2, a2);
         if (a2 as i16) < 0 {
-            p.b.mode = 6;
-            self.prop_free(p, i);
+            p.b.mode = 6; // 0x85B56: the free is the next tick's mode 6
         }
     }
 
