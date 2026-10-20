@@ -1,0 +1,5 @@
+# probe segment m521b_hud_items_2p: the key lines after the snapshot (frame 0 = first game frame after it)
+8-8:A
+76-76:A
+8-8:2A
+76-76:2A

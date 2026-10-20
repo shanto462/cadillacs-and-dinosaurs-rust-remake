@@ -2209,6 +2209,38 @@ impl Game {
             }
             return true;
         }
+        // The free list words of the five pools (probe `spawn`, `spawn_pokes.py`): the pointer word moving up by 2 takes the top
+        // slot off the free stack, as the allocators 0x4818 / 0x4860 / 0x483C / 0x4884 / 0x48A8 do; the count word is the stack
+        // length and follows by itself (a count that does not agree with the pointer is not a state of the original).
+        if size == 2 {
+            for (k, (cnt, ptr, end)) in FREE_LISTS.iter().enumerate() {
+                if addr == g(*cnt) {
+                    return true;
+                }
+                if addr == g(*ptr) {
+                    if apply {
+                        let len = |s: &Game| match k {
+                            0 => s.items.free.len(),
+                            1 => s.props.free.len(),
+                            2 => s.enemies.free.len(),
+                            3 => s.effects.free.len(),
+                            _ => s.specials.free.len(),
+                        } as u32;
+                        let now = 0x8000 + end - 2 * len(self);
+                        if value == now + 2 {
+                            match k {
+                                0 => self.items.free.pop(),
+                                1 => self.props.free.pop(),
+                                2 => self.enemies.free.pop(),
+                                3 => self.effects.free.pop(),
+                                _ => self.specials.free.pop(),
+                            };
+                        }
+                    }
+                    return true;
+                }
+            }
+        }
         false
     }
 
@@ -2231,6 +2263,12 @@ impl Game {
         }
         for a in [g(0x046B), g(0x757A), g(0x757B)] {
             map[(a - RAM) as usize] = 1;
+        }
+        for (cnt, ptr, _) in FREE_LISTS {
+            for a in [g(cnt), g(ptr)] {
+                map[(a - RAM) as usize] = 1;
+                map[(a + 1 - RAM) as usize] = 1;
+            }
         }
         map
     }
@@ -2360,6 +2398,28 @@ mod tests {
         assert_eq!(b.enemies.slots[e].m.w(0x76), 0xB274);
         // The next allocation is the same slot on both sides.
         assert_eq!(b.enemies.alloc(), a.enemies.alloc());
+    }
+
+    /// The probe's `spawn` (replayed by `spawn_pokes.py`) takes the top slot off a free list: the pointer word moves up by 2 and the count
+    /// goes down by one. A pointer poke does that to the port's free stack, the count poke follows by itself, a pointer that moves anywhere
+    /// else is ignored.
+    #[test]
+    fn a_poke_of_a_free_list_pointer_takes_the_top_slot() {
+        for (k, (cnt, ptr, end)) in FREE_LISTS.iter().enumerate() {
+            let mut a = Game::new(assets());
+            let len = |g: &Game| match k { 0 => g.items.free.len(), 1 => g.props.free.len(), 2 => g.enemies.free.len(), 3 => g.effects.free.len(), _ => g.specials.free.len() };
+            let before = len(&a);
+            let now = 0x8000 + end - 2 * before as u32;
+            a.trace_poke(g(*ptr), 2, now + 4).unwrap(); // not one slot: ignored
+            assert_eq!(len(&a), before);
+            a.trace_poke(g(*ptr), 2, now + 2).unwrap();
+            a.trace_poke(g(*cnt), 2, before as u32 - 1).unwrap();
+            assert_eq!(len(&a), before - 1, "pool {k}");
+        }
+        let mut a = Game::new(assets());
+        let top = a.items.free.last().copied().unwrap();
+        a.trace_poke(g(0x65FE), 2, 0x8000 + 0x6638 - 2 * a.items.free.len() as u32 + 2).unwrap();
+        assert!(!a.items.free.contains(&top));
     }
 
     #[test]

@@ -1,0 +1,4 @@
+# probe segment m520_ffi_club_n4_dz1: the key lines after the snapshot (frame 0 = first game frame after it)
+10-10:A
+70-70:A
+150-150:A

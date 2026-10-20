@@ -271,6 +271,8 @@ impl Game {
             }
         }
         self.flow.sub = 2;
+        // 0xEB46 / 0xEB4C: scroll 2 base 0x91C0 (not modelled), scroll 3 base G.$2E = 0x9200 for the continue screen.
+        self.w.scroll3_base = 0x9200;
         let hold = self.flow.front.sys.hold;
         self.flow.cont.raw.sb(0x1B, hold);
         self.flow.cont.raw.sb(0x1C, hold);

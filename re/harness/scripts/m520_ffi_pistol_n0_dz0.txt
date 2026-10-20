@@ -1,0 +1,3 @@
+# probe segment m520_ffi_pistol_n0_dz0: the key lines after the snapshot (frame 0 = first game frame after it)
+10-10:A
+70-70:A

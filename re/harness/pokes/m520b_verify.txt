@@ -1,0 +1,802 @@
+# M5-20 more D2c scenarios: the other weapons against bosses and monsters (second wave of m520_verify.txt).
+
+segment m520b_w_rifle_vice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=0 ax=1027 z=296
+3 spawn A 18 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+130-130:A
+trace 260
+
+segment m520b_w_rifle_butcher
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=0 ax=1027 z=296
+3 spawn A 61 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+130-130:A
+trace 260
+
+segment m520b_w_rifle_hogg
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=0 ax=1027 z=296
+3 spawn A 31 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+130-130:A
+trace 260
+
+segment m520b_w_rifle_mack
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=0 ax=1027 z=296
+3 spawn A 38 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+39 objset A hp 100
+129 objset A hp 100
+10-10:A
+40-40:A
+130-130:A
+trace 260
+
+segment m520b_w_rifle_slice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=0 ax=1027 z=296
+3 spawn A 25 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+130-130:A
+trace 260
+
+segment m520b_w_rifle_tyrog4
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=0 ax=1027 z=296
+3 spawn A 4 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+130-130:A
+trace 260
+
+segment m520b_w_uzi_vice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=6 ax=1027 z=296
+3 spawn A 18 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-100:A
+trace 220
+
+segment m520b_w_uzi_butcher
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=6 ax=1027 z=296
+3 spawn A 61 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-100:A
+trace 220
+
+segment m520b_w_uzi_hogg
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=6 ax=1027 z=296
+3 spawn A 31 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-100:A
+trace 220
+
+segment m520b_w_uzi_mack
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=6 ax=1027 z=296
+3 spawn A 38 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+39 objset A hp 100
+10-10:A
+40-100:A
+trace 220
+
+segment m520b_w_uzi_slice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=6 ax=1027 z=296
+3 spawn A 25 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-100:A
+trace 220
+
+segment m520b_w_uzi_tyrog4
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=6 ax=1027 z=296
+3 spawn A 4 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-100:A
+trace 220
+
+segment m520b_w_m16_vice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=8 ax=1027 z=296
+3 spawn A 18 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-100:A
+trace 220
+
+segment m520b_w_m16_butcher
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=8 ax=1027 z=296
+3 spawn A 61 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-100:A
+trace 220
+
+segment m520b_w_m16_hogg
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=8 ax=1027 z=296
+3 spawn A 31 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-100:A
+trace 220
+
+segment m520b_w_m16_mack
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=8 ax=1027 z=296
+3 spawn A 38 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+39 objset A hp 100
+10-10:A
+40-100:A
+trace 220
+
+segment m520b_w_m16_slice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=8 ax=1027 z=296
+3 spawn A 25 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-100:A
+trace 220
+
+segment m520b_w_m16_tyrog4
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=8 ax=1027 z=296
+3 spawn A 4 var=0 w5c=0x7fff ax=1174 z=296
+4 hold 0xffd99c 2 1174
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-100:A
+trace 220
+
+segment m520b_w_rod_vice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=14 ax=1027 z=296
+3 spawn A 18 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+70-70:A
+trace 200
+
+segment m520b_w_rod_butcher
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=14 ax=1027 z=296
+3 spawn A 61 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+70-70:A
+trace 200
+
+segment m520b_w_rod_hogg
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=14 ax=1027 z=296
+3 spawn A 31 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+70-70:A
+trace 200
+
+segment m520b_w_rod_mack
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=14 ax=1027 z=296
+3 spawn A 38 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+39 objset A hp 100
+69 objset A hp 100
+10-10:A
+40-40:A
+70-70:A
+trace 200
+
+segment m520b_w_rod_slice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=14 ax=1027 z=296
+3 spawn A 25 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+70-70:A
+trace 200
+
+segment m520b_w_rod_tyrog4
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=14 ax=1027 z=296
+3 spawn A 4 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+70-70:A
+trace 200
+
+segment m520b_w_stick_vice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=16 ax=1027 z=296
+3 spawn A 18 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 200
+
+segment m520b_w_stick_butcher
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=16 ax=1027 z=296
+3 spawn A 61 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 200
+
+segment m520b_w_stick_hogg
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=16 ax=1027 z=296
+3 spawn A 31 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 200
+
+segment m520b_w_stick_mack
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=16 ax=1027 z=296
+3 spawn A 38 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+39 objset A hp 100
+10-10:A
+40-40:A
+trace 200
+
+segment m520b_w_stick_slice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=16 ax=1027 z=296
+3 spawn A 25 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 200
+
+segment m520b_w_stick_tyrog4
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=16 ax=1027 z=296
+3 spawn A 4 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 200
+
+segment m520b_w_bknife_vice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=18 ax=1027 z=296
+3 spawn A 18 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-60:A
+trace 220
+
+segment m520b_w_bknife_butcher
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=18 ax=1027 z=296
+3 spawn A 61 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-60:A
+trace 220
+
+segment m520b_w_bknife_hogg
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=18 ax=1027 z=296
+3 spawn A 31 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-60:A
+trace 220
+
+segment m520b_w_bknife_mack
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=18 ax=1027 z=296
+3 spawn A 38 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+39 objset A hp 100
+10-10:A
+40-60:A
+trace 220
+
+segment m520b_w_bknife_slice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=18 ax=1027 z=296
+3 spawn A 25 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-60:A
+trace 220
+
+segment m520b_w_bknife_tyrog4
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=18 ax=1027 z=296
+3 spawn A 4 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-60:A
+trace 220
+
+segment m520b_w_torch_vice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=22 ax=1027 z=296
+3 spawn A 18 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-60:A
+trace 220
+
+segment m520b_w_torch_butcher
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=22 ax=1027 z=296
+3 spawn A 61 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-60:A
+trace 220
+
+segment m520b_w_torch_hogg
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=22 ax=1027 z=296
+3 spawn A 31 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-60:A
+trace 220
+
+segment m520b_w_torch_mack
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=22 ax=1027 z=296
+3 spawn A 38 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+39 objset A hp 100
+10-10:A
+40-60:A
+trace 220
+
+segment m520b_w_torch_slice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=22 ax=1027 z=296
+3 spawn A 25 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-60:A
+trace 220
+
+segment m520b_w_torch_tyrog4
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=22 ax=1027 z=296
+3 spawn A 4 var=0 w5c=0x7fff ax=1058 z=296
+4 hold 0xffd99c 2 1058
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-60:A
+trace 220
+
+segment m520b_w_dyn_vice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=24 ax=1027 z=296
+3 spawn A 18 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 320
+
+segment m520b_w_dyn_butcher
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=24 ax=1027 z=296
+3 spawn A 61 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 320
+
+segment m520b_w_dyn_hogg
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=24 ax=1027 z=296
+3 spawn A 31 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 320
+
+segment m520b_w_dyn_mack
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=24 ax=1027 z=296
+3 spawn A 38 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 320
+
+segment m520b_w_dyn_slice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=24 ax=1027 z=296
+3 spawn A 25 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 320
+
+segment m520b_w_dyn_tyrog4
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=24 ax=1027 z=296
+3 spawn A 4 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 320
+
+segment m520b_w_grenade_vice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=26 ax=1027 z=296
+3 spawn A 18 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 320
+
+segment m520b_w_grenade_butcher
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=26 ax=1027 z=296
+3 spawn A 61 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 320
+
+segment m520b_w_grenade_hogg
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=26 ax=1027 z=296
+3 spawn A 31 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 320
+
+segment m520b_w_grenade_mack
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=26 ax=1027 z=296
+3 spawn A 38 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 320
+
+segment m520b_w_grenade_slice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=26 ax=1027 z=296
+3 spawn A 25 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 320
+
+segment m520b_w_grenade_tyrog4
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=26 ax=1027 z=296
+3 spawn A 4 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 320
+
+segment m520b_w_stones_vice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=28 ax=1027 z=296
+3 spawn A 18 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 260
+
+segment m520b_w_stones_butcher
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=28 ax=1027 z=296
+3 spawn A 61 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 260
+
+segment m520b_w_stones_hogg
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=28 ax=1027 z=296
+3 spawn A 31 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 260
+
+segment m520b_w_stones_mack
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=28 ax=1027 z=296
+3 spawn A 38 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 260
+
+segment m520b_w_stones_slice
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=28 ax=1027 z=296
+3 spawn A 25 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 260
+
+segment m520b_w_stones_tyrog4
+jump 1 0 928 char=jack
+god on
+rank 0 ; level 0
+2 spawn E 0 var=28 ax=1027 z=296
+3 spawn A 4 var=0 w5c=0x7fff ax=1090 z=296
+4 hold 0xffd99c 2 1090
+4 hold 0xffd9a4 2 296
+9 snapshot keep
+10-10:A
+40-40:A
+trace 260

@@ -1,0 +1,16 @@
+# probe segment m519_lie_mashA: the key lines after the snapshot (frame 0 = first game frame after it)
+420-420:A
+427-427:A
+434-434:A
+441-441:A
+448-448:A
+455-455:A
+462-462:A
+469-469:A
+476-476:A
+483-483:A
+490-490:A
+497-497:A
+504-504:A
+511-511:A
+518-518:A

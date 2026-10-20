@@ -1,0 +1,10 @@
+# probe segment m520h_rod2_hannah: the key lines after the snapshot (frame 0 = first game frame after it)
+6-6:A
+50-50:A
+150-150:A
+250-250:A
+350-350:A
+450-450:A
+550-550:A
+650-650:A
+750-750:A

@@ -1,0 +1,1 @@
+# probe segment m519_dmg_hannah_L0_hp20: the key lines after the snapshot (frame 0 = first game frame after it)

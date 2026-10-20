@@ -1,0 +1,10 @@
+# probe segment m520h_rod1_hannah: the key lines after the snapshot (frame 0 = first game frame after it)
+6-6:A
+43-43:A
+143-143:A
+243-243:A
+343-343:A
+443-443:A
+543-543:A
+643-643:A
+743-743:A

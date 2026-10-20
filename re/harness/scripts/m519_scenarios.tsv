@@ -1,0 +1,270 @@
+name	batch	frames	topic
+m519_ty_thug_ferris	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_thug_gneiss	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_driver	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_lash	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_tyrog1	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_bludge	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_hammer	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_poacher	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_blade	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_razor	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_vice	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_walther	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_punk	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_shivat	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_slice	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_rhopper	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_hogg	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_morgan	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_mack	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_morgue	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_butcher	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_blade63	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_punk64	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_slisaur	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_tyrog72	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_zeke	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_tyrog91	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_ty_poacher79	m519_verify.txt	560	D2b S6 enemy types and S10 to S20 gaps
+m519_dmg_jack_L31_hp100	m519_verify.txt	770	D2b S6 enemy types and S10 to S20 gaps
+m519_dmg_mustapha_L31_hp100	m519_verify.txt	770	D2b S6 enemy types and S10 to S20 gaps
+m519_dmg_hannah_L31_hp100	m519_verify.txt	770	D2b S6 enemy types and S10 to S20 gaps
+m519_dmg_mess_L31_hp100	m519_verify.txt	770	D2b S6 enemy types and S10 to S20 gaps
+m519_dmg_jack_L0_hp20	m519_verify.txt	770	D2b S6 enemy types and S10 to S20 gaps
+m519_dmg_mustapha_L0_hp20	m519_verify.txt	770	D2b S6 enemy types and S10 to S20 gaps
+m519_dmg_hannah_L0_hp20	m519_verify.txt	770	D2b S6 enemy types and S10 to S20 gaps
+m519_dmg_mess_L0_hp20	m519_verify.txt	770	D2b S6 enemy types and S10 to S20 gaps
+m519_dmg_jack_L0_hp40	m519_verify.txt	770	D2b S6 enemy types and S10 to S20 gaps
+m519_lie_L8	m519_verify.txt	900	D2b S6 enemy types and S10 to S20 gaps
+m519_lie_L24	m519_verify.txt	900	D2b S6 enemy types and S10 to S20 gaps
+m519_lie_mashA	m519_verify.txt	520	D2b S6 enemy types and S10 to S20 gaps
+m519_lie_mash_L24	m519_verify.txt	900	D2b S6 enemy types and S10 to S20 gaps
+m519_dizzy4	m519_verify.txt	760	D2b S6 enemy types and S10 to S20 gaps
+m519_dizzy_L24	m519_verify.txt	700	D2b S6 enemy types and S10 to S20 gaps
+m519_mercy_hp5	m519_verify.txt	300	D2b S6 enemy types and S10 to S20 gaps
+m519_mercy_hp12	m519_verify.txt	300	D2b S6 enemy types and S10 to S20 gaps
+m519_mercy_hp30	m519_verify.txt	300	D2b S6 enemy types and S10 to S20 gaps
+m519_cont_mode	m519_verify.txt	1100	D2b S6 enemy types and S10 to S20 gaps
+m519_lives9_hud	m519_verify.txt	330	D2b S6 enemy types and S10 to S20 gaps
+m519_score_kill_gneiss	m519_verify.txt	200	D2b S6 enemy types and S10 to S20 gaps
+m519_pick_food1_hurt	m519_verify.txt	180	D2b S6 enemy types and S10 to S20 gaps
+m519_pick_food18_hurt	m519_verify.txt	180	D2b S6 enemy types and S10 to S20 gaps
+m519_pick_food9_full	m519_verify.txt	180	D2b S6 enemy types and S10 to S20 gaps
+m519_pick_treas9	m519_verify.txt	180	D2b S6 enemy types and S10 to S20 gaps
+m519_pick_treas16	m519_verify.txt	180	D2b S6 enemy types and S10 to S20 gaps
+m519b_resp_e2a1	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp_e3a0	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp_e4a1	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp_e4a2	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp_e5a0	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp_e5a1	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp_e6a1	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp_e7a1	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp_e8a1	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp2p_e2a1	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp3p_e2a1	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp2p_e4a1	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp3p_e4a1	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp2p_e8a1	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m519b_resp3p_e8a1	m519b_verify.txt	650	D2b S1 respawn in other areas and hero counts
+m520_w_pistol_vice	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_pistol_walther	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_pistol_slice	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_pistol_butcher	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_pistol_hogg	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_pistol_morgan	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_pistol_mack	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_pistol_rhopper	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_pistol_tyrog4	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_pistol_zeke	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_pistol_ferris	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_shotgun_vice	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_shotgun_walther	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_shotgun_slice	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_shotgun_butcher	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_shotgun_hogg	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_shotgun_morgan	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_shotgun_mack	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_shotgun_rhopper	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_shotgun_tyrog4	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_shotgun_zeke	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_shotgun_ferris	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_bazooka_vice	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_bazooka_walther	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_bazooka_slice	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_bazooka_butcher	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_bazooka_hogg	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_bazooka_morgan	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_bazooka_mack	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_bazooka_rhopper	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_bazooka_tyrog4	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_bazooka_zeke	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_bazooka_ferris	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_knife_vice	m520_verify.txt	200	D2c weapons against bosses, friendly fire variants
+m520_w_knife_walther	m520_verify.txt	200	D2c weapons against bosses, friendly fire variants
+m520_w_knife_slice	m520_verify.txt	200	D2c weapons against bosses, friendly fire variants
+m520_w_knife_butcher	m520_verify.txt	200	D2c weapons against bosses, friendly fire variants
+m520_w_knife_hogg	m520_verify.txt	200	D2c weapons against bosses, friendly fire variants
+m520_w_knife_morgan	m520_verify.txt	200	D2c weapons against bosses, friendly fire variants
+m520_w_knife_mack	m520_verify.txt	200	D2c weapons against bosses, friendly fire variants
+m520_w_knife_rhopper	m520_verify.txt	200	D2c weapons against bosses, friendly fire variants
+m520_w_knife_tyrog4	m520_verify.txt	200	D2c weapons against bosses, friendly fire variants
+m520_w_knife_zeke	m520_verify.txt	200	D2c weapons against bosses, friendly fire variants
+m520_w_knife_ferris	m520_verify.txt	200	D2c weapons against bosses, friendly fire variants
+m520_w_club60_vice	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_club60_walther	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_club60_slice	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_club60_butcher	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_club60_hogg	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_club60_morgan	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_club60_mack	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_club60_rhopper	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_club60_tyrog4	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_club60_zeke	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_w_club60_ferris	m520_verify.txt	260	D2c weapons against bosses, friendly fire variants
+m520_ffi_barrel_n4_dz0	m520_verify.txt	270	D2c weapons against bosses, friendly fire variants
+m520_ffi_pistol_n4_dz1	m520_verify.txt	270	D2c weapons against bosses, friendly fire variants
+m520_ffi_club_n4_dz1	m520_verify.txt	350	D2c weapons against bosses, friendly fire variants
+m520_ffi_dyn_n4_dz1	m520_verify.txt	270	D2c weapons against bosses, friendly fire variants
+m520_ffi_knifethrow_n4_dz1	m520_verify.txt	270	D2c weapons against bosses, friendly fire variants
+m520_ffi_pistol_n0_dz0	m520_verify.txt	270	D2c weapons against bosses, friendly fire variants
+m520_3p_ffi_pistol_n4_dz0	m520_verify.txt	270	D2c weapons against bosses, friendly fire variants
+m520_3p_ffi_club_n4_dz0	m520_verify.txt	350	D2c weapons against bosses, friendly fire variants
+m520_3p_ffi_dyn_n4_dz0	m520_verify.txt	270	D2c weapons against bosses, friendly fire variants
+m520_3p_ffi_bazooka_n4_dz0	m520_verify.txt	270	D2c weapons against bosses, friendly fire variants
+m520_3p_ffi_uzi_n4_dz0	m520_verify.txt	310	D2c weapons against bosses, friendly fire variants
+m520_3p_ffi_shotgun_n4_dz0	m520_verify.txt	270	D2c weapons against bosses, friendly fire variants
+m520b_w_rifle_vice	m520b_verify.txt	260	D2c more weapons against bosses
+m520b_w_rifle_butcher	m520b_verify.txt	260	D2c more weapons against bosses
+m520b_w_rifle_hogg	m520b_verify.txt	260	D2c more weapons against bosses
+m520b_w_rifle_mack	m520b_verify.txt	260	D2c more weapons against bosses
+m520b_w_rifle_slice	m520b_verify.txt	260	D2c more weapons against bosses
+m520b_w_rifle_tyrog4	m520b_verify.txt	260	D2c more weapons against bosses
+m520b_w_uzi_vice	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_uzi_butcher	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_uzi_hogg	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_uzi_mack	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_uzi_slice	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_uzi_tyrog4	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_m16_vice	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_m16_butcher	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_m16_hogg	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_m16_mack	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_m16_slice	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_m16_tyrog4	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_rod_vice	m520b_verify.txt	200	D2c more weapons against bosses
+m520b_w_rod_butcher	m520b_verify.txt	200	D2c more weapons against bosses
+m520b_w_rod_hogg	m520b_verify.txt	200	D2c more weapons against bosses
+m520b_w_rod_mack	m520b_verify.txt	200	D2c more weapons against bosses
+m520b_w_rod_slice	m520b_verify.txt	200	D2c more weapons against bosses
+m520b_w_rod_tyrog4	m520b_verify.txt	200	D2c more weapons against bosses
+m520b_w_stick_vice	m520b_verify.txt	200	D2c more weapons against bosses
+m520b_w_stick_butcher	m520b_verify.txt	200	D2c more weapons against bosses
+m520b_w_stick_hogg	m520b_verify.txt	200	D2c more weapons against bosses
+m520b_w_stick_mack	m520b_verify.txt	200	D2c more weapons against bosses
+m520b_w_stick_slice	m520b_verify.txt	200	D2c more weapons against bosses
+m520b_w_stick_tyrog4	m520b_verify.txt	200	D2c more weapons against bosses
+m520b_w_bknife_vice	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_bknife_butcher	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_bknife_hogg	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_bknife_mack	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_bknife_slice	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_bknife_tyrog4	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_torch_vice	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_torch_butcher	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_torch_hogg	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_torch_mack	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_torch_slice	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_torch_tyrog4	m520b_verify.txt	220	D2c more weapons against bosses
+m520b_w_dyn_vice	m520b_verify.txt	320	D2c more weapons against bosses
+m520b_w_dyn_butcher	m520b_verify.txt	320	D2c more weapons against bosses
+m520b_w_dyn_hogg	m520b_verify.txt	320	D2c more weapons against bosses
+m520b_w_dyn_mack	m520b_verify.txt	320	D2c more weapons against bosses
+m520b_w_dyn_slice	m520b_verify.txt	320	D2c more weapons against bosses
+m520b_w_dyn_tyrog4	m520b_verify.txt	320	D2c more weapons against bosses
+m520b_w_grenade_vice	m520b_verify.txt	320	D2c more weapons against bosses
+m520b_w_grenade_butcher	m520b_verify.txt	320	D2c more weapons against bosses
+m520b_w_grenade_hogg	m520b_verify.txt	320	D2c more weapons against bosses
+m520b_w_grenade_mack	m520b_verify.txt	320	D2c more weapons against bosses
+m520b_w_grenade_slice	m520b_verify.txt	320	D2c more weapons against bosses
+m520b_w_grenade_tyrog4	m520b_verify.txt	320	D2c more weapons against bosses
+m520b_w_stones_vice	m520b_verify.txt	260	D2c more weapons against bosses
+m520b_w_stones_butcher	m520b_verify.txt	260	D2c more weapons against bosses
+m520b_w_stones_hogg	m520b_verify.txt	260	D2c more weapons against bosses
+m520b_w_stones_mack	m520b_verify.txt	260	D2c more weapons against bosses
+m520b_w_stones_slice	m520b_verify.txt	260	D2c more weapons against bosses
+m520b_w_stones_tyrog4	m520b_verify.txt	260	D2c more weapons against bosses
+m520h_rifle_hannah	m520h_verify.txt	344	D2c weapons for Hannah, Mustapha and Mess
+m520h_uzi_hannah	m520h_verify.txt	374	D2c weapons for Hannah, Mustapha and Mess
+m520h_m16_hannah	m520h_verify.txt	414	D2c weapons for Hannah, Mustapha and Mess
+m520h_rod0_hannah	m520h_verify.txt	844	D2c weapons for Hannah, Mustapha and Mess
+m520h_rod1_hannah	m520h_verify.txt	851	D2c weapons for Hannah, Mustapha and Mess
+m520h_rod2_hannah	m520h_verify.txt	858	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold10_hannah	m520h_verify.txt	214	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold20_hannah	m520h_verify.txt	224	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold30_hannah	m520h_verify.txt	234	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold40_hannah	m520h_verify.txt	244	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold50_hannah	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_grenade_hannah	m520h_verify.txt	323	D2c weapons for Hannah, Mustapha and Mess
+m520h_stones_hannah	m520h_verify.txt	323	D2c weapons for Hannah, Mustapha and Mess
+m520h_dynamite_run_hannah	m520h_verify.txt	344	D2c weapons for Hannah, Mustapha and Mess
+m520h_stones1_hannah	m520h_verify.txt	323	D2c weapons for Hannah, Mustapha and Mess
+m520h_stones2_hannah	m520h_verify.txt	323	D2c weapons for Hannah, Mustapha and Mess
+m520h_drum_hannah	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_pail_hannah	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_stone6_hannah	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_boulder_hannah	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_tntbarrel_hannah	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_shotgun_d45_hannah	m520h_verify.txt	124	D2c weapons for Hannah, Mustapha and Mess
+m520h_rifle_mustapha	m520h_verify.txt	344	D2c weapons for Hannah, Mustapha and Mess
+m520h_uzi_mustapha	m520h_verify.txt	374	D2c weapons for Hannah, Mustapha and Mess
+m520h_m16_mustapha	m520h_verify.txt	414	D2c weapons for Hannah, Mustapha and Mess
+m520h_rod0_mustapha	m520h_verify.txt	844	D2c weapons for Hannah, Mustapha and Mess
+m520h_rod1_mustapha	m520h_verify.txt	851	D2c weapons for Hannah, Mustapha and Mess
+m520h_rod2_mustapha	m520h_verify.txt	858	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold10_mustapha	m520h_verify.txt	214	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold20_mustapha	m520h_verify.txt	224	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold30_mustapha	m520h_verify.txt	234	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold40_mustapha	m520h_verify.txt	244	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold50_mustapha	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_grenade_mustapha	m520h_verify.txt	323	D2c weapons for Hannah, Mustapha and Mess
+m520h_stones_mustapha	m520h_verify.txt	323	D2c weapons for Hannah, Mustapha and Mess
+m520h_dynamite_run_mustapha	m520h_verify.txt	344	D2c weapons for Hannah, Mustapha and Mess
+m520h_stones1_mustapha	m520h_verify.txt	323	D2c weapons for Hannah, Mustapha and Mess
+m520h_stones2_mustapha	m520h_verify.txt	323	D2c weapons for Hannah, Mustapha and Mess
+m520h_drum_mustapha	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_pail_mustapha	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_stone6_mustapha	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_boulder_mustapha	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_tntbarrel_mustapha	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_shotgun_d45_mustapha	m520h_verify.txt	124	D2c weapons for Hannah, Mustapha and Mess
+m520h_rifle_mess	m520h_verify.txt	344	D2c weapons for Hannah, Mustapha and Mess
+m520h_uzi_mess	m520h_verify.txt	374	D2c weapons for Hannah, Mustapha and Mess
+m520h_m16_mess	m520h_verify.txt	414	D2c weapons for Hannah, Mustapha and Mess
+m520h_rod0_mess	m520h_verify.txt	844	D2c weapons for Hannah, Mustapha and Mess
+m520h_rod1_mess	m520h_verify.txt	851	D2c weapons for Hannah, Mustapha and Mess
+m520h_rod2_mess	m520h_verify.txt	858	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold10_mess	m520h_verify.txt	214	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold20_mess	m520h_verify.txt	224	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold30_mess	m520h_verify.txt	234	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold40_mess	m520h_verify.txt	244	D2c weapons for Hannah, Mustapha and Mess
+m520h_club_hold50_mess	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_grenade_mess	m520h_verify.txt	323	D2c weapons for Hannah, Mustapha and Mess
+m520h_stones_mess	m520h_verify.txt	323	D2c weapons for Hannah, Mustapha and Mess
+m520h_dynamite_run_mess	m520h_verify.txt	344	D2c weapons for Hannah, Mustapha and Mess
+m520h_stones1_mess	m520h_verify.txt	323	D2c weapons for Hannah, Mustapha and Mess
+m520h_stones2_mess	m520h_verify.txt	323	D2c weapons for Hannah, Mustapha and Mess
+m520h_drum_mess	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_pail_mess	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_stone6_mess	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_boulder_mess	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_tntbarrel_mess	m520h_verify.txt	254	D2c weapons for Hannah, Mustapha and Mess
+m520h_shotgun_d45_mess	m520h_verify.txt	124	D2c weapons for Hannah, Mustapha and Mess
+m521_e1a1_hall_jack	m521_verify.txt	1200	D4a Episode 1 hall statues (W20)
+m521_e1a1_hall_hannah	m521_verify.txt	1200	D4a Episode 1 hall statues (W20)
+m521_e1a1_hall_mess	m521_verify.txt	1200	D4a Episode 1 hall statues (W20)
+m521_e1a1_hall_mustapha	m521_verify.txt	1200	D4a Episode 1 hall statues (W20)
+m521_e1a1_hall_3p	m521_verify.txt	1200	D4a Episode 1 hall statues (W20)
+m521b_hud_items_2p	m521b_verify.txt	220	D4a HUD item messages for 2 and 3 players
+m521b_hud_items_3p	m521b_verify.txt	220	D4a HUD item messages for 2 and 3 players
