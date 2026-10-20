@@ -628,7 +628,7 @@ impl Game {
         let r = (self.rand() & 0x1F) as u8;
         let aggr = (self.rank.aggression & 0x7) as u32;
         let threshold = self.assets.enemy.t.u8(0x3ADA4, a9 * 4 + aggr);
-        r < threshold
+        (r as i8) < (threshold as i8) // 0x3AD98: bge, including stale +$A9 rows
     }
 }
 
@@ -636,6 +636,20 @@ impl Game {
 mod tests {
     use super::*;
     use dino_assets::AssetPack;
+
+    /// 0x3AD98 compares bytes as signed, even when a reused slot has +$A9 outside 0/2.
+    #[test]
+    fn attack_threshold_is_signed_for_stale_rows() {
+        for (threshold, expected) in [(0x80, false), (0x7F, true)] {
+            let mut a = AssetPack::default();
+            a.enemy.t.blobs = vec![(0x3ADA4, vec![threshold; 36])];
+            let mut g = Game::new(Box::leak(Box::new(a)));
+            g.rank.aggression = 7;
+            let mut e = Enemy::default();
+            e.m.sb(0xA9, 7);
+            assert_eq!(g.enemy_c6_check_attack(&e), expected);
+        }
+    }
 
     /// 0x3A6EA / 0x3A730: losing the last hero preserves the first candidate.
     #[test]
