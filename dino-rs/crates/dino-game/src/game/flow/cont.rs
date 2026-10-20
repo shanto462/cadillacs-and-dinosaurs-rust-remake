@@ -16,7 +16,12 @@ pub struct Continue {
     pub return_pending: bool,
     /// Sleeps inside 0xEE3A, 0xAC06 and 0xAC26, including video clear time.
     pub exit_wait: u16,
+    /// Episode 3 only (G.$4D9 == 2): the palette rows 2, 3 and 11 saved at the continue start (0x92308), 3 x 16 words.
+    pub pal_save: Vec<u16>,
 }
+
+/// The palette rows that 0x92308 saves and 0x9233A restores (scroll2 palettes 2, 3, 11 in palette RAM).
+const EP3_PAL_ROWS: [u32; 3] = [0x914840, 0x914860, 0x914960];
 
 impl Game {
     /// 0x732E..0x7474: dead player's countdown and one-credit continue request.
@@ -160,10 +165,48 @@ impl Game {
     pub(super) fn flow_continue_begin(&mut self) {
         self.sound(0xFF00);
         self.flow.speed = 1;
+        self.flow_continue_ep3_begin(); // 0xEA06..0xEA0E: the save (Episode 3)
         self.flow_scene_palettes(1);
         self.brightness_full();
         self.flow_clear_scroll1();
         self.sprites.wipe();
+        self.flow_continue_ep3_begin_flag(); // 0xEA34..0xEA3C: the row scroll flag (Episode 3)
+    }
+
+    /// 0xEA06..0xEA0E: in Episode 3 (G.$4D9 == 2) save the palette rows 2, 3 and 11 (0x92308), before the scene palettes.
+    pub(super) fn flow_continue_ep3_begin(&mut self) {
+        if self.w.stage == 2 {
+            let mut v = Vec::with_capacity(48);
+            for addr in EP3_PAL_ROWS {
+                let i = ((addr - 0x914000) / 2) as usize;
+                v.extend_from_slice(&self.pal.words[i..i + 16]);
+            }
+            self.flow.cont.pal_save = v;
+        }
+    }
+
+    /// 0xEA34..0xEA3C: in Episode 3 clear G.$26 bit 0 (andi.w #$FFFE,$26).
+    pub(super) fn flow_continue_ep3_begin_flag(&mut self) {
+        if self.w.stage == 2 {
+            self.w.video_ctrl &= !1;
+        }
+    }
+
+    /// 0xEF30..0xEF3E: in Episode 3 set G.$26 bit 0 (ori.w #1,$26), then restore the saved palette rows (0x9233A).
+    pub(super) fn flow_continue_ep3_return(&mut self) {
+        if self.w.stage != 2 {
+            return;
+        }
+        self.w.video_ctrl |= 1;
+        let saved = std::mem::take(&mut self.flow.cont.pal_save);
+        if saved.len() != 48 {
+            return; // no save at the continue start (the rows keep their values)
+        }
+        for (k, addr) in EP3_PAL_ROWS.into_iter().enumerate() {
+            let i = ((addr - 0x914000) / 2) as usize;
+            self.pal.words[i..i + 16].copy_from_slice(&saved[k * 16..k * 16 + 16]);
+        }
+        self.pal.dirty = true;
     }
 
     /// 0xEA42..0xEB60: switch tilemap banks, load villain and start counting.
@@ -636,6 +679,7 @@ impl Game {
             self.flow.cont.level3.clear();
         }
         self.sprites.wipe();
+        self.flow_continue_ep3_return(); // 0xEF30..0xEF3E (Episode 3 only)
         // 0xEF44 / 0xEF4A: the far scroll base of the normal backdrop (move.w #$9100,$2e(a5)), then the saved mode is restored.
         // (G.$2C = 0x90C0 is not modelled.) Without this G.$2E stays at the flash value 0x9200 after the continue (MAME at 6230 of ep6_jack).
         self.w.scroll3_base = 0x9100;
@@ -705,6 +749,61 @@ mod tests {
             p.exists()
                 .then(|| &*Box::leak(Box::new(dino_extract::extract(p).unwrap())))
         })
+    }
+
+    /// 0xEA06 / 0xEA34 / 0xEF30: the Episode 3 palette save and flag run only in Episode 3 (G.$4D9 == 2).
+    /// No recording of an Episode 3 continue exists (all re/out/traces checked), so this is a unit test.
+    #[test]
+    fn episode3_continue_saves_and_restores_only_in_episode_3() {
+        let Some(a) = assets() else { return };
+        let mut g = Game::new(a);
+        for addr in EP3_PAL_ROWS {
+            let i = ((addr - 0x914000) / 2) as usize;
+            for k in 0..16 {
+                g.pal.words[i + k] = 0x5000 + k as u16;
+            }
+        }
+        // Episode 1 (G.$4D9 = 0): nothing is saved, and the return leaves the rows and G.$26 alone.
+        g.w.stage = 0;
+        g.w.video_ctrl = 0x0F;
+        g.flow_continue_ep3_begin();
+        g.flow_continue_ep3_begin_flag();
+        assert!(g.flow.cont.pal_save.is_empty());
+        assert_eq!(g.w.video_ctrl & 1, 1);
+        for addr in EP3_PAL_ROWS {
+            g.pal.words[((addr - 0x914000) / 2) as usize] = 0xBEEF;
+        }
+        g.flow_continue_ep3_return();
+        assert_eq!(g.pal.words[((0x914840 - 0x914000) / 2) as usize], 0xBEEF);
+        assert_eq!(g.w.video_ctrl & 1, 1);
+        // Episode 3 (G.$4D9 = 2): the rows are saved at the start and restored at the return; G.$26 bit 0 is cleared then set.
+        for addr in EP3_PAL_ROWS {
+            let i = ((addr - 0x914000) / 2) as usize;
+            for k in 0..16 {
+                g.pal.words[i + k] = 0x5000 + k as u16 + (i as u16 & 0xF00);
+            }
+        }
+        let want: Vec<u16> = EP3_PAL_ROWS.iter().flat_map(|&addr| {
+            let i = ((addr - 0x914000) / 2) as usize;
+            g.pal.words[i..i + 16].to_vec()
+        }).collect();
+        g.w.stage = 2;
+        g.w.video_ctrl = 0x0F;
+        g.flow_continue_ep3_begin();
+        g.flow_continue_ep3_begin_flag();
+        assert_eq!(g.flow.cont.pal_save, want);
+        assert_eq!(g.w.video_ctrl & 1, 0);
+        for addr in EP3_PAL_ROWS {
+            g.pal.words[((addr - 0x914000) / 2) as usize] = 0xBEEF;
+        }
+        g.flow_continue_ep3_return();
+        let got: Vec<u16> = EP3_PAL_ROWS.iter().flat_map(|&addr| {
+            let i = ((addr - 0x914000) / 2) as usize;
+            g.pal.words[i..i + 16].to_vec()
+        }).collect();
+        assert_eq!(got, want);
+        assert_eq!(g.w.video_ctrl & 1, 1);
+        assert!(g.flow.cont.pal_save.is_empty());
     }
 
     /// D4d A16: uninterrupted game-over scene through 0xAC06 / 0xAC26.
