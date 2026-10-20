@@ -78,6 +78,7 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x7BD12, 40, "GO erase cells"),
     // Pool B class 47 (0x84282), manhole hole patch tile codes (M3-21).
     (0x842F6, 24, "B47 manhole hole patch tile codes (0x84282)"),
+    (0x84204, 58, "B46 wall break tile codes, 9 + 10 + 10 words (0x841D0, M9-04)"),
     // Pool B class 57 (0x85B64), the floor labels of the lift: 56 labels of 3 glyph words (0x85BF6) and the 12 glyphs (L, B and the digits) of 4 cells (0x85D6C).
     (0x85BF6, 0x150, "B57 lift floor labels, 3 glyph numbers each (0x85B64)"),
     (0x85D6C, 0xC0, "B57 lift label glyphs, 2 x 2 scroll2 cells each (0x85D46)"),

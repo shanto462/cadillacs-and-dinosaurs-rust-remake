@@ -532,6 +532,7 @@ impl Game {
         b.x = b.x.wrapping_add((b.vx as i32) << 8);
         b.vz = sz.wrapping_add(b.az);
         b.z = b.z.wrapping_add((b.vz as i32) << 8);
+        b.frame_w1 = (b.vz as u16) << 8; // d1 = vz << 8 (`swap d1 ; asr.l #8,d1`): the Butcher's decision roll 0x5A1AC keeps its high byte
     }
 
     /// 0x120E.
