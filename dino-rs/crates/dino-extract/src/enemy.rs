@@ -469,6 +469,9 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x39E70, 32, "class 6 lunge hold by level (0x39E46)"),
     (0x3A9E8, 6, "class 6 attack approach slot base by script (0x3A980)"),
     (0x3AED8, 10, "class 6 attack roll limit by script (0x3AEC0)"),
+    // M8-01 the brontosaurus foot: the wander speed choices (0x47E02).
+    (0x47EAC, 16, "class 22 wander X speed choice (0x47E38)"),
+    (0x47EBC, 16, "class 22 wander Z speed choice (0x47E6E)"),
 ];
 
 pub fn extract(rom: &Rom) -> EnemyData {

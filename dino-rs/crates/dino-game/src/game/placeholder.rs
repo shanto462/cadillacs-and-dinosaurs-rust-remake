@@ -76,7 +76,7 @@ pub const SPECS: &[Spec] = &[
     // Class 3 (M6-07, M6-08), LASH T., is real (with his mace 62 and chain piece 8).
     // Class 5 (M6-09) and class 61 (M6-10), the Butcher, are real.
     // Class 13 (M6-01 / M6-02), the poachers, is real.
-    dino(22, "BRONTOSAURUS foot", None),
+    // Classes 22 and 23 (M8-01), the brontosaurus foot and its leg, are real.
     // Class 24 (M6-04, M6-05), Shivat, is real. Class 25 (M7-01 .. M7-04), Slice, is real.
     // Classes 35, 36, 45 (Morgan, villager) and 40 (Morgue) are real (M7-13..M7-21).
     // Class 38 (M6-03), Mack, is real.
