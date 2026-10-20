@@ -27,7 +27,7 @@
 //! choosing a hero (waits for the pick), 6 playing. The prompts of the in-level HUD (G.$4D5 = 0) and the states 8 to 0xC are M2-05.
 
 use crate::game::Game;
-use crate::game::{POOL_B, Pool};
+
 
 /// ROM addresses of the select code (inside the blobs `FRONT_TABLES` lists).
 mod rom {
@@ -188,7 +188,7 @@ impl Game {
         // 0xAE32: the draw list (0x49A8) and the pool B (0x4C76) start again
         self.draw_list.clear();
         self.sprites.splash_timer = 1;
-        self.props = Pool::new(POOL_B);
+        self.props = crate::game::pool_b_init();
         // 0xAE3E: the timer shows 10 for the first frame, every record is locked for 10 frames and has no cursor yet
         let s = &mut self.flow.front.select;
         s.seconds = 10;

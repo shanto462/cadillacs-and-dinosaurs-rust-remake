@@ -29,8 +29,8 @@
 //! | A + 5 | scroll2 blank, G.$757C and the playback state cleared; the rank and the player objects (four draws of the generator) |
 //! | A + 6 | the heroes, G.$14 = 0x1C3, the row (G.$4D9, G.$786, G.$757C), the palettes |
 //! | A + 7 | 0xA9BE: mode 4, G.$28 = 0x12D6 |
-//! | A + 8 | mode 0xC, the scroll2 camera Y of the area, the sound codes 0xFF00 and the music |
-//! | A + 9 | the map (0x2228A) |
+//! | A + 8 | mode 0xC, the sound codes 0xFF00 and the music; 0x2228A: the first event, the map header and the camera of the area |
+//! | A + 9 | the map (0x2228A from the clears 0x20836 on) |
 //! | A + 10 | the HUD, the music again, and the first game frame (G.$0 = 1) |
 //!
 //! That is the timeline of the runs after the first (the demos 2 to 5 of the recording). The first demo after power on
@@ -39,8 +39,8 @@
 //! (A + 10); Episode 1 (row 0, the sixth demo) does not sleep: its first pass starts in A + 9. In all of them the frame ends inside
 //! the draw of the map (later runs: its last 44 cells come in A + 10) or of the HUD (Episode 3: its first 40 cells are
 //! there in A + 9); the port draws both whole (the records A + 9 and A + 10 differ in those cells, see
-//! `demos_set_up_and_run_in_step_with_mame`). Measured in `attract3` / `flow_m113-long` (M1-15, not ported: the demos are allowed to
-//! differ until M10, `re/harness/allow/m1.txt`): in the later runs of Episodes 8, 5 and 6 the last 11 blocks (44 cells, a cell range
+//! `demos_set_up_and_run_in_step_with_mame`). Measured in `attract3` / `flow_m113-long` (M1-15, not ported, listed with their causes
+//! in `re/harness/allow/m10.txt`): in the later runs of Episodes 8, 5 and 6 the last 11 blocks (44 cells, a cell range
 //! relative to the 1024 cell column group of the first screen: 490 to 495 and 506 to 543) of the scroll2 map come in A + 10; in
 //! Episode 3 the HUD cuts after its first 40 cells (A + 9), its other 84 cells and the first 165 of the 187 hidden scroll3 cells
 //! (an area without a far layer, `camera.rs` `write_cell3` writes them since M1-15) are in A + 10 and the last 22 in A + 11, and the
@@ -52,6 +52,11 @@
 //! A frame never takes more than one video frame in the demos of the recordings (G.$0 counts every video frame, there is
 //! no slowdown). The last pass is in A + 1210; the picture stays for 100 frames, the fade out has 16 steps (A + 1310 to A + 1325),
 //! and the routine returns in A + 1325 (the old stub of M1-04 had this length: 1325 frames).
+//!
+//! Since M10-03 the demos play their real levels and equal the recording `flow_m1003-loop` (the whole loop from power on, the six
+//! demos) from the first full pass to the clear after the demo (the tag team move of Episode 3 included):
+//! `the_six_demos_of_the_loop_match_mame`, `re/harness/m10_demo_check.sh`. What the clear keeps matters there: the row scroll task of
+//! Episode 3 (G.$7780) and the car word G.$77A2 are left from the demo or game before.
 //!
 //! # The streams
 //!
@@ -236,6 +241,12 @@ impl Game {
         fresh.w.video_ctrl = self.w.video_ctrl;
         fresh.w.layer_ctrl = self.w.layer_ctrl;
         fresh.w.priority_masks = self.w.priority_masks;
+        fresh.w.scroll3_base = self.w.scroll3_base; // G.$2E
+        // G.$757A on is not cleared either: the row scroll task of Episode 3 (G.$7780: its state and +$08) and the car word G.$77A2
+        // keep what the last demo or game left there (G.$77A0 is cleared by the stage setup, 0xAAD8)
+        fresh.cam.row = self.cam.row.clone();
+        fresh.spawn.g.car_on = self.spawn.g.car_on;
+        fresh.spawn.g.car_obj = self.spawn.g.car_obj;
         fresh.w.sounds = std::mem::take(&mut self.w.sounds);
         fresh.w.snd_reqs = std::mem::take(&mut self.w.snd_reqs);
         // video memory, the palettes, the sprite buffers and the fade state are not cleared by the sweeps
@@ -254,6 +265,7 @@ impl Game {
         fresh.flow.front.select = Default::default(); // G.$62C is in the cleared range
         fresh.hold_unported = self.hold_unported;
         fresh.trace_unmapped = std::mem::take(&mut self.trace_unmapped);
+        fresh.trace_ram_cleared(); // harness only: the objects' frame pointers are 0 after the clear
         *self = fresh;
     }
 
@@ -330,17 +342,18 @@ impl Game {
             }
             dst::STAGE => {
                 if self.flow.front.demo.runs <= 1 {
-                    self.flow_demo_stage(true);
+                    self.flow_demo_stage();
                     self.flow_demo_stage_tail();
+                    self.flow_demo_map_start();
                     self.flow.front.task.wait(2, dst::MAP);
                 } else {
-                    self.flow_demo_stage(false); // 0xA9BE: mode 4, G.$28 = 0x12D6
+                    self.flow_demo_stage(); // 0xA9BE: mode 4, G.$28 = 0x12D6
                     self.flow.front.task.wait(1, dst::TAIL);
                 }
             }
             dst::TAIL => {
                 self.flow_demo_stage_tail();
-                self.flow_demo_camera_y();
+                self.flow_demo_map_start();
                 self.flow.front.task.wait(1, dst::MAP);
             }
             dst::MAP => {
@@ -437,23 +450,19 @@ impl Game {
         self.flow.frame = 0;
     }
 
-    /// 0xAC6A, the call of 0xA9BE (the stage setup: palettes, pools, mode 4, G.$28 = 0x12D6). `camera`: the scroll2 camera is
-    /// put at the start of the area now (in the first run the recording shows it in the frame of the mode byte).
-    fn flow_demo_stage(&mut self, camera: bool) {
+    /// 0xAC6A, the call of 0xA9BE (the stage setup: palettes, pools, mode 4, G.$28 = 0x12D6).
+    fn flow_demo_stage(&mut self) {
         self.flow_stage_setup(); // 0xA9BE (0x1DA10, the player scripts, is not ported)
         self.sprites.splash_timer = 1; // 0x49A8 (in 0xAA0E): the water splash timer
         self.sprites.splash_phase = 0;
-        if camera {
-            self.flow_demo_camera_y();
-        }
     }
 
-    /// The camera of the start of 0x2228A (the map is drawn later).
-    fn flow_demo_camera_y(&mut self) {
-        let map = &self.assets.stages.area(self.w.stage, self.cam.s2.area).scroll2;
-        let (x, y) = (map.init_x, map.init_y);
-        self.cam.s2.cam_x = x;
-        self.cam.s2.cam_y = y;
+    /// 0x9A0AA: 0x2228A up to the map: the scroll controller starts in the event the table 0x222B6 gives for the stage and area,
+    /// the map header and the camera of the area (the recording shows them in the frame of the mode byte, before the map's cells).
+    fn flow_demo_map_start(&mut self) {
+        let t = &self.assets.frontend.text;
+        let first = t.u8(START_EVENTS, 4 * self.w.stage as u32 + self.cam.s2.area as u32);
+        self.flow_demo_camera_start(first);
     }
 
     /// 0xAC6E ..: mode 0xC, the player count, 100 HP for everybody, the sound codes and the music.
@@ -475,12 +484,10 @@ impl Game {
         }
     }
 
-    /// 0x99F10 from 0x2228A on: the scroll controllers start in the event the table gives for the stage and area, the
-    /// rank is not counted (G.$5EC, G.$5EE = 0, G.$602 = 1: frozen).
+    /// 0x99F10 from the map of 0x2228A on: the clears and the map, then the rank is not counted (G.$5EC, G.$5EE = 0, G.$602 = 1:
+    /// frozen).
     fn flow_demo_map(&mut self) {
-        let t = &self.assets.frontend.text;
-        let first = t.u8(START_EVENTS, 4 * self.w.stage as u32 + self.cam.s2.area as u32);
-        self.flow_demo_camera_init(first); // 0x2228A
+        self.flow_demo_camera_draw(); // 0x2228A (0x20836 ..)
         self.rank.aggression = 0; // G.$5EC
         self.w.level = 0; // G.$5EE
         self.rank.freeze = 0x100; // G.$602 (a byte write: move.b #1, $602(a5), the high byte of the word)

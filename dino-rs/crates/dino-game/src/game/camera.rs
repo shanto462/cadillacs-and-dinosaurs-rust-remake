@@ -49,6 +49,9 @@ pub struct Scroll2 {
     pub next_event: usize,
     /// ROM address of the event list `next_event` indexes (0x2099A sets it). 0 = not set yet.
     pub event_base: u32,
+    /// Stage 2: +$56 points into the stage's list of the standard table 0x21B2A (`Stage::std_events`, loaded by 0x2099A: the demo's
+    /// start 0x2228A) and not into the controller's own list 0x22B9E (0x2251C, the init 0x223AE of a game).
+    pub std_list: bool,
     /// +$5A camera X when the event loaded (= event X), +$5C camera Y when it loaded.
     pub x5a: u16,
     pub y5c: u16,
@@ -599,24 +602,55 @@ impl Game {
     /// event is loaded (0x2099A) and the pointer to the next event is left on the loaded event (the
     /// normal start 0x206EA adds 0x10 to it, this one does not); the task state is set to 2, so the
     /// init 0x206EA (palettes, timers +$71 / +$75 / +$72 / +$73, the area of mode 0) is skipped; then
-    /// the area is set up (0x20766). Added for M1-12 (`flow/demo.rs`).
-    pub fn flow_demo_camera_init(&mut self, first_event: u8) {
+    /// the area is set up (0x20766). Added for M1-12 (`flow/demo.rs`). In two parts: the event, the state and the area setup up to
+    /// the map header and the camera (0x20836: the clears of both layers come next), then the clears and the map
+    /// ([`Game::flow_demo_camera_draw`]); the video frame ends between them in the demo setup (M10-03: the event, the header and the
+    /// camera are in the record before the map's cells).
+    pub fn flow_demo_camera_start(&mut self, first_event: u8) {
         self.cam.s2.event_idx = first_event; // move.b (a4), $6c(a6)
-        self.load_event_index(); // bsr 0x2099A
+        self.load_event_index(); // bsr 0x2099A (with the camera Y of before: +$5C = 0)
         self.cam.s2.state = 2; // move.b #2, 4(a6)
-        self.area_setup(); // bra 0x20766
+        self.area_setup_head(); // bra 0x20766
+        self.reinit_map_header(); // 0x207CA .. 0x20822
     }
 
-    /// 0x2099A: load the event at the current event index.
+    /// 0x2228A, the second part: 0x20836 on (the clears and the first columns of the map).
+    pub fn flow_demo_camera_draw(&mut self) {
+        self.reinit_map_draw();
+    }
+
+    /// 0x2099A: load the event at the current event index, from the stage's list of the table 0x21B2A.
     fn load_event_index(&mut self) {
-        self.cam.s2.event_base = self.assets.stages.stages.get(self.w.stage as usize).map(|x| x.camera_events_addr).unwrap_or(0);
+        self.cam.s2.std_list = true; // movea.l #$21b2a, a4 ..
+        let st = self.assets.stages.stages.get(self.w.stage as usize);
+        self.cam.s2.event_base = st.map(|x| if x.std_events.is_empty() { x.camera_events_addr } else { x.std_events_addr }).unwrap_or(0);
         self.cam.s2.next_event = self.cam.s2.event_idx as usize;
         self.load_event();
     }
 
+    /// 0x2251C: the same for the stage 2 controller, from its own list 0x22B9E (`lea.l $22b9e.l, a4`).
+    fn load_event_index_stage2(&mut self) {
+        self.cam.s2.std_list = false;
+        self.cam.s2.event_base = self.assets.stages.stages.get(self.w.stage as usize).map(|x| x.camera_events_addr).unwrap_or(0);
+        self.cam.s2.next_event = self.cam.s2.event_idx as usize;
+        self.load_event(); // 0x22532
+    }
+
+    /// The event load of the modes 1 and 6: stage 2 runs its own copies of them (0x22772, 0x22864), which load with 0x2251C.
+    fn load_event_index_mode(&mut self) {
+        if self.w.stage == 2 { self.load_event_index_stage2() } else { self.load_event_index() }
+    }
+
+    /// The event list +$56 points into: the stage's list, or in stage 2 the list of the table 0x21B2A when 0x2099A loaded the
+    /// event (the demo, `Scroll2::std_list`).
+    fn cam_events(&self) -> &'static [dino_assets::stage::CameraEvent] {
+        let st = &self.assets.stages.stages[self.w.stage as usize];
+        if self.cam.s2.std_list && !st.std_events.is_empty() { &st.std_events } else { &st.camera_events }
+    }
+
     /// 0x209C0: copy the event record at `next_event` into the controller.
     fn load_event(&mut self) {
-        let events = &self.assets.stages.stages[self.w.stage as usize].camera_events;
+        let events = self.cam_events();
         let s = &mut self.cam.s2;
         let ev = events.get(s.next_event).copied().unwrap_or_default();
         s.x4c = ev.x;
@@ -638,6 +672,12 @@ impl Game {
 
     /// 0x20766: area setup (also used by modes 1 and 0x12).
     fn area_setup(&mut self) {
+        self.area_setup_head();
+        self.reinit_map();
+    }
+
+    /// 0x20766 .. 0x207C4: the area setup up to the map (the vertical scene, the layer control, the lift of stage 6).
+    fn area_setup_head(&mut self) {
         self.w.vertical_scene = 0;
         self.w.layer_ctrl = 0x12D6;
         if self.w.stage == 6 && self.cam.s2.area == 1 {
@@ -653,7 +693,6 @@ impl Game {
             self.flow_clear_scroll1();
             self.hook_162ae();
         }
-        self.reinit_map();
     }
 
     /// 0x205C6 (with 0x20614, 0x20650, 0x206A8): draws one page of the scroll1 table 0x138C48 (page `page`, the d5 of the
@@ -717,6 +756,12 @@ impl Game {
 
     /// 0x207CA: load the area's scroll2 header, reset the camera and draw the first screen.
     fn reinit_map(&mut self) {
+        self.reinit_map_header();
+        self.reinit_map_draw();
+    }
+
+    /// 0x207CA .. 0x20822: the map header of the area (+$40 .. +$48) and the camera at its start.
+    fn reinit_map_header(&mut self) {
         let area = self.cam.s2.area;
         let map = &self.assets.stages.area(self.w.stage, area).scroll2;
         let s = &mut self.cam.s2;
@@ -726,6 +771,10 @@ impl Game {
         s.sy48 = map.init_y;
         s.cam_x = map.init_x;
         s.cam_y = map.init_y;
+    }
+
+    /// 0x20836 ..: both layers cleared (0xB6C, 0xB88), then the first columns of the map from the streamed X and Y.
+    fn reinit_map_draw(&mut self) {
         self.vram.clear2();
         self.vram.clear3();
         let (mut x, y) = (self.cam.s2.sx46, self.cam.s2.sy48);
@@ -775,7 +824,7 @@ impl Game {
         self.tile_anim_tick();
         let mode = self.cam.s2.mode;
         if ![0x0E, 0x0F, 0x01, 0x12, 0x09].contains(&mode) {
-            let events = &self.assets.stages.stages[self.w.stage as usize].camera_events;
+            let events = self.cam_events();
             let s = &self.cam.s2;
             let ev = events.get(s.next_event).copied().unwrap_or_default();
             let by_y = s.by_y79 != 0 || (self.w.stage == 6 && s.area == 1);
@@ -1037,7 +1086,7 @@ impl Game {
             self.cam.s2.go = 0;
             return;
         }
-        let events = &self.assets.stages.stages[self.w.stage as usize].camera_events;
+        let events = self.cam_events();
         self.cam.s2.lock78 = 0;
         loop {
             let ev = events.get(self.cam.s2.next_event).copied().unwrap_or_default();
@@ -1073,7 +1122,7 @@ impl Game {
     /// 0x20CE6: once the go flag is clear, load the next event (its mode takes over).
     fn area_end_load_next(&mut self) {
         if self.cam.s2.go == 0 {
-            self.load_event_index();
+            self.load_event_index_mode();
             self.cam.s2.next_event += 1;
             self.cam.s2.sub = 0;
         }
@@ -1105,7 +1154,7 @@ impl Game {
             4 => self.area_end_next_area(false),
             6 => {
                 if self.cam.s2.go == 0 {
-                    self.load_event_index();
+                    self.load_event_index_mode();
                     self.cam.s2.next_event += 1;
                     self.cam.s2.sub = 0;
                     self.brightness_full();
@@ -1301,7 +1350,7 @@ impl Game {
             self.cam.s2.sub = 4;
         }
         if self.cam.s2.sub == 4 {
-            let events = &self.assets.stages.stages[self.w.stage as usize].camera_events;
+            let events = self.cam_events();
             let ev = events.get(self.cam.s2.next_event).copied().unwrap_or_default();
             let s = &mut self.cam.s2;
             s.cam_y = s.cam_y.wrapping_sub(6);
@@ -1385,7 +1434,7 @@ impl Game {
         s.lock78 = 0;
         s.event_idx = 0;
         if s.mode != 0x0E && s.mode != 0x0F {
-            self.load_event_index(); // 0x2251C
+            self.load_event_index_stage2(); // 0x2251C
             self.cam.s2.next_event += 1; // addi.l #$10, $56(a6)
         }
         self.stage2_reinit();
@@ -1425,7 +1474,7 @@ impl Game {
             self.cam.s2.mode = 8;
         }
         if ![1, 3, 6, 8].contains(&self.cam.s2.mode) {
-            let events = &self.assets.stages.stages[self.w.stage as usize].camera_events;
+            let events = self.cam_events();
             let ev = events.get(self.cam.s2.next_event).copied().unwrap_or_default();
             if ev.x <= self.cam.s2.cam_x {
                 self.load_event(); // 0x22532

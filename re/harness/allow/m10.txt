@@ -1,0 +1,274 @@
+# Approved known differences of milestone 10 (the demos of the attract loop with their real levels), M10-03 to M10-05.
+# One rule per line: a key pattern (fnmatch) and an optional record range, then a "# reason". The records are trace records
+# (video frame - 2) of the power-on recordings below; A is the record of a demo call (the title returned, G.$757A stepped).
+#
+# What is compared (no input, the port runs free from power on, its own RAM clear and setup of every demo):
+#   MAME  re/out/traces/flow_m1003-loop.mame.trc   (40000 records: the whole loop, the six demos, `scripts/m1003_loop.txt`)
+#   port  dino-game --rom dino.zip --trace OUT/loop.port.trc --frames 40000
+#   diff  re/.venv/bin/python -I re/harness/diff.py re/out/traces/flow_m1003-loop.mame.trc OUT/loop.port.trc --from A --frames A+1327 \
+#           --allow re/harness/allow/m10.txt                (RESULT: no differences, for each of the six demos)
+#   or    re/harness/m10_demo_check.sh   (the six free runs and the six step-like runs, see the script)
+# The demos (A, row, level): 3343 row 1 Episode 2 area 0, 9914 row 2 Episode 3 area 0, 16448 row 3 Episode 8 area 1, 23019 row 4
+# Episode 5 area 0, 29553 row 5 Episode 6 area 1, 36124 row 0 Episode 1 area 1. The same rules fit `flow_m113-long` (the first five)
+# and the two first-run recordings `flow_m112-row5` / `flow_m112-row0` (the counter poked at power frame 1000, A = 3343).
+#
+# Result (2026-10-21): from the first full pass (A + 11) to the first record of the next screen (A + 1326) every demo is equal to the
+# recording in every traced field, tilemap cell, palette word, sprite entry and sound code, without any rule (Episode 3 has the tag
+# team move at A + 928, record 10842: equal since the port runs its trigger 0x6728, M9-01). The same in the step-like runs (the port
+# loaded with MAME's state after every record A + 11 .. A + 1209, harness `DINO_LAGSYNC_EVERY=1 DINO_LAGSYNC_RANGE=...`).
+# Not part of these rules (diff.py reports them apart, they are no field differences): the side arguments d1 / d2 of a few sound
+# requests (1 to 6 frames per demo: the hero voice pan 0x32xxx / 0x42xxx and the register leftovers in d2 of 0x3E, 0x62, 0x80, 0x8F,
+# 0xDE, 0xDF), the M4 sound side task (agy, sound side arguments).
+
+# ----------------------------------------------------------------------------------------------------------------------
+# 1. The setup of a demo, records A .. A + 10 (D4d s3.6, `demo.rs` module comment, D5-errata M1-12). The original needs about 10
+#    frames of CPU time for the RAM clear (three frames of sweeps, A .. A + 2) and the setup (0xA9BE, the map 0x2228A, the HUD
+#    0x162AE); the video frame boundaries fall inside these routines. The port does the same steps in the same frames, but each step
+#    whole: the records show writes one frame early or late, never a different value after the setup.
+
+# 1a. The port's RAM clear builds a new game (`flow_demo_clear_ram`): its pools have their free stacks, list heads and HUD rings at
+#     their init values from A + 2 on; in the original the sweeps reach them in A .. A + 2 (A and A + 1 still hold what the screens
+#     before left, the last demo's HUD state included) and RAM holds 0 there until the stage setup 0xA9BE writes them (A + 7 / A + 8).
+#     None of these is read before the first pass.
+global.free_count            3343-3353       # the pool, list, ring and script pointers of the new game (A + 2) against RAM 0 / the leftovers of the sweeps
+global.free_count            9914-9924
+global.free_count            16448-16458
+global.free_count            23019-23029
+global.free_count            29553-29563
+global.free_count            36124-36134
+global.free_ptr              3343-3353
+global.free_ptr              9914-9924
+global.free_ptr              16448-16458
+global.free_ptr              23019-23029
+global.free_ptr              29553-29563
+global.free_ptr              36124-36134
+global.free_slot             3343-3353
+global.free_slot             9914-9924
+global.free_slot             16448-16458
+global.free_slot             23019-23029
+global.free_slot             29553-29563
+global.free_slot             36124-36134
+global.item_ptr              3343-3353
+global.item_ptr              9914-9924
+global.item_ptr              16448-16458
+global.item_ptr              23019-23029
+global.item_ptr              29553-29563
+global.item_ptr              36124-36134
+global.item_count            3343-3353
+global.item_count            9914-9924
+global.item_count            16448-16458
+global.item_count            23019-23029
+global.item_count            29553-29563
+global.item_count            36124-36134
+global.obst_ptr              3343-3353
+global.obst_ptr              9914-9924
+global.obst_ptr              16448-16458
+global.obst_ptr              23019-23029
+global.obst_ptr              29553-29563
+global.obst_ptr              36124-36134
+global.obst_prev_ptr         3343-3353
+global.obst_prev_ptr         9914-9924
+global.obst_prev_ptr         16448-16458
+global.obst_prev_ptr         23019-23029
+global.obst_prev_ptr         29553-29563
+global.obst_prev_ptr         36124-36134
+global.obst_prev_count       3343-3353
+global.obst_prev_count       9914-9924
+global.obst_prev_count       16448-16458
+global.obst_prev_count       23019-23029
+global.obst_prev_count       29553-29563
+global.obst_prev_count       36124-36134
+global.obst_slot             3343-3353
+global.obst_slot             9914-9924
+global.obst_slot             16448-16458
+global.obst_slot             23019-23029
+global.obst_slot             29553-29563
+global.obst_slot             36124-36134
+global.next_event            3343-3353
+global.next_event            9914-9924
+global.next_event            16448-16458
+global.next_event            23019-23029
+global.next_event            29553-29563
+global.next_event            36124-36134
+global.spawn_list1           3343-3353
+global.spawn_list1           9914-9924
+global.spawn_list1           16448-16458
+global.spawn_list1           23019-23029
+global.spawn_list1           29553-29563
+global.spawn_list1           36124-36134
+global.spawn_list2           3343-3353
+global.spawn_list2           9914-9924
+global.spawn_list2           16448-16458
+global.spawn_list2           23019-23029
+global.spawn_list2           29553-29563
+global.spawn_list2           36124-36134
+global.floor_ptr             3343-3353
+global.floor_ptr             9914-9924
+global.floor_ptr             16448-16458
+global.floor_ptr             23019-23029
+global.floor_ptr             29553-29563
+global.floor_ptr             36124-36134
+global.splash_timer          3343-3353
+global.splash_timer          9914-9924
+global.splash_timer          16448-16458
+global.splash_timer          23019-23029
+global.splash_timer          29553-29563
+global.splash_timer          36124-36134
+global.splash_phase          3343-3353
+global.splash_phase          9914-9924
+global.splash_phase          16448-16458
+global.splash_phase          23019-23029
+global.splash_phase          29553-29563
+global.splash_phase          36124-36134
+global.attack_serial         3343-3353
+global.attack_serial         9914-9924
+global.attack_serial         16448-16458
+global.attack_serial         23019-23029
+global.attack_serial         29553-29563
+global.attack_serial         36124-36134
+global.shake_sign            3343-3353
+global.shake_sign            9914-9924
+global.shake_sign            16448-16458
+global.shake_sign            23019-23029
+global.shake_sign            29553-29563
+global.shake_sign            36124-36134
+global.shake_timer           3343-3353
+global.shake_timer           9914-9924
+global.shake_timer           16448-16458
+global.shake_timer           23019-23029
+global.shake_timer           29553-29563
+global.shake_timer           36124-36134
+global.hud_*                 3343-3353
+global.hud_*                 9914-9924
+global.hud_*                 16448-16458
+global.hud_*                 23019-23029
+global.hud_*                 29553-29563
+global.hud_*                 36124-36134
+global.hudcur_*              3343-3353
+global.hudcur_*              9914-9924
+global.hudcur_*              16448-16458
+global.hudcur_*              23019-23029
+global.hudcur_*              29553-29563
+global.hudcur_*              36124-36134
+effect.off_x                                 # the leftover speed words of the ranking's clouds (class 0x20, m1.txt rule) until the sweeps, A .. A + 1
+effect.owner60
+
+# 1b. The stage setup 0xA9BE (A + 7): the clock words, the floor base and the car switch G.$77A0 are written one frame later in the
+#     original (the frame ends inside 0xA9BE / 0xAA0E in the runs after the first).
+global.time_min              3350            # 0xA9BE: the port writes them in A + 7, the original in A + 8
+global.time_min              9921
+global.time_min              16455
+global.time_min              23026
+global.time_min              29560
+global.time_min              36131
+global.time_sec              3350
+global.time_sec              9921
+global.time_sec              16455
+global.time_sec              23026
+global.time_sec              29560
+global.time_sec              36131
+global.time_div              3350
+global.time_div              9921
+global.time_div              16455
+global.time_div              23026
+global.time_div              29560
+global.time_div              36131
+global.floor_base            3350
+global.floor_base            9921
+global.floor_base            16455
+global.floor_base            23026
+global.floor_base            29560
+global.floor_base            36131
+global.car_on                3350
+global.car_on                9921
+global.car_on                16455
+global.car_on                23026
+global.car_on                29560
+global.car_on                36131
+
+# 1c. The three hero objects. A + 5: the frame ends inside the third player init 0x4D76 (its who, lives, serial and power come in
+#     A + 6). A + 5 .. A + 9: the setup calls 0x18C88 for each present hero (the box table, the speed table 0x5036, +$78 = 10, the idle
+#     animation 0x5BDC: +$28, +$2F, +$48, +$4C, +$4D) before the row sets the class; the port leaves it to the first update of the object
+#     in mode 0 (`player_spawn_stage_start`, A + 10), where the original does it again with the class of the row. A one line change in
+#     player.rs (make `player_physics_reset` visible to flow/demo.rs) would move it; player.rs belongs to another worker now.
+#     A .. A + 1: the leftovers of the screens before the clear (the objects of the attract screens and the last demo).
+player.*                     3343-3352       # the hero objects in the setup (see above)
+player.*                     9914-9923
+player.*                     16448-16457
+player.*                     23019-23028
+player.*                     29553-29562
+player.*                     36124-36133
+
+# 1d. The map (0x2228A from 0x20836 on) and the HUD (0x162AE). In the runs after the first the map of the areas that start at X = 0
+#     (Episodes 8, 5 and 6: the screen pre-drawn at +0xBC8) is not done when A + 9 ends: its last 11 blocks (44 cells) and what
+#     follows (G.$5EC, G.$5EE = 0, G.$602 = 1) are in A + 10; in Episode 3 and Episode 1 the map is done and the frame ends after the
+#     first 40 (Episode 3) or 38 (Episode 1) cells of the HUD (and its write of +$10A of the first hero). The port draws the map in A + 9
+#     and the HUD in A + 10, each whole (D5-errata M1-15). Episode 3: its first pass has not finished in A + 10 (G.$757C is 1200 there),
+#     the port's has (G.$670 spawn_init, the 22 hidden scroll3 cells of 0x23090 and the sprite list come one record later).
+scroll1                      3352            # the frame boundary inside the map / the HUD draw (A + 9)
+scroll1                      9923
+scroll1                      16457
+scroll1                      23028
+scroll1                      29562
+scroll1                      36133
+scroll2                      3352
+scroll2                      9923
+scroll2                      16457
+scroll2                      23028
+scroll2                      29562
+scroll2                      36133
+global.aggression            3352
+global.aggression            9923
+global.aggression            16457
+global.aggression            23028
+global.aggression            29562
+global.aggression            36133
+global.level                 3352
+global.level                 9923
+global.level                 16457
+global.level                 23028
+global.level                 29562
+global.level                 36133
+global.rank_freeze           3352
+global.rank_freeze           9923
+global.rank_freeze           16457
+global.rank_freeze           23028
+global.rank_freeze           29562
+global.rank_freeze           36133
+scroll3                      3352-3353       # Episode 3: its first pass ends in A + 11; first runs: see 1e
+scroll3                      9923-9924
+scroll3                      16457-16458
+scroll3                      23028-23029
+scroll3                      29562-29563
+scroll3                      36133-36134
+sprites                      3352-3353
+sprites                      9923-9924
+sprites                      16457-16458
+sprites                      23028-23029
+sprites                      29562-29563
+sprites                      36133-36134
+global.spawn_init            3352-3353
+global.spawn_init            9923-9924
+global.spawn_init            16457-16458
+global.spawn_init            23028-23029
+global.spawn_init            29562-29563
+global.spawn_init            36133-36134
+
+# 1e. The first demo after power on runs its setup one frame ahead in the middle (`demo.rs`): the event, the map header and the camera
+#     are in A + 7 there; the display shadow G.$868 is not copied by the vblank (0x71C) while the setup is busy, so it stays 0 in A + 8.
+#     The poked first runs of rows 5 and 0 (`flow_m112-row5`, `-row0`, A = 3343): row 5 has the HUD cut (34 cells) and the area music
+#     0x0005 one record early in A + 9; in row 0 (Episode 1) the first pass begins in A + 9 and the frame ends after the second hero's
+#     update (the third hero, the enemies, the cameras, the blink of the HUD and the sprite list come in A + 10).
+global.display_y2            3351-3352          # the first run: G.$868 lags the camera in the busy setup
+sounds                       3352                # flow_m112-row5: the area music of 0x162AE / 0xA55A one record early
+global.players_minus_one     3352                # flow_m112-row0: the first pass is cut between the second and the third hero
+global.blink_*               3352
+global.spawn_init            3352
+global.cam2_sub              3352
+global.max_x60               3352
+global.max_y62               3352
+global.min_x64               3352
+global.min_y66               3352
+global.event_idx             3352
+global.lock78                3352
+global.cam3_state            3352

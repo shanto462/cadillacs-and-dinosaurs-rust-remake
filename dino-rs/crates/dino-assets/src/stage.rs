@@ -71,6 +71,13 @@ pub struct Stage {
     pub camera_events: Vec<CameraEvent>,
     /// ROM address of `camera_events[0]` (the scroll2 controller's +$56 points into this table).
     pub camera_events_addr: u32,
+    /// Stage 2 only: the stage's list of the standard event table 0x21B2A (the one 0x2099A reads; `camera_events` of stage 2 is the
+    /// controller's own list 0x22B9E, read by 0x2251C). The demo's start of the controller (0x2228A) loads its first event with 0x2099A,
+    /// so +$56 points into this list and the stage 2 controller (0x224A4) reads its next events here too. Empty for the other stages
+    /// (their `camera_events` is this list).
+    pub std_events: Vec<CameraEvent>,
+    /// ROM address of `std_events[0]`.
+    pub std_events_addr: u32,
     pub areas: Vec<Area>,
     /// Stage 2 only: the scroll2 map header 0x22AFA that its own controller (0x22398, init 0x22404) loads instead of the one of the
     /// table 0x21580 that the standard controller (and the demo's area setup) uses. The screen arrays are the same 60 screens and

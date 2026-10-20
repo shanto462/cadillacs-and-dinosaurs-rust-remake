@@ -1896,6 +1896,43 @@ fn demo_rows_5_and_0_set_up_and_run_in_step_with_mame() {
     }
 }
 
+/// The whole attract loop from power on with no input, 40000 records (`re/harness/scripts/m1003_loop.txt`, `record.sh --batch`): the
+/// six demos (counters 1 to 5, then the wrap to row 0), three passes of the four attract states.
+const TRACE_LOOP: &str = "../../../re/out/traces/flow_m1003-loop.mame.trc";
+/// The records of the demo calls in `flow_m1003-loop` (A: the title returned, G.$757A stepped) and the rows they play: Episode 2 area 0,
+/// Episode 3 area 0, Episode 8 area 1, Episode 5 area 0, Episode 6 area 1, Episode 1 area 1.
+const LOOP_CALLS: [usize; 6] = [3343, 9914, 16448, 23019, 29553, 36124];
+
+/// M10-03 to M10-05: the six demos of the attract loop with their real levels, from power on (a free run of 37460 records, every demo
+/// set up by the port's own RAM clear and played from the streams). In every demo from its first full pass (A + 11) to the first record
+/// of the next screen (A + 1326) everything the test compares is equal to the recording: the three tilemaps, the four palette banks,
+/// the sprite list, the layer control, the title counter, the attract state byte, the six scroll shadows, the sound codes, the system
+/// variables, the random number state G.$14, the frame counters, G.$757C, the mode, stage and area; at the demo frames G.$0 = 60, 300,
+/// 600, 900 and 1200 every modeled byte of the three player objects; the 100 frozen frames, the fade (A + 1210 on) and the first frame
+/// of the clear that follows. The setup records are checked as in `demos_set_up_and_run_in_step_with_mame`. No exception: the tag team
+/// move of Episode 3 (A + 928, Hannah and Mustapha, the trigger 0x6728) is equal too.
+#[test]
+fn the_six_demos_of_the_loop_match_mame() {
+    let Some(a) = assets() else { return };
+    if !Path::new(TRACE_LOOP).exists() {
+        eprintln!("mame_check: {TRACE_LOOP} is missing, skipped");
+        return;
+    }
+    let (_, demos) = run_demos(a, TRACE_LOOP, 37460, |_, _, _| {}, &[60, 300, 600, 900, 1200]);
+    assert_eq!(demos.iter().map(|d| d.0).collect::<Vec<_>>(), LOOP_CALLS, "the frames the title returned");
+    for (n, (start, recs)) in demos.iter().enumerate() {
+        assert_demo(n, *start, recs);
+        let bad: Vec<String> = recs
+            .iter()
+            .filter(|r| r.rel >= 11)
+            .filter(|r| !r.d.none() || r.d.cams.is_some() || !r.d.core_sys().is_empty() || !r.globals.is_empty() || !r.players.is_empty())
+            .map(|r| format!("A+{}: {:?} {:?} {:?}", r.rel, r.d, r.globals, &r.players[..r.players.len().min(4)]))
+            .collect();
+        // (G.$0 is equal in every record, so the player objects are compared at the five checkpoints of every demo)
+        assert!(bad.is_empty(), "demo {n} (call at record {start}): {} records differ, first {:?}", bad.len(), &bad[..bad.len().min(2)]);
+    }
+}
+
 /// Diagnostic: a coin (and, with `DINO_START`, a start) during the demo against the recordings of M1-13. `DINO_CASE` is `coin`
 /// (`flow_m113-coin`: coin at 4000 to 4007) or `free` (`flow_m113-freestart`: free play, start at 4000 to 4005).
 #[test]
@@ -2043,11 +2080,11 @@ fn attract_loop_32000_frames_match_mame() {
 /// The demo calls of `attract3.mame.trc` (the records where G.$757A steps) and the records the demo routine returns in (A + 1325).
 const LOOP_DEMOS: [(usize, usize); 4] = [(3343, 4668), (9914, 11239), (16448, 17773), (23019, 24344)];
 
-/// What the whole loop of `attract3.mame.trc` is compared with: the records `from ..= last` of the loop from power on, the random
-/// number state G.$14 set from the recording in the frame each demo returns (the levels of the demos are not complete, M10-03 to
-/// M10-05: the objects of the classes the port does not run draw numbers the port does not), per record all differences of
-/// `Differences` (tilemaps, palettes, sprite list, layer control, title counter, sound codes, attract state byte, the six scroll
-/// shadows) and the system variables, and G.$14 itself.
+/// What the whole loop of `attract3.mame.trc` is compared with: the records `from ..= last` of the loop from power on, per record all
+/// differences of `Differences` (tilemaps, palettes, sprite list, layer control, title counter, sound codes, attract state byte, the six
+/// scroll shadows) and the system variables, and G.$14 itself. Until M10-03 the random number state was set from the recording in the
+/// frame each demo returned (the demos drew numbers in classes the port did not run); the demos play their real levels now and leave
+/// the original's G.$14, so nothing is set.
 fn run_loop(a: &'static AssetPack, trace: &str, last: i32) -> (Vec<Differences>, Vec<(i32, u16, u16)>) {
     let mut rng_bad: Vec<(i32, u16, u16)> = Vec::new();
     let (_, rows) = compare_power_on_with(
@@ -2055,11 +2092,7 @@ fn run_loop(a: &'static AssetPack, trace: &str, last: i32) -> (Vec<Differences>,
         trace,
         last,
         |_| [0; 3],
-        |k, g, prev| {
-            if LOOP_DEMOS.iter().any(|&(_, e)| e == k as usize) {
-                g.w.rng = ram16(prev, 0xFF8014);
-            }
-        },
+        |_, _, _| {},
         |k, g, ram, _| {
             let in_demo = LOOP_DEMOS.iter().any(|&(s, e)| (s..e).contains(&(k as usize)));
             if k >= 25 && !in_demo && g.w.rng != ram16(ram, 0xFF8014) {
@@ -2076,11 +2109,9 @@ fn run_loop(a: &'static AssetPack, trace: &str, last: i32) -> (Vec<Differences>,
 /// scroll shadows, the variables of the system task, and G.$14. Records 25 on (0 to 24 are the reset code clearing the video RAM).
 ///
 /// The boot, the title, the profile cards, the ranking, the story slides and the opening movie (all four runs of it) are equal in
-/// EVERY record, without exception. The only records that differ are those of the four demos (A .. A + 1325: the levels are not
-/// complete, `demo_report` lists the first record of each kind of difference per demo, causes in `re/harness/allow/m1.txt`) and the
-/// two records after each demo, where the clear 0xAE0 of the next screen is still under way and video memory holds the demo's last
-/// picture (scroll2 in the first, scroll3 in the first two, the palette of the demo in the fade of the last). G.$14 is set from the
-/// recording in the frame each demo returns, so it is not compared inside a demo.
+/// EVERY record, without exception, and so are the records of the clear after each demo (M10-03: the demos leave the original's
+/// picture and G.$14, nothing is set from the recording). The records of the four demos (A .. A + 1324) are not compared here: they
+/// are the test `the_six_demos_of_the_loop_match_mame` (`flow_m1003-loop`), which lists what differs there.
 #[test]
 fn attract_loop_two_loops_match_mame() {
     let Some(a) = assets() else { return };
@@ -2098,12 +2129,6 @@ fn attract_loop_two_loops_match_mame() {
             continue;
         }
         compared += 1;
-        let after_demo = LOOP_DEMOS.iter().any(|&(_, e)| k == e || k == e + 1);
-        let mut d = d.clone();
-        if after_demo {
-            // the clear of the next screen is under way: the cells and colours of the demo's last picture
-            (d.s2, d.s3, d.pal) = (0, 0, 0);
-        }
         if !d.none() || d.cams.is_some() || !d.core_sys().is_empty() {
             bad.push(format!("record {k}: {d:?}"));
         }

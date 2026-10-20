@@ -33,7 +33,7 @@
 
 use super::attract::Stub;
 use super::boot::st;
-use crate::game::{Game, POOL_A, POOL_B, POOL_C, Pool};
+use crate::game::{Game, POOL_C, Pool};
 
 /// Script positions of the slot 0x10 task inside the routine.
 pub(super) mod rst {
@@ -115,8 +115,8 @@ impl Game {
         // 0x151C4: 0x49A8, 0x4A46, 0x4A18 (the lists), 0x4C76, 0x4C48, 0x4CA4 (pools B, A, C)
         self.draw_list.clear();
         self.sprites.splash_timer = 1;
-        self.props = Pool::new(POOL_B);
-        self.enemies = Pool::new(POOL_A);
+        self.props = crate::game::pool_b_init();
+        self.enemies = crate::game::pool_a_init();
         self.effects = Pool::new(POOL_C);
         if let Some(i) = self.props.alloc() {
             // 0x8C96C: jsr 0x4860, +$00 = 1, +$20 = 0x164

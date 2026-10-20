@@ -769,3 +769,25 @@ Checks (`re/harness/m901_check.sh`, 24 recordings made with `record.sh`, headles
   a blast (0x27DAA, `+$5C` = 1) and the pool B class 46 (0x84188) and frees itself. So B46 (0x8419E) IS reachable in natural play
   (ep8_jack 64622; D3e part 1 open item 6 and M9-04 list it as "no spawner found"); it is still unported.
 - 3 player kill-all crash: see "Class 10 hold machine with a stale `+$AC`" above (the class is 10, pool A slot 23).
+
+## M10-03 to M10-05 (the demos with their real levels, 2026-10-21, opus worker)
+
+Recording: `flow_m1003-loop` (40000 records from power on, no input, the six demos; `re/harness/scripts/m1003_loop.txt`). The sixth demo
+(counter 6, wrapped to row 0, Episode 1 area 1) is called in record 36124. Check: `re/harness/m10_demo_check.sh`, allow rules `re/harness/allow/m10.txt`.
+
+- D4d s3.6 and the M3-08 note above (the demo's events of Episode 3): 0x2228A loads the first event with the standard loader 0x2099A, which reads the
+  stage's list of the table 0x21B2A (Episode 3: from 0x21CFA), not the controller's own list 0x22B9E (0x2251C). The pointer +$56 stays in that list, so the
+  stage 2 controller 0x224A4 reads its next events there too (MAME: +$56 = 0x21CFA, then 0x21D0A). The port extracts that list as `Stage::std_events`
+  and follows the pointer (`Scroll2::std_list`). Without it the camera of the Episode 3 demo stood still at X 0.
+- D4d s3.6 (setup, what the clear keeps): G.$757A on is not cleared, so the row scroll task of Episode 3 (G.$7780, state 2 after that demo) and the car word
+  G.$77A2 keep what the demo or game before left; G.$2E (scroll3 base) is kept too. G.-$70BA (the boss bar message) has no init routine: it is 0 after the
+  reset and the clear until 0x17204 writes it (the port's HUD started it at 0xFFFF, which made the HUD of later demos differ).
+- Pool tags: the pool inits write a constant at +$82 of every slot: 0x4C48 pool A 4, 0x4C76 pool B 8, 0x4C1A pool E 0xC (`game/mod.rs` `pool_a_init` ..).
+- 0x2228A in the frame of the mode byte (A + 8 in the runs after the first, A + 7 in the first): the event, the task state, the map header and the camera are
+  written before the frame ends; the clears 0x20836 and the map come in the next record. The camera Y is still 0 when the event loads (+$5C = 0); the first
+  pass loads the same event again (the pointer was left on it), +$5C = the camera Y then.
+- The clear 0xAE0 after a demo (0x97CD6 / 0x97D2A, in the record the demo routine returns, A + 1325): sprites, scroll1 and the first 1416 cells of scroll2 are
+  done when that frame ends, and the cell 1416 has its code word but still its old attribute (Episode 5); the next frame does the rest of scroll2 and scroll3
+  up to a cell between 3368 and 3584 (the port uses 3476), the third the rest.
+- The tag team move happens in the demo of Episode 3: at A + 928 (record 10842) Hannah and Mustapha start it (D2a s9, trigger 0x6728 from 0x670C); with the
+  port's tag team move (M9-01) it is equal too.

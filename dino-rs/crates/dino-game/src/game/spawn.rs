@@ -8,7 +8,7 @@
 //!
 //! Until the flow port calls `spawn_reset`, `spawn_script_tick` notices an area change by itself.
 
-use super::{Game, Handle, POOL_A, POOL_B, Pool};
+use super::{Game, Handle};
 use dino_assets::enemy::SpawnRec;
 
 /// Enemy-side globals of the original (G.$xxxx), kept here because this port owns them.
@@ -138,8 +138,8 @@ impl Game {
     /// Pool part of 0xAA0E (pool A / B init 0x4C48 / 0x4C76) and 0xAA92..0xAAD8: pool E objects
     /// except held weapons are told to free themselves, area globals cleared.
     pub fn spawn_area_reset_objects(&mut self) {
-        self.enemies = Pool::new(POOL_A);
-        self.props = Pool::new(POOL_B);
+        self.enemies = super::pool_a_init(); // 0x4C48
+        self.props = super::pool_b_init(); // 0x4C76
         for it in self.items.slots.iter_mut() {
             if it.b.live != 0 && !(it.b.k20 == 0 && it.b.mode == 2 && it.b.sub == 8) {
                 it.b.mode = 6;

@@ -28,6 +28,31 @@ fn area_map(rom: &Rom, hdr: u32) -> AreaMap {
     AreaMap { rom_addr: hdr, screens_addr: ptr, w, h, screens, init_x: rom.u16(hdr + 6), init_y: rom.u16(hdr + 8) }
 }
 
+/// A list of 16-byte camera event records (0x209C0 / 0x22532 copy one into the controller), up to and with the record of X 0xFFFF.
+fn events(rom: &Rom, mut ev: u32) -> Vec<CameraEvent> {
+    let mut list = Vec::new();
+    loop {
+        let x = rom.u16(ev);
+        list.push(CameraEvent {
+            x,
+            y: rom.u16(ev + 2),
+            push: rom.u16(ev + 4),
+            up: rom.u16(ev + 6),
+            down: rom.u16(ev + 8),
+            area: rom.u8(ev + 10),
+            mode: rom.u8(ev + 11),
+            vfollow: rom.u8(ev + 12),
+            flag70: rom.u8(ev + 13),
+            next_mode: rom.u8(ev + 14),
+            by_y: rom.u8(ev + 15),
+        });
+        if x == 0xFFFF {
+            return list;
+        }
+        ev += 16;
+    }
+}
+
 fn palette_bank(rom: &Rom, addr: u32) -> Vec<u16> {
     (0..512).map(|i| rom.u16(addr + 2 * i)).collect()
 }
@@ -48,30 +73,12 @@ pub fn extract(rom: &Rom) -> StageData {
             .step_by(16)
             .map(|b| [cell(rom, b), cell(rom, b + 4), cell(rom, b + 8), cell(rom, b + 12)])
             .collect();
-        // Camera events (0x2099A): stage 2 uses its own table at 0x22B9E.
-        let mut ev = if stage == 2 { 0x22B9E } else { 0x21B2A + rom.u16(0x21B2A + stage * 2) as u32 };
-        let camera_events_addr = ev;
-        let mut camera_events = Vec::new();
-        loop {
-            let x = rom.u16(ev);
-            camera_events.push(CameraEvent {
-                x,
-                y: rom.u16(ev + 2),
-                push: rom.u16(ev + 4),
-                up: rom.u16(ev + 6),
-                down: rom.u16(ev + 8),
-                area: rom.u8(ev + 10),
-                mode: rom.u8(ev + 11),
-                vfollow: rom.u8(ev + 12),
-                flag70: rom.u8(ev + 13),
-                next_mode: rom.u8(ev + 14),
-                by_y: rom.u8(ev + 15),
-            });
-            if x == 0xFFFF {
-                break;
-            }
-            ev += 16;
-        }
+        // Camera events (0x2099A): stage 2 uses its own table at 0x22B9E (0x2251C); its list of the standard table is kept for the
+        // demo (0x2228A loads the first event of the demo with 0x2099A).
+        let std_addr = 0x21B2A + rom.u16(0x21B2A + stage * 2) as u32;
+        let camera_events_addr = if stage == 2 { 0x22B9E } else { std_addr };
+        let camera_events = events(rom, camera_events_addr);
+        let (std_events, std_events_addr) = if stage == 2 { (events(rom, std_addr), std_addr) } else { (Vec::new(), 0) };
         let areas = (0..AREAS[stage as usize] as u32)
             .map(|area| {
                 let shift_tab = 0x22DE4 + rom.u16(0x22DE4 + stage * 2) as u32;
@@ -90,7 +97,16 @@ pub fn extract(rom: &Rom) -> StageData {
             .collect();
         // Stage 2: the controller 0x22398 loads its own copy of the map header (0x22404).
         let controller_map = (stage == 2).then(|| area_map(rom, 0x22AFA));
-        data.stages.push(Stage { scroll2_screen_words: screens, scroll2_blocks: blocks, camera_events, camera_events_addr, areas, controller_map });
+        data.stages.push(Stage {
+            scroll2_screen_words: screens,
+            scroll2_blocks: blocks,
+            camera_events,
+            camera_events_addr,
+            std_events,
+            std_events_addr,
+            areas,
+            controller_map,
+        });
     }
     data
 }

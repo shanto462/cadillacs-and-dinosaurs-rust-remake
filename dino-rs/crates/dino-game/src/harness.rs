@@ -386,7 +386,7 @@ pub fn load_state(game: &mut Game, path: &str) -> Result<Vec<String>, String> {
 /// Loads the state a [`TraceReader`] currently holds.
 /// The number of resyncs of a lag-sync run over the records 0 .. frames - 1 of a MAME trace: the lag records, and the
 /// frames k with (k + 1) % every == 0 when `every` > 0 (the diagnostic period).
-fn count_lag_records(path: &str, frames: u32, every: u32) -> Result<u32, String> {
+fn count_lag_records(path: &str, frames: u32, every: u32, in_range: impl Fn(u32) -> bool) -> Result<u32, String> {
     let mut r = TraceReader::open(path)?;
     r.next(); // record -1
     let mut n = 0;
@@ -394,7 +394,7 @@ fn count_lag_records(path: &str, frames: u32, every: u32) -> Result<u32, String>
         if r.next().is_none() {
             break;
         }
-        if r.flags & 1 != 0 || (every > 0 && (k + 1) % every == 0) {
+        if r.flags & 1 != 0 || (every > 0 && (k + 1) % every == 0 && in_range(k)) {
             n += 1;
         }
     }
@@ -563,8 +563,15 @@ pub fn run(
     }
     // `DINO_LAGSYNC_EVERY=N` (diagnostic): resync every N frames too (N = 1 is a step run). Found by the lag-sync study, not a mode of its own.
     let every: u32 = std::env::var("DINO_LAGSYNC_EVERY").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
+    // `DINO_LAGSYNC_RANGE=A-B` (diagnostic, with DINO_LAGSYNC_EVERY): the periodic resyncs only after the records A ..= B (a power-on
+    // run that resyncs inside the demo loop of the attract mode only, where the loader keeps the front end tasks of the port).
+    let range: Option<(u32, u32)> = std::env::var("DINO_LAGSYNC_RANGE").ok().and_then(|v| {
+        let (a, b) = v.split_once('-')?;
+        Some((a.parse().ok()?, b.parse().ok()?))
+    });
+    let in_range = |k: u32| range.is_none_or(|(a, b)| (a..=b).contains(&k));
     let resyncs = match lagsync {
-        Some(p) => count_lag_records(p, frames, every)?,
+        Some(p) => count_lag_records(p, frames, every, in_range)?,
         None => 0,
     };
     let mut lag_reader = match lagsync {
@@ -693,7 +700,7 @@ pub fn run(
             if rd.next() != Some(k as i32) {
                 return Err(format!("the MAME trace has no record for frame {k}"));
             }
-            if rd.flags & 1 != 0 || (every > 0 && (k + 1) % every == 0) {
+            if rd.flags & 1 != 0 || (every > 0 && (k + 1) % every == 0 && in_range(k)) {
                 load_regions(&mut game, rd)?; // the warnings repeat at every resync: not shown
             }
         }

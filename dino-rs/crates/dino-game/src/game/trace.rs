@@ -1530,18 +1530,28 @@ impl Game {
         f.u16(b + 0x54, "down54", &mut s.down54);
         let ev_stage = self.assets.stages.stages.get(self.w.stage as usize).map(|x| x.camera_events_addr).unwrap_or(0);
         let ev_base = if s.event_base != 0 { s.event_base } else { ev_stage }; // the list of the last event load (0x2099A)
+        // stage 2: +$56 points into the controller's own list or (the demo, 0x2099A) into the stage's list of the table 0x21B2A
+        let std = self.assets.stages.stages.get(self.w.stage as usize).map_or((0, 0), |x| (x.std_events_addr, x.std_events.len()));
         let mut p = ev_base.wrapping_add(16u32.wrapping_mul(s.next_event as u32));
         f.u32(b + 0x56, "next_event", &mut p);
         if f.loading() {
-            match list_index(p, ev_base, 16) {
+            s.std_list = false;
+            match list_index(p, std.0, 16).filter(|&k| k < std.1) {
                 Some(k) => {
-                    s.event_base = ev_base;
+                    s.std_list = true;
+                    s.event_base = std.0;
                     s.next_event = k;
                 }
-                None => {
-                    s.event_base = ev_stage;
-                    s.next_event = (p.wrapping_sub(ev_stage) / 16) as usize;
-                }
+                None => match list_index(p, ev_base, 16) {
+                    Some(k) => {
+                        s.event_base = ev_base;
+                        s.next_event = k;
+                    }
+                    None => {
+                        s.event_base = ev_stage;
+                        s.next_event = (p.wrapping_sub(ev_stage) / 16) as usize;
+                    }
+                },
             }
             s.map_area = s.area;
             // +$42 names the map in use: an area reached by walking keeps the map of the area before it (0x207CA runs only at an
@@ -2027,6 +2037,23 @@ impl Game {
 
     fn trace_pointer_phase(&self) -> [u8; 6] {
         [self.flow.mode, self.flow.sub, self.flow.in_game, self.spawn.init, self.w.stage, self.cam.s2.area]
+    }
+
+    /// Trace side of a RAM clear that zeroes the object pools (the demo setup 0x99F10): the frame pointers +$28 and +$30 of every
+    /// slot are 0 in the original until the object starts an animation, the port's objects hold the default frame id. The trace
+    /// writes 0 for them until the id changes (as for the null pointers a snapshot load keeps, `frame_override`). Not for the three
+    /// players: the setup starts their idle animation (0x18C88, 0x5BDC) with the frame id 0 of the port.
+    pub fn trace_ram_cleared(&mut self) {
+        let ids: Vec<(u16, u16, usize)> = POOLS.iter().skip(1).map(|(_, p)| *p).collect();
+        for (base, stride, n) in ids {
+            for i in 0..n {
+                let h = base + stride * i as u16;
+                let b = self.body(h);
+                let (f28, f30) = (b.frame, b.frame2);
+                self.trace_unmapped.insert(obj(h) + 0x28, (f28, 0));
+                self.trace_unmapped.insert(obj(h) + 0x30, (f30, 0));
+            }
+        }
     }
 
     /// RAM image and mask of every modeled field.

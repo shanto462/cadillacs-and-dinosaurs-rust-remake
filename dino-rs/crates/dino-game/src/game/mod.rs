@@ -102,6 +102,27 @@ impl<T: Default> Pool<T> {
     }
 }
 
+/// The pool inits that also write the pool tag at +$82 of every slot (the slot bytes are cleared first, 0x4D34): 0x4C48 pool A
+/// (tag 4), 0x4C76 pool B (tag 8), 0x4C1A pool E (tag 0xC). The free routines do not touch +$82, nothing else writes it. The
+/// pools of a new game are the RAM of the reset (all zero) until the first init.
+pub fn pool_a_init() -> Pool<enemy::Enemy> {
+    let mut p: Pool<enemy::Enemy> = Pool::new(POOL_A);
+    p.slots.iter_mut().for_each(|s| s.m.sb(0x82, 4)); // move.b #$4, $82(a0)
+    p
+}
+
+pub fn pool_b_init() -> Pool<prop::Prop> {
+    let mut p: Pool<prop::Prop> = Pool::new(POOL_B);
+    p.slots.iter_mut().for_each(|s| s.m.sb(0x82, 8)); // move.b #$8, $82(a0)
+    p
+}
+
+pub fn pool_e_init() -> Pool<item::Item> {
+    let mut p: Pool<item::Item> = Pool::new(POOL_E);
+    p.slots.iter_mut().for_each(|s| s.m.sb(0x82, 0xC)); // move.b #$c, $82(a0)
+    p
+}
+
 impl<T> Pool<T> {
     /// Allocators 0x4818 / 0x483C / 0x4860 / 0x4884 / 0x48A8. `None` = pool empty (carry set).
     pub fn alloc(&mut self) -> Option<usize> {

@@ -102,6 +102,10 @@ Hogg (Episode 3) and Tyrog (Episode 6 area 2) are not listed: a right walk from 
 - `--headless --autoplay`: a bot (god mode, the flow test) plays from power on through the eight episodes to the ending and back to the attract loop. It stops there (a few seconds). Mode changes go to stderr.
 - `--headless --screenshots 60,600 --shot-dir DIR`: runs the game and saves the pictures at frames 60 and 600 as `DIR/f00060.png` and `DIR/f00600.png`. Add `--jump NAME` (or `--episode`, `--area`, `--camx`) to choose the start.
 - `--test --headless --screenshots 30 --shot-dir DIR`: draws the test menu over the picture at frame 30.
+- The attract demos against MAME (M10-03): `re/harness/m10_demo_check.sh` (from the repo root; the six demos of the loop, a free run and a step-like run each).
+  The pictures of the six demos at their frame 300: `--headless --screenshots 3654,10225,16759,23330,29864,36435 --shot-dir DIR` (no `--jump`: from power on).
+  A diagnostic for any power-on trace: `DINO_LAGSYNC_EVERY=1 DINO_LAGSYNC_RANGE=9925-11123 dino-game --rom ../dino.zip --lagsync TRACE --trace OUT --frames 11300`
+  loads MAME's state after every record of the range only (example: the Episode 3 demo).
 
 ### The smart bot (`--autoplay smart`)
 

@@ -558,7 +558,7 @@ impl Game {
         self.flow.sub = 0;
         self.flow.sub2 = 0;
         // 0x4A00 list, 0x4C1A pool E init
-        self.items = super::Pool::new(super::POOL_E);
+        self.items = super::pool_e_init(); // +$82 = 0xC
         self.flow_area_reset_a(); // 0xAA0E
     }
 
@@ -629,7 +629,7 @@ impl Game {
         // 0x49A8.. per-frame lists: player port / main.
         self.sprites.splash_timer = 1; // 0x49B4: the water splash timer (the phase -$7124 is not reset)
         self.terrain_obstacles_reset(); // 0x4A76
-        self.enemies = super::Pool::new(super::POOL_A); // 0x4C48
+        self.enemies = super::pool_a_init(); // 0x4C48
     }
 
     /// 0xAA0E from the pool B init (0x4C76) on. In a stage start the 68000 is busy with it in the next video frame (`flow_stage_start_staged`).

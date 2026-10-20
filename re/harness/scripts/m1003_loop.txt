@@ -1,0 +1,8 @@
+# M10-03 to M10-05: one whole attract loop from power on with no input: the six demos (the counter G.$757A 1 to 5, then the wrap to
+# row 0: Episodes 2, 3, 8, 5, 6 and 1), three passes of the four attract states (39312 frames) and the boot. One segment, its own
+# MAME process. Pictures at about frame 300 of each demo (video frame A + 312, A = the record of the demo call).
+# DINO_TIMEOUT=3000 re/harness/record.sh --batch re/harness/scripts/m1003_loop.txt m1003_loop
+
+segment m1003-loop
+frames 40000
+snaps 3655,10226,16760,23331,29865,36436

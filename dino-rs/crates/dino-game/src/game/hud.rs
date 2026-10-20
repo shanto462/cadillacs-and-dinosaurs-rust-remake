@@ -130,7 +130,8 @@ impl Default for Hud {
             ring_w: [0; 3],
             ring_r: [0; 3],
             boss: 0,
-            boss_msg: FREE,
+            // no routine sets G.-$70BA up: it is 0 after the reset and after the RAM clear of a demo (0x99F10) until 0x17204 writes it
+            boss_msg: [0; 8],
             bar_start: 0,
             weapon_dirty: 0,
             score_dirty: false,

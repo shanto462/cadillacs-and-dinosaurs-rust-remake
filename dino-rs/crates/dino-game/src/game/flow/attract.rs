@@ -42,6 +42,15 @@ pub enum Stub {
 /// 1072 to 3576 gives what the recording shows (56 of the 216 board cells left, see
 /// `flow_attract_clear_step`); the middle of the range that the cycle count allows is used.
 const CLEAR3_FIRST: usize = 3000;
+/// The same for the clear after a demo (0x97CD6 / 0x97D2A call 0xAE0 in the frame the demo routine returns): the scroll3 clear
+/// has got further when the frame of the scroll2 clear ends. Any value from 3368 to 3584 gives what the six demos of
+/// `flow_m1003-loop` show (the cells 3077 to 3367 of the demo's last scroll3 picture are blank in that record, cell 3584 is not);
+/// the middle is used (M10-03).
+const CLEAR3_AFTER_DEMO: usize = 3476;
+/// After a demo the clear 0xAE0 gets into scroll2 in the frame of the call already: when that frame ends its first 1416 cells are blank
+/// and the cell 1416 has its code word (0x5800) but still its old attribute word (`flow_m1003-loop`, Episode 5, the only demo whose
+/// scroll2 holds a picture there; the other five agree).
+const CLEAR2_AFTER_DEMO: usize = 1416;
 
 impl Game {
     /// A stretch of CPU time of the original that the port writes as a sleep: `frames` until the
@@ -208,6 +217,7 @@ impl Game {
     /// The demo returned (states 2 and 6).
     pub(super) fn flow_attract_demo_end(&mut self) {
         self.flow.front.stub = Stub::None;
+        self.flow.front.clear3_cut = CLEAR3_AFTER_DEMO; // the first part of the scroll3 clear of the 0xAE0 below
         if self.flow.front.attract_state & 0x3E == 2 {
             // 0x97CD6: kill the blink task (slot 0x20), then the story slides 0x988C0 (`slides.rs`);
             // they return in `st::SLIDES_END`
@@ -218,6 +228,11 @@ impl Game {
             self.flow_attract_clear();
             self.flow_attract_busy(2, 2, st::RANK_START);
         }
+        // 0xB6C has begun when the frame ends (the rest of scroll2 in the next one, `flow_attract_clear_step`)
+        for c in self.vram.scroll2.iter_mut().take(CLEAR2_AFTER_DEMO) {
+            (c.code, c.attr) = (0x5800, 0);
+        }
+        self.vram.scroll2[CLEAR2_AFTER_DEMO].code = 0x5800; // the code word first, the attribute word comes in the next frame
     }
 
     /// The slides returned (state 2): stop sound, clear, brightness, then the ranking.

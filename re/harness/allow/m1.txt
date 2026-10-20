@@ -9,9 +9,10 @@
 # recording in the record each demo returns (4668, 11239, 17773, 24344). The demos draw random numbers in objects of classes the
 # port does not run yet (the levels are incomplete until M10-03 to M10-05), so the state they leave is not the original's; without
 # the four lines every screen after the first demo would differ in the random numbers of the clouds and heroes of the ranking.
-# The same four injections are made by the test `attract_loop_two_loops_match_mame` (dino-rs, `cargo test`), which compares the
-# whole loop record by record (tilemaps, palettes, sprite list, layer control, sounds, state byte, scroll shadows, G.$14) with NO
-# allowed difference outside the demos: that test is the gate for the screens, this file lists what the field by field diff shows.
+# The test `attract_loop_two_loops_match_mame` (dino-rs, `cargo test`) compares the whole loop record by record (tilemaps, palettes,
+# sprite list, layer control, sounds, state byte, scroll shadows, G.$14) with NO allowed difference outside the demos: that test is
+# the gate for the screens, this file lists what the field by field diff shows. Since M10-03 the demos play their real levels and
+# leave the original's G.$14: the test sets nothing any more, the poke file is not needed (the demos themselves: allow/m10.txt).
 # The records are trace records (video frame - 2). The demos are the records 3343-4667, 9914-11238, 16448-17772, 23019-24343
 # (A .. A + 1324, A = the record in which the title returned and G.$757A stepped), after them come the clear of the next screen
 # (the records 4668, 11239, 17773, 24344 and the next one).

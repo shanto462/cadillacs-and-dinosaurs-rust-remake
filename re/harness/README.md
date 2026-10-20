@@ -1673,6 +1673,25 @@ The port side of the poke is `dino-game --poke 1000:FFF57A:2:5 --trace OUT --fra
 `DINO_LAST`, `DINO_DEMO`) lists, per demo, the first record (relative to the call A) where each kind of difference shows; `re/harness/diff.py MAME PORT
 --from 3300 --frames N --at FRAME` lists the player object fields at the checkpoints (G.$0 = 60, 300, 600).
 
+## M10-03 to M10-05: the six demos with their real levels
+
+One power-on recording of the whole loop (one MAME process, about a minute; pictures at frame 300 of each demo in
+`re/out/flow/m1003_loop/m1003-loop/snap/`):
+
+```sh
+DINO_TIMEOUT=3000 re/harness/record.sh --batch re/harness/scripts/m1003_loop.txt m1003_loop     # re/out/traces/flow_m1003-loop.mame.trc
+re/harness/m10_demo_check.sh            # the six demos: free run with allow/m10.txt, then step-like runs (PORT_OUT for the port traces)
+```
+
+`flow_m1003-loop` has 40000 records (no input): the demo calls are the records 3343, 9914, 16448, 23019, 29553 and 36124 (the counter
+G.$757A 1 to 5, then 6 wraps to row 0, Episode 1 area 1). The check script runs the port from power on and diffs each demo from its call A to
+the first record of the next screen (A + 1326) with `allow/m10.txt` (the setup records A .. A + 10, causes in the file). The step-like run is a lag-sync run from power on that loads MAME's state after every record of the demo loop only
+(`DINO_LAGSYNC_EVERY=1 DINO_LAGSYNC_RANGE=A-B`, `harness.rs`: the attract tasks of the port are kept, the loader does not know them). Result
+2026-10-21: every demo "RESULT: no differences" in the free run (and with no rule at all from A + 11 on) and in the step-like runs (the
+tag team move of Episode 3 at 10842 included). The Rust test `the_six_demos_of_the_loop_match_mame` asserts the same (and the player objects at G.$0 = 60, 300, 600, 900, 1200).
+Pictures: `dino-game --rom dino.zip --headless --screenshots 3654,10225,16759,23330,29864,36435 --shot-dir DIR` equal the six MAME snapshots
+(`probe/shotdiff.py ... --clock f`, the port picture of frame N is the snapshot of video frame N + 1).
+
 ## Stage clock and TIME OVER scenarios (M2-13, M2-14)
 
 `pokes/m213_clock.txt` is a probe batch (record it like the M5-15 batches, one MAME process): `m213_clock` (2400 frames: Jack stands

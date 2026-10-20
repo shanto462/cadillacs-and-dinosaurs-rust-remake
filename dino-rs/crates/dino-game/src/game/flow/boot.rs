@@ -21,7 +21,7 @@
 
 use crate::game::flow::scene::Scene;
 use crate::game::vram::PaletteRam;
-use crate::game::{Game, POOL_A, POOL_B, Pool};
+use crate::game::Game;
 
 /// Script positions of the slot 0x10 task (the attract states of `attract.rs` are here too).
 pub(super) mod st {
@@ -417,8 +417,8 @@ impl Game {
     pub(super) fn title_pools_reset(&mut self) {
         self.draw_list.clear();
         self.sprites.splash_timer = 1; // 0x49B4 (the phase -$7124 is not reset)
-        self.enemies = Pool::new(POOL_A);
-        self.props = Pool::new(POOL_B);
+        self.enemies = crate::game::pool_a_init();
+        self.props = crate::game::pool_b_init();
         self.hook_12be4();
         self.spawn_reset();
     }
