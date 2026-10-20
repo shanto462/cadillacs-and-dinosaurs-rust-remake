@@ -350,7 +350,9 @@ impl Game {
                 self.c61_check_slash(e);
             }
             self.c61_slot_keep(e); // 0x32E00
-            e.b.frame_w1 = 0;
+            // 0x32E44 ends with d1 = X + 0x400 (`move.w $8(a6),d1 ; addi.w #$400,d1`, d1 is not used after the compare): the d1 that the decision roll 0x5A1AC
+            // keeps in its high byte when no state, frame load or leap roll of this frame wrote d1 after it.
+            e.b.frame_w1 = e.b.xi().wrapping_add(0x400) as u16;
             self.c61_state(e, h);
             self.c61_leap_roll(e);
             self.c61_check_far(e);
@@ -428,6 +430,9 @@ impl Game {
         }
         let quarter = (e.m.w(o::BAR) as i16) >> 2;
         let low = (e.b.hp as i16).wrapping_sub(quarter) < 0;
+        // `sub.w d0,d1` leaves d1 = HP - a quarter of the bar (the rand routine 0x119C keeps d1): the stale d1 of the decision roll 0x5A1AC that follows in
+        // the same frame (`move.b (a0),d1` only replaces its low byte), whatever frame record this frame loaded before.
+        e.b.frame_w1 = (e.b.hp as i16).wrapping_sub(quarter) as u16;
         let limit = self.assets.enemy.t.u16(0x58B0C, if low { 0 } else { 2 });
         if (self.rand() & 0x1F) as i16 > limit as i16 {
             return;

@@ -89,6 +89,8 @@ mod b20;
 mod b31;
 #[path = "prop/b35.rs"]
 mod b35;
+#[path = "prop/b46.rs"]
+mod b46;
 #[path = "prop/b47.rs"]
 mod b47;
 // Episode 8 sewer end (M3-22): the waterfall over the edge and the shaft (classes 36, 37, 38).
@@ -298,6 +300,7 @@ impl Game {
                 38 => self.prop_b38(&mut p, i),
                 43 => self.prop_b43(&mut p, i),
                 44 => self.prop_b44(&mut p, i),
+                46 => self.prop_b46(&mut p, i),
                 47 => self.prop_b47(&mut p, i),
                 48 => self.prop_b48(&mut p, i),
                 49 => self.prop_b49(&mut p, i),

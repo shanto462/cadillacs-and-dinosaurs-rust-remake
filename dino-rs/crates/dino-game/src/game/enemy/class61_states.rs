@@ -243,6 +243,7 @@ impl Game {
         let tg = self.c61_tgt(e);
         if t & 3 == 0 {
             let d1: i16 = if tg.x > e.b.xi() { -0x5E } else { 0x5E };
+            e.b.frame_w1 = d1 as u16; // moveq #$5E / #$A2,d1: the d1 the decision roll 0x5A1AC keeps in its high byte
             e.m.sl(0xC0, if tg.x.wrapping_add(d1) > e.b.xi() { 0x20000 } else { 0xFFFE_0000 });
             e.m.sl(0xC4, if tg.z > e.b.zi() { 0x18000 } else { 0xFFFE_8000 });
         }
@@ -251,6 +252,7 @@ impl Game {
             e.m.sb(o::A2, a2 - 1);
             return;
         }
+        e.b.frame_w1 = 0; // 0x58F78: moveq #0,d1 (1 when a step was made)
         let d2: i16 = if tg.x > e.b.xi() { -0x68 } else { 0x68 };
         let mut moved = false;
         if (tg.x.wrapping_add(d2).wrapping_add(8).wrapping_sub(e.b.xi()) as u16) >= 0x10 {
@@ -262,6 +264,7 @@ impl Game {
             moved = true;
         }
         if moved {
+            e.b.frame_w1 = 1; // moveq #1,d1
             self.c61_walk_adjust(e);
             if e.m.b(o::A2) != 0 {
                 return;
@@ -284,6 +287,7 @@ impl Game {
         let tg = self.c61_tgt(e);
         if t & 3 == 0 {
             let d1: i16 = if tg.x > e.b.xi() { -0x10 } else { 0x10 };
+            e.b.frame_w1 = d1 as u16; // moveq #$10 / #$F0,d1 (see c61_s18)
             e.m.sl(0xC0, if tg.x.wrapping_add(d1) > e.b.xi() { 0x20000 } else { 0xFFFE_0000 });
             e.m.sl(0xC4, if tg.z > e.b.zi() { 0x18000 } else { 0xFFFE_8000 });
         }
@@ -292,6 +296,7 @@ impl Game {
             e.m.sb(o::A2, a2 - 1);
             return;
         }
+        e.b.frame_w1 = 0; // 0x5907A: moveq #0,d1 (1 when a step was made)
         let d2: i16 = if tg.x > e.b.xi() { -0x10 } else { 0x10 };
         let mut moved = false;
         if (tg.x.wrapping_add(d2).wrapping_add(8).wrapping_sub(e.b.xi()) as u16) >= 0x10 {
@@ -303,6 +308,7 @@ impl Game {
             moved = true;
         }
         if moved {
+            e.b.frame_w1 = 1; // moveq #1,d1
             self.enemy_step(&mut e.b);
         } else {
             self.c61_59e22(e);
