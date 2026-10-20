@@ -294,9 +294,8 @@ impl Game {
     }
 
     /// 0x74E2: the GAME OVER state of the HUD block of a player (state 0xC). The counter `+$80` (a byte) runs down one a frame; a start press
-    /// of the player, or the end of the count (a borrow), makes the block free again (state 0) and blanks its rectangle (0x7F86). A player
-    /// who comes from the ending with the count at 0 leaves at once. TODO(M2-21): the mode 0x10 exit (0x7FCA), the flashing prompt of the
-    /// counts that go on (0x754C, 0x7560 and what it draws) and the part of the screen of the game over.
+    /// of the player, or the end of the count (a borrow), makes the block free again (state 0) and blanks its rectangle (0x7F86 / 0x7FCA). A player
+    /// who comes from the ending with the count at 0 leaves at once.
     fn flow_join_game_over(&mut self, i: usize) {
         let leave = if self.flow.mode == 0x10 {
             true // 0x74E2: the continue screen sets the block free
@@ -318,12 +317,14 @@ impl Game {
             return;
         }
         self.flow.join[i].state = 0; // 0x7538
-        if self.flow.mode != 0x10 {
-            self.flow_join_clear(i, 0x7FB6, 0x7FC2); // bra 0x7F86 (0x7FCA in the mode 0x10: not ported)
+        if self.flow.mode == 0x10 {
+            self.flow_join_clear(i, 0x7FFA, 0x8006); // 0x7FCA
+        } else {
+            self.flow_join_clear(i, 0x7FB6, 0x7FC2); // bra 0x7F86
         }
     }
 
-    /// 0x7F86 / 0x800E -> 0xF94: blank the ROM rectangle in the HUD block.
+    /// 0x7F86 / 0x7FCA / 0x800E -> 0xF94: blank the ROM rectangle in the HUD block.
     pub(super) fn flow_join_clear(&mut self, i: usize, three: u32, two: u32) {
         if self.spawn.g.b4d5 != 0 { return; }
         let t = &self.assets.frontend.text;

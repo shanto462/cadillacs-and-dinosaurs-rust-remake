@@ -370,9 +370,12 @@ impl Game {
         }
     }
 
-    /// 0x8C6C2 / 0x8C6E2: every hero in play jumps to the car (the scripted jump 0x1BBCA) at camera X + 0xB0, depth 0x30, facing right; the hero
-    /// whose `+$02` equals the character in `+$A7` (player number against character, as the original compares) aims 0x40 shorter.
+    /// 0x8C6C2 / 0x8C6E2: every hero in play jumps to the car (the scripted jump 0x1BBCA) at camera X + 0xB0, depth 0x30, facing right.
+    /// In the original, the 68000 sets a1 = car before the loop over players 0..2, but player_scripted_jump_entry (0x1BBCA -> 0x13A0)
+    /// clobbers a1 with ROM 0x11D220. Thus only the first live player compares against the car's +$A7; subsequent players compare against
+    /// ROM byte 0 (which never matches their who >= 1).
     fn prop_car_board(&mut self, p: &Prop) {
+        let mut a1_seat2 = p.m.b(o::NEW_SEAT + 2);
         for k in 0..3 {
             if self.players[k].b.live == 0 {
                 continue;
@@ -382,9 +385,10 @@ impl Game {
             pl.w88 = cam.wrapping_add(0xB0);
             pl.w8a = 0x30;
             pl.b.facing = 1;
-            if pl.b.who == p.m.b(o::NEW_SEAT + 2) {
+            if pl.b.who == a1_seat2 {
                 pl.w88 = pl.w88.wrapping_sub(0x40);
             }
+            a1_seat2 = 0; // 0x13A0 clobbers a1 to ROM 0x11D220, where offset +$A7 is 0
             self.player_scripted_jump_entry(k);
         }
     }
