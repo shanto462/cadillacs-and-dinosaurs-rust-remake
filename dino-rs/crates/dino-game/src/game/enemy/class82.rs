@@ -91,32 +91,37 @@ impl Game {
             e.b.palette_override = 0x9D;
         }
         self.enemy_anim(&mut e.b, 0); // moveq #0, d0; jsr $120e.l
-        self.enemy_zeke_pick_target(e); // jsr $32032.l; move.w a0, $76(a6)
+        // 0x60756: jsr $32032.l; move.w a0, $76(a6). Plain pick: no 0x60D7C rule here (no $116 test or set).
+        let target = self.enemy_pick_target(&e.b);
+        e.m.sw(0x76, target);
         self.enemy_snap_to_floor(e); // jsr $3140c.l
         e.b.airborne = 1; // move.b #$1, $51(a6)
         e.b.set_yi(e.b.yi().wrapping_add(0x140)); // addi.w #$140, $c(a6)
         e.b.mode = e.b.mode.wrapping_add(2); // addq.b #$2, $4(a6) -> mode 2
     }
 
-    /// 0x60D7C: target rule.
+    /// 0x60D7C: target rule (the patrol act 0 only; the init 0x606E8 has its own plain pick).
     fn enemy_zeke_pick_target(&mut self, e: &mut Enemy) {
         let target = self.enemy_pick_target(&e.b); // jsr $32032.l
         let mut chosen = target;
         if let Some(crate::game::Slot::Player(pi)) = crate::game::slot_of(target) {
             if self.players[pi].b116 != 0 {
-                let mut d0 = self.players[pi].b.who;
-                for _ in 0..3 {
-                    d0 = d0.wrapping_add(1) & 3;
-                    let next_pi = if d0 >= 3 { 0 } else { d0 as usize };
-                    if next_pi < self.players.len() && self.players[next_pi].b.live != 0 {
-                        chosen = Game::player_handle(next_pi);
-                        break;
+                // 0x60D82..0x60DCC: each step takes d0 = who(a0) + 1 & 3 and a0 = table[d0] (0x60DDC: P1, P2, P3, P1).
+                // Candidates 1 and 2 must be live (tst.b $0(a0)); candidate 3 is taken whether it is live or not.
+                let mut cand = pi;
+                for k in 0..3 {
+                    let d0 = self.players[cand].b.who.wrapping_add(1) & 3;
+                    cand = if d0 >= 3 { 0 } else { d0 as usize };
+                    if k < 2 && self.players[cand].b.live == 0 {
+                        continue;
                     }
+                    chosen = Game::player_handle(cand);
+                    break;
                 }
             }
         }
         if let Some(crate::game::Slot::Player(pi)) = crate::game::slot_of(chosen) {
-            self.players[pi].b116 = 1;
+            self.players[pi].b116 = 1; // 0x60DD0: move.b #$1, $116(a0)
         }
         e.m.sw(0x76, chosen);
     }

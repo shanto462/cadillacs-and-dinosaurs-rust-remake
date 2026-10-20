@@ -969,7 +969,10 @@ impl Effect {
         f.u16(0x60, "owner60", &mut self.owner60);
         if self.b.k20 == 0x84 {
             // a bullet spark (class 33): the life byte and the two speed longs
-            f.u8(0x62, "b62", &mut self.b.b62);
+            // the life byte is the high byte of the word off_x (fx33): traced as the byte, the low byte stays
+            let mut life = ((self.off_x as u16) >> 8) as u8;
+            f.u8(0x62, "b62", &mut life);
+            self.off_x = ((life as u16) << 8 | (self.off_x as u16 & 0xFF)) as i16;
             f.i32(0x64, "vx64", &mut self.vx64);
             f.i32(0x68, "vy68", &mut self.vy68);
             return;

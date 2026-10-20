@@ -81,8 +81,12 @@ impl Game {
         e.b.anim_table = SPARK_ANIMS;
         e.b.draw_flags = 0x10;
         fx_start(&mut e.b, fx, 0); // jsr 0x120E, animation 0
-        // 0x96C98: the life is the sequence byte + 0x1E
-        e.b.b62 = self.w.ricochet_seq.wrapping_add(0x1E);
+        // 0x96C98: the life is the sequence byte + 0x1E. The original keeps it in the high byte of the word +$62 (off_x) and the
+        // speed long vx64 at +$64 in the words +$64 (off_y) and +$66 (w66): the stale bytes of a freed spark stay in those words.
+        e.off_y = (e.vx64 >> 16) as i16;
+        e.w66 = e.vx64 as u16;
+        let life = self.w.ricochet_seq.wrapping_add(0x1E);
+        e.off_x = ((life as u16) << 8 | (e.off_x as u16 & 0xFF)) as i16;
         e.b.mode = e.b.mode.wrapping_add(2);
         e.owner60 &= 0x00FF; // clr.b $60(a6): the bounce flag
         true
@@ -114,8 +118,9 @@ impl Game {
     fn fx_ricochet_flight(&mut self, i: usize) {
         let fx = self.fx_data();
         let e = &mut self.effects.slots[i];
-        let life = e.b.b62.wrapping_sub(1); // subq.b #1, $62 ; bmi frees
-        e.b.b62 = life;
+        let life = ((e.off_x as u16) >> 8) as u8; // subq.b #1, $62 (the high byte of off_x)
+        let life = life.wrapping_sub(1);
+        e.off_x = ((life as u16) << 8 | (e.off_x as u16 & 0xFF)) as i16;
         if life & 0x80 != 0 {
             return self.fx_free(i);
         }
@@ -124,7 +129,7 @@ impl Game {
         e.vy68 = e.vy68.wrapping_add(GRAVITY);
         e.b.y = e.b.y.wrapping_add(e.vy68);
         let draw = if e.owner60 >> 8 != 0 {
-            e.b.b62 & 1 != 0 // 0x96CEE: after the bounce, drawn when the life is odd
+            life & 1 != 0 // 0x96CEE: after the bounce, drawn when the life is odd
         } else {
             if e.vy68 < 0 {
                 e.owner60 = (e.owner60 & 0x00FF) | 0x0100; // move.b #1, $60: the bounce flag
