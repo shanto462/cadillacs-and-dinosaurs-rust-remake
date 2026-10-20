@@ -340,8 +340,8 @@ impl Game {
             0x16 => self.c84_grab_walk(e, false),
             _ => self.c84_grab_walk(e, true),
         }
-        if let Some(p) = self.c84_counter_test(e) {
-            self.c84_counter(e, p);
+        if self.c84_counter_test(e).is_some() {
+            self.c84_counter(e);
         }
         self.terrain_collide_free(&mut e.b); // 0x12E20
         self.c84_screen_clamp(e);
@@ -1495,8 +1495,10 @@ impl Game {
     }
 
     /// 0x6326E: the counter by the hero's move (rows of 0x6505A, `rand & 31`): 1 / 2 / 3 the arm strikes, 5 the dash, 6 the step; `+$C9` 1.
-    fn c84_counter(&mut self, e: &mut Enemy, k: usize) {
-        let row = match self.players[k].action {
+    /// The row test reads `$C8(a0)`, but the mask test of 0x6324A has loaded a0 with 0x6504A (`movea.l`), so the byte is the ROM's at
+    /// 0x65112, not the hero's move (MAME ep8_jack 58572: the step, where the hero's jump attack row gives the dash).
+    fn c84_counter(&mut self, e: &mut Enemy) {
+        let row = match self.assets.enemy.t.u8(t::COUNTER_MASK, 0xC8) {
             0x14 => 0,
             0x02 => 0x20,
             0x13 => 0x40,
@@ -1741,8 +1743,8 @@ impl Game {
         p.b.var26 = 6;
     }
 
-    /// 0x27DAA: a blast (pool E class 1, kind 4) at (x, y, z) with `+$5C` = `d3` (a full pool makes none).
-    fn c84_blast(&mut self, x: i16, y: i16, z: i16, d3: u16) {
+    /// 0x27DAA: a blast (pool E class 1, kind 4) at (x, y, z) with `+$5C` = `d3` (a full pool makes none). Also the end of the aura (`effect/fx39.rs`).
+    pub(crate) fn c84_blast(&mut self, x: i16, y: i16, z: i16, d3: u16) {
         let Some(j) = self.items.alloc() else { return };
         let n = &mut self.items.slots[j];
         n.b.live = 1;

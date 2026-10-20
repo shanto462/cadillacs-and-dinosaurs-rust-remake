@@ -445,15 +445,16 @@ impl Game {
         false
     }
 
-    /// 0x4F260: nearest eligible previous-frame enemy, last one wins equal distances.
+    /// 0x4F260: nearest eligible previous-frame enemy, last one wins equal distances. The list is the shared storage of 0x4BEA
+    /// (`combat_hurt_list_seen`: this frame's pushes have replaced its high entries; MAME ep8_3p 748).
     fn enemy_hopper_enemies(&self, e: &mut Enemy, own: Handle) {
-        let list = self.combat.get(0x69BA);
+        let list = self.combat_hurt_list_seen();
         if list.is_empty() {
             e.m.sw(0x76, own);
             return;
         }
         let mut best = 0xFFFF;
-        for &h in list {
+        for h in list {
             let b = self.body(h);
             if let Some(crate::game::Slot::Enemy(i)) = crate::game::slot_of(h) {
                 if (self.enemies.slots[i].m.b(0x7D) as i8) < 0 {
@@ -493,7 +494,7 @@ impl Game {
         }
         for h in (0..3)
             .map(Self::player_handle)
-            .chain(self.combat.get(0x69BA).iter().copied())
+            .chain(self.combat_hurt_list_seen())
         {
             if self.enemy_hopper_in_front(e, h) {
                 e.m.sw(0x76, h);
@@ -694,7 +695,7 @@ impl Game {
                         };
                         let t = e.m.w(0xB0);
                         let normal = b.mode == 2 && b.sub == 0;
-                        if normal {
+                                        if normal {
                             e.m.sw(0xB0, t.wrapping_sub(1));
                         }
                         if !normal || t == 0 {

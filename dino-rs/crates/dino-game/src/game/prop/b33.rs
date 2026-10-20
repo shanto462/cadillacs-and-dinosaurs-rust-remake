@@ -9,8 +9,9 @@ use crate::game::{slot_of, Game, Handle, Slot};
 
 impl Game {
     /// 0x818E4 (mode table 0x818F0): 0 by `+$05` (0x81906: 0 the creation 0x8190A, 2 the wait 0x8199E), 2 the run 0x819BE, 4 the leader
-    /// flags 0x81A5E, 6 the free 0x81A74.
-    pub(crate) fn prop_b33(&mut self, p: &mut Prop, h: Handle, i: usize) {
+    /// flags 0x81A5E, 6 the `rts` 0x81A72 (table word 0x182): the starter is never freed and stays live in mode 6 until the next stage
+    /// clears pool B (MAME ep7_3p). The free 0x81A74 after it is not in the table.
+    pub(crate) fn prop_b33(&mut self, p: &mut Prop, h: Handle) {
         match p.b.mode {
             0 if p.b.sub == 0 => self.prop_b33_create(p, h),
             0 => {
@@ -31,7 +32,7 @@ impl Game {
                     self.enemy_boss_leader(who);
                 }
             }
-            _ => self.prop_free(p, i), // 0x4938
+            _ => {} // 0x81A72
         }
     }
 

@@ -53,6 +53,19 @@ impl Lists {
 }
 
 impl Game {
+    /// Last frame's hurt list (G.$69BA count, $69BC pointer) as an object sees it in the middle of pool A: 0x105E8 keeps only the count and the
+    /// pointer, the entries stay in the stack of 0x4BEA, and this frame's pushes (0x4BEA, from the top of the same stack) have already overwritten
+    /// its high entries for every object that registered earlier in this frame. Readers: the Rock Hopper 0x4F260 / 0x4F2B4 (class 29); Shivat has
+    /// the same rule in `enemy/class24.rs` (0x491A4). Visiting order as `Lists::get`.
+    pub(crate) fn combat_hurt_list_seen(&self) -> Vec<Handle> {
+        let mut saved = self.combat.get(0x69BA).to_vec();
+        let current = self.combat.get(0x671E);
+        let overlap = saved.len().min(current.len());
+        let start = saved.len() - overlap;
+        saved[start..].copy_from_slice(&current[current.len() - overlap..]);
+        saved
+    }
+
     /// 0x10546: all hit tests of the frame, in the original order.
     pub fn collision(&mut self) {
         self.pass_10664(); // player vs player

@@ -6,9 +6,9 @@ use crate::game::{Game, Handle};
 impl Game {
     /// 0x844B4 / 0x844C8 / 0x84562 / 0x84F4A: dialogue dispatch and fades.
     pub fn prop_b50(&mut self, p: &mut Prop, h: Handle, i: usize) {
-        // Variants 0 to 6 (the table 0x84584: 3 the Episode 5 chief scene, 4 and 5 one dispatcher, 6 Fessenden's last words) are ported;
-        // the ending's variant 7 has its own owner.
-        if p.b.var26 > 6 {
+        // Variants 0 to 7 (the table 0x84584: 3 the Episode 5 chief scene, 4 and 5 one dispatcher, 6 Fessenden's last words, 7 the boss's line in
+        // the Episode 8 clear scene, made by the stand ins 0x69F84) are ported; the table has no row past 7.
+        if p.b.var26 > 7 {
             if !self.trace_hold(h, &p.b) {
                 self.prop_free(p, i);
             }
@@ -72,10 +72,11 @@ impl Game {
             0xA5DFA => 0xA6002,
             0xA5E0C => 0xA6036,
             0xA5E1E => 0xA604A,
+            0xA5E30 => 0xA605E,
             _ => panic!("unported B50 dispatcher {dispatch:06X}"),
         };
         let routine = self.assets.frontend.text.u32(table, 2 * p.b.sub as u32);
-        // 0xA6072..0xA6370, 0xA655A, 0xA657E: immediate operands of the print routines (portrait, text, the palette row of 0x84E2E);
+        // 0xA6072..0xA6370, 0xA655A, 0xA657E, 0xA65A2: immediate operands of the print routines (portrait, text, the palette row of 0x84E2E);
         // 0xA637E, 0xA63BE, 0xA63E2 (variant 3) are below with their own palette routine and times.
         let line = match routine {
             0xA6072 => Some((0, 0, None)),
@@ -104,6 +105,7 @@ impl Game {
             0xA634E => Some((9, 0x19, Some(5))),
             0xA655A => Some((4, 4, Some(0))),
             0xA657E => Some((4, 0x3F, Some(0))),
+            0xA65A2 => Some((0, 0x43, Some(0))),
             _ => None,
         };
         // Variant 3 (the chief scene): 0xA637E / 0xA63BE print with 0x84E5C (the second portrait palette, row 4), 0xA63E2 with 0x84E2E row 3;
@@ -132,7 +134,7 @@ impl Game {
             }
             p.m.sw(0xA2, self.assets.frontend.text.u16(0x8461A, portrait * 2));
             self.text_portrait(0x90A29C, portrait as u16, text);
-            p.m.sw(0xA4, if matches!(routine, 0xA655A | 0xA657E) { 150 } else { 90 });
+            p.m.sw(0xA4, if matches!(routine, 0xA655A | 0xA657E | 0xA65A2) { 150 } else { 90 });
             p.b.sub = p.b.sub.wrapping_add(2);
             return;
         }

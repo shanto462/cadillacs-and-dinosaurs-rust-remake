@@ -147,13 +147,17 @@ impl Game {
         self.script_area_end(); // 0x1D95E
     }
 
-    /// The boss is in its death state: `+$7D` = 0xFF and `+$6C` (HP) = 0 (0x7BF76). A boss that is not a pool A
-    /// object reads as alive.
+    /// The boss is in its death state: `+$7D` = 0xFF and `+$6C` (HP) = 0 (0x7BF76). The "boss" can be a pool B object: the Slisaur
+    /// starter (B33, `prop/b33.rs`) sets its `+$7D` and keeps the HP sum of its Slisaurs in `+$6C`. Any other object reads as alive.
     fn boss_is_defeated(&self, boss: Handle) -> bool {
         match slot_of(boss) {
             Some(Slot::Enemy(i)) => {
                 let e = &self.enemies.slots[i];
                 e.m.b(enemy_off::ATTACKING) == 0xFF && e.b.hp == 0
+            }
+            Some(Slot::Prop(i)) => {
+                let p = &self.props.slots[i];
+                p.m.b(0x7D) == 0xFF && p.b.hp == 0
             }
             _ => false,
         }

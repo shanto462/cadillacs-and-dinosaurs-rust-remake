@@ -14,3 +14,23 @@ global.display_y1 251-316
 # - No 3 player recordings exist for these scenarios (BT-A7 with 3 players was not recorded).
 # - m800_bta7_k8_start in step mode (records 226 .. 316, 9 fields): the Episode 8 title card task (G.$735E) sleeps inside 0xA82; its sleep counter is not in the trace, so
 #   the step loader cannot restart the task at MAME's point and the card's G.$4D5 / cam1 / G.$7364 come a frame apart. Run mode (the reference here) is equal with rule 1.
+
+# M8-18 (Episode 7) and M8-36 (Episode 8 part 2, the whole runs of Episodes 6 to 8), Task 18 (2026-10-21). No new rules; step mode is the reference.
+# Equal (0 fields, 0 video / sound items) in step mode: m800_a14_e7a1_nat, m800_a15_l_wave4, m800_a16_* (fences, B1 var 4 tiles), m800_a17_n_e7a2_end,
+# m800_a17_tc_b52, m800_a18_n_e7a3_talk, m800_a29_b53_e7a3, m515_s7_objs_ex / tnt, m516_e7a0_lv10 / lv20, all 18 m516_lift_* (the rider list), m800_a32_s_e6a0_k18,
+# every m800_bta6 .. bta16 recording (Slisaurs 1 / 2 / 3 players, Tyrog chain, Fessenden forms 1 and 2) but m800_bta6_sl_kill 905 (the record after the MAME lag
+# record 904, Task 17) and m800_bta9_ty_full_c 7987 / 8349 (the next-stage setup, allow/m7.txt cause 4, and a lag record), e7kill3_rec (the 3 player kill-all scene, 84 records
+# before the crash, also equal in run mode). Run mode: the same, except the probe recordings (MAME-only spawns or pokes: m800_a14_n_e7a1_full record 1,
+# m515_s7_objs_* 61, m800_a17_tc_b52 3, m800_a31 / bta17 11) and the MAME lag records at area loads (m800_a14_e7a1_nat 6036, m800_a17_n_e7a2_end 1500).
+# Not rules (what is left, with the cause):
+# - m800_a31_ee_f84_kill, m800_bta17_f84_kill: 7296 (the blocking next-stage setup, allow/m7.txt cause 4), 8261 (one record after the MAME lag record 8260:
+#   the B81 of the Fessenden scene is made one record early in step mode), from 12837 the end of the ending: mode 0x14 clears everything (0xAE0) over
+#   several video frames while G.$0 does not count, so step mode compares half-done records (the ending itself is checked in run mode by allow/m3e.txt).
+# - ep6_jack, ep7_jack, ep8_jack (1 player, whole runs): G.$2E scroll3_base after a continue (fixed on integ by ac79e88, not in this worktree), the rain
+#   prop free timing (fixed on integ by 1294639), single records at MAME lag records (ep7_jack 23330 area start, 34860; ep8_jack 33713; ep6_jack 65578),
+#   the tally sound 0x49 one record early (allow/m4.txt), ep8_jack 64623: pool B class 46 (0x8419E) is not ported (M9-04; its maker is the aura,
+#   D5 errata), 65753: B81 / B82 one record (as 8261 above).
+# - ep6_3p, ep7_3p, ep8_3p: single records: a new object's first frame (+$28) in its spawn record (effect class 1 at the lift start 12308, B31 the stage
+#   clock 26853 / 35743, item class 8), the muzzle flash +$64 (pool C class 31: a stale word of the slot in MAME), the spark life byte (pool C class 33,
+#   ep8_3p 8013), ep8_3p 26436 (class 18 target: P1 and P3 at the same X and Z, the tie of 0x32032 one record apart), ep8_3p 44910 (P3 HP one record).
+#   ep8_3p from 55193 is the game over and ranking (mode 0x18, front end), not Episode 8.
