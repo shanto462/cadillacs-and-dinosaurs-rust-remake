@@ -1058,10 +1058,26 @@ mod tests {
             let mut p = Prop::default();
             p.b.live = 1;
             p.b.k20 = 33 * 4;
-            g.prop_b33(&mut p, h, i);
+            g.prop_b33(&mut p, h);
             let made: Vec<_> = g.enemies.slots.iter().filter(|e| e.b.live != 0 && e.b.k20 == 71 * 4).collect();
             assert_eq!((made.len(), p.m.b(0xAA) as usize), (n, n));
             assert!(made.iter().all(|e| e.b.xi() == 0x580 && e.m.w(o::STARTER) == h));
         }
+    }
+
+    /// The starter's mode 6 is the `rts` 0x81A72 (table word 0x182): it is never freed (MAME ep7_3p 37802 .. 38466).
+    #[test]
+    fn the_starter_is_never_freed() {
+        let mut g = game();
+        let i = g.props.alloc().unwrap();
+        let h = g.props.handle(i);
+        let mut p = Prop::default();
+        p.b.live = 1;
+        p.b.k20 = 33 * 4;
+        p.b.mode = 6;
+        for _ in 0..3 {
+            g.prop_b33(&mut p, h);
+        }
+        assert_eq!((p.b.live, p.b.mode), (1, 6));
     }
 }

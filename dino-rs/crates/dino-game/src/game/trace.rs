@@ -676,6 +676,11 @@ impl Prop {
                 self.m.sb(off, v);
             }
         }
+        if f.all() || self.b.k20 == 33 * 4 {
+            // The Slisaur starter (B33, 0x81A06) keeps the HP sum of its Slisaurs in +$6C / +$6E; the boss controller reads +$6C (0x7BF76).
+            f.u16(0x6C, "hp", &mut self.b.hp);
+            f.u16(0x6E, "hp_prev", &mut self.b.hp_prev);
+        }
         if f.all() || self.b.k20 == 59 * 4 {
             let mut a4 = self.m.b(0xA4);
             f.u8(0xA4, "b59_timer", &mut a4);

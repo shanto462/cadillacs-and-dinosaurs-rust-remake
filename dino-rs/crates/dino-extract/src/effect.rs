@@ -40,6 +40,7 @@ const EFFECT_LISTS: &[u32] = &[
     0x92E12, // continue return flash, class 6 variant 0 (0x92CD6)
     0x9430E, // Bludge acid splash, effect $20 = 0x48 (0x942C6, loaded with 0x1236)
     0x95980, // invulnerability glitter (0x9592E)
+    0x975AC, // mutation aura, effect $20 = 0x9C (0x97546)
     0x93096, // burning flames, effect $20 = 0x20, airborne loop, var 0 (0x92FD4)
     0x930F4, // same, var != 0 (0x92FE0)
     0x930D4, // flames dying out after landing, var 0 (0x93054)

@@ -78,6 +78,9 @@ mod fx21;
 mod fx18;
 #[path = "effect/fx31.rs"]
 mod fx31;
+// Pool C class 39 (M8-36): the mutation aura of the Episode 8 clear scene.
+#[path = "effect/fx39.rs"]
+mod fx39;
 #[path = "effect/fx33.rs"]
 mod fx33;
 // Pool C classes 5, 20 and 29 (M6-14): water bubbles, sweat beads, the ground impact smoke ring.
@@ -93,8 +96,6 @@ mod fx36_37;
 // Pool C class 41 (M6-22): the dust and smoke of the Cadillac.
 #[path = "effect/fx41.rs"]
 mod fx41;
-#[path = "effect/fx39.rs"]
-mod fx39;
 mod fx40;
 #[path = "effect/fx30.rs"]
 mod fx30;
@@ -627,7 +628,7 @@ impl Game {
                 // 0x58 0x95840,
                 // 0x70 0x96488, 0x78 0x966B4, 0x80 0x96A7E,
                 // 0x88 0x96DC4, 0x8C 0x96E56, 0x90 0x96FF4, 0x94 0x9720A,
-                // 0x98 (null entry), 0x9C 0x97530, 0xA0 0x97674, 0xA4 0x97800.
+                // 0x98 (null entry), 0xA0 0x97674, 0xA4 0x97800.
                 // See re/specs/anim/HANDOFF.md. Until then they are freed on their first update.
                 other => {
                     #[cfg(debug_assertions)]

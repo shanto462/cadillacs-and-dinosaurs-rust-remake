@@ -149,9 +149,9 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x53034, 0x110, "Morgue grid directions"),
     (0x74F42, 0x60, "Fessenden swing waits by level"),
     // Fessenden form 2, class 84 and its parts 85 to 89 (M8-30 .. M8-35, 0x6173E..0x64452) with the data block after them (the walk bands and
-    // points, the windows, the gate, the picker, the aims, the counter and knock down tables, 0x64AFA..0x650E0); the fire, class 95 (0x6995E,
-    // the speeds 0x69C74).
-    (0x6173E, 0x39C2, "Fessenden form 2 handlers and tables"),
+    // points, the windows, the gate, the picker, the aims, the counter and knock down tables, 0x64AFA..0x650E0, and the byte 0x65112 that the
+    // counter 0x6326E reads as `$C8(a0)` with a0 = 0x6504A); the fire, class 95 (0x6995E, the speeds 0x69C74).
+    (0x6173E, 0x39D6, "Fessenden form 2 handlers and tables"),
     (0x6995E, 0x3B8, "Fessenden fire handler and speeds"),
     // The Slisaurs, class 71 (M8-13 .. M8-15, 0x5C818..0x5DD58): the handler with its tables (the knock down limits 0x5C9E8, the scripts
     // 0x5CD9A, the blade types 0x5CF06, the fans 0x5D058 / 0x5D078, the pauses 0x5D12E / 0x5D14E, the target picks 0x5D46E / 0x5D4FE, the

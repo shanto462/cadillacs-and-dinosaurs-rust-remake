@@ -335,7 +335,7 @@ impl Game {
                 88 => self.prop_car(&mut p, h, i),
                 89 => self.prop_class89(&mut p, i),
                 93 => self.prop_class93(&mut p, i),
-                33 => self.prop_b33(&mut p, h, i),
+                33 => self.prop_b33(&mut p, h),
                 30 => self.prop_b30(&mut p, i),
                 34 => self.prop_b34(&mut p, i),
                 79 => self.prop_b79(&mut p, i),

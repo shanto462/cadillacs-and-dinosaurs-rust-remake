@@ -353,6 +353,12 @@ MAME wins over the design text; the design documents themselves are not edited.
 ## Class 10 hold machine with a stale `+$AC` (2026-10-19)
 - 0x3C60C dispatches on the word `+$AC` through a table of two entries (0x3C61A: 0 grab, 2 stomp). `+$AC` is not cleared by the free 0x48FC or the class 10 init, so a slot that held a class 20 thug can keep 3 there. When the wave controller's kill-all (G.$50E = 2 at the timer end, 0x7B3B6) meets a drop entrance in the same frame (0x3B91A runs the kill-all check, then 0x3B9CE adds 2 to `+$05`), the thug enters sub 4 with that stale word. The original then reads the table at an odd address: address error, vector 3 at 0xD0, which saves the registers and draws the register dump screen (0x14E): the game stops.
 - The port does not stop the game there: it undoes the drop entrance's `+$05` step, so the thug is back in the kill reaction (sub 2) of the kill-all and dies as the kill-all meant; a one-time line is logged (class10_hold.rs). (A first version left it idle in sub 4: it stayed counted and its wave never ended, found by M6-20.) This is the only deliberate difference from the original in class 10. Found by the autoplay bot (Episode 7, frame 12938 of that route) in M6-25.
+- (M8-18) This is the "ADDRESS ERROR" of D4c / D3e part 3 s7(c) item 1. Reproduced with `jump 7 0 0x900 char=jack,hannah,mess`, `god on`,
+  `hold 0xFF850E 1 2`, all three walking right: the game stops at gf 1601 (t about 235). The register dump that 0xD0 saves at 0xFF0004 .. 0xFF0050
+  (read with `peek 0xFF0000 42`): access address 0x4201B, PC 0x3C614, a6 = 0xFFDD14 = pool A slot 23, class 10 (variant 0x202, a drop entrance at
+  X 0xA65, Y 0x100, state 02040000) with `+$AC` = 0x5A01 (0x3C61A + 0x5A01 is odd). The four class 2 thugs alive at the same time are not involved.
+  The port in step and run mode from a snapshot 84 game frames before (probe_record, `e7kill3_rec`) equals MAME; at the crash frame it logs the
+  one-time line and the thug dies (freed 240 frames later), the game goes on.
 - D3a s4.1 and s3.4 (poacher guard): "no guard (`+$87` stays 0)" is wrong. The class 13 init writes `+$87` = 1 and the player's hit pass calls 0x3DFC6 (table 0x10B50, `+$84` = 8 / 0x48 / 0x4C). On the ROM the chance table 0x741D4 is all 0, so it never blocks, but it draws one random number (thrown away) for every hit on a free poacher on the ground that faces its target; the arena `jump 2 0 0x400` has floor height 0x40, where the guard returns before the draw. The state 0x28 of s4.4 is the hop back after a block (0x3FBE4), never run. M6-01 / M6-02.
 - D3a s4.1 (poacher death): mode 4 sets `+$80` = 0x3C first (0x401DE), gives the score and blinks 60 frames drawn on even counts; "120 frames like class 2" is wrong. D3a s4.5 (muzzle flash): `+$24` of the flash is the NEGATED facing (0xFF for a right facing poacher). M6-02.
 - D3a s4.4 (dead states): the states 0x1A, 0x20, 0x22, 0x2E, 0x30, 0x32, 0x3A and 0x40 and the decisions 6, 7, 9 and 10 of table 1 have no live setter; the ROM table 1 (0x72A94) only holds the values 1, 2, 3, 4, 5 and 8, the far table (0x72F14) the values 1 to 7. M6-01.
@@ -739,3 +745,27 @@ The tag team move (D2a section 9, D2c section 15, mechanics P43 and WM18) is por
 - The flight of the partner ends in the normal landing entry (0x1A81A); idle entries free `+$C1`.
 
 Checks (`re/harness/m901_check.sh`, 24 recordings made with `record.sh`, headless, one process each; the scripts and pokes are `re/harness/scripts/m901_*.txt`, `boot_2p_mm.txt`, `boot_2p_hj.txt`, `boot_2p_mu.txt`, `re/harness/pokes/m901_*.lua`): the four initiators (Jack with Hannah, Mustapha with Mess, Hannah with Jack, Mess with Mustapha: the tie up at the record 92, the launch and the flight), the boundaries (dx 31 and 32, dz 15 and 16), the input break (`tie_inputbreak`), the pistol in the initiator's hand, three players with the same Z and with Z 296, 300 and 304, Hannah's run attack with a direction (hit, left, jump) and without, the run ending by itself, the partner's weapon in the run attack (knife, Uzi, club, revolver), the air attack of the three flying partners. D2a A15 numbers (launch at +30 for Jack and Mess, +40 for the others, the flight, the blink of 180 frames) are inside these recordings. 4 unit tests of `player_tag.rs` (the boundaries and the 90 frames with the initiator, the input reset and the pauses, the follow table).
+
+- (M8-18) The starter B33 is never freed either: its mode table 0x818F0 has the words 0x08, 0xCE, 0x16E, 0x182, so mode 6 is the `rts` at 0x81A72
+  and the free 0x81A74 after it is not reached. B33 stays live in mode 6 until the next stage clears pool B (M ep7_3p 37802 .. 38466, ep7_jack 52695 ..).
+- (M8-18) The boss controller (B22, 0x7BF76) of the Slisaur fight has B33 as its "boss": B33 sets its own `+$7D` = 0xFF and keeps the HP sum of
+  the Slisaurs in `+$6C`, so the controller ends (G.$7A9 clear, the area end script 0x1D95E) in the frame the sum reaches 0, before B33's own
+  end (0xACEE). The port's test read only pool A bosses, so the area end script never ran from the controller (M ep7_3p 37802).
+
+## Episode 7 and 8 acceptance (M8-18, M8-36, Task 18, 2026-10-21)
+- The "last frame" hurt list G.$69BA / $69BC keeps only a count and a pointer: its entries stay in the stack of 0x4BEA, which this frame's pushes
+  rebuild from the top. An object that reads the list in the middle of pool A sees this frame's entries over the high end of the old list. Codex
+  found it for Shivat (class 24, 0x491A4); the Rock Hopper (class 29) has the same reads (0x4F260 the nearest enemy, 0x4F2B4 the attack window)
+  and now uses the same rule (`Game::combat_hurt_list_seen`, combat.rs). MAME ep8_3p 748: the hopper took the class 14 thug that had
+  registered earlier in the frame. The other readers (item 0x6248, player 0x64F6, classes 78 / 80 0x5F324) still read the saved list as it was.
+- Fessenden form 2 (class 84), the counter 0x6326E: the row test reads `$C8(a0)`, but the mask test before it (0x6324A) has done
+  `movea.l #$6504A, a0`, so the byte is the ROM byte 0x65112 (0), never the hero's move: every counter uses the last row of 0x6505A (the row of
+  "any other move"). D3d's "the counter by the hero's move" is what the code meant, not what it does. MAME ep8_jack 58572 (the step, where the
+  jump attack row gives the dash).
+- Pool B class 50 variant 7 (the boss's line in the Episode 8 clear scene, made by the stand ins, 0x69F84) is the same dialogue box as the other
+  variants: dispatcher 0xA5E30, table 0xA605E (0xA65A2 portrait 0 text 0x43 for 150 frames, 0xA6638 the face 0, then the shared clears and the
+  end). The port had left it to "its own owner" and freed it; the fade of its mode 0 and the box were missing (MAME ep8_jack 64366).
+- Pool C class 39 (0x97530, the aura of the clear scene, D5 M8-28 named it): it moves right 6 pixels a frame from X 0x1200 to 0x12D0, then leaves
+  a blast (0x27DAA, `+$5C` = 1) and the pool B class 46 (0x84188) and frees itself. So B46 (0x8419E) IS reachable in natural play
+  (ep8_jack 64622; D3e part 1 open item 6 and M9-04 list it as "no spawner found"); it is still unported.
+- 3 player kill-all crash: see "Class 10 hold machine with a stale `+$AC`" above (the class is 10, pool A slot 23).
