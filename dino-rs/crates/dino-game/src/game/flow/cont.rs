@@ -228,6 +228,8 @@ impl Game {
             }
         }
         self.flow.sub = 2;
+        // 0xEB46 / 0xEB4C: scroll 2 base 0x91C0 (not modelled), scroll 3 base G.$2E = 0x9200 for the continue screen.
+        self.w.scroll3_base = 0x9200;
         let hold = self.flow.front.sys.hold;
         self.flow.cont.raw.sb(0x1B, hold);
         self.flow.cont.raw.sb(0x1C, hold);
@@ -636,6 +638,8 @@ impl Game {
             self.flow.cont.level3.clear();
         }
         self.sprites.wipe();
+        // 0xEF44 / 0xEF4A: scroll 2 base back to 0x90C0 (not modelled) and G.$2E to 0x9100, then the mode 0xC.
+        self.w.scroll3_base = 0x9100;
         let saved = self.flow.saved_mode;
         self.flow.mode = 0xC;
         self.flow.sub = saved[1];

@@ -1,0 +1,6 @@
+# probe segment m520h_uzi_mess: the key lines after the snapshot (frame 0 = first game frame after it)
+6-6:A
+36-96:A
+126-186:A
+216-216:A
+246-246:A

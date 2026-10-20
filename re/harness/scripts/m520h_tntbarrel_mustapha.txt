@@ -1,0 +1,4 @@
+# probe segment m520h_tntbarrel_mustapha: the key lines after the snapshot (frame 0 = first game frame after it)
+6-7:AR
+56-56:A
+96-126:J

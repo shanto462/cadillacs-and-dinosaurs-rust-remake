@@ -1,0 +1,3 @@
+# probe segment m520h_shotgun_d45_mustapha: the key lines after the snapshot (frame 0 = first game frame after it)
+6-6:A
+36-36:A

@@ -1,0 +1,5 @@
+# probe segment m520h_dynamite_run_hannah: the key lines after the snapshot (frame 0 = first game frame after it)
+6-6:A
+32-32:R
+35-76:R
+58-58:A

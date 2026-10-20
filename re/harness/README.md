@@ -1763,3 +1763,20 @@ files to it (`ln -s NAME.mame.trc a416_NAME.mame.trc`, the same for `.state`, `.
 `m700_a207` to `m700_a214` and `m700_a224`, `m600_h13_*`, `m600_h22_e4_open`, `m600_h23_car_trace` and `m516_e4a*` (M7-06). The music requests of a recording are the ring entries with a code
 below 0x27, 0xFF00 or 0xFF07 (`trace.mame_sounds`); `DINO_WATCH_WRITE=ADDR probe_record.sh BATCH SEGMENT NEWNAME` logs which routine writes a byte (the wall jump terrain skip was found with the wall
 byte `FFB2C4`, the log is in `re/out/probe/BATCH-rec/mame.log`).
+
+### Verify batches of M5-19 to M5-21 (respawn, weapons, items)
+
+Recipes in `re/harness/pokes/` (snapshot style of `probe_record.sh`, one MAME process for the whole file; the input scripts are copied to `re/harness/scripts/NAME.txt`, the table is `re/harness/scripts/m519_scenarios.tsv`):
+
+| recipe | scenarios | what |
+| --- | --- | --- |
+| `m519_verify.txt` | 54 | D2b S6 (28 enemy kinds under the respawn explosion, pinned), S13 (hero damage at level 31 and low HP), S15 / S16 (lie, mash, dizzy), mercy rule, S10 continue mode, S20 scores |
+| `m519b_verify.txt` | 15 | D2b S1 respawn in nine other areas, 2 and 3 players (the drop spot, the strike over other terrain) |
+| `m520_verify.txt`, `m520b_verify.txt` | 67, 60 | D2c: 15 weapons against 11 boss and monster kinds (Vice, Walther, Slice, Butcher, Hogg, Morgan, Mack, Rock Hopper, Tyrog, Zeke, Ferris); friendly fire with weapons: dz 1, no enemies, the barrel, three players |
+| `m520h_verify.txt` | 66 | D2c weapon scenarios of `m516_w_*.txt` for Hannah, Mustapha and Mess |
+| `m521_verify.txt`, `m521b_verify.txt` | 5, 2 | D4a: the Episode 1 hall with the armor statues (W20); item messages in the 2 and 3 player HUD |
+
+Record: `PR_TIMEOUT=3600 re/harness/probe/probe_record.sh re/harness/pokes/m520_verify.txt all` (the recordings go to the shared `re/out/traces/`). Compare: `MODE=step` and `MODE=run` of `port.sh` (with `PORT_OUT=` a folder of your own) and `diff.py`.
+
+`spawn_pokes.py` (called by `port.sh` for a sidecar with `spawn` notes) replays the probe's spawns of all five pools, and the port takes a poked pool pointer word as an allocation (`trace_poke_extra`), so free runs of recordings that spawn explosions, items and enemies stay in step. A probe spawn writes only a few fields of the slot (+$00, +$20, +$08, +$0C, +$10, +$26, +$5C, +$5B, +$96), the rest keeps what the slot had in MAME: the owner `+$02` of a spawned explosion is 0 there (player 1, power `$C6` 42).
+Hold a hero still for 92 frames within 31 / 15 pixels of another hero and MAME starts the tag team, which the port does not have yet (M9-01): keep the heroes apart or the recording short.

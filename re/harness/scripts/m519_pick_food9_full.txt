@@ -1,0 +1,2 @@
+# probe segment m519_pick_food9_full: the key lines after the snapshot (frame 0 = first game frame after it)
+12-12:A

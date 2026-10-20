@@ -1,0 +1,4 @@
+# probe segment m520_w_shotgun_vice: the key lines after the snapshot (frame 0 = first game frame after it)
+10-10:A
+40-40:A
+130-130:A

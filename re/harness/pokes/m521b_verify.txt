@@ -1,0 +1,47 @@
+# M5-21: the HUD item messages (D4a open item 6) in the 2 and 3 player layouts: every hero eats a food or takes a treasure, then a second round after a full heal.
+
+segment m521b_hud_items_2p
+jump 1 0 928 char=jack,hannah
+god on
+1 hp 40
+1 poke 0xffb27c 2 1000
+1 poke 0xffb284 2 296
+1 poke 0xffb3fc 2 1100
+1 poke 0xffb404 2 296
+2 spawn E 4 var=1 ax=1003 z=296
+2 spawn E 4 var=3 ax=1103 z=296
+2 snapshot keep
+66 hp 100
+68 spawn E 9 var=5 ax=1003 z=296
+68 spawn E 4 var=7 ax=1103 z=296
+8-8:A
+76-76:A
+8-8:2A
+76-76:2A
+trace 220
+
+segment m521b_hud_items_3p
+jump 1 0 928 char=jack,hannah,mess
+god on
+1 hp 40
+1 poke 0xffb27c 2 1000
+1 poke 0xffb284 2 296
+1 poke 0xffb3fc 2 1100
+1 poke 0xffb404 2 296
+1 poke 0xffb57c 2 1200
+1 poke 0xffb584 2 296
+2 spawn E 4 var=1 ax=1003 z=296
+2 spawn E 4 var=3 ax=1103 z=296
+2 spawn E 9 var=2 ax=1203 z=296
+2 snapshot keep
+66 hp 100
+68 spawn E 9 var=5 ax=1003 z=296
+68 spawn E 4 var=7 ax=1103 z=296
+68 spawn E 4 var=12 ax=1203 z=296
+8-8:A
+76-76:A
+8-8:2A
+76-76:2A
+8-8:3A
+76-76:3A
+trace 220

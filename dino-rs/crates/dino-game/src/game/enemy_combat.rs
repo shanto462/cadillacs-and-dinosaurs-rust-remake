@@ -261,8 +261,10 @@ impl Game {
         let row: u16 = if hp >= 75 { 0 } else if hp >= 50 { 0x40 } else if hp >= 25 { 0x80 } else { 0xC0 };
         let r = self.rand() & 0x3E;
         d = (d as u16 as u32) * self.assets.enemy.t.u16(0x2BB4E, row.wrapping_add(r) as u32) as u32;
-        let damage = (d as u16) >> 10; // lsr.w, including the minimum after truncation
-        (damage.max(1), counter)
+        // The hero formula 0x2B904 ends `lsr.w #10, d1` (the word, so the product is cut to 16 bits) and a minimum of 1 (0x2BA1C); the attack
+        // object formula 0x2BA2A ends `lsr.l #10, d1` (the whole product) and has no minimum: 0 is possible, and `sub.w d1` uses the low word.
+        let damage = if hero { ((d as u16) >> 10).max(1) } else { (d >> 10) as u16 };
+        (damage, counter)
     }
 
     /// 0x11CEC / 0x11D32: monster attacks against heroes. Unlike 0x115B0 there is no
@@ -1881,6 +1883,22 @@ mod monster_tests {
         assert_eq!(g.w.rng, expected_rng);
         g.body_mut(a).who = 0xFF;
         assert_eq!(g.enemy_monster_damage(10, a, di, false).0, 1);
+    }
+
+    /// 0x2BA2A ends with `lsr.l #10, d1` (the whole product), the hero formula 0x2B904 with `lsr.w` (the low word, then a minimum of 1).
+    /// Measured: the respawn air strike (base 30, owner power 42) takes 64 HP from Hogg (300 HP, name 0x98); the word shift gave 1.
+    #[test]
+    fn attack_object_formula_shifts_the_whole_product_the_hero_formula_the_low_word() {
+        let mut g = game();
+        let (a, d) = pair(&mut g);
+        let di = g.enemy_index(d);
+        g.body_mut(a).who = 0;
+        g.players[0].power = 255;
+        // 30 * 255 = 7650; * 32 >> 10 = 239; * 32 * 32 = 244736 = 0x3BC80.
+        assert_eq!(u32::from(g.enemy_monster_damage(30, a, di, false).0), 244_736u32 >> 10);
+        g.body_mut(a).kind = 4;
+        let hero = g.enemy_damage_core(30, 0x58, Some(255), di, true).0;
+        assert_eq!(hero, (0xBC80u16 >> 10).max(1));
     }
 
     #[test]

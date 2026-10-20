@@ -1,0 +1,4 @@
+# probe segment m519_score_kill_gneiss: the key lines after the snapshot (frame 0 = first game frame after it)
+10-10:A
+22-22:A
+34-34:A

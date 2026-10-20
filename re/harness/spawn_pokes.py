@@ -6,7 +6,7 @@ initialised and its init (the frame it is made in) would never run in the port. 
 copy (probe.lua `do_spawn`): the free list pointer and count of the pool, `+$00`, `+$20`, `+$08`, `+$0C`, `+$10`, `+$26`, `+$5C`, `+$5B`, `+$96`
 of the slot on top of the free list (read from the MAME record before the spawn), as lines of the sidecar format (`frame hexaddr size value`).
 
-Usage: spawn_pokes.py MAME.trc SIDECAR OUT      (OUT = the sidecar with the writes added after its header; only pool A is handled; the others are skipped with a note)
+Usage: spawn_pokes.py MAME.trc SIDECAR OUT      (OUT = the sidecar with the writes added after its header; the pools A, B, C, D and E are handled)
 """
 import os
 import re
@@ -16,7 +16,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import trace as T  # noqa: E402
 
 G = 0xFF8000
-POOL_A = {"ptr": G + 0x6602, "cnt": G + 0x65F8}
+# free list pointer / count words of the five pools (allocators 0x483C A, 0x4860 B, 0x4884 C, 0x48A8 D, 0x4818 E; probe.lua POOLS)
+POOLS = {"A": {"ptr": G + 0x6602, "cnt": G + 0x65F8}, "B": {"ptr": G + 0x6600, "cnt": G + 0x65F6}, "E": {"ptr": G + 0x65FE, "cnt": G + 0x65F4},
+         "C": {"ptr": G + 0x6604, "cnt": G + 0x65FA}, "D": {"ptr": G + 0x6606, "cnt": G + 0x65FC}}
 
 
 def num(s):
@@ -43,19 +45,21 @@ def main():
     lines = []
     taken = {}
     for k, pool, cls, o in notes:
-        if pool.upper() != "A":
-            print(f"spawn_pokes: frame {k}: a spawn in pool {pool} is not replayed (only pool A is handled)", file=sys.stderr)
+        if pool.upper() not in POOLS:
+            print(f"spawn_pokes: frame {k}: a spawn in pool {pool} is not replayed (unknown pool)", file=sys.stderr)
             continue
+        P = POOLS[pool.upper()]
         ram = imgs[k - 1]
         r16 = lambda a: (ram[a - 0xFF0000] << 8) | ram[a - 0xFF0000 + 1]
-        ptr, cnt = r16(POOL_A["ptr"]) + 2 * taken.get(k, 0), r16(POOL_A["cnt"]) - taken.get(k, 0)
-        taken[k] = taken.get(k, 0) + 1
+        key = (k, pool.upper())
+        ptr, cnt = r16(P["ptr"]) + 2 * taken.get(key, 0), r16(P["cnt"]) - taken.get(key, 0)
+        taken[key] = taken.get(key, 0) + 1
         slot = 0xFF0000 + r16(0xFF0000 + ptr)
         xs = o.get("ax") or o.get("x") or "+0x120"
         rel = "ax" not in o and xs[0] in "+-"
         x = ((r16(G + 0x744) + num(xs)) if rel else num(xs)) & 0xFFFF
         z = num(o["z"]) if "z" in o else r16(0xFF0000 + 0xB274 + 0x10)
-        w = [(POOL_A["ptr"], 2, ptr + 2), (POOL_A["cnt"], 2, cnt - 1), (slot, 1, 1), (slot + 0x20, 2, cls * 4), (slot + 8, 2, x),
+        w = [(P["ptr"], 2, ptr + 2), (P["cnt"], 2, cnt - 1), (slot, 1, 1), (slot + 0x20, 2, cls * 4), (slot + 8, 2, x),
              (slot + 0xC, 2, num(o["y"]) if "y" in o else 0), (slot + 0x10, 2, z), (slot + 0x26, 2, num(o["var"]) if "var" in o else 0),
              (slot + 0x5C, 2, num(o["w5c"]) if "w5c" in o else 0), (slot + 0x5B, 1, num(o["b5b"]) if "b5b" in o else 0),
              (slot + 0x96, 1, num(o.get("drop", o.get("b96", "0"))))]

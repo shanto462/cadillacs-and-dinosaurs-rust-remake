@@ -1,0 +1,137 @@
+# M5-19 extra: the respawn (S1: parked above the screen, the drop, the air strike) in other areas and with other hero counts, D2b open item 7 (the terrain push 0x12CAC at the drop spot
+# and at the bomb start): the hero loses HP at frame 120 (after the scripted walk in), 650 frames.
+
+segment m519b_resp_e2a1
+jump 2 1 char=jack
+rank 0 ; level 0
+0 lives 2
+60 time 3:00
+120 hp 0
+119 snapshot
+trace 650
+
+segment m519b_resp_e3a0
+jump 3 0 char=jack
+rank 0 ; level 0
+0 lives 2
+60 time 3:00
+120 hp 0
+119 snapshot
+trace 650
+
+segment m519b_resp_e4a1
+jump 4 1 char=jack
+rank 0 ; level 0
+0 lives 2
+60 time 3:00
+120 hp 0
+119 snapshot
+trace 650
+
+segment m519b_resp_e4a2
+jump 4 2 char=jack
+rank 0 ; level 0
+0 lives 2
+60 time 3:00
+120 hp 0
+119 snapshot
+trace 650
+
+segment m519b_resp_e5a0
+jump 5 0 char=jack
+rank 0 ; level 0
+0 lives 2
+60 time 3:00
+120 hp 0
+119 snapshot
+trace 650
+
+segment m519b_resp_e5a1
+jump 5 1 char=jack
+rank 0 ; level 0
+0 lives 2
+60 time 3:00
+120 hp 0
+119 snapshot
+trace 650
+
+segment m519b_resp_e6a1
+jump 6 1 char=jack
+rank 0 ; level 0
+0 lives 2
+60 time 3:00
+120 hp 0
+119 snapshot
+trace 650
+
+segment m519b_resp_e7a1
+jump 7 1 char=jack
+rank 0 ; level 0
+0 lives 2
+60 time 3:00
+120 hp 0
+119 snapshot
+trace 650
+
+segment m519b_resp_e8a1
+jump 8 1 char=jack
+rank 0 ; level 0
+0 lives 2
+60 time 3:00
+120 hp 0
+119 snapshot
+trace 650
+
+segment m519b_resp2p_e2a1
+jump 2 1 char=jack,hannah
+rank 0 ; level 0
+0 lives 2 P1
+60 time 3:00
+120 hp 0 P1
+119 snapshot
+trace 650
+
+segment m519b_resp3p_e2a1
+jump 2 1 char=jack,hannah,mess
+rank 0 ; level 0
+0 lives 2 P3
+60 time 3:00
+120 hp 0 P3
+119 snapshot
+trace 650
+
+segment m519b_resp2p_e4a1
+jump 4 1 char=jack,hannah
+rank 0 ; level 0
+0 lives 2 P1
+60 time 3:00
+120 hp 0 P1
+119 snapshot
+trace 650
+
+segment m519b_resp3p_e4a1
+jump 4 1 char=jack,hannah,mess
+rank 0 ; level 0
+0 lives 2 P3
+60 time 3:00
+120 hp 0 P3
+119 snapshot
+trace 650
+
+segment m519b_resp2p_e8a1
+jump 8 1 char=jack,hannah
+rank 0 ; level 0
+0 lives 2 P1
+60 time 3:00
+120 hp 0 P1
+119 snapshot
+trace 650
+
+segment m519b_resp3p_e8a1
+jump 8 1 char=jack,hannah,mess
+rank 0 ; level 0
+0 lives 2 P3
+60 time 3:00
+120 hp 0 P3
+119 snapshot
+trace 650

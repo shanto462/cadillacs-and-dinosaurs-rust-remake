@@ -1,0 +1,8 @@
+# probe segment m520h_rifle_hannah: the key lines after the snapshot (frame 0 = first game frame after it)
+6-6:A
+36-36:A
+86-86:A
+136-136:A
+171-171:A
+196-196:A
+256-256:A
