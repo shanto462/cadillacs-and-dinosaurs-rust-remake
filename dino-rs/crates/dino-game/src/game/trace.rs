@@ -1837,22 +1837,29 @@ impl Game {
         self.flow.tally.live = false;
         if st != 0 {
             if self.flow.tally.owner && self.flow.mode == 0xC {
-                // The clear task: the position inside its routine follows from the sleep counter (a counter above 1 is a sleep inside a
-                // routine of the tally, 0xA7E or 0xA82), the state and the sub step (a task is made and runs for the first time in the same frame, so a snapshot never holds one that has not run).
+                // 0x95A saves D0..A6 and the return PC on the task stack. The sleep
+                // helpers return through 0xA98, then to their caller. Read that caller:
+                // counter 1 can be either the loop sleep or the last internal sleep.
                 use super::flow::tally::After;
-                let (state, sub) = (self.flow.tally.raw.b(0), self.flow.tally.raw.b(1));
+                let stack = u32::from_be_bytes(ram[0x8A..0x8E].try_into().unwrap()) as usize;
+                let sp = stack & 0xFFFF;
+                let resume = if stack >> 16 == 0xFF && sp + 0x44 <= ram.len()
+                    && u32::from_be_bytes(ram[sp + 0x3C..sp + 0x40].try_into().unwrap()) == 0xA98
+                {
+                    u32::from_be_bytes(ram[sp + 0x40..sp + 0x44].try_into().unwrap())
+                } else {
+                    0
+                };
                 let t = &mut self.flow.tally;
                 t.live = true;
                 t.sleep = if st == 1 { cnt as u16 } else { 1 };
-                t.after = if cnt > 1 {
-                    match (state, sub) {
-                        (2, 0xA) => After::AdvanceTotal,
-                        (2, _) => After::Advance,
-                        (6, _) => After::Resume,
-                        _ => After::Loop,
-                    }
-                } else {
-                    After::Loop
+                t.after = match resume {
+                    0xBC90 | 0xBDCE | 0xBEFA | 0xBFF6 | 0xC3A2 => After::Advance,
+                    0xC1B0 => After::AdvanceTotal,
+                    0xC49A => After::Cleanup,
+                    // 0xC63C tail-calls the sleep after setting state 8.
+                    0xB99C => After::Resume,
+                    _ => After::Loop, // 0xB9A2: the ordinary loop sleep
                 };
             } else if self.flow.mode == 0xC && self.flow.sub == 0 && self.flow.intro.state <= 6 {
                 let it = &mut self.flow.intro;
@@ -2281,6 +2288,44 @@ mod tests {
 
     fn assets() -> &'static AssetPack {
         Box::leak(Box::new(AssetPack::default()))
+    }
+
+    /// 0xB97E / 0x95A: the saved caller, not the counter, identifies a tally sleep.
+    #[test]
+    fn tally_loader_keeps_the_last_sleep_continuation() {
+        use crate::game::flow::tally::After;
+        let mut game = Game::new(assets());
+        game.flow.mode = 0xC;
+        game.flow.tally.owner = true;
+        let mut ram = vec![0u8; 0x10000];
+        ram[0x82] = 1;
+        ram[0x8A..0x8E].copy_from_slice(&0xFF1000u32.to_be_bytes());
+        ram[0x103C..0x1040].copy_from_slice(&0xA98u32.to_be_bytes());
+        for cnt in [30, 2, 1] {
+            ram[0x83] = cnt;
+            for (state, sub, caller, after) in [
+                (2, 0, 0xBC90u32, After::Advance),
+                (2, 2, 0xBDCE, After::Advance),
+                (2, 4, 0xBEFA, After::Advance),
+                (2, 6, 0xBFF6, After::Advance),
+                (2, 0xA, 0xC1B0, After::AdvanceTotal),
+                (2, 0xC, 0xC3A2, After::Advance),
+                (2, 0xE, 0xC49A, After::Cleanup),
+                (8, 2, 0xB99C, After::Resume),
+                (2, 0, 0xB9A2, After::Loop),
+            ] {
+                game.flow.tally.raw.sb(0, state);
+                game.flow.tally.raw.sb(1, sub);
+                ram[0x1040..0x1044].copy_from_slice(&caller.to_be_bytes());
+                game.trace_load_tasks(&ram, &mut Vec::new());
+                assert_eq!(game.flow.tally.after, after, "counter {cnt}, caller {caller:X}");
+                assert_eq!(game.flow.tally.sleep, cnt as u16);
+                if cnt == 1 && after == After::Advance {
+                    game.flow_tally_task();
+                    assert_eq!(game.flow.tally.raw.b(1), sub + 2);
+                }
+            }
+        }
     }
 
     /// What `trace_ram` writes, `trace_load` reads back: fields and pool free lists.

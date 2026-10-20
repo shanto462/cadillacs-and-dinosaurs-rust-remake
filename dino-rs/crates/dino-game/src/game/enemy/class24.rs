@@ -465,7 +465,7 @@ impl Game {
     /// 0x491A4: the nearest counted enemy of last frame's list 0x69BA (|dx| + |dz|, words; `+$7D` negative ones are skipped; ties go to the later
     /// one). Nobody in the list: himself.
     pub(super) fn c24_nearest_enemy(&mut self, e: &mut Enemy, h: Handle) {
-        let list = self.combat.get(0x69BA).to_vec();
+        let list = self.enemy_c24_hurt_list();
         if list.is_empty() {
             e.m.sw(TARGET, h);
             return;
@@ -487,6 +487,18 @@ impl Game {
                 best = d;
             }
         }
+    }
+
+    /// 0x491A4 / 0x491F8 / 0x49296 read the saved pointer and count, but 0x4BEA
+    /// rebuilds the current list in the same downward-growing stack. Earlier
+    /// objects have already overwritten its high entries when Shivat runs.
+    pub(super) fn enemy_c24_hurt_list(&self) -> Vec<Handle> {
+        let mut saved = self.combat.get(0x69BA).to_vec();
+        let current = self.combat.get(0x671E);
+        let overlap = saved.len().min(current.len());
+        let saved_start = saved.len() - overlap;
+        saved[saved_start..].copy_from_slice(&current[current.len() - overlap..]);
+        saved
     }
 
     /// `+$7D` of any object of the hit list (pool A enemies, pool B props, pool E items).
@@ -845,5 +857,29 @@ impl Game {
         if rec.score != 0 {
             self.snd_hit(rec.score, e.b.xi(), e.b.facing); // jsr 0x962A with a2 = a6 = Shivat
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::game::Game;
+    use dino_assets::AssetPack;
+
+    /// 0x491A4 reads a saved extent of the stack that 0x4BEA is rebuilding.
+    #[test]
+    fn hurt_list_keeps_its_old_extent_and_observes_overwritten_entries() {
+        let mut g = Game::new(Box::leak(Box::new(AssetPack::default())));
+        for h in [0xC8F4, 0xC9D4, 0xCAB4] {
+            g.combat.push(0x69BA, h);
+        }
+        assert_eq!(g.enemy_c24_hurt_list(), [0xCAB4, 0xC9D4, 0xC8F4]);
+        g.combat.push(0x671E, 0xCB94);
+        assert_eq!(g.enemy_c24_hurt_list(), [0xCAB4, 0xC9D4, 0xCB94]);
+        for h in [0xCC74, 0xCD54, 0xCE34] {
+            g.combat.push(0x671E, h);
+        }
+        assert_eq!(g.enemy_c24_hurt_list(), [0xCD54, 0xCC74, 0xCB94]);
+        g.combat.clear(0x69BA);
+        assert!(g.enemy_c24_hurt_list().is_empty());
     }
 }

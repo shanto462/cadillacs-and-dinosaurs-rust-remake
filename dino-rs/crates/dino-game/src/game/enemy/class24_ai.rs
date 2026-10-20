@@ -310,7 +310,7 @@ impl Game {
                 return true;
             }
         }
-        for t in self.combat.get(0x69BA).to_vec() {
+        for t in self.enemy_c24_hurt_list() {
             if self.c24_bite_test(e, h, t) {
                 return true;
             }
@@ -329,7 +329,7 @@ impl Game {
                 return true;
             }
         }
-        for (n, t) in self.combat.get(0x69BA).to_vec().into_iter().enumerate() {
+        for (n, t) in self.enemy_c24_hurt_list().into_iter().enumerate() {
             let hit = if n == 0 { self.c24_reach_test(e, h, t) } else { self.c24_bite_test(e, h, t) };
             if hit {
                 return true;
