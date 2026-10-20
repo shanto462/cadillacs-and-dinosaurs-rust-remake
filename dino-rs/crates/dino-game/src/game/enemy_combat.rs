@@ -4,6 +4,7 @@
 use super::body::Body;
 use super::enemy::{Enemy, off::*};
 use super::{Game, Handle, Slot, collide, slot_of};
+use dino_assets::HitBox;
 
 /// Hit reaction tables.
 mod th {
@@ -311,12 +312,94 @@ impl Game {
                 e.b.step = 0;
                 e.b.hitstop = rec.hit_stop; // the monster's hit-stop is unchanged
                 e.b.b9a = rec.b7;
-                if rec.sound != 0 { self.snd_hit(rec.sound, self.body(a).xi(), self.body(a).facing); }
+                // 0x11F60: jsr 0x962A. a6 is not set by pass 0x11E56 (left pointing into collision
+                // boxes in ROM by 0x128F8): 0x128F8 leaves a6 = ($44(a3) + 12*d1) advanced by the
+                // six (a6)+ reads at 0x1293C / 0x12944 / 0x12966 / 0x12968 / 0x1298E / 0x12996
+                // (or the multi-box variants at 0x129A8 / 0x12A5C / 0x12B0E). 0x962A tests +$24(a6)
+                // for mode 3 vs mode 4.
+                if rec.sound != 0 {
+                    let a6 = self.a6_at_128f8_hit(&ab, &db, db.body_box, &hb);
+                    let a6_byte = self.rom_u8(a6.wrapping_add(0x24));
+                    self.snd_hit(rec.sound, self.body(a).xi(), a6_byte);
+                }
                 self.spawn_hit_spark(a, d, ha, hb, rec.spark);
                 self.body_mut(d).facing = ab.facing ^ 1;
                 self.enemy_monster_part_hit(di);
             }
         }
+    }
+
+    /// 0x128F8: computes the address a6 holds when 0x128F8 returns with hit (carry set).
+    /// - 0x12916 (neither has multi_box):
+    ///   a6 = table + 12 * ib + 12 (6 words read with (a6)+ at 0x1293C, 0x12944, 0x12966, 0x12968, 0x1298E, 0x12996)
+    /// - 0x129A8 (attacker single, defender multi):
+    ///   a6 = subtable + 2 + 12 * match_index (a6 advanced by (a6)+ for count at 0x129C4, then 12 per miss)
+    /// - 0x12A5C (attacker multi, defender single):
+    ///   a6 = table + 12 * ib (no post-increments of a6)
+    /// - 0x12B0E (both multi):
+    ///   a6 = subtable + 2 (restored from stack at 0x12BBC)
+    fn a6_at_128f8_hit(&self, ab: &Body, db: &Body, ib: u8, hb: &HitBox) -> u32 {
+        let table = db.box_table & 0xFF_FFFF;
+        match (ab.multi_box, db.multi_box) {
+            (false, false) => {
+                // 0x12916: a6 = table + 12 * d1 + 12
+                table.wrapping_add(12 * ib as u32).wrapping_add(12)
+            }
+            (false, true) => {
+                // 0x129A8: a6 = subtable + 2 + 12 * match_index
+                let sub_offset = self.rom_i16(table.wrapping_add(2 * ib as u32)) as i32 as u32;
+                let subtable = table.wrapping_add(sub_offset);
+                let boxes = self.assets.sprites.hitboxes.multi(table, ib);
+                let match_index = boxes.iter().position(|b| b == hb).unwrap_or(0) as u32;
+                subtable.wrapping_add(2).wrapping_add(12 * match_index)
+            }
+            (true, false) => {
+                // 0x12A5C: a6 = table + 12 * d1
+                table.wrapping_add(12 * ib as u32)
+            }
+            (true, true) => {
+                // 0x12B0E: a6 = subtable + 2
+                let sub_offset = self.rom_i16(table.wrapping_add(2 * ib as u32)) as i32 as u32;
+                let subtable = table.wrapping_add(sub_offset);
+                subtable.wrapping_add(2)
+            }
+        }
+    }
+
+    /// Read a single byte from ROM assets (sprites hitbox region, or fallback blobs).
+    fn rom_u8(&self, addr: u32) -> u8 {
+        let addr = addr & 0xFF_FFFF;
+        let bank = &self.assets.sprites.hitboxes;
+        if addr >= bank.base {
+            let offset = (addr - bank.base) as usize;
+            let word_idx = offset / 2;
+            if let Some(&w) = bank.words.get(word_idx) {
+                let w = w as u16;
+                return if offset % 2 == 0 {
+                    (w >> 8) as u8
+                } else {
+                    (w & 0xFF) as u8
+                };
+            }
+        }
+        for (start, data) in &self.assets.enemy.t.blobs {
+            if addr >= *start && ((addr - start) as usize) < data.len() {
+                return data[(addr - start) as usize];
+            }
+        }
+        for (start, data) in &self.assets.text.blobs {
+            if addr >= *start && ((addr - start) as usize) < data.len() {
+                return data[(addr - start) as usize];
+            }
+        }
+        0
+    }
+
+    /// Big-endian 16-bit word from ROM assets.
+    fn rom_i16(&self, addr: u32) -> i16 {
+        let b0 = self.rom_u8(addr);
+        let b1 = self.rom_u8(addr.wrapping_add(1));
+        i16::from_be_bytes([b0, b1])
     }
 
     /// 0x1128E: a hit on a multipart Tyrog piece makes each matching sibling unhittable.
@@ -1531,7 +1614,7 @@ impl Game {
 mod tests {
     use super::*;
     use dino_assets::player::PlayerData;
-    use dino_assets::{AnimTable, AssetPack, AttackRecord, Frame, FrameDraw, HitBox, HitBoxBank};
+    use dino_assets::{AnimTable, AssetPack, AttackRecord, Frame, FrameDraw, HitBoxBank};
 
     fn frame(kind: u8, body_box: u8) -> Frame {
         Frame {
@@ -1839,6 +1922,36 @@ mod monster_tests {
         assert_eq!(g.players.iter().map(|p| p.score).collect::<Vec<_>>(), score);
         g.pass_11e56();
         assert_eq!(g.body(d).hp, 13, "one hit per serial / live bit");
+    }
+
+    #[test]
+    fn monster_pass_11e56_computes_a6_and_reads_rom_byte_for_sound() {
+        let mut ap = AssetPack::default();
+        ap.sprites.hitboxes = HitBoxBank {
+            base: 0x100000,
+            words: vec![0x1234, 0x5678],
+        };
+        let mut g = Game::new(Box::leak(Box::new(ap)));
+        let (a, d) = pair(&mut g);
+        let ab = g.body(a).clone();
+        let db = g.body(d).clone();
+        let hb = HitBox::default();
+
+        // 1. Single vs single (0x12916): a6 = table + 12 * ib + 12
+        assert_eq!(g.a6_at_128f8_hit(&ab, &db, 1, &hb), 0x100000 + 12 * 1 + 12);
+        assert_eq!(g.a6_at_128f8_hit(&ab, &db, 5, &hb), 0x100000 + 12 * 5 + 12);
+
+        // 2. Multi vs single (0x12A5C): a6 = table + 12 * ib
+        let mut ab_multi = ab.clone();
+        ab_multi.multi_box = true;
+        assert_eq!(g.a6_at_128f8_hit(&ab_multi, &db, 2, &hb), 0x100000 + 12 * 2);
+
+        // 3. rom_u8 reads from hitboxes bank or blobs
+        assert_eq!(g.rom_u8(0x100000), 0x12);
+        assert_eq!(g.rom_u8(0x100001), 0x34);
+        assert_eq!(g.rom_u8(0x100002), 0x56);
+        assert_eq!(g.rom_u8(0x100003), 0x78);
+        assert_eq!(g.rom_i16(0x100000), 0x1234);
     }
 
     #[test]
