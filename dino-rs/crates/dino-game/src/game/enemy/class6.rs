@@ -59,7 +59,7 @@ impl Game {
         // 0x3339A: jsr $16c6.l (init anim ptr to special slot Ram, frame to Ram + 10)
         let spec_h = self.specials.handle(spec_idx);
         e.m.sw(0xA4, (spec_h as u16).wrapping_add(12));
-        e.b.frame = slot_frame(spec_idx);
+        e.b.set_frame(slot_frame(spec_idx));
         let (a, b, c, d) = self.specials.slots[spec_idx].record_params();
         (e.b.param_a, e.b.param_b, e.b.kind, e.b.timer) = (a, b, c, d);
 

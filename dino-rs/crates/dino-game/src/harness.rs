@@ -659,6 +659,14 @@ pub fn run(
         }
         _ => None,
     };
+    let ticks_resync = std::env::var("DINO_LAGSYNC_TICKS").map_or(true, |v| v != "0");
+    let mut mame_clock_before = match &mut lag_reader {
+        Some(r) => {
+            let ram = &r.region("ram")?.data;
+            u16::from_be_bytes([ram[0x8000], ram[0x8001]])
+        }
+        None => 0,
+    };
     let mut tw = TraceWriter::create(trace, &mut game, &meta)?;
     pokes.apply(&mut game, -1, true)?; // power frame 1 (and 0): after the load, before record -1
     tw.record(&mut game, -1)?;
@@ -685,6 +693,7 @@ pub fn run(
             }
             game.spawn.g.step_players = Some(a.region("ram")?.check(0xFF0000)?.to_vec());
         }
+        let port_clock = game.w.frame; // G.$0 before the tick (the lag-sync run compares its step with MAME's)
         pokes.apply(&mut game, k as i32, false)?; // game clock: after record k - 1, before the tick
         let f = script.map(|s| s.at(k)).unwrap_or_default();
         game.w.input = f.players;
@@ -724,7 +733,16 @@ pub fn run(
             let g0 = record_g0(rd)?;
             let catch_up = rd.flags & 1 == 0 && catch_up_record(prev_g0, g0);
             prev_g0 = g0;
-            if rd.flags & 1 != 0 || catch_up || (every > 0 && (k + 1) % every == 0 && in_range(k)) {
+            // A record in which MAME ran another number of game frames than the port (G.$0 counts them) is a resync point too: the original runs as many game
+            // frames in a video frame as the CPU time allows (the skip wait of `flow/skip.rs`, a story panel that starts inside a lag record), the port a fixed number.
+            // `DINO_LAGSYNC_TICKS=0` leaves these out.
+            let mame_clock = {
+                let ram = &rd.region("ram")?.data;
+                u16::from_be_bytes([ram[0x8000], ram[0x8001]])
+            };
+            let clocks_differ = ticks_resync && mame_clock.wrapping_sub(mame_clock_before) != game.w.frame.wrapping_sub(port_clock);
+            mame_clock_before = mame_clock;
+            if rd.flags & 1 != 0 || catch_up || clocks_differ || (every > 0 && (k + 1) % every == 0 && in_range(k)) {
                 load_regions(&mut game, rd)?; // the warnings repeat at every resync: not shown
             }
         }

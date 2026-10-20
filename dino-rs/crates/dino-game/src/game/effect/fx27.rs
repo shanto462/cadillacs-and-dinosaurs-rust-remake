@@ -17,7 +17,7 @@ impl Game {
         set_word(&mut e.b.x, o.xi());
         set_word(&mut e.b.y, o.yi());
         set_word(&mut e.b.z, o.zi());
-        e.b.frame = o.frame;
+        e.b.set_frame(o.frame);
         e.b.facing = o.facing;
         e.b.var26 = d1;
     }

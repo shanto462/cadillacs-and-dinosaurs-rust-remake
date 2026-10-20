@@ -665,7 +665,7 @@ impl Game {
         let extra = self.assets.player.comp_extra.get((fr.w0 / 4) as usize).copied().unwrap_or_default();
         let (w34, w36) = ((fr.param_a as u16) << 8 | fr.param_b as u16, (fr.kind as u16) << 8 | fr.duration as u16);
         let b = &mut self.players[i].b;
-        b.frame2 = f;
+        b.set_frame2(f);
         b.extra = extra;
         b.w34 = w34;
         b.w36 = w36;

@@ -70,7 +70,7 @@ impl Game {
                     it.b.anim_table = FOOD_TABLE;
                     self.item_small_common(it, h, it.b.var26);
                     self.item_anim(it, it.b.var26.wrapping_sub(1));
-                    it.b.frame2 = it.b.frame;
+                    it.b.set_frame2(it.b.frame);
                     if it.b.act == 0 {
                         it.b.mode += 2;
                         return;
@@ -98,7 +98,7 @@ impl Game {
     /// the screen edge): lie still (sub 0, act 0 only: `clr.b $6`).
     fn item_food_flight(&mut self, it: &mut Item, h: Handle) {
         self.item_anim_step(it);
-        it.b.frame2 = it.b.frame;
+        it.b.set_frame2(it.b.frame);
         it.b.motion();
         self.item_terrain(it, h);
         if it.b.airborne == 0 && self.item_land_check(it) {

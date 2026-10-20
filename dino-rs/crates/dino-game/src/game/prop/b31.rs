@@ -83,7 +83,7 @@ impl Game {
         sp.b.live = sp.m.b(0);
         // 0x16C6: the slot is the draw record of the object
         let (a, b, c, d) = sp.record_params();
-        p.b.frame = slot_frame(slot);
+        p.b.set_frame(slot_frame(slot));
         (p.b.param_a, p.b.param_b, p.b.kind, p.b.timer) = (a, b, c, d);
         p.b.visible = 1;
         p.b.draw_flags = 0xD0;

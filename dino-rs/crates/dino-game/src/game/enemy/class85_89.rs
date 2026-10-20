@@ -66,7 +66,7 @@ impl Game {
                 put(&mut e.b.y, b.b.y);
                 put(&mut e.b.z, b.b.z);
                 e.b.palette_override = b.b.palette_override;
-                e.b.frame = b.b.frame;
+                e.b.set_frame(b.b.frame);
                 e.b.param_a = b.b.param_a;
                 e.b.param_b = b.b.param_b;
                 e.b.kind = b.b.kind;

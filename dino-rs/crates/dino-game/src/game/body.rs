@@ -63,6 +63,10 @@ pub struct Body {
     /// Not an original field: the second word of the last frame record read by `load_frame` (0x1236 leaves it in d1). The Butcher's roll 0x5A1AC compares
     /// d1 as a word whose high byte is still this (the animation step of the same frame), so the word decides when a frame was loaded.
     pub frame_w1: u16,
+    /// Not an original field: how often a frame record was loaded into +$28 / +$30 (the trace writer shows a null frame pointer of the original, which the port
+    /// cannot keep as a frame id, until the first load).
+    pub frame_loads: u32,
+    pub frame2_loads: u32,
     /// +$2C / +$2D / +$2E: frame bytes +4 / +5 / +6 (+$2E = frame class for collision).
     pub param_a: u8,
     pub param_b: u8,
@@ -176,11 +180,21 @@ impl Body {
         self.y = self.y.wrapping_add((self.vy as i32) << 8);
     }
 
+    /// A write of the frame pointer +$28 / +$30.
+    pub fn set_frame(&mut self, id: FrameId) {
+        self.frame = id;
+        self.frame_loads = self.frame_loads.wrapping_add(1);
+    }
+    pub fn set_frame2(&mut self, id: FrameId) {
+        self.frame2 = id;
+        self.frame2_loads = self.frame2_loads.wrapping_add(1);
+    }
+
     /// Frame loaders 0x1236 (10-byte records) and 0x143E (12-byte records). The extractor
     /// already resolved which composition selects the extra bytes.
     pub fn load_frame(&mut self, s: &SpriteData, id: FrameId) {
         let f = s.frame(id);
-        self.frame = id;
+        self.set_frame(id);
         self.frame_w1 = f.w1;
         self.param_a = f.param_a;
         self.param_b = f.param_b;

@@ -153,7 +153,7 @@ impl Game {
         let it = self.flow.intro;
         let t = &mut self.flow.tally;
         if !t.owner {
-            t.raw = Ram::default();
+            // +0 .. +$11 are the intro's; the bytes behind (G.$7370 counting, G.$7371 sound, the blocks) keep what the last tally left until this one writes them
             t.raw.sb(o::STATE, it.state);
             t.raw.sb(o::SUB, it.sub);
             t.raw.sb(o::B2, it.b2); // +2 / +3 the intro's marker period and light flag, +4 its marker time (MAME keeps 0xFFEC there)

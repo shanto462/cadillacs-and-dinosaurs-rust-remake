@@ -286,7 +286,7 @@ impl Game {
             }
         }
         self.item_anim_step(it);
-        it.b.frame2 = it.b.frame;
+        it.b.set_frame2(it.b.frame);
         it.b.palette_override = 0;
         if it.b.param_a != 0 {
             it.b.palette_override = 0x8B;
