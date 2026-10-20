@@ -111,6 +111,7 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     (0x68080, 0x40, "Fessenden phase timers"),
     (0x73B14, 0x40, "Morgan aggression gate"),
     (0x73B54, 0x200, "Morgan action choices by AB sign"),
+    (0x744BA, 0x20, "Morgue step delay by level (0x541CA)"),
     (0x73D54, 0x40, "Morgue aggression gate"),
     (0x73D94, 0x100, "Morgue action choices"),
     (0xB7D32, 0x20, "Morgue palette (0x53EE0)"),

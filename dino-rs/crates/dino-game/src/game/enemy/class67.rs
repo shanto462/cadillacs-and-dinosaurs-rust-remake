@@ -45,8 +45,7 @@ impl Game {
                 e.b.ay = -0x20;
                 e.b.az = 0;
                 e.b.sub = 2;
-                self.enemy_anim(&mut e.b, 3);
-                self.enemy_draw_check(&mut e.b, h);
+                self.enemy_anim(&mut e.b, 3); // 0x5BF92 jmp 0x120E: no draw on this frame
                 return;
             }
             e.b.motion();

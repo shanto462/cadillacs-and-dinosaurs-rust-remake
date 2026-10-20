@@ -20,7 +20,7 @@ impl Game {
                         self.enemy_morgan_hit_credit(e);
                         self.enemy_hit_reaction(e, h);
                     }
-                    4 => self.enemy_hit_reaction(e, h),
+                    4 => self.enemy_morgan_dying(e, h),
                     6 => self.enemy_grabbed(e, h),
                     _ => {}
                 }
@@ -702,7 +702,7 @@ impl Game {
     }
 
     /// 0x52ECE / 0x5490E: clear 45 columns x 13 rows of space tile 0x20 at `a0`.
-    pub(in crate::game) fn clear_caption_box(&mut self, mut a0: u32) {
+    pub(in crate::game) fn enemy_clear_caption_box(&mut self, mut a0: u32) {
         for _col in 0..45 {
             let mut a2 = a0;
             for _row in 0..13 {
@@ -723,10 +723,10 @@ impl Game {
                 self.spawn.g.b502 = 0;
                 self.prop_b50_palette(3); // 0x84E2E
                 self.text_portrait(0x90A29C, 7, 0x3B); // 0x84736
-                e.m.sw(0xA2, 0x1C); // 0x84746: move.w 0(a2, d0.w), $A2(a6)
+                e.m.sw(0xA2, self.assets.frontend.text.u16(0x8461A, 7 * 2)); // 0x84746: move.w 0(a2, d0.w), $A2(a6)
                 e.m.sw(0x80, 0x78); // 120 frames
                 e.b.sub = 2;
-                self.draw_list_add_check(h);
+                self.enemy_draw_check(&mut e.b, h);
             }
             2 => {
                 // 0x52DF4
@@ -734,7 +734,7 @@ impl Game {
                 let t = e.m.w(0x80);
                 if t != 0 {
                     e.m.sw(0x80, t.wrapping_sub(1));
-                    self.draw_list_add_check(h);
+                    self.enemy_draw_check(&mut e.b, h);
                     return;
                 }
                 // 0x52E0C: timer expired (borrow)
@@ -744,7 +744,7 @@ impl Game {
                     e.b.sub = 10;
                     e.m.sw(0x80, 0x77); // 0x78 decremented in sub 10 fallthrough
                     self.enemy_anim(&mut e.b, 0x10);
-                    self.draw_list_add_check(h);
+                    self.enemy_draw_check(&mut e.b, h);
                     return;
                 }
                 // 0x52E2E: walk towards center
@@ -760,7 +760,7 @@ impl Game {
                 self.enemy_anim(&mut e.b, 0x0E); // anim 14
                 self.enemy_step(&mut e.b);
                 self.enemy_move_dir(&mut e.b);
-                self.draw_list_add_check(h);
+                self.enemy_draw_check(&mut e.b, h);
             }
             4 => {
                 // 0x52E70
@@ -769,40 +769,40 @@ impl Game {
                     e.m.sw(0x80, t.wrapping_sub(1));
                     self.enemy_step(&mut e.b);
                     self.enemy_move_dir(&mut e.b);
-                    self.draw_list_add_check(h);
+                    self.enemy_draw_check(&mut e.b, h);
                 } else {
                     // Falls into sub 10 (0x52E90 / 0x52EA2)
                     e.b.sub = 10;
                     e.m.sw(0x80, 0x77); // 0x78 decremented in sub 10 fallthrough
                     self.enemy_anim(&mut e.b, 0x10);
-                    self.draw_list_add_check(h);
+                    self.enemy_draw_check(&mut e.b, h);
                 }
             }
             6 | 8 => {
                 e.b.sub = 10;
                 e.m.sw(0x80, 0x77);
                 self.enemy_anim(&mut e.b, 0x10);
-                self.draw_list_add_check(h);
+                self.enemy_draw_check(&mut e.b, h);
             }
             10 => {
                 // 0x52EA2
                 let t = e.m.w(0x80);
                 if t != 0 {
                     e.m.sw(0x80, t.wrapping_sub(1));
-                    self.draw_list_add_check(h);
+                    self.enemy_draw_check(&mut e.b, h);
                 } else {
                     // 0x52EB4: clear caption window and rewrite to Morgue (class 40)
-                    self.clear_caption_box(0x90A29C); // 0x52ECE
+                    self.enemy_clear_caption_box(0x90A29C); // 0x52ECE
                     e.b.k20 = 40 * 4;
                     e.b.mode = 0;
                     e.b.sub = 0;
                     e.b.act = 0;
                     e.b.step = 0;
-                    self.draw_list_add_check(h);
+                    self.enemy_draw_check(&mut e.b, h);
                 }
             }
             _ => {
-                self.draw_list_add_check(h);
+                self.enemy_draw_check(&mut e.b, h);
             }
         }
     }
