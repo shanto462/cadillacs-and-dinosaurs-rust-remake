@@ -51,6 +51,7 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x5B606, 0x5B77C, // the bomb carriers class 64: Punk alt and Wrench T. alt (0x5B068, 0x5B092) (M6-27)
     0x5F0AC, 0x5F128, // their dynamite class 77 (0x5EE16, 0x5EE20) (M6-27)
     0x5BAE0, // barrel class 65 (0x5B96A) (M6-29)
+    0x718EE, 0x4837C, // the brontosaurus foot class 22 (0x47C42) and its leg class 23 (0x48266) (M8-01)
     0x4C90E, 0x45706, // Slice class 25 (0x4BEA8) and his boomerang class 19 (0x450B4) (M7-01, M7-03)
     0x702C4, 0x2ED42, 0x30C94, // Tyrog class 4 (0x36A98), his hit reactions and held poses (by name 0x19) (M8-07)
     0x309EA, 0x3125C, // Tyrog's host class 72 (+$84 0x6C): hit reactions and held poses (M8-10)
