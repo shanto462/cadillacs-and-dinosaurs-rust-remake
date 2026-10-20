@@ -5,7 +5,7 @@
 //!         [--input SCRIPT | --input-file PATH] [--viewer] [--view char,set,anim]
 //!         [--screenshot out.png --frames N] [--screenshots F1,F2 --shot-dir DIR]
 //!         [--headless | --windowed] [--mute] [--load-state FILE] [--trace FILE --frames N]
-//!         [--step-from MAME.trc] [--follow-rng MAME.trc]
+//!         [--step-from MAME.trc] [--follow-rng MAME.trc] [--lagsync MAME.trc]
 //!         [--poke FRAME:ADDR:SIZE:VALUE]... [--poke-file FILE]... [--poke-clock power|game]
 //!         [--episode 1..8 | --stage 0..7] [--area 0..3] [--camx X] [--autoplay] [--debug-keys] [--list-placeholders]
 //!         [--jump NAME] [--list-jumps] [--test]`
@@ -90,6 +90,8 @@ struct Args {
     load_state: Option<String>,
     step_from: Option<String>,
     follow_rng: Option<String>,
+    /// `--lagsync MAME.trc`: a free run that resyncs to MAME's state after every lag record (`harness::run`).
+    lagsync: Option<String>,
     pokes: harness::PokeSet,
     /// `--mute`: no audio device (windowed runs only).
     mute: bool,
@@ -190,6 +192,7 @@ fn args() -> Args {
         load_state: value("--load-state"),
         step_from: value("--step-from"),
         follow_rng: value("--follow-rng"),
+        lagsync: value("--lagsync"),
         pokes: pokes(&a),
         mute: a.iter().any(|x| x == "--mute"),
     }
@@ -285,8 +288,9 @@ fn main() {
         let assets = load_assets(args.load_state.as_deref(), args.step_from.as_deref());
         let (load, step) = (args.load_state.as_deref(), args.step_from.as_deref());
         let follow = args.follow_rng.as_deref();
+        let lagsync = args.lagsync.as_deref();
         let start = harness::Start { boot: !args.direct, stage: args.stage, area: args.area, camx: args.camx, chars: &args.chars };
-        let r = harness::run(assets, trace, load, step, follow, start, config, args.script.as_ref(), args.pokes, frames);
+        let r = harness::run(assets, trace, load, step, follow, lagsync, start, config, args.script.as_ref(), args.pokes, frames);
         if let Err(e) = r {
             eprintln!("error: {e}");
             std::process::exit(1);

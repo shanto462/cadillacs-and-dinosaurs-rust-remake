@@ -232,9 +232,9 @@ def main():
                 if mm:
                     skip_spawn.add(int(mm.group(1)))
     print("spawn frames not compared: " + (" ".join(str(k) for k in sorted(skip_spawn)) if skip_spawn else "none"))
-    # Step mode (the port trace header says "mode":"step"): a MAME lag record (flags & 1, the game frame overran vblanks) covers more game
-    # ticks than one port step, so it is left out. Run and follow modes compare every record.
-    skip_lag = tp.header.get("mode") == "step" and not args.no_skip_lag
+    # Step mode (the port trace header says "mode":"step") and lag-sync mode ("lagsync"): a MAME lag record (flags & 1, the game frame
+    # overran vblanks) covers more game ticks than one port step, so it is left out. Run and follow modes compare every record.
+    skip_lag = tp.header.get("mode") in ("step", "lagsync") and not args.no_skip_lag
     lag_skipped = 0
     for rm, rp in zip(tm.records(), tp.records()):
         if rm.frame != rp.frame:
@@ -479,6 +479,8 @@ def main():
     if lag_frames:
         print(f"MAME lag frames (game frame overran a vblank): {lag_frames[:20]}{' ...' if len(lag_frames) > 20 else ''}")
     print(f"lag frames not compared (step mode): {lag_skipped}" + ("" if skip_lag else " (off: run/follow mode or --no-skip-lag)"))
+    if tp.header.get("mode") == "lagsync":
+        print(f"lag-sync resyncs in the port run: {tp.header.get('lagsync_resyncs')}")
     if first_frame is None:
         print("\nRESULT: no differences" + (" (some allowed, see below)" if allowed else ""))
     else:

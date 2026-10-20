@@ -26,13 +26,16 @@ the test script for FRAMES (default 600) game frames and writes one record per f
 seconds and is bit-for-bit repeatable. `port.sh SCRIPT [NAME] [FRAMES]` loads the snapshot into the
 port and plays the same script. Both take `NAME` (default: the script name without `.txt`).
 
-### Three ways to run the port (`MODE=...`)
+### Four ways to run the port (`MODE=...`)
 
 | mode | command | what it checks |
 | --- | --- | --- |
 | `run` (default) | `port.sh SCRIPT` | the port plays on its own from the snapshot. The real test: it must match for the whole run. A difference at frame k also causes differences after k. |
 | `follow` | `MODE=follow port.sh SCRIPT` | like `run`, but the random number state `G.$14` is copied from MAME before every frame. Objects of classes the port does not run still call `rand()` in the original; this stops that drift from hiding the ported code. Writes `NAME.follow.trc`. |
 | `step` | `MODE=step port.sh SCRIPT` | before every frame the port is loaded with MAME's state after the previous frame, so a difference at frame k comes from frame k alone, never from an earlier difference. Use it to find out why something differs. Writes `NAME.step.trc`. |
+| `lagsync` | `MODE=lagsync port.sh SCRIPT` | like `run`, but after every MAME lag record (`flags & 1`: the original's game frame overran a vblank, one port tick cannot replay it) the port is loaded with MAME's state of that record, the state a step run starts the next frame from. The lag records are not compared (diff.py, as in `step`). The header has `lagsync_resyncs` (the number of resyncs). Writes `NAME.lagsync.trc`. Use it for a free run whose first difference would otherwise be a lag record. |
+
+`lagsync` is a free run between the lag records: a difference after a resync is a logic or state difference of the port, not the lag. It is not exact like `step`: free runs drift in state that a resync does not restore (for example stale bytes of free slots), so a difference can still appear a few frames after a resync. Find those with the diagnostic `DINO_LAGSYNC_EVERY=N` (resync every N frames as well; N = 1 is `step`; a smaller N moves the first difference later).
 
 Start with `step`: it tells you which classes and routines are wrong or missing. Use `run` to prove
 the whole run is exact. In `step` mode a VRAM or sound write that an unported routine makes shows up
@@ -418,6 +421,7 @@ point. `dino-game --load-state` fills the port from it by the same field lists (
 dino-game --rom dino.zip --load-state NAME.state  --input-file SCRIPT --frames N --trace OUT     # run
 dino-game --rom dino.zip --load-state NAME.state  --follow-rng NAME.mame.trc ...                 # follow
 dino-game --rom dino.zip --step-from  NAME.mame.trc --input-file SCRIPT ...                      # step
+dino-game --rom dino.zip --load-state NAME.state  --lagsync NAME.mame.trc --input-file SCRIPT ... # lagsync
 ```
 
 - `src/harness.rs`: reader and writer of the trace files, the headless run loop.
