@@ -105,6 +105,7 @@ pub fn extract(rom: &Rom) -> FrontendData {
         (0x7BF4, 0x168, "join name strings and origins"),
         (0x7E20, 0x50, "join countdown origins and big digits"),
         (0x7FB6, 0x14, "join strip clear rectangles"),
+        (0x7FFA, 0x14, "join mode 0x10 clear rectangles"),
         (0x803C, 0x14, "join countdown clear rectangles"),
         (0x82D4, 0x14, "join arrow origins"),
         (0x80F4, 8, "two-player big prompt origins"),
