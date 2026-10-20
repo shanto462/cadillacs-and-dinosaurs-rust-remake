@@ -3,7 +3,7 @@
 //! a walker walks to the nearest hero and swings at him, a hazard crosses the screen, and every
 //! placeholder is drawn as a labelled box (`draw_boxes`, called by `present.rs`).
 //! The stage bosses (`Spec::boss`) are the same objects with the boss inits (HP row, controller, the death chain 0xACEE,
-//! Morgan's rebirth as Morgue). The boss starters (pool B 33 and 79) are placeholders too (`ph_starter`).
+//! Morgan's rebirth as Morgue). The boss starters (pool B 33 and 79) are real (`prop/b33.rs`, `prop/b79.rs`).
 //!
 //! The registry `SPECS` lists the classes served by placeholders. A real port deletes its entry
 //! (`--list-placeholders` prints the list). The census flag, the name ids and the kinds come from
@@ -12,10 +12,8 @@
 
 use super::body::Body;
 use super::enemy::{Enemy, off::*};
-use super::prop::Prop;
 use super::{Game, Handle};
 use crate::render::DrawTarget;
-use dino_assets::enemy::SpawnRec;
 use macroquad::prelude::{Color, BLACK};
 
 /// What the placeholder knows of one class.
@@ -82,7 +80,7 @@ pub const SPECS: &[Spec] = &[
     // Class 38 (M6-03), Mack, is real.
     // Classes 78 and 80 (M6-03), the ground critters, are real.
     // Class 79 (M6-06), the dinosaur hunter, is real.
-    Spec { boss: Some(Boss { hp_row: 0, controller: false, score: true, rebirth: None, group: true }), ..walker(71, "SLISAUR", Some(0x18), false) },
+    // Class 71 (M8-13 .. M8-15), the Slisaurs, and their starter pool B 33 are real.
     // Classes 94 (M8-27, M8-28) and 84 with its parts 85 to 89 and the fire 95 (M8-30 .. M8-35), Fessenden, are real.
 ];
 
@@ -342,36 +340,6 @@ impl Game {
             || !self.enemies.slots.iter().enumerate().any(|(i, o)| {
                 o.b.live != 0 && o.b.k20 == e.b.k20 && o.b.hp != 0 && self.enemies.handle(i) != h
             })
-    }
-
-    /// The starters of the boss classes 4 and 71 (pool B 79 and 33), placeholders too: they make their bosses at once and
-    /// are done (the original waits for the scene first, not ported). Slisaur starter (0x818E4): two Slisaurs at X 0x580,
-    /// Z 0x30 and 0x40, a third at Z 0x20 with two or three players, and the boss controller (0x7BEDC, `+$AA` = the starter).
-    /// Tyrog starter (B79): Tyrog (class 4, form 0) where the starter stands.
-    pub fn ph_starter(&mut self, p: &mut Prop, h: Handle, i: usize) {
-        if self.trace_hold(h, &p.b) {
-            return; // harness: kept as the snapshot had it
-        }
-        match p.b.k20 / 4 {
-            33 => {
-                let zs: &[u16] = if self.w.players_minus_one == 0 { &[0x30, 0x40] } else { &[0x30, 0x40, 0x20] };
-                for &z in zs {
-                    self.ph_spawn_boss(71, 0x580, z);
-                }
-                self.boss_spawn_controller(h);
-            }
-            _ => {
-                let (x, z) = (p.b.xi() as u16, p.b.zi() as u16);
-                self.ph_spawn_boss(4, x, z);
-            }
-        }
-        self.prop_free(p, i);
-    }
-
-    /// Makes a pool A object of `class` (a boss record, variant 0) at X, Z: the next enemy update runs its init.
-    fn ph_spawn_boss(&mut self, class: u16, x: u16, z: u16) {
-        let r = SpawnRec { trig: 0, flags: 0, class: class * 4, x, z, var: 0, wc: 0, b5b: 0, b96: 0 };
-        self.spawn_record(&r, false);
     }
 
     /// Placeholders are drawn as boxes (`draw_boxes`), not with their sprites: drop them from the

@@ -637,3 +637,16 @@ The 24 natural whole-episode recordings (ep1_3p, ep2 to ep8 with Jack and 3 play
 ## Morgan's death and Morgue (agy, 2026-10-19): native, not exact yet
 
 class36.rs (Morgan's death 0x52DA2: the caption, the walk, the pose, the rewrite to class 40) and class40.rs (Morgue 0x53E08: palette, intro, roar, the moves, charge, death 0x549D4 with 30,000 points) replace the placeholders 35, 40 and 45; `--list-placeholders` now lists only the foot (22) and the Slisaur (71). G.$4D6 at frame 2380 equals MAME (the death slow motion). Step mode is NOT equal yet (main session check, PORT_OUT runs): m700_bt_a4_m5_b, m700_bt_a4_m5_trans and m700_bt_a5_m5_morgue_kill differ at 2380 in one sprite entry (an object at D8B4: code 526B at x 0xCA against MAME 42B0 at x 0xBF) and from 2682 in Morgue's own fields (+$7B reaction MAME 00 port 04, then +$23 palette_override, +$2F timer, +$88 / +$8A dest, +$A5 repos, X from 2819, rng from 2819; 424 object-frames); m700_bt_a5_m5_morgue_dmg from 2105 / 2347. The plan blocks M7-19 to M7-21 stay open until these recordings are equal.
+
+## The Slisaurs, class 71, their starter B33 and the lab monitor B30 / B34 (M8-13 .. M8-16, Task 17, 2026-10-21)
+- The fight cannot start without the monitor: the script sets G.$4FC before B30 appears, B33 and every Slisaur wait while it is set, and only
+  B30's talk end (0x81656) clears it (M s7-1p-a frame 1246). The old placeholder starter did not wait; with the real starter B30 / B34
+  (planned as M8-16) had to come in the same task or the game stopped in Episode 7 area 3.
+- The recover entry (0x5C95E) rolls its knock down answer (0x5C9A2) against a quarter / a half of the start HP using d0 as the animation
+  start 0x120E leaves it (a word of the frame record), not HP; the port takes that word from the frame (`c71_frame_word`).
+- The afterimages get d1 in `+$26`: in the run of walk mode 6 the word of the state jump table (0xB2, or the retarget's d1 in a retarget
+  frame), in the dash 0x3A0.
+- A dead Slisaur is never freed: its death table has only the score step and a draw step (0x5D19A), so the body lies drawn until the area
+  ends (M sl-kill: mode 4 sub 2 until 5868). The wait state 6 (0x5CCC0) has no caller.
+- The hop speed is |d| / 42 in the high byte plus the remainder * 4 in the low byte (`add.b d0,$14(a6)`), not a 16.16 division.
+- D3d 4.4 (combo 4 or 5 at the start): the on-screen test 0x5DCC4 gives combo 4 (the fan) on screen and 5 (dash and kick) off screen.

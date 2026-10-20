@@ -514,14 +514,23 @@ mod tests {
     fn the_slisaur_starter_makes_the_group_and_the_last_death_ends_the_fight() {
         let Some(mut g) = rom_game() else { return eprintln!("slisaur test skipped: dino.zip is absent") };
         g.spawn_prop(33, 0, Some((0x580, 0, 0x30))).unwrap();
-        g.pool_b_update(); // the starter makes its bosses and frees itself
-        g.enemies_update();
+        g.pool_b_update(); // 0x8190A: the starter makes its Slisaurs
+        g.spawn.g.b4fc = 0;
+        g.pool_b_update(); // 0x8199E: no scene: the controller and the run
+        g.enemies_update(); // 0x5C83E: the inits
+        g.enemies_update(); // 0x5C8D6: the fight starts
         let ids = slots_of(&g, 71);
         assert_eq!(ids.len(), 2, "two Slisaurs for one player");
         assert!(g.props.slots.iter().any(|p| p.b.live != 0 && p.b.k20 == 22 * 4), "the boss controller");
-        kill_boss(&mut g, ids[0]);
-        assert_eq!(g.flow.sub, 0, "one Slisaur left: no defeat");
-        kill_boss(&mut g, ids[1]);
-        assert_eq!(g.flow.sub, 2, "the last one ends the fight");
+        for (n, &i) in ids.iter().enumerate() {
+            let e = &mut g.enemies.slots[i];
+            e.b.set_state(0x0202_0000); // a hit (0x81A7A) that ends at HP 0
+            e.b.hp_prev = 10;
+            e.b.hp = 0;
+            e.b.who = 1;
+            g.enemies_update();
+            g.pool_b_update(); // 0x819BE: all handles 0: 0xACEE with the last body
+            assert_eq!(g.flow.sub, if n == 0 { 0 } else { 2 }, "only the last death ends the fight");
+        }
     }
 }

@@ -152,6 +152,15 @@ pub const TABLES: &[(u32, u32, &str)] = &[
     // the speeds 0x69C74).
     (0x6173E, 0x39C2, "Fessenden form 2 handlers and tables"),
     (0x6995E, 0x3B8, "Fessenden fire handler and speeds"),
+    // The Slisaurs, class 71 (M8-13 .. M8-15, 0x5C818..0x5DD58): the handler with its tables (the knock down limits 0x5C9E8, the scripts
+    // 0x5CD9A, the blade types 0x5CF06, the fans 0x5D058 / 0x5D078, the pauses 0x5D12E / 0x5D14E, the target picks 0x5D46E / 0x5D4FE, the
+    // sides 0x5D666 / 0x5D79A, the points 0x5D7F8 / 0x5D818 / 0x5D87A, the walk modes 0x5DA3A, the gate 0x5DB0E, the combos 0x5DB8E, the
+    // speeds 0x5DCEE / 0x5DD1C).
+    (0x5C818, 0x1540, "Slisaur handler and tables"),
+    // The lab monitor, pool B 30 (0x811DE..0x817CE): its script, tile sets, palette lists and mouth sequences, and the palette sources it cycles
+    // (0xBF392..0xBF632).
+    (0x811DE, 0x5F0, "lab monitor B30 handler and tables"),
+    (0xBF392, 0x2A0, "lab monitor palette sources"),
 ];
 
 pub fn extract(rom: &Rom) -> BossData {
