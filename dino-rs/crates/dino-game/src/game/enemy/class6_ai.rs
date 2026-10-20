@@ -453,7 +453,8 @@ impl Game {
     /// 0x3A6EA: scan active players into $A2 array, returns count minus 1.
     fn enemy_c6_scan_players(&self, e: &mut Enemy) -> u32 {
         let mut count = 0u32;
-        e.m.sw(0xA2, 0);
+        // 0x3A730 skips the first cell when nobody is live. Keep that stale
+        // target through the last hero's death, as the original does.
         e.m.sw(0xA4, 0);
         e.m.sw(0xA6, 0);
         for (i, p) in self.players.iter().enumerate() {
@@ -627,6 +628,43 @@ impl Game {
         let r = (self.rand() & 0x1F) as u8;
         let aggr = (self.rank.aggression & 0x7) as u32;
         let threshold = self.assets.enemy.t.u8(0x3ADA4, a9 * 4 + aggr);
-        r < threshold
+        (r as i8) < (threshold as i8) // 0x3AD98: bge, including stale +$A9 rows
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dino_assets::AssetPack;
+
+    /// 0x3AD98 compares bytes as signed, even when a reused slot has +$A9 outside 0/2.
+    #[test]
+    fn attack_threshold_is_signed_for_stale_rows() {
+        for (threshold, expected) in [(0x80, false), (0x7F, true)] {
+            let mut a = AssetPack::default();
+            a.enemy.t.blobs = vec![(0x3ADA4, vec![threshold; 36])];
+            let mut g = Game::new(Box::leak(Box::new(a)));
+            g.rank.aggression = 7;
+            let mut e = Enemy::default();
+            e.m.sb(0xA9, 7);
+            assert_eq!(g.enemy_c6_check_attack(&e), expected);
+        }
+    }
+
+    /// 0x3A6EA / 0x3A730: losing the last hero preserves the first candidate.
+    #[test]
+    fn empty_player_scan_keeps_the_last_target() {
+        let mut g = Game::new(Box::leak(Box::new(AssetPack::default())));
+        let mut e = Enemy::default();
+        g.players[1].b.live = 2;
+        assert_eq!(g.enemy_c6_scan_players(&mut e), 0);
+        assert_eq!(e.m.w(0xA2), Game::player_handle(1));
+        g.players[1].b.live = 0;
+        assert_eq!(g.enemy_c6_scan_players(&mut e), 0);
+        assert_eq!(e.m.w(0xA2), Game::player_handle(1));
+        assert_eq!((e.m.w(0xA4), e.m.w(0xA6)), (0, 0));
+        e.m.sw(0xA2, 0);
+        g.enemy_c6_scan_players(&mut e);
+        assert_eq!(e.m.w(0xA2), Game::player_handle(0));
     }
 }

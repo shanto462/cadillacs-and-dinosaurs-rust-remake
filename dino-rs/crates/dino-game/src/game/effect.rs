@@ -93,6 +93,8 @@ mod fx36_37;
 // Pool C class 41 (M6-22): the dust and smoke of the Cadillac.
 #[path = "effect/fx41.rs"]
 mod fx41;
+#[path = "effect/fx39.rs"]
+mod fx39;
 mod fx40;
 #[path = "effect/fx30.rs"]
 mod fx30;
@@ -606,11 +608,21 @@ impl Game {
                 FX_CAR_PUFF => self.fx_car_puff(i),
                 FX_Z_MARK => self.fx_z_mark(i),
                 FX_AFTERIMAGE => self.fx_afterimage(i),
+                0x9C => self.fx39(i),
                 0xA0 => self.fx40(i),
-                // TODO(port): remaining classes (handler addresses from the table at 0x237E6):
-                // 0x00 0x923E0, 0x18 0x92C9A,
-                // 0x24 0x93184, 0x28 0x932D2,
-                // 0x30 0x939D6, 0x34 0x93A7A, 0x3C 0x93E54, 0x40 0x93FFC,
+                // Dead classes (M9-05, D5-errata): 0x00 0x923E0, 0x24 0x93184 (STAGE CLEARED!), 0x30 0x939D6 (made only with the debug switch G.$4AA), 0x34 0x93A7A,
+                // 0x8C 0x96E56 have no maker that runs in play (no recording of the 1827 shows one alive); 0x98 is the NULL entry of the table (0x2387E).
+                // A slot that gets one anyway is freed at once, without the message of the classes still to do.
+                0x00 | 0x24 | 0x30 | 0x34 | 0x8C | 0x98 => {
+                    let (h, b) = (self.effects.handle(i), self.effects.slots[i].b.clone());
+                    if !self.trace_hold(h, &b) {
+                        self.fx_free(i);
+                    }
+                }
+                // TODO(port): remaining classes (handler addresses from the table at 0x237E6; the dead ones are above):
+                // 0x18 0x92C9A,
+                // 0x28 0x932D2,
+                // 0x3C 0x93E54, 0x40 0x93FFC,
                 // 0x44 0x94100, 0x48 0x942C6,
                 // 0x58 0x95840,
                 // 0x70 0x96488, 0x78 0x966B4, 0x80 0x96A7E,

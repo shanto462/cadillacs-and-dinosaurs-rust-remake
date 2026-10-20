@@ -54,6 +54,7 @@ const EFFECT_LISTS: &[u32] = &[
     0x96B10, // cloud of the ranking screen, effect $20 = 0x80, var 0 (0x96AB6)
     0x96B1C, // same, var 1 (0x96AC8)
     0x96B28, // same, var 2 (0x96AD4)
+    0x975AC, // the flare of the Episode 8 clear scene, effect $20 = 0x9C (0x97546, M9-04)
 ];
 
 /// Raw-list animations (8-byte records), loaded with 0x16C6.

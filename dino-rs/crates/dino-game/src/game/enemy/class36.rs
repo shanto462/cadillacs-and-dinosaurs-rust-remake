@@ -153,13 +153,14 @@ impl Game {
         self.enemy_morgan_recover(e);
     }
 
-    /// 0x51ACA: shared recovery with Morgan's jab and escape-hop continuations.
+    /// 0x51ACA / 0x527A8: shared recovery with Morgan's jab and escape-hop continuations.
     pub(super) fn enemy_morgan_recover(&mut self, e: &mut Enemy) {
         match self.boss_recover(e, BossAi::Morgan) {
             BossRecover::WakeAttack => {
                 self.lib_face_target(e);
                 self.enemy_morgan_attack(e, 14, 13, 0x3F);
                 e.m.sb(0xB9, 0);
+                self.lib_aim_at_target(e); // 0x527DE: the wake-up jab also refreshes +$22
             }
             BossRecover::OffscreenHop => self.enemy_morgan_hop(e, 0x28, 17),
             _ => self.enemy_morgan_kite(e),

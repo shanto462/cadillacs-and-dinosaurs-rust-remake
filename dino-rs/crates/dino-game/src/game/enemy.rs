@@ -532,6 +532,7 @@ impl Game {
         b.x = b.x.wrapping_add((b.vx as i32) << 8);
         b.vz = sz.wrapping_add(b.az);
         b.z = b.z.wrapping_add((b.vz as i32) << 8);
+        b.frame_w1 = (b.vz as u16) << 8; // d1 = vz << 8 (`swap d1 ; asr.l #8,d1`): the Butcher's decision roll 0x5A1AC keeps its high byte
     }
 
     /// 0x120E.
@@ -775,6 +776,7 @@ impl Game {
         let g = &mut self.spawn.g;
         g.census_prev = g.census;
         g.census = [[0; 4]; 3];
+        g.census_target = None;
         g.alive = g.alive_run;
         g.alive_run = 0;
         for i in 0..self.enemies.slots.len() {
@@ -794,6 +796,7 @@ impl Game {
             } else {
                 0
             };
+            self.spawn.g.census_target = Some(Game::player_handle(p)); // A2 at 0x324A6
             let c = &mut self.spawn.g.census[p];
             c[0] = c[0].wrapping_add(1);
             if e.m.b(ATTACKING) != 0 {
@@ -811,7 +814,11 @@ impl Game {
     pub fn enemy_pick_target(&self, b: &Body) -> Handle {
         let present: [bool; 3] = std::array::from_fn(|i| self.players[i].b.live != 0);
         if !present.iter().any(|&p| p) {
-            return Game::player_handle(0); // 0x32376 with G.$4CD unknown: P1
+            // 0x32376: when nobody is live, use the first started hero (G.$4CD).
+            let started = self.flow.started;
+            let p = if started == 0 || started & 1 != 0 { 0 }
+                else if started & 2 != 0 { 1 } else { 2 };
+            return Game::player_handle(p);
         }
         let mut score = [0u8; 3];
         let prev = &self.spawn.g.census_prev;
@@ -1616,10 +1623,8 @@ impl Game {
                         s = 0;
                     }
                 } else {
-                    s = s.wrapping_sub(1);
-                    if (s as i8) < 0 {
-                        s = 5;
-                    }
+                    let (next, borrow) = s.overflowing_sub(1); // 0x3545C..0x35460: bcc, not a sign test
+                    s = if borrow { 5 } else { next };
                 }
                 e.m.sb(SLOT, s);
                 self.enemy_c2_steer_slot(e);
@@ -2381,6 +2386,56 @@ mod tests {
         }
         assert!(g.enemy_c2_bump_player(&mut e));
         assert_eq!(e.m.w(TARGET), Game::player_handle(0));
+    }
+
+    /// 0x3545E tests carry: a reused slot's 0xFF decrements to 0xFE without wrapping to 5.
+    #[test]
+    fn reposition_slot_wraps_only_on_borrow() {
+        let mut a = dino_assets::AssetPack::default();
+        a.enemy.t.blobs = vec![
+            (t2::ATTACK_CHANCE, vec![0; 8]),
+            (t2::REPOS_CHOICE, vec![0; 32]),
+            (t2::REPOS_TIME, vec![1; 16]),
+            (t2::SLOTS, vec![0; 24]),
+        ];
+        let mut g = Game::new(Box::leak(Box::new(a)));
+        g.players[0].b.facing = 1;
+        let mut e = Enemy::default();
+        e.m.sw(TARGET, Game::player_handle(0));
+        e.m.sb(SLOT, 0xFF);
+        e.m.sb(REPOS, 1);
+        g.enemy_c2_at_slot(&mut e, 0);
+        assert_eq!(e.m.b(SLOT), 0xFE);
+    }
+
+    /// 0x3248A..0x324A2 leaves the last counted target in A2; excluded monsters keep it.
+    #[test]
+    fn census_keeps_the_last_counted_target_for_grab_damage() {
+        let mut g = bare_game();
+        for (i, target) in [(0, 1), (1, 2)] {
+            let e = &mut g.enemies.slots[i];
+            e.b.live = 1;
+            e.b.mode = 2;
+            e.m.sw(TARGET, Game::player_handle(target));
+        }
+        g.enemy_census();
+        assert_eq!(g.spawn.g.census_target, Some(Game::player_handle(2)));
+        g.enemies.slots[1].m.sb(ATTACKING, 0xFF);
+        g.enemy_census();
+        assert_eq!(g.spawn.g.census_target, Some(Game::player_handle(1)));
+        g.enemies.slots[0].b.mode = 0;
+        g.enemy_census();
+        assert_eq!(g.spawn.g.census_target, None);
+    }
+
+    /// 0x32376 uses G.$4CD even after all three live bytes have cleared.
+    #[test]
+    fn target_without_live_heroes_uses_started_bits() {
+        let mut g = bare_game();
+        for (bits, player) in [(0, 0), (1, 0), (2, 1), (3, 0), (4, 2), (6, 1), (7, 0)] {
+            g.flow.started = bits;
+            assert_eq!(g.enemy_pick_target(&Body::default()), Game::player_handle(player));
+        }
     }
 
     #[test]

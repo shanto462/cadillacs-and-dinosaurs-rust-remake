@@ -45,6 +45,7 @@ impl Game {
         let tx = self.lib_target(e).xi().wrapping_add(0x400);
         let x = e.b.xi().wrapping_add(0x400);
         e.b.facing = (tx > x) as u8;
+        e.b.frame_w1 = tx as u16; // d1 = the target's X + 0x400 (the Butcher's decision roll 0x5A1AC keeps its high byte)
     }
 
     #[allow(dead_code)] // the classes that call 0x32B94 (3, 4, 6, 7, 8, 13) are not ported yet

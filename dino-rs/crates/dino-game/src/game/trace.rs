@@ -1143,7 +1143,7 @@ pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
 pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
     ("player", &[0]),
     ("enemy", &[0, 2, 3, 4, 5, 6, 7, 8, 10, 13, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24, 25, 26, 27, 29, 31, 32, 34, 35, 36, 38, 40, 41, 42, 43, 45, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 70, 71, 72, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97]),
-    ("prop", &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 20, 21, 22, 25, 26, 27, 28, 29, 30, 31, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 47, 48, 49, 50, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 66, 70, 71, 72, 73, 74, 76, 79, 80, 81, 82, 83, 84, 85, 87, 88, 95, 96]),
+    ("prop", &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 20, 21, 22, 25, 26, 27, 28, 29, 30, 31, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 66, 69, 70, 71, 72, 73, 74, 76, 79, 80, 81, 82, 83, 84, 85, 87, 88, 95, 96]),
     (
         "item",
         &[
@@ -1161,7 +1161,7 @@ pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
             class::ATTACK_BOX,
         ],
     ),
-    ("effect", &[0x04 / 4, 0x10 / 4, 0x14 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x2C / 4, 0x38 / 4, 0x50 / 4, 0x54 / 4, 0x0C / 4, 0x1C / 4, 0x4C / 4, 0x60 / 4, 0x64 / 4, 0x3C / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x74 / 4, 0x88 / 4, 0x08 / 4, 0x7C / 4, 0x84 / 4, 0x90 / 4, 0x94 / 4, 0xA4 / 4, 0x78 / 4, 0x6C / 4, 0x48 / 4, 0xA0 / 4]),
+    ("effect", &[0x04 / 4, 0x10 / 4, 0x14 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x2C / 4, 0x38 / 4, 0x50 / 4, 0x54 / 4, 0x0C / 4, 0x1C / 4, 0x4C / 4, 0x60 / 4, 0x64 / 4, 0x3C / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x74 / 4, 0x88 / 4, 0x08 / 4, 0x7C / 4, 0x84 / 4, 0x90 / 4, 0x94 / 4, 0xA4 / 4, 0x78 / 4, 0x6C / 4, 0x48 / 4, 0x9C / 4, 0xA0 / 4]),
     // a pool D slot has no class word: the diff tool reads +$20 of the slot, which is 0 for the clock's slot (a sprite word)
     ("special", &[0]),
 ];
@@ -1837,22 +1837,29 @@ impl Game {
         self.flow.tally.live = false;
         if st != 0 {
             if self.flow.tally.owner && self.flow.mode == 0xC {
-                // The clear task: the position inside its routine follows from the sleep counter (a counter above 1 is a sleep inside a
-                // routine of the tally, 0xA7E or 0xA82), the state and the sub step (a task is made and runs for the first time in the same frame, so a snapshot never holds one that has not run).
+                // 0x95A saves D0..A6 and the return PC on the task stack. The sleep
+                // helpers return through 0xA98, then to their caller. Read that caller:
+                // counter 1 can be either the loop sleep or the last internal sleep.
                 use super::flow::tally::After;
-                let (state, sub) = (self.flow.tally.raw.b(0), self.flow.tally.raw.b(1));
+                let stack = u32::from_be_bytes(ram[0x8A..0x8E].try_into().unwrap()) as usize;
+                let sp = stack & 0xFFFF;
+                let resume = if stack >> 16 == 0xFF && sp + 0x44 <= ram.len()
+                    && u32::from_be_bytes(ram[sp + 0x3C..sp + 0x40].try_into().unwrap()) == 0xA98
+                {
+                    u32::from_be_bytes(ram[sp + 0x40..sp + 0x44].try_into().unwrap())
+                } else {
+                    0
+                };
                 let t = &mut self.flow.tally;
                 t.live = true;
                 t.sleep = if st == 1 { cnt as u16 } else { 1 };
-                t.after = if cnt > 1 {
-                    match (state, sub) {
-                        (2, 0xA) => After::AdvanceTotal,
-                        (2, _) => After::Advance,
-                        (6, _) => After::Resume,
-                        _ => After::Loop,
-                    }
-                } else {
-                    After::Loop
+                t.after = match resume {
+                    0xBC90 | 0xBDCE | 0xBEFA | 0xBFF6 | 0xC3A2 => After::Advance,
+                    0xC1B0 => After::AdvanceTotal,
+                    0xC49A => After::Cleanup,
+                    // 0xC63C tail-calls the sleep after setting state 8.
+                    0xB99C => After::Resume,
+                    _ => After::Loop, // 0xB9A2: the ordinary loop sleep
                 };
             } else if self.flow.mode == 0xC && self.flow.sub == 0 && self.flow.intro.state <= 6 {
                 let it = &mut self.flow.intro;
@@ -2281,6 +2288,44 @@ mod tests {
 
     fn assets() -> &'static AssetPack {
         Box::leak(Box::new(AssetPack::default()))
+    }
+
+    /// 0xB97E / 0x95A: the saved caller, not the counter, identifies a tally sleep.
+    #[test]
+    fn tally_loader_keeps_the_last_sleep_continuation() {
+        use crate::game::flow::tally::After;
+        let mut game = Game::new(assets());
+        game.flow.mode = 0xC;
+        game.flow.tally.owner = true;
+        let mut ram = vec![0u8; 0x10000];
+        ram[0x82] = 1;
+        ram[0x8A..0x8E].copy_from_slice(&0xFF1000u32.to_be_bytes());
+        ram[0x103C..0x1040].copy_from_slice(&0xA98u32.to_be_bytes());
+        for cnt in [30, 2, 1] {
+            ram[0x83] = cnt;
+            for (state, sub, caller, after) in [
+                (2, 0, 0xBC90u32, After::Advance),
+                (2, 2, 0xBDCE, After::Advance),
+                (2, 4, 0xBEFA, After::Advance),
+                (2, 6, 0xBFF6, After::Advance),
+                (2, 0xA, 0xC1B0, After::AdvanceTotal),
+                (2, 0xC, 0xC3A2, After::Advance),
+                (2, 0xE, 0xC49A, After::Cleanup),
+                (8, 2, 0xB99C, After::Resume),
+                (2, 0, 0xB9A2, After::Loop),
+            ] {
+                game.flow.tally.raw.sb(0, state);
+                game.flow.tally.raw.sb(1, sub);
+                ram[0x1040..0x1044].copy_from_slice(&caller.to_be_bytes());
+                game.trace_load_tasks(&ram, &mut Vec::new());
+                assert_eq!(game.flow.tally.after, after, "counter {cnt}, caller {caller:X}");
+                assert_eq!(game.flow.tally.sleep, cnt as u16);
+                if cnt == 1 && after == After::Advance {
+                    game.flow_tally_task();
+                    assert_eq!(game.flow.tally.raw.b(1), sub + 2);
+                }
+            }
+        }
     }
 
     /// What `trace_ram` writes, `trace_load` reads back: fields and pool free lists.

@@ -261,8 +261,10 @@ impl Game {
         let row: u16 = if hp >= 75 { 0 } else if hp >= 50 { 0x40 } else if hp >= 25 { 0x80 } else { 0xC0 };
         let r = self.rand() & 0x3E;
         d = (d as u16 as u32) * self.assets.enemy.t.u16(0x2BB4E, row.wrapping_add(r) as u32) as u32;
-        let damage = (d as u16) >> 10; // lsr.w, including the minimum after truncation
-        (damage.max(1), counter)
+        // 0x2BA1C uses lsr.w and enforces one damage for a direct hero hit.
+        // Attack objects use lsr.l at 0x2BB4A, with no minimum after the shift.
+        let damage = if hero { ((d as u16) >> 10).max(1) } else { (d >> 10) as u16 };
+        (damage, counter)
     }
 
     /// 0x11CEC / 0x11D32: monster attacks against heroes. Unlike 0x115B0 there is no
@@ -1802,6 +1804,18 @@ mod monster_tests {
         attacks[0] = AttackRecord { damage: 9, stun: 2, reaction: 4, hit_stop: 5, ..Default::default() };
         a.sprites.player_attacks = std::array::from_fn(|_| attacks.to_vec());
         Game::new(Box::leak(Box::new(a)))
+    }
+
+    /// 0x2BA1C versus 0x2BB4A: synthetic factors expose the word/long shift difference.
+    #[test]
+    fn attack_object_damage_keeps_the_high_word() {
+        let mut hero = game();
+        hero.enemies.slots[0].b.hp = 100;
+        let mut object = game();
+        object.enemies.slots[0].b.hp = 100;
+        assert_eq!(hero.enemy_damage_core(100, 0, Some(32), 0, true).0, 36);
+        assert_eq!(object.enemy_damage_core(100, 0, Some(32), 0, false).0, 100);
+        assert_eq!(hero.w.rng, object.w.rng);
     }
 
     fn pair(g: &mut Game) -> (Handle, Handle) {

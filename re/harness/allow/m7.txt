@@ -61,3 +61,30 @@ global.display_y2
 #   - The hit of a hero on an enemy with a weakness pair (A7, Jack's running jump kick on a Ferris) is a counter hit (G.$4F5): second spark and 400 more points.
 #   - Effects: the trace now carries +$51 (the debris pieces bounce on it; a step run had no airborne flag for them).
 #   - The harness joins the sound requests of the ticks of a game clock record (`harness.rs`): an area change with the fade and the area music in one lag record lost the first requests.
+#
+# M7-26 / M7-27 continuation (2026-10-21, codex worktree). These notes add no allow rules.
+# Episode 5 targeted set: 69 recordings (A215..A221, Episode 5 A224, Morgan/Morgue,
+# live-gun bucket, H4, 2P and 3P boss chain). 68 equal; morgue_kill first differs at
+# 7053, after the tally, in the existing blocking next-stage pointer setup (cause 4).
+# Fixed: Zeke's held-player hit 0x610F8 -> 0x125C0 does not load A2. 0x6422 reads
+# the source left by the census 0x3248A..0x324A2, or the list-2 cursor from 0xFD02
+# when no enemy was counted. 0x9658 also uses that source for the hit sound pan.
+# The wrong HP crossed the dizzy-roll threshold and caused the extra RNG draw.
+# Attack-object damage 0x2BB4A uses lsr.l without a final minimum; only a direct
+# hero hit uses lsr.w and the minimum at 0x2BA1C. ep5_3p 2017 now matches.
+# With no live hero, target selection 0x32376 uses the first started-player bit
+# of G.$4CD. The two Poachers at codex_ep5_natural_2p 15155 now match.
+# Other fixes found in the full runs: Shivat init 0x48424 clears +$BD, preserving
+# +$BB; Bludge attack roll 0x3AD98 compares signed bytes even with stale +$A9;
+# thug slot decrement 0x3545E tests carry, so a stale 0xFF becomes 0xFE.
+# Remaining effects, assigned to the effects worker, are not hidden by a rule:
+# spark / muzzle +$64 at ep5_3p 52513, ep5_mess 13012 and natural_2p 10549/15436.
+# 0x96BDE writes the flash selector to the ricochet's +$64 BEFORE the early-free
+# branches 0x96C22 / 0x96C40. fx_ricochet_flashes keeps it only in a Rust local;
+# a slot freed there and reused in the same frame loses that scratch write.
+# Hannah 57778: smoke ring class 29 variant byte at +$26 is kept in the low byte
+# by the port; the original 0x965A2 writes the high byte. This is an effect byte
+# representation issue. No effect source file was edited in this continuation.
+# Continue boundaries and dialogue/scene CPU overruns remain causes 4 and 6.
+# Later Episode 6 item / Blade-piece frames are outside Episode 5 acceptance.
+# Evidence and the full gate report: re/out/codex-ep5b/REPORT.md (worktree local).
