@@ -1861,6 +1861,15 @@ impl Game {
         let (st, cnt) = task(2);
         self.flow.cont.return_pending = self.flow.mode == 0x10 && self.flow.sub == 6 && self.flow.sub2 == 0 && st == 8;
         self.flow.wait = if st == 1 { cnt } else { 0 };
+        // A sleep whose return address (task stack +$3C, the sleep helper 0xA98) is not the loop's own sleep belongs to a mode routine
+        // that slept inside itself: its next run goes on without the frame counters (`flow.resume`, not in the snapshot). The stack
+        // pointer of the task is the long at +$08 of its entry (0xFF0052 + 16 * slot).
+        let stack = u32::from_be_bytes(ram[0x7A..0x7E].try_into().unwrap()) as usize;
+        let sp = stack & 0xFFFF;
+        self.flow.resume = st == 1
+            && stack >> 16 == 0xFF
+            && sp + 0x44 <= ram.len()
+            && u32::from_be_bytes(ram[sp + 0x3C..sp + 0x40].try_into().unwrap()) == 0xA98;
         // Slot 3 (0x30): stage intro or stage clear task. Both keep their state in the struct G.$735E (loaded with the globals). The
         // intro task (0xB9BE) is the one while the level runs and the stage is not cleared (game mode 0xC, G.$4D1 = 0); it is taken
         // over with the sleep counter of the snapshot. The clear task (0xB97E) is not (the tally is M2-28).
