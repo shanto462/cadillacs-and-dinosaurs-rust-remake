@@ -84,6 +84,10 @@ pub struct Spawn {
     /// +$08 / +$0C current record of list 1 / list 2 (index in the area lists).
     pub l1: usize,
     pub l2: usize,
+    /// ROM address of the list each index belongs to (set when the lists are restarted). A stage change does not move the
+    /// original's pointers, so the trace takes the pointers from these bases, not from the current stage. 0 = not set yet.
+    pub base1: u32,
+    pub base2: u32,
     /// Area whose lists are loaded (to notice an area change, see the module doc).
     pub area: u8,
     pub g: Globals,
@@ -119,6 +123,16 @@ impl Game {
         self.spawn.l1 = 0;
         self.spawn.l2 = 0;
         self.spawn.init = 0;
+        self.spawn_set_bases();
+    }
+
+    /// The list addresses of the current stage and area become the spawn pointer bases (see `Spawn::base1`).
+    fn spawn_set_bases(&mut self) {
+        let (st, area) = (self.w.stage as usize, self.cam.s2.area as usize & 3);
+        if let Some(sc) = self.assets.enemy.stages.get(st).and_then(|s| s.areas.get(area)) {
+            self.spawn.base1 = sc.list1_addr;
+            self.spawn.base2 = sc.list2_addr;
+        }
     }
 
     /// Pool part of 0xAA0E (pool A / B init 0x4C48 / 0x4C76) and 0xAA92..0xAAD8: pool E objects
@@ -142,6 +156,12 @@ impl Game {
     }
 
     fn spawn_area_script(&self) -> &'static dino_assets::enemy::AreaScript {
+        // The list the spawn pointer G.$674 points to (set at the area start): a stage change does not move it.
+        if self.spawn.base1 != 0 {
+            if let Some(sc) = self.assets.enemy.stages.iter().flat_map(|s| s.areas.iter()).find(|a| a.list1_addr == self.spawn.base1) {
+                return sc;
+            }
+        }
         &self.assets.enemy.stages[self.w.stage as usize].areas[self.cam.s2.area as usize & 3]
     }
 
@@ -158,6 +178,7 @@ impl Game {
             self.spawn.l1 = 0;
             self.spawn.l2 = 0;
             self.spawn.area = self.cam.s2.area;
+            self.spawn_set_bases();
             self.spawn.init = 2;
             return;
         }

@@ -47,6 +47,8 @@ pub struct Scroll2 {
     pub down54: u16,
     /// +$56 pointer to the next event record (here an index into the stage's event list).
     pub next_event: usize,
+    /// ROM address of the event list `next_event` indexes (0x2099A sets it). 0 = not set yet.
+    pub event_base: u32,
     /// +$5A camera X when the event loaded (= event X), +$5C camera Y when it loaded.
     pub x5a: u16,
     pub y5c: u16,
@@ -607,6 +609,7 @@ impl Game {
 
     /// 0x2099A: load the event at the current event index.
     fn load_event_index(&mut self) {
+        self.cam.s2.event_base = self.assets.stages.stages.get(self.w.stage as usize).map(|x| x.camera_events_addr).unwrap_or(0);
         self.cam.s2.next_event = self.cam.s2.event_idx as usize;
         self.load_event();
     }
