@@ -43,6 +43,8 @@ pub struct TraceReader {
     pos: usize,
     block: usize,
     pub regions: Vec<Region>,
+    /// The flags word of the record `next()` applied (bit 0: a lag record, MAME's game frame overran a vblank).
+    pub flags: u32,
 }
 
 impl TraceReader {
@@ -62,7 +64,7 @@ impl TraceReader {
             let size = json_number(item, "\"size\":").ok_or("region without size")? as usize;
             regions.push(Region { name, base, data: vec![0; size] });
         }
-        Ok(TraceReader { pos: 12 + n, d, block, regions })
+        Ok(TraceReader { pos: 12 + n, d, block, regions, flags: 0 })
     }
 
     fn u32le(&self, o: usize) -> u32 {
@@ -76,6 +78,7 @@ impl TraceReader {
             return None;
         }
         let frame = self.u32le(self.pos) as i32;
+        self.flags = self.u32le(self.pos + 4);
         let mut pos = self.pos + 16; // frame, flags, vblank, lag
         for r in 0..self.regions.len() {
             let count = self.u32le(pos) as usize;
@@ -381,6 +384,23 @@ pub fn load_state(game: &mut Game, path: &str) -> Result<Vec<String>, String> {
 }
 
 /// Loads the state a [`TraceReader`] currently holds.
+/// The number of resyncs of a lag-sync run over the records 0 .. frames - 1 of a MAME trace: the lag records, and the
+/// frames k with (k + 1) % every == 0 when `every` > 0 (the diagnostic period).
+fn count_lag_records(path: &str, frames: u32, every: u32) -> Result<u32, String> {
+    let mut r = TraceReader::open(path)?;
+    r.next(); // record -1
+    let mut n = 0;
+    for k in 0..frames {
+        if r.next().is_none() {
+            break;
+        }
+        if r.flags & 1 != 0 || (every > 0 && (k + 1) % every == 0) {
+            n += 1;
+        }
+    }
+    Ok(n)
+}
+
 fn load_regions(game: &mut Game, rd: &TraceReader) -> Result<Vec<String>, String> {
     let ram = rd.region("ram")?.check(0xFF0000)?;
     let gfx = rd.region("gfx")?.check(0x900000)?;
@@ -515,12 +535,19 @@ fn goto_area(game: &mut crate::game::Game, area: u8, camx: u16) -> Result<(), St
 /// `step`: a MAME trace for a step run. Before every frame the port is loaded with MAME's state
 /// after the previous frame, so a difference at frame k comes from frame k's logic alone and
 /// cannot be a consequence of an earlier difference (see `re/harness/README.md`).
+///
+/// `lagsync`: a MAME trace for a lag-sync run: a free run like `run`, but after a frame whose MAME record is
+/// a lag record (flags & 1: the original's game frame overran a vblank, one port tick cannot replay it) the
+/// port is loaded with MAME's state of that record, which is the state the next frame starts from in a step
+/// run. Every other frame runs free, so the drift is cut only at the lag records. The port trace has one
+/// record per MAME frame; the lag records themselves are left out of diff.py. The header counts the resyncs.
 pub fn run(
     assets: &'static dino_assets::AssetPack,
     trace: &str,
     load: Option<&str>,
     step: Option<&str>,
     follow_rng: Option<&str>,
+    lagsync: Option<&str>,
     start: Start,
     config: crate::game::flow::Config,
     script: Option<&Script>,
@@ -531,6 +558,23 @@ pub fn run(
     game.flow_apply_config(config);
     game.flow.game_clock = std::env::var_os("DINO_GAME_CLOCK").is_some();
     let mut warnings = Vec::new();
+    if lagsync.is_some() && (step.is_some() || follow_rng.is_some()) {
+        return Err("--lagsync is a mode of its own (not with --step-from or --follow-rng)".into());
+    }
+    // `DINO_LAGSYNC_EVERY=N` (diagnostic): resync every N frames too (N = 1 is a step run). Found by the lag-sync study, not a mode of its own.
+    let every: u32 = std::env::var("DINO_LAGSYNC_EVERY").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
+    let resyncs = match lagsync {
+        Some(p) => count_lag_records(p, frames, every)?,
+        None => 0,
+    };
+    let mut lag_reader = match lagsync {
+        Some(p) => {
+            let mut r = TraceReader::open(p)?;
+            r.next(); // record -1: the state the run starts from (the --load-state file)
+            Some(r)
+        }
+        None => None,
+    };
     let mut reader = match step {
         Some(p) => Some(TraceReader::open(p)?),
         None => None,
@@ -563,12 +607,19 @@ pub fn run(
     pokes.check(&mut game)?;
     let warn: Vec<String> = warnings.iter().map(|w| json_str(w)).collect();
     let meta = format!(
-        ",\"kind\":\"trace\",\"mode\":\"{}\",\"follow_rng\":{},\"frames\":{frames},\"load_state\":{},\"pokes\":{},\"warnings\":[{}]",
-        if step.is_some() { "step" } else { "run" },
+        ",\"kind\":\"trace\",\"mode\":\"{}\",\"follow_rng\":{},\"frames\":{frames},\"load_state\":{},\"pokes\":{},\"warnings\":[{}]{}",
+        if step.is_some() {
+            "step"
+        } else if lagsync.is_some() {
+            "lagsync"
+        } else {
+            "run"
+        },
         follow_rng.is_some(),
         json_str(step.or(load).unwrap_or("")),
         pokes.len(),
-        warn.join(",")
+        warn.join(","),
+        if lagsync.is_some() { format!(",\"lagsync_resyncs\":{resyncs},\"lagsync_trace\":{}", json_str(lagsync.unwrap_or(""))) } else { String::new() }
     );
     // `DINO_STEP_PLAYERS`: a second reader, one record ahead, supplies the players' state after the
     // frame being run (see `Game::trace_load_players`).
@@ -637,6 +688,15 @@ pub fn run(
         }
         pokes.apply(&mut game, k as i32, true)?; // power clock: after the tick, before the record
         tw.record(&mut game, k as i32)?;
+        if let Some(rd) = &mut lag_reader {
+            // MAME's record k: a lag record means the next frame starts from its state (as a step run loads it).
+            if rd.next() != Some(k as i32) {
+                return Err(format!("the MAME trace has no record for frame {k}"));
+            }
+            if rd.flags & 1 != 0 || (every > 0 && (k + 1) % every == 0) {
+                load_regions(&mut game, rd)?; // the warnings repeat at every resync: not shown
+            }
+        }
     }
     tw.finish()?;
     if !pokes.is_empty() {

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Run the port headless from a MAME recording and write its trace. Usage (from anywhere):
-#   [MODE=run|follow|step] re/harness/port.sh TEST_SCRIPT [NAME] [FRAMES]
+#   [MODE=run|follow|step|lagsync] re/harness/port.sh TEST_SCRIPT [NAME] [FRAMES]
 #
 #   MODE=run (default) free run from NAME.state: the port plays on its own      -> NAME.port.trc
 #   MODE=follow        free run, but the random number state is copied from the
@@ -8,6 +8,11 @@
 #                      does not run call rand(), which the port cannot repeat)  -> NAME.follow.trc
 #   MODE=step          before every frame the port is loaded with MAME's state
 #                      after the previous frame: each frame is checked alone     -> NAME.step.trc
+#   MODE=lagsync       free run like run, but after every MAME lag record (flags & 1: the original's
+#                      game frame overran a vblank) the port is loaded with MAME's state of that
+#                      record, as step does for every frame. The drift is cut only at lag records.
+#                      diff.py leaves the lag records out (as in step). The header counts the
+#                      resyncs ("lagsync_resyncs")                               -> NAME.lagsync.trc
 #
 # NAME defaults to the script name without .txt, FRAMES to 600. Inputs come from the same
 # files as record.sh (re/out/traces/NAME.state, NAME.mame.trc). See README.md.
@@ -33,7 +38,8 @@ case "${MODE:-run}" in
   run)    OPTS="--load-state $OUT/$NAME.state";                                 TRACE=$PO/$NAME.port.trc ;;
   follow) OPTS="--load-state $OUT/$NAME.state --follow-rng $OUT/$NAME.mame.trc"; TRACE=$PO/$NAME.follow.trc ;;
   step)   OPTS="--step-from $OUT/$NAME.mame.trc";                               TRACE=$PO/$NAME.step.trc ;;
-  *) echo "MODE must be run, follow or step"; exit 1 ;;
+  lagsync) OPTS="--load-state $OUT/$NAME.state --lagsync $OUT/$NAME.mame.trc"; TRACE=$PO/$NAME.lagsync.trc ;;
+  *) echo "MODE must be run, follow, step or lagsync"; exit 1 ;;
 esac
 if [ -n "${POKES:-}" ]; then
   if [ "$POKES" != none ]; then
