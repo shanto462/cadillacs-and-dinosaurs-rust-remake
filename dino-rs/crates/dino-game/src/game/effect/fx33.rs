@@ -104,6 +104,11 @@ impl Game {
         let w4 = t.u16(rec, 4);
         let hi = if facing { w4 } else { w4.wrapping_neg() };
         let off = ((hi as u32) << 16).wrapping_add(t.u16(rec, 6) as u32);
+        // 0x96BDA .. 0x96BFE: clr.l $68(a6), then move.w (the selector) to $64 and the offset long to $68. This is before the early
+        // frees of 0x96C1C / 0x96C40, so a freed spark leaves them in its slot (the next object of the slot reads them).
+        let e = &mut self.effects.slots[i];
+        e.off_y = sel as i16;
+        e.vy68 = off as i32;
         let count = u32::from(t.u8(rec, 0)) + 1; // dbra: the count - 1 plus one turns
         for k in 0..count {
             let dir = t.u8(scatter, k); // move.b (a2)+, $22(a6)

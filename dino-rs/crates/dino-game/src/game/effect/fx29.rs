@@ -1,5 +1,5 @@
 //! Pool C class 29 (+$20 = 0x74), handler 0x965CE: a ground impact smoke ring. Made by 0x965A2 (`fx_spawn_smoke_ring`) with the caller's
-//! position and a variant byte in +$26 (the callers pass 0 or 2). The variant byte indexes the word table at 0x9665E; the block is dx, dy
+//! position and a variant byte in the high byte of +$26 (the callers pass 0 or 2). The variant byte indexes the word table at 0x9665E; the block is dx, dy
 //! (added once to the integer words), a vx long at +$58, a vy long at +$5C and a life byte at +$60. Animation 0 of table 0x9664E. Every
 //! update, including the init's fall-through, loses one life, ticks the animation (the result is ignored), adds the two longs to X and Y
 //! and draws with 0x49CA. A negative life frees it. No sound, no random number.
@@ -59,7 +59,7 @@ impl Game {
 
     /// 0x965E2: the block of the variant byte, animation 0, mode + 2.
     fn fx_smoke_ring_init(&mut self, i: usize) {
-        let var = self.effects.slots[i].b.var26 as u8; // move.b $26, d0: a byte index, not a word
+        let var = (self.effects.slots[i].b.var26 >> 8) as u8; // move.b $26(a6), d0: the high byte of the word, a byte index
         let t = &self.assets.enemy.t;
         let off = t.u16(SMOKE_PARAMS, var as u32);
         let a = SMOKE_PARAMS.wrapping_add(off as i16 as i32 as u32);
@@ -79,7 +79,8 @@ impl Game {
         e.b.mode = e.b.mode.wrapping_add(2);
     }
 
-    /// 0x965A2: a smoke ring at `owner`'s position words. `var` is stored with `move.b` (the high byte of +$26 stays).
+    /// 0x965A2: a smoke ring at `owner`'s position words. `var` goes to the high byte of +$26 (`move.b d0,$26(a0)`, an even
+    /// address); the low byte is not written.
     /// `false` when pool C is full (carry). The callers are jumps, so the spawn's rts leaves the caller's update.
     pub fn fx_spawn_smoke_ring(&mut self, owner: Handle, var: u8) -> bool {
         let Some(j) = self.fx_alloc() else { return false };
@@ -93,7 +94,7 @@ impl Game {
         set_word(&mut e.b.x, x);
         set_word(&mut e.b.y, y);
         set_word(&mut e.b.z, z);
-        e.b.var26 = (e.b.var26 & 0xFF00) | var as u16;
+        e.b.var26 = (e.b.var26 & 0x00FF) | ((var as u16) << 8);
         true
     }
 }
