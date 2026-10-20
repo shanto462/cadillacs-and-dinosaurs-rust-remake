@@ -1940,7 +1940,7 @@ impl Game {
             0x70 => self.c63_recover(e),            // 0x5ACAA the alternate Blade (class 63)
             0x74 | 0x90 => self.c64_recover(e),     // 0x5B2C4 the bomb carriers (class 64)
             0x54 => self.enemy_morgan_recover(e), // 0x51ACA
-            0x58 => self.c40_recover(e, h),          // 0x543AC Morgue (class 40)
+            0x58 => self.enemy_c40_recover(e, h),          // 0x543AC Morgue (class 40)
             0x40 => self.enemy_c6_enter_wait(e, h), // 0x396C2 Bludge (class 6): the reset and the wait state of the same frame
             _ => e.b.set_state(0x0200_0000),
         }
