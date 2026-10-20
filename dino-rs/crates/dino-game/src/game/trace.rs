@@ -134,6 +134,11 @@ impl<'a> F<'a> {
             match frame_id(self.assets, a, effects, raw) {
                 Some(n) => *id = n,
                 None => {
+                    // No frame (0): the id is reset too. The override below is keyed by the id the port holds, and a stale id kept here
+                    // made a later object of the same slot with that same frame id print 0 (every spark of a slot after a resync).
+                    if a == 0 {
+                        *id = 0;
+                    }
                     self.v.frame_unmapped(field, *id, a);
                     // 0 (no frame) and RAM pointers (lists an object builds itself) are not ROM
                     // records: they are kept verbatim, with no warning.
@@ -2595,3 +2600,4 @@ mod tests {
         }
     }
 }
+

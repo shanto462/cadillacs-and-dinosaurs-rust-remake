@@ -70,6 +70,9 @@ mod fx02;
 // Pool C class 11 (M5-04): the debris of broken containers and weapons.
 #[path = "effect/fx11.rs"]
 mod fx11;
+// Pool C class 10 (M5-22): the shards of the broken hall window (0x79146 makes them).
+#[path = "effect/fx10.rs"]
+mod fx10;
 // Pool C class 21 (M5-04): the puffs and debris showers (0x94640 spawns one, it makes the pieces).
 #[path = "effect/fx21.rs"]
 mod fx21;
@@ -107,6 +110,7 @@ use dino_assets::{FrameId, HitBox};
 
 /// Effect classes (+$20) ported here.
 pub const FX_SPARK: u16 = 0x04;
+pub const FX_SHARD: u16 = 0x28;
 pub const FX_CAVE_DROP: u16 = 0x08;
 pub const FX_WATER_SPLASH: u16 = 0x10;
 pub const FX_FLAMES: u16 = 0x20;
@@ -577,6 +581,7 @@ impl Game {
             }
             match self.effects.slots[i].b.k20 {
                 FX_SPARK => self.fx_spark(i),
+                FX_SHARD => self.fx_shard(i),
                 FX_CAVE_DROP => self.fx_cave_drop(i),
                 0x18 => self.fx_continue_flash(i),
                 0x40 => self.fx_game_over_word(i),
@@ -622,7 +627,6 @@ impl Game {
                 }
                 // TODO(port): remaining classes (handler addresses from the table at 0x237E6; the dead ones are above):
                 // 0x18 0x92C9A,
-                // 0x28 0x932D2,
                 // 0x3C 0x93E54, 0x40 0x93FFC,
                 // 0x44 0x94100, 0x48 0x942C6,
                 // 0x58 0x95840,

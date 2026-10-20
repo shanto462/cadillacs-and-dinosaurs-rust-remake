@@ -810,6 +810,25 @@ impl Game {
         }
     }
 
+    /// The A2 register that the census 0x3242E leaves behind (0x3248A..0x324A6: the target of the last counted enemy, player 1 when it is
+    /// neither player 2 nor 3) and that the code of the held hits does not set (0x4F082 the Rock Hopper, 0x610F8 Zeke): the damage scale 0x6422 reads
+    /// `+$84` of it and the pan 0x9658 its X. Returns (+$84, X). With no counted enemy the list 2 cursor of the spawner survives in A2 (0xFD02).
+    pub(super) fn enemy_census_a2(&self) -> (u16, i16) {
+        if let Some(a2) = self.spawn.g.census_target {
+            (self.player_enemy_w84(a2), self.body(a2).xi())
+        } else {
+            let sc = &self.assets.enemy.stages[self.w.stage as usize].areas[self.cam.s2.area as usize & 3];
+            let a2 = sc.list2_addr.wrapping_add((self.spawn.l2 as u32).wrapping_mul(16));
+            (self.assets.enemy.t.u16(a2, 0x84), self.assets.enemy.t.i16(a2, 8))
+        }
+    }
+
+    /// The A3 register that the census leaves behind: player 3 when the last counted enemy targets player 3, else player 2 (the second `lea` of
+    /// 0x32498 is the last one executed). The Rock Hopper's grab of an enemy (0x4EFF8 `move.w $6C(a3), $6E(a3)`) writes the previous HP of it.
+    pub(super) fn enemy_census_a3(&self) -> usize {
+        if self.spawn.g.census_target == Some(Game::player_handle(2)) { 2 } else { 1 }
+    }
+
     /// 0x32032: choose the target player for enemy `b`.
     pub fn enemy_pick_target(&self, b: &Body) -> Handle {
         let present: [bool; 3] = std::array::from_fn(|i| self.players[i].b.live != 0);

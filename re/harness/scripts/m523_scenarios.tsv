@@ -1,0 +1,8 @@
+name	boot	frames	players	heroes	vice_hp	level	lagsync_first_difference	step_first_difference_with_lag_jumps
+m517_ep1_jack	boot_jack.txt	29857	1	Jack	500	16	none	none
+m517_ep1_mustapha	boot_mustapha.txt	30544	1	Mustapha	550	24	none	none
+m517_ep1_hannah	boot_hannah.txt	15456	1	Hannah	500	16	none	none
+m517_ep1_mess	boot_mess.txt	16145	1	Mess	550	20	none	none
+m517_ep1_3p	boot_3p.txt	24336	3	Jack, Mustapha, Mess	750	21	none	none
+m523_ep1_2p	boot_2p.txt	30700	2	Jack, Hannah	650	18	24568 (tag team)	24568 (tag team)
+m523_ep1_3pjhm	boot_3p_jhm.txt	33800	3	Jack, Hannah, Mustapha	750	22	24916 (tag team)	24916 (tag team)
