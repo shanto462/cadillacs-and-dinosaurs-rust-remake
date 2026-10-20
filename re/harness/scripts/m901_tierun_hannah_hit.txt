@@ -1,0 +1,5 @@
+# M5: Hannah partner run attack (state 0x1A) with 2R held
+0-99:
+100-200:2R
+134-135:2A
+201-239:

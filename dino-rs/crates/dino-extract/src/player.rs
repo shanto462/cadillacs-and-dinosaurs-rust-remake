@@ -20,6 +20,10 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x1A15C, 0x18, "run pose: set 5 animation by character and weapon class (0x1A15C), 4 split-body offset table pointers (0x1A164) (0x1A0F0)"),
     (0x1A228, 8, "run swing pose: set 5 animation by character (0x1A1EA)"),
     (0x1BE86, 0x80, "split-body offsets of the run pose: 8 (dx, dy) per character (0x1A164)"),
+    // M9-01 / M9-02 the tag team move.
+    (0x6902, 0x20, "tag team: the partner state (act, step) by initiator and partner (0x6902, read at 0x68EC)"),
+    (0x6994, 0x40, "tag team: the follow table pointers by initiator and partner (0x6994, read at 0x6954)"),
+    (0x69D4, 0x34, "tag team: the follow offsets (dx, dy) by initiator and phase (0x6962)"),
 ];
 
 /// Number of compositions (word at 0xFFFF8) and the per-composition extra bytes (0x11D220).

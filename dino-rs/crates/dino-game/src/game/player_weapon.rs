@@ -26,8 +26,7 @@
 //! the drawing is `draw.rs` `draw_split` (0x14136).
 //!
 //! # Not ported here
-//! * The score extra life pose (states 0x18 / 0x1A, `+$10E`), the two-player tie-up (0x6866,
-//!   state 0x1A, run state 4) and the second half of the heavy object code (0x1B0F6..): not weapons.
+//! * The score extra life pose (state 0x18, `+$10E`); the two-player tie-up (0x670C, state 0x1A, run state 4, the air states 0x22 .. 0x26: `player_tag.rs`).
 
 use super::{ATK, JMP};
 use crate::game::item::o as io;
@@ -216,7 +215,7 @@ impl Game {
 
     /// `clr.b $a8(a0)` / `move.b #1,$a8(a0)` on the held item (+$A8: the item threw or swung
     /// because of a run attack). A pointer that is not an item writes into the ROM: no effect.
-    fn player_set_item_a8(&mut self, i: usize, v: u8) {
+    pub(super) fn player_set_item_a8(&mut self, i: usize, v: u8) {
         if let Some(Slot::Item(j)) = slot_of(self.players[i].item) {
             self.items.slots[j].m.sb(io::A8, v);
         }
@@ -639,7 +638,7 @@ impl Game {
 
     /// The frame `idx` (a signed byte, 12 bytes per frame) after the first frame of animation
     /// `anim` of set 0 of the player (0x1506 / 0x13EA). `None` when no frame is extracted there.
-    fn player_set0_frame(&self, i: usize, anim: u16, idx: u8) -> Option<FrameId> {
+    pub(super) fn player_set0_frame(&self, i: usize, anim: u16, idx: u8) -> Option<FrameId> {
         let s = &self.assets.sprites;
         let table = s.player_sets[0][self.players[i].b.id as usize & 3];
         let first = s.table(table).anims.get(anim as usize).copied().flatten()?;

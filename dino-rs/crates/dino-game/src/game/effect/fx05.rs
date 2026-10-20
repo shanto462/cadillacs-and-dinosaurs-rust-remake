@@ -78,7 +78,7 @@ impl Game {
     }
 
     /// 0x61F6: the same placement as 0x6192, but the variant comes from the character id (table 0x6244) and +$5C = 1, so the
-    /// handler does not wait for the owner's +$2C. No random number. The only caller is the unported two-player tie-up (0x686E, `bra` at 0x68FC).
+    /// handler does not wait for the owner's +$2C. No random number. The only caller is the tag team start (0x686E, `bra` at 0x68FC: `player_tag.rs`).
     pub fn fx_spawn_bubbles_now(&mut self, owner: Handle) -> bool {
         let Some(j) = self.fx_alloc() else { return false };
         let (who, id, x, y, z) = {
