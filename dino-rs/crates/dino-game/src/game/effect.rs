@@ -221,7 +221,7 @@ impl Special {
 /// 0x160A: load a frame record, copying only +$2C..+$2F (no boxes, no extra bytes).
 pub fn fx_load(b: &mut Body, fx: &EffectData, id: FrameId) {
     let f = fx.frame(id);
-    b.frame = id;
+    b.set_frame(id);
     b.param_a = f.param_a;
     b.param_b = f.param_b;
     b.kind = f.kind;
@@ -249,7 +249,7 @@ pub fn fx_tick(b: &mut Body, fx: &EffectData) -> bool {
 /// 0x16C6: load an 8-byte raw-list record (+$28 and +$2C..+$2F).
 pub fn raw_load(b: &mut Body, fx: &EffectData, id: FrameId) {
     let f = fx.raw(id);
-    b.frame = id;
+    b.set_frame(id);
     b.param_a = f.param_a;
     b.param_b = f.param_b;
     b.kind = f.kind;

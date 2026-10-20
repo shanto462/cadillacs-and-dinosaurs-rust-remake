@@ -127,9 +127,9 @@ impl Game {
     /// 0x42B96..0x42C44: nearby hero checks, retarget and periodic attack roll.
     fn enemy_vice_approach(&mut self, e: &mut Enemy) {
         if e.b.airborne == 0 {
-            // 0x44DEC / 0x44E12 and 0x44E52 / 0x44E6C scan P3, P2, P1.
+            // 0x44DEC / 0x44E12 and 0x44E52 / 0x44E6C scan P1, P2, P3: d5 counts 2 down to 0 and picks the longs of the table 0x44E06 (P3, P2, P1) by 4 * d5.
             for behind in [false, true] {
-                for i in (0..3).rev() {
+                for i in 0..3 {
                     let p = &self.players[i].b;
                     if p.live == 0 || p.sub != 0 { continue; }
                     let near = if behind {
@@ -682,9 +682,9 @@ impl Game {
         }
     }
 
-    /// 0x44E52 / 0x43604 / 0x4362C: scan P3 to P1, enter and tick the back elbow.
+    /// 0x44E52 / 0x43604 / 0x4362C: scan P1 to P3 (the table 0x44E06 is read from the end), enter and tick the back elbow.
     fn enemy_vice_back_elbow(&mut self, e: &mut Enemy) -> bool {
-        for i in (0..3).rev() {
+        for i in 0..3 {
             let p = &self.players[i].b;
             if p.live == 0 || p.sub != 0 { continue; }
             let dx = if e.b.facing == 0 { 60i16 } else { -60i16 };

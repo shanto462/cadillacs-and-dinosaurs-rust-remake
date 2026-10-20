@@ -135,7 +135,7 @@ impl Game {
         // 0x7E802: the slot is the draw record (0x16C6)
         let sp = &self.specials.slots[slot];
         let (a, b, c, d) = sp.record_params();
-        p.b.frame = slot_frame(slot);
+        p.b.set_frame(slot_frame(slot));
         (p.b.param_a, p.b.param_b, p.b.kind, p.b.timer) = (a, b, c, d);
         p.b.visible = 1;
         p.b.draw_flags = 0xD0;
@@ -145,7 +145,7 @@ impl Game {
     fn prop_c25_reload(&mut self, p: &mut Prop) {
         let Some(Slot::Special(slot)) = slot_of(p.m.w(f::SLOT)) else { return };
         let (a, b, c, d) = self.specials.slots[slot].record_params();
-        p.b.frame = slot_frame(slot);
+        p.b.set_frame(slot_frame(slot));
         (p.b.param_a, p.b.param_b, p.b.kind, p.b.timer) = (a, b, c, d);
     }
 
@@ -343,7 +343,7 @@ impl Game {
                 let total = self.flow.tally.raw.l(block(k) + blk::TOTAL);
                 self.prop_c25_six(p, slot, total);
                 let (a, b, c, d) = self.specials.slots[slot].record_params();
-                p.b.frame = slot_frame(slot);
+                p.b.set_frame(slot_frame(slot));
                 (p.b.param_a, p.b.param_b, p.b.kind, p.b.timer) = (a, b, c, d);
                 p.b.visible = 1;
                 p.b.draw_flags = 0xD0;

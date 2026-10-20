@@ -55,18 +55,18 @@ pub trait Visit {
     /// kept too. The other visitors ignore it.
     fn raw_bytes(&mut self, _addr: u32, _out: &mut [u8]) {}
     fn error(&mut self, _msg: String) {}
-    /// Trace side: the original value of a frame pointer the port could not map at load time,
-    /// while the object still shows the frame id it got then.
-    fn frame_override(&self, _field: u32, _id: FrameId) -> Option<u32> {
+    /// Trace side: the original value of a frame pointer the port could not map at load time (a null pointer of an object that has not run yet, or the stale
+    /// pointer of a free slot), while the object has loaded no frame since (`loads`: `Body::frame_loads`; the port's own id of such an object is a default).
+    fn frame_override(&self, _field: u32, _id: FrameId, _loads: u32) -> Option<u32> {
         None
     }
     /// Load side: remember a frame pointer that has no extracted frame record.
-    fn frame_unmapped(&mut self, _field: u32, _id: FrameId, _raw: u32) {}
+    fn frame_unmapped(&mut self, _field: u32, _id: FrameId, _raw: u32, _loads: u32) {}
 }
 
 /// Frame pointers that had no extracted frame record at load time: field address ->
-/// (frame id the port kept, original pointer).
-pub type Unmapped = std::collections::HashMap<u32, (FrameId, u32)>;
+/// (frame id the port kept, original pointer, `Body::frame_loads` / `frame2_loads` then: the pointer is shown while no frame was loaded since).
+pub type Unmapped = std::collections::HashMap<u32, (FrameId, u32, u32)>;
 
 /// A pre-initialization snapshot can have null pointers although the native port keeps
 /// only indexes/counts. Retain those nulls while their native state and initialization
@@ -126,15 +126,19 @@ impl<'a> F<'a> {
     /// A frame record pointer (+$28 / +$30). The port keeps frame ids; the original the ROM
     /// address of the record. `effects`: the object is a pool C effect (effect / raw frames).
     /// `live`: report a pointer without a frame record (only for objects in use).
-    pub fn frame(&mut self, off: u32, name: &'static str, id: &mut FrameId, effects: bool, raw: bool, live: bool) {
+    pub fn frame(&mut self, off: u32, name: &'static str, id: &mut FrameId, loads: &mut u32, effects: bool, raw: bool, live: bool) {
         let field = self.base.wrapping_add(off) & 0xFF_FFFF;
-        let addr = self.v.frame_override(field, *id).unwrap_or_else(|| frame_addr(self.assets, *id));
+        if self.loading() {
+            *loads = 0; // the load starts the count: an unmapped pointer is shown until the object loads a frame
+        }
+        let loads = *loads;
+        let addr = self.v.frame_override(field, *id, loads).unwrap_or_else(|| frame_addr(self.assets, *id));
         let a = self.raw(off, 4, name, addr);
         if self.loading() {
             match frame_id(self.assets, a, effects, raw) {
                 Some(n) => *id = n,
                 None => {
-                    self.v.frame_unmapped(field, *id, a);
+                    self.v.frame_unmapped(field, *id, a, loads);
                     // 0 (no frame) and RAM pointers (lists an object builds itself) are not ROM
                     // records: they are kept verbatim, with no warning.
                     if live && (0x1000..0x18_0000).contains(&a) {
@@ -209,8 +213,8 @@ impl Visit for Collect {
             }
         }
     }
-    fn frame_override(&self, field: u32, id: FrameId) -> Option<u32> {
-        self.unmapped.get(&field).filter(|(i, _)| *i == id).map(|(_, a)| *a)
+    fn frame_override(&self, field: u32, _id: FrameId, loads: u32) -> Option<u32> {
+        self.unmapped.get(&field).filter(|(_, _, l)| *l == loads).map(|(_, a, _)| *a)
     }
 }
 
@@ -261,8 +265,8 @@ impl Visit for Load<'_> {
     fn error(&mut self, msg: String) {
         self.errors.push(msg);
     }
-    fn frame_unmapped(&mut self, field: u32, id: FrameId, raw: u32) {
-        self.unmapped.insert(field, (id, raw));
+    fn frame_unmapped(&mut self, field: u32, id: FrameId, raw: u32, loads: u32) {
+        self.unmapped.insert(field, (id, raw, loads));
     }
 }
 
@@ -299,7 +303,7 @@ impl Body {
         let raw = self.draw_flags & 0x40 != 0;
         // The pieces of a burned body (pool C class 15, 0x3C) are drawn with the sprite frame loader 0x120E: sprite frames, not effect frames.
         let effects = effects && self.k20 != 0x3C;
-        f.frame(0x28, "frame", &mut self.frame, effects, raw, self.live != 0);
+        f.frame(0x28, "frame", &mut self.frame, &mut self.frame_loads, effects, raw, self.live != 0);
         f.u8(0x2C, "param_a", &mut self.param_a);
         f.u8(0x2D, "param_b", &mut self.param_b);
         f.u8(0x2E, "kind", &mut self.kind);
@@ -309,7 +313,7 @@ impl Body {
     /// +$30..+$3F: split body (only when +$25 bit 0 is set).
     pub fn trace_split(&mut self, f: &mut F) {
         if f.all() || self.draw_flags & 1 != 0 {
-            f.frame(0x30, "frame2", &mut self.frame2, false, false, self.live != 0);
+            f.frame(0x30, "frame2", &mut self.frame2, &mut self.frame2_loads, false, false, self.live != 0);
             f.u16(0x34, "w34", &mut self.w34);
             f.u16(0x36, "w36", &mut self.w36);
             f.u32(0x38, "offs_table", &mut self.offs_table);
@@ -596,7 +600,7 @@ impl Item {
         let class = if f.loading() { self.m.w(0x20) } else { self.b.k20 };
         self.b.trace_header(f, class == 0x18);
         let live = self.b.live != 0;
-        f.frame(0x30, "frame2", &mut self.b.frame2, false, false, live);
+        f.frame(0x30, "frame2", &mut self.b.frame2, &mut self.b.frame2_loads, false, false, live);
         self.b.trace_rest(f);
         self.m.trace_list(f, ITEM_RAW);
     }
@@ -608,6 +612,11 @@ impl Prop {
     pub fn trace_visit(&mut self, f: &mut F, stage: u8) {
         self.b.trace_header(f, false);
         self.m.trace_load_all(f, 0xC0);
+        if f.loading() && self.b.live == 0 {
+            // A free slot keeps the stale bytes of its last object, which the original's RAM shows too (or zero after a pool reset): +$40..+$9A would
+            // otherwise stay at the values of an older object of the port until a class that traces them takes the slot.
+            self.b.trace_rest(f);
+        }
         if f.all() || self.b.k20 == 50 * 4 {
             for (off, name) in [(0xA2, "dialogue_palette"), (0xA4, "dialogue_timer"), (0xA6, "dialogue_mouth"), (0xAA, "dialogue_eyes"), (0xB0, "dialogue_hero")] {
                 let mut value = self.m.w(off);
@@ -975,6 +984,11 @@ impl Effect {
             self.off_x = ((life as u16) << 8 | (self.off_x as u16 & 0xFF)) as i16;
             f.i32(0x64, "vx64", &mut self.vx64);
             f.i32(0x68, "vy68", &mut self.vy68);
+            if f.loading() {
+                // the words +$64 / +$66 are the speed long: the stale bytes the spark leaves in its slot when it frees (fx33.rs)
+                self.off_y = (self.vx64 >> 16) as i16;
+                self.w66 = self.vx64 as u16;
+            }
             return;
         }
         f.i16(0x62, "off_x", &mut self.off_x);
@@ -1314,6 +1328,7 @@ impl Game {
         f.u16(0x05EE, "level", &mut w.level);
         f.u16(0x05F0, "rank", &mut w.rank);
         f.u8(0x67BE, "attack_serial", &mut w.attack_serial);
+        f.u8(0x0515, "ricochet_seq", &mut w.ricochet_seq); // the spark counter of 0x96BA0 (fx33.rs)
         f.u32(n(0x704E), "leap_dx", &mut w.leap_dx);
         f.u32(n(0x7052), "leap_dz", &mut w.leap_dz);
         f.u16(n(0x7054), "morgue_7054", &mut w.morgue_7054);
