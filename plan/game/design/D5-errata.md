@@ -658,3 +658,16 @@ What the code does that D3b section 6 did not say (the recordings equal MAME wit
 - A leg made when the foot's own slot is not the top of the free stack runs before the foot in the same frame (natural Episode 6 run: leg slot 13, foot slot 15), so it follows the position of the foot of the frame before.
 
 Check: `m800_d3b_a20_foot`, `m600_a20_bronto_0`, `m800_a09_e6a1_foot_god`, `m600_h14_h_foot_poacher` equal MAME in every field, sprite, tilemap, palette and sound (step mode); the natural runs `ep6_jack` and `ep6_3p` (60000 frames, the foot is in them from frame about 20600) have no difference in class 22 or 23. D3b A20: `$6` 2, 4, 6, 8, 0xA, 0xC, 0xE, 2 at the recorded frames, the knock down 30 and the shake 4 are in the recordings. The prop 55 that was freed one frame early in `m800_a09_e6a1_foot_god` was a consequence of the placeholder foot (it is equal now). The recordings named `*_foot` of Episode 3 (`m308_foot1p`, `m600_bs_*_foot`) are "on foot" (Hogg), not this foot.
+
+## The Slisaurs, class 71, their starter B33 and the lab monitor B30 / B34 (M8-13 .. M8-16, Task 17, 2026-10-21)
+- The fight cannot start without the monitor: the script sets G.$4FC before B30 appears, B33 and every Slisaur wait while it is set, and only
+  B30's talk end (0x81656) clears it (M s7-1p-a frame 1246). The old placeholder starter did not wait; with the real starter B30 / B34
+  (planned as M8-16) had to come in the same task or the game stopped in Episode 7 area 3.
+- The recover entry (0x5C95E) rolls its knock down answer (0x5C9A2) against a quarter / a half of the start HP using d0 as the animation
+  start 0x120E leaves it (a word of the frame record), not HP; the port takes that word from the frame (`c71_frame_word`).
+- The afterimages get d1 in `+$26`: in the run of walk mode 6 the word of the state jump table (0xB2, or the retarget's d1 in a retarget
+  frame), in the dash 0x3A0.
+- A dead Slisaur is never freed: its death table has only the score step and a draw step (0x5D19A), so the body lies drawn until the area
+  ends (M sl-kill: mode 4 sub 2 until 5868). The wait state 6 (0x5CCC0) has no caller.
+- The hop speed is |d| / 42 in the high byte plus the remainder * 4 in the low byte (`add.b d0,$14(a6)`), not a 16.16 division.
+- D3d 4.4 (combo 4 or 5 at the start): the on-screen test 0x5DCC4 gives combo 4 (the fan) on screen and 5 (dash and kick) off screen.

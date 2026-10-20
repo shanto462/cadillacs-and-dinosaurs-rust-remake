@@ -58,6 +58,7 @@ pub const OBJECT_ANIM_TABLES: &[u32] = &[
     0x6EA48, 0x30568, 0x31178, // Morgue class 40 (init 0x53E1E, M7-19..M7-21) and Fessenden form 1, class 94 (0x67D5A, the Morgue table): the animations, the hit reactions and held poses (+$84 0x58 / 0x94) (M8-27)
     0x64452, 0x647D8, 0x648AA, 0x646A4, 0x312F4, 0x312A8, // Fessenden form 2: body 84, arm 86, limb 87, heads 88 / 89; hit / held tables (+$84 0x88) (M8-30)
     0x69B1C, // its fireball, class 95 (0x69972)
+    0x5D1C0, 0x30860, 0x31210, // the Slisaurs, class 71 (0x5C850), their hit reactions and held poses (+$84 0x60) (M8-13)
     0x71408, 0x71936, // the bosses' fire class 26 (0x4D5EE) and the chest blades class 74 (0x5E520) (M8-09)
     0x71A4E, 0x71D66, // the Tyrog scene: the actors class 75 (0x5E722) and the creature class 76 (0x5EC46) (M8-06)
     0x302BA, 0x310E0, // Slice's hit reactions and held poses (by name 5 in the reaction tables) (M7-01)
