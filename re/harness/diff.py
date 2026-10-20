@@ -170,6 +170,7 @@ def main():
     ap.add_argument("--snd-table", action="store_true", help="per sound code: MAME (d1, d2) and port (d1, d2) counts (M4-13)")
     ap.add_argument("--no-skip-spawn", action="store_true", help="compare the spawn frames of the probe sidecar too (default: left out, task 20)")
     ap.add_argument("--no-skip-lag", action="store_true", help="compare the MAME lag records in step mode too (default in step mode: left out, one port step cannot replay a lag record)")
+    ap.add_argument("--lag-jumps", action="store_true", help="step mode: leave out the catch-up records too (an unflagged record whose G.$0 jumps by 2 to 0x100, after a lag record); lagsync always does")
     ap.add_argument("--frame-list", action="store_true", help="print every differing frame with its number of differing items (M6-17)")
     ap.add_argument("--at", type=int, action="append", default=[], help="list every difference at this frame (repeatable)")
     ap.add_argument("--rom-image", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "out", "dino_68k.bin"),
@@ -235,6 +236,8 @@ def main():
     # Step mode (the port trace header says "mode":"step") and lag-sync mode ("lagsync"): a MAME lag record (flags & 1, the game frame
     # overran vblanks) covers more game ticks than one port step, so it is left out. Run and follow modes compare every record.
     skip_lag = tp.header.get("mode") in ("step", "lagsync") and not args.no_skip_lag
+    skip_jumps = tp.header.get("mode") == "lagsync"  # the catch-up records (see below) are left out in lagsync, in step only with --lag-jumps
+    prev_g0 = None
     lag_skipped = 0
     for rm, rp in zip(tm.records(), tp.records()):
         if rm.frame != rp.frame:
@@ -246,6 +249,11 @@ def main():
         mram, mgfx = rm.images["ram"], rm.images["gfx"]
         if rm.flags & 1:
             lag_frames.append(f)
+        # A catch-up record: the record after a lag record that holds 2 to 0x100 game frames (G.$0 jumps by more than 1) without the lag
+        # flag (an area start: MAME runs the walk in inside one record). One port tick cannot replay it, so lagsync (and --lag-jumps) leave it out.
+        g0 = (int(mram[0x8000]) << 8) | int(mram[0x8001])
+        catch_up = not rm.flags & 1 and prev_g0 is not None and 2 <= ((g0 - prev_g0) & 0xFFFF) <= 0x100
+        prev_g0 = g0
         if prev_ram is not None:
             delta = mram != prev_ram
             live_bytes = np.zeros(0x10000, dtype=bool)
@@ -259,7 +267,7 @@ def main():
             continue
         if f in skip_spawn:
             continue
-        if skip_lag and rm.flags & 1:
+        if skip_lag and (rm.flags & 1 or (catch_up and (skip_jumps or args.lag_jumps))):
             lag_skipped += 1
             continue
         frames += 1

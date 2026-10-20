@@ -389,16 +389,32 @@ pub fn load_state(game: &mut Game, path: &str) -> Result<Vec<String>, String> {
 fn count_lag_records(path: &str, frames: u32, every: u32) -> Result<u32, String> {
     let mut r = TraceReader::open(path)?;
     r.next(); // record -1
+    let mut prev_g0 = record_g0(&r)?;
     let mut n = 0;
     for k in 0..frames {
         if r.next().is_none() {
             break;
         }
-        if r.flags & 1 != 0 || (every > 0 && (k + 1) % every == 0) {
+        let g0 = record_g0(&r)?;
+        if r.flags & 1 != 0 || catch_up_record(prev_g0, g0) || (every > 0 && (k + 1) % every == 0) {
             n += 1;
         }
+        prev_g0 = g0;
     }
     Ok(n)
+}
+
+/// G.$0 (the game frame counter) of the record last read.
+fn record_g0(r: &TraceReader) -> Result<u16, String> {
+    let ram = &r.region("ram")?.data;
+    Ok(u16::from_be_bytes([ram[0x8000], ram[0x8001]]))
+}
+
+/// A catch-up record: not flagged as a lag record, but it holds 2 to 0x100 game frames (G.$0 jumps by more than 1: the record after an
+/// area start, where MAME runs the walk in inside one record). One port tick cannot replay it, so a lagsync run resyncs after it too
+/// (`diff.py` leaves it out in lagsync mode).
+fn catch_up_record(prev_g0: u16, g0: u16) -> bool {
+    (2..=0x100).contains(&g0.wrapping_sub(prev_g0))
 }
 
 fn load_regions(game: &mut Game, rd: &TraceReader) -> Result<Vec<String>, String> {
@@ -540,7 +556,8 @@ fn goto_area(game: &mut crate::game::Game, area: u8, camx: u16) -> Result<(), St
 /// a lag record (flags & 1: the original's game frame overran a vblank, one port tick cannot replay it) the
 /// port is loaded with MAME's state of that record, which is the state the next frame starts from in a step
 /// run. Every other frame runs free, so the drift is cut only at the lag records. The port trace has one
-/// record per MAME frame; the lag records themselves are left out of diff.py. The header counts the resyncs.
+/// record per MAME frame; the lag records themselves are left out of diff.py. The header counts the resyncs. A catch-up record (not
+/// flagged, but G.$0 jumps by 2 to 0x100: the record after an area start) is treated like a lag record (`catch_up_record`).
 pub fn run(
     assets: &'static dino_assets::AssetPack,
     trace: &str,
@@ -574,6 +591,10 @@ pub fn run(
             Some(r)
         }
         None => None,
+    };
+    let mut prev_g0 = match &lag_reader {
+        Some(r) => record_g0(r)?,
+        None => 0,
     };
     let mut reader = match step {
         Some(p) => Some(TraceReader::open(p)?),
@@ -693,7 +714,10 @@ pub fn run(
             if rd.next() != Some(k as i32) {
                 return Err(format!("the MAME trace has no record for frame {k}"));
             }
-            if rd.flags & 1 != 0 || (every > 0 && (k + 1) % every == 0) {
+            let g0 = record_g0(rd)?;
+            let catch_up = rd.flags & 1 == 0 && catch_up_record(prev_g0, g0);
+            prev_g0 = g0;
+            if rd.flags & 1 != 0 || catch_up || (every > 0 && (k + 1) % every == 0) {
                 load_regions(&mut game, rd)?; // the warnings repeat at every resync: not shown
             }
         }
@@ -714,6 +738,18 @@ mod tests {
         let mut a = dino_assets::AssetPack::default();
         a.enemy.stages = (0..8).map(|_| Default::default()).collect(); // the field list visit reads the wave tables
         Game::new(Box::leak(Box::new(a)))
+    }
+
+    /// The frame counter G.$0 steps by 1 in a normal record; a jump of 2 to 0x100 is the record after an area start (a catch-up record). A 0 step
+    /// (the tally stops the counter), a wrap and a jump past 0x100 are not.
+    #[test]
+    fn a_catch_up_record_is_a_small_unflagged_jump_of_the_frame_counter() {
+        assert!(!catch_up_record(0x100, 0x101));
+        assert!(!catch_up_record(0x100, 0x100));
+        assert!(catch_up_record(0x23, 0x29));
+        assert!(catch_up_record(0xFFFE, 2));
+        assert!(!catch_up_record(0x100, 0x400));
+        assert!(!catch_up_record(0x400, 0x100));
     }
 
     #[test]

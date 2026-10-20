@@ -1784,3 +1784,24 @@ Record: `PR_TIMEOUT=3600 re/harness/probe/probe_record.sh re/harness/pokes/m520_
 
 `spawn_pokes.py` (called by `port.sh` for a sidecar with `spawn` notes) replays the probe's spawns of all five pools, and the port takes a poked pool pointer word as an allocation (`trace_poke_extra`), so free runs of recordings that spawn explosions, items and enemies stay in step. A probe spawn writes only a few fields of the slot (+$00, +$20, +$08, +$0C, +$10, +$26, +$5C, +$5B, +$96), the rest keeps what the slot had in MAME: the owner `+$02` of a spawned explosion is 0 there (player 1, power `$C6` 42).
 Hold a hero still for 92 frames within 31 / 15 pixels of another hero and MAME starts the tag team, which the port does not have yet (M9-01): keep the heroes apart or the recording short.
+
+## Episode 1 full runs (M5-22 and M5-23)
+
+Seven natural runs of Episode 1 from the first frame of control: the five of M5-17 (above) and two new ones, `m523_ep1_2p` (Jack and Hannah, `boot_2p.txt`, the keys of the 3 player run without player 3) and `m523_ep1_3pjhm` (Jack, Hannah and Mustapha, `boot_3p_jhm.txt`, the keys of `m517_ep1_3p.txt`). Both new runs end in the game over (the bot dies at Vice), so their traces stop in the continue mode. `scripts/m523_scenarios.tsv` has the lengths, Vice's HP and the result. Record them like the M5-17 runs (one MAME process, 40000 frames), then cut the trace with `trace_prefix.py SRC.mame.trc NAME.mame.trc --frames N` and copy `SRC.state` to `NAME.state`:
+
+```sh
+DINO_BOOT=re/harness/scripts/boot_2p.txt re/harness/record.sh re/harness/scripts/m523_ep1_2p.txt m523_ep1_2p_full 40000
+```
+
+Compare (each from the repo root; `PORT_OUT` is a folder of your own):
+
+```sh
+MODE=lagsync PORT_OUT=$PWD/re/out/port re/harness/port.sh re/harness/scripts/m517_ep1_jack.txt m517_ep1_jack 29857
+re/.venv/bin/python -I re/harness/diff.py re/out/traces/m517_ep1_jack.mame.trc re/out/port/m517_ep1_jack.lagsync.trc
+MODE=step PORT_OUT=$PWD/re/out/port re/harness/port.sh re/harness/scripts/m517_ep1_jack.txt m517_ep1_jack 29857
+re/.venv/bin/python -I re/harness/diff.py re/out/traces/m517_ep1_jack.mame.trc re/out/port/m517_ep1_jack.step.trc --lag-jumps
+```
+
+Results (2026-10-21): the five runs of M5-17 are equal for every record in `lagsync` and in `step --lag-jumps`; the 2 player run and the Jack, Hannah, Mustapha run are equal until two idle heroes start the tag team (records 24568 and 24916; the port has no tag team yet, M9-01). `run` differs from the first MAME lag record on (records 1696 to 3328).
+
+Catch-up records: after an area start MAME has a record that is not flagged as a lag record but holds 2 to 0x100 game frames (G.$0 jumps by more than 1: 0x23 to 0x29 at record 2369 of the Jack run). One port tick cannot replay it. `MODE=lagsync` resyncs after it like after a lag record, `diff.py` leaves it out in lagsync mode, and `--lag-jumps` leaves it out in step mode (not by default, so the sweeps keep their numbers). The harness itself: `harness.rs` `catch_up_record`.

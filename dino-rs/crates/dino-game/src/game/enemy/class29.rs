@@ -983,6 +983,11 @@ impl Game {
             } else {
                 let i = self.enemy_index(target);
                 self.enemies.slots[i].b.who = e.b.who;
+                // 0x4EFF8 `move.w $6C(a3), $6E(a3)`: the grab code does not set A3, the census (0x3242E) left it (MAME's watch of the write,
+                // Episode 1 with Jack, Hannah and Mustapha, a thug held, frame 11654: A2 = A3 = 0xFFB3F4): the previous HP of that hero becomes his HP.
+                let a3 = self.enemy_census_a3();
+                let p3 = &mut self.players[a3].b;
+                p3.hp_prev = p3.hp;
                 e.b.act = 4;
             }
             self.enemy_anim(&mut e.b, 28);
@@ -1006,7 +1011,11 @@ impl Game {
         }
         self.enemy_begin_attack(&mut e.b, 0x29);
         if e.b.act == 2 {
-            self.enemy_hit_held_player(e, h);
+            // 0x4F082 `jsr 0x125C0`: A2 is not set by the Hopper's code, the census left it (MAME's watch of the HP write, 2 player Episode 1,
+            // frame 12148: A2 = A3 = 0xFFB3F4 with Hannah held and player 2 the last counted target): the damage scale 0x6422 reads its +$84 and
+            // the sound pan its X.
+            let (w84, ax) = self.enemy_census_a2();
+            self.enemy_hit_held_player_scale(e, h, w84, ax);
             let Some(crate::game::Slot::Player(i)) = crate::game::slot_of(target) else {
                 return;
             };

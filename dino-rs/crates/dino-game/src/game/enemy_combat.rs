@@ -549,7 +549,7 @@ impl Game {
         let sx = self.body(src).xi();
         let e = &mut self.enemies.slots[ei];
         e.b.facing = (sx > e.b.xi()) as u8;
-        self.boss_hit_entry(ei); // 0x3262A and the defeat (stage bosses only)
+        // The boss credit 0x3262A and the defeat come from the boss's own hit state in its next update (the original does not call them here).
         // 0x1128E: Fessenden parts only (+$63 == 4).
     }
 

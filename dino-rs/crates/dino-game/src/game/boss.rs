@@ -36,8 +36,10 @@ impl Game {
         Some(h)
     }
 
-    /// A stage boss takes the boss hit path. Until the real boss classes are ported only the placeholder bosses do
-    /// (`placeholder.rs`, class 18 variant 0, Vice); each ported boss calls `boss_hit_entry` from its own hit code.
+    /// A stage boss takes the boss hit path. (Tests only: the hit pass no longer calls the boss hit, each boss class runs `boss_hit` from its own
+    /// hit state, one frame after the hit, as the original does: 0x4385C for Vice. A call from the hit pass credited the damage of a bullet or
+    /// an explosion a frame early, M5-22.)
+    #[cfg(test)]
     fn boss_is_stage_boss(b: &super::body::Body) -> bool {
         (b.k20 == 18 * 4 && b.var26 >> 8 == 0)
             || super::placeholder::spec_of(b.k20 / 4).is_some_and(|s| super::placeholder::boss_of(s, b.var26))
@@ -49,6 +51,7 @@ impl Game {
     /// left sets `+$6E` = HP; a negative `+$02` skips all of it. Then at HP 0 or below: the boss is put back inside the
     /// camera (0x32740), and while `+$6E` is set the defeat runs once (0xACEE, then `+$6E` = 0). The music fade 0xA5EA
     /// comes from the first step of the boss's death state (0x38D44), not from here.
+    #[cfg(test)]
     pub(super) fn boss_hit_entry(&mut self, ei: usize) {
         if !Game::boss_is_stage_boss(&self.enemies.slots[ei].b) {
             return;
