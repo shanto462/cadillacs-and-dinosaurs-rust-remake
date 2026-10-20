@@ -81,7 +81,7 @@ impl Game {
         e.m.sw(TIMER, 0);
         e.m.sb(ROLL, 0);
         e.m.sb(WALK, 0);
-        e.m.sb(TURNS, 0);
+        e.m.sb(PALETTE, 0); // 0x48424 clears +$BD; +$BB survives slot reuse
         e.m.sb(HUNT, 0xFF);
         self.enemy_snap_to_floor(e); // 0x3140C
         e.m.sb(ATTACKING, 0xFF);

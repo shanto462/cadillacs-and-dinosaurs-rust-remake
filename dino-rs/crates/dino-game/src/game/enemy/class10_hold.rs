@@ -333,6 +333,11 @@ impl Game {
     /// hurt reaction of the record, hit stop on both, the hit sound; then the weapon drop (0x1177A)
     /// and the power factor (0x11738).
     pub(super) fn enemy_hit_held_player(&mut self, e: &mut Enemy, me: Handle) {
+        self.enemy_hit_held_player_scale(e, me, e.m.w(W84), e.b.xi());
+    }
+
+    /// 0x125C0 / 0x6422: the damage scale comes from A2, which 0x125C0 leaves unchanged.
+    pub(super) fn enemy_hit_held_player_scale(&mut self, e: &mut Enemy, me: Handle, w84: u16, ax: i16) {
         if self.w.scripted != 0 {
             return; // tst.b $4dd(a5)
         }
@@ -353,7 +358,7 @@ impl Game {
         }
         let r = self.rand();
         let (hp, chr) = (self.players[pi].b.hp, self.players[pi].b.id);
-        let dmg = crate::game::player_combat::enemy_damage(&self.assets.player, rec.damage as u8, self.w.level, e.m.w(W84), chr, hp, r);
+        let dmg = crate::game::player_combat::enemy_damage(&self.assets.player, rec.damage as u8, self.w.level, w84, chr, hp, r);
         let p = &mut self.players[pi];
         let nhp = (p.b.hp as i16).wrapping_sub(dmg as i16);
         p.b.hp = if nhp > 0 { nhp as u16 } else { 0 };
@@ -367,8 +372,7 @@ impl Game {
         e.b.hitstop = rec.hit_stop;
         p.b.b9a = rec.b7;
         if rec.sound != 0 {
-            let (ax, vf) = (e.b.xi(), e.b.facing);
-            self.snd_hit(rec.sound, ax, vf);
+            self.snd_hit(rec.sound, ax, e.b.facing);
         }
         self.player_drop_check(pi);
         self.player_power_factor(pi);

@@ -50,6 +50,9 @@ pub struct Globals {
     /// [targeting me, of those attacking, enemies left of me, enemies right of me].
     pub census_prev: [[u8; 4]; 3],
     pub census: [[u8; 4]; 3],
+    /// A2 left by 0x3242E (0x3248A..0x324A2). None keeps the spawn-list cursor
+    /// left by 0xFD02. Zeke's grab hit 0x610F8 / 0x125C0 reads this stale source.
+    pub census_target: Option<Handle>,
     /// Player kill counts (player +$10B; not in the player port's struct yet).
     pub kills: [u8; 3],
     /// G.$4DE the script id of the scripted control (set by 0x1DA10, 0x1D95E and 0x1DAC4, `script.rs`).

@@ -703,7 +703,18 @@ impl Game {
                     e.b.hitstop = 0;
                     e.b.serial = self.w.attack_serial;
                     self.w.attack_serial = self.w.attack_serial.wrapping_add(1);
-                    self.enemy_hit_held_player(e, h);
+                    // 0x610F8 does not set A2. The census (0x3248A..0x324A2) leaves
+                    // its last target there; with no counted target, 0xFD02's list-2
+                    // cursor survives. Both damage (0x6436) and sound pan (0x9658)
+                    // read that source, not Zeke.
+                    let (w84, ax) = if let Some(a2) = self.spawn.g.census_target {
+                        (self.player_enemy_w84(a2), self.body(a2).xi())
+                    } else {
+                        let sc = &self.assets.enemy.stages[self.w.stage as usize].areas[self.cam.s2.area as usize & 3];
+                        let a2 = sc.list2_addr.wrapping_add((self.spawn.l2 as u32).wrapping_mul(16));
+                        (self.assets.enemy.t.u16(a2, 0x84), self.assets.enemy.t.i16(a2, 8))
+                    };
+                    self.enemy_hit_held_player_scale(e, h, w84, ax);
                     let pan = self.snd_pan_x(e.b.xi());
                     self.snd_request(0x5F, pan as u32, 0); // 0xA0CC
                     self.enemy_zeke_reset_patrol(e);
