@@ -46,6 +46,11 @@ impl TextData {
     /// The rest of the blob that holds `addr`, from `addr` on (for the text printers, which read
     /// a string through the end marker they know: '@', 0x4040 ...).
     pub fn slice_from(&self, addr: u32) -> &[u8] {
+        // The end of a table is a valid start (an empty rest): a typewriter that has typed its whole text holds that address (MAME
+        // m800_bta7_k8_start: the cursor of the last episode title is 0xCA20, the end of the table 0xC6D2).
+        if self.blobs.iter().any(|(start, data)| addr == start + data.len() as u32) {
+            return &[];
+        }
         let (d, i) = self.find(addr);
         &d[i..]
     }
