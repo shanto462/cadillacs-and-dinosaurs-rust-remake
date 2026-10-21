@@ -428,6 +428,14 @@ fn load_regions(game: &mut Game, rd: &TraceReader) -> Result<Vec<String>, String
     if game.sprites.blank {
         game.sprites.entries.clear();
     }
+    // A lag record holds the whole clear 0xAE0 of the pass that overran: the part the port still had to do in the next frames
+    // (`flow_attract_clear_step`, begun by its own tick before the load) is in the snapshot already. Without this the story panel's
+    // exit (m800_bta9_ty_full_c lag record 8348: the exit clear, the area setup and its scroll2, a treasure put down by the area
+    // script) cleared the loaded scroll2 once more in the next tick, and the treasure's first terrain test (0x3140C) found no wall.
+    if rd.flags & 1 != 0 {
+        game.flow.front.clear_stage = 0;
+        game.flow.front.clear3_cut = 0;
+    }
     Ok(warn)
 }
 
