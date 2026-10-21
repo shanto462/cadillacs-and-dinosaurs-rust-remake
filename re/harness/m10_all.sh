@@ -1,5 +1,5 @@
 #!/bin/sh
-# M10-27 (task 71): every natural and flow whole-run recording of the final regression, through re/harness/m10_check.sh.
+# M10-26 (task 71): every natural and flow whole-run recording of the final regression, through re/harness/m10_check.sh.
 # Usage: [MODES="step lagsync"] [PORT_OUT=DIR] sh re/harness/m10_all.sh   (MODES default: step lagsync run, as m10_check.sh)
 # The list: every NAME that has a section in allow/m10_runs.txt and every trace of ep[1-8]_*, m517_ep1_*, m523_ep1_*, m1019_*, m1020_*, m328_end-*
 # that has an input the harness can replay (the *_probe traces and the traces without input are left out). NAME:FRAMES, FRAMES = the trace record count.
