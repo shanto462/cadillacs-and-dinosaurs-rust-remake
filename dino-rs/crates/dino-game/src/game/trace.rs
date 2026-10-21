@@ -1573,6 +1573,15 @@ impl Game {
                     s.event_base = std.0;
                     s.next_event = k;
                 }
+                // 0x2099A / 0x209C0: a stage change can leave the old list base in
+                // the loader. Adjacent lists share the 16-byte grid, so that base
+                // also accepts pointers into the new list, at the wrong index.
+                None if list_index(p, ev_stage, 16).is_some_and(|k| {
+                    self.assets.stages.stages.get(self.w.stage as usize).is_some_and(|st| k < st.camera_events.len())
+                }) => {
+                    s.event_base = ev_stage;
+                    s.next_event = ((p - ev_stage) / 16) as usize;
+                }
                 None => match list_index(p, ev_base, 16) {
                     Some(k) => {
                         s.event_base = ev_base;
@@ -1860,6 +1869,23 @@ impl Game {
         self.w.stage = l.read(g(0x04D9), 1) as u8;
         self.cam.s2.area = l.read(g(0x073C + 0x4A), 1) as u8;
         self.trace_visit(&mut l);
+        // 0x7EC48: a typewriter can be created entirely inside a MAME lag
+        // record. Restore its text state as well as its pool B slot, otherwise
+        // prop_class26 frees the slot because flow.typers has no peer for it.
+        self.flow.typers.retain(|t| t.slot.is_none());
+        for (i, p) in self.props.slots.iter().enumerate() {
+            if p.b.live == 0 || p.b.k20 != 0x68 { continue; }
+            let base = self.props.handle(i) as usize;
+            let w = |off| u16::from_be_bytes(ram[base + off..base + off + 2].try_into().unwrap());
+            let l = |off| u32::from_be_bytes(ram[base + off..base + off + 4].try_into().unwrap());
+            let cursor = l(0x80);
+            let text = if p.b.mode <= 2 && p.b.sub <= 2 {
+                self.assets.frontend.text.slice_from(if p.b.sub == 0 { cursor } else { l(0x88) })
+            } else { &[] };
+            self.flow.typers.push(super::flow::text::Typer::from_pool_b_snapshot(
+                text, i, (p.b.mode, p.b.sub), cursor, (w(0x84), w(0x86), w(0x8C)),
+            ));
+        }
         self.trace_unmapped = l.unmapped;
         let mut warn = l.errors;
         self.trace_load_tasks(ram, &mut warn);
@@ -2589,6 +2615,74 @@ mod tests {
         assert_eq!((game.spawn.l1, game.spawn.l2), (5, 7));
         assert_eq!((game.props.slots[0].m.w(0xA0), game.props.slots[0].m.w(0xA2)), (1, 0));
         assert!(warnings.iter().all(|w| !w.contains("wave controller")), "{warnings:?}");
+    }
+
+    /// 0x2099A / 0x209C0: the first lock after a stage change uses the new
+    /// event list even when the previous list has the same record alignment.
+    #[test]
+    fn camera_loader_changes_list_base_between_stages() {
+        use dino_assets::stage::{Area, CameraEvent, Stage};
+        let mut pack = AssetPack::default();
+        // Synthetic adjacent lists. The stale base would decode index 5
+        // instead of the new list's lock at index 1.
+        pack.stages.stages = vec![
+            Stage { camera_events_addr: 0x1000, camera_events: vec![CameraEvent::default(); 4], ..Default::default() },
+            Stage {
+                camera_events_addr: 0x1040,
+                areas: vec![Area::default()],
+                camera_events: vec![
+                    CameraEvent::default(),
+                    CameraEvent { x: 0x80, mode: 4, ..Default::default() },
+                    CameraEvent { x: 0xFFFF, ..Default::default() },
+                ],
+                ..Default::default()
+            },
+        ];
+        let mut game = Game::new(Box::leak(Box::new(pack)));
+        game.cam.s2.event_base = 0x1000;
+        let mut ram = vec![0; 0x10000];
+        ram[0x84D9] = 1;
+        ram[0x8740] = 2;
+        ram[0x8744..0x8746].copy_from_slice(&0x80u16.to_be_bytes());
+        ram[0x8792..0x8796].copy_from_slice(&0x1050u32.to_be_bytes());
+        ram[0x87A8] = 1;
+        game.trace_load(&ram, &vec![0; 0x30000]);
+        assert_eq!((game.cam.s2.event_base, game.cam.s2.next_event), (0x1040, 1));
+        game.background_update();
+        assert_eq!((game.cam.s2.mode, game.cam.s2.event_idx, game.cam.s2.next_event), (4, 2, 2));
+        assert_eq!(game.cam.s2.cam_x, 0x80);
+    }
+
+    /// 0x7EC48 / 0x7ECCC: a loaded typewriter keeps its cursor and countdown,
+    /// reads the remaining text, and frees at the normal end of the string.
+    #[test]
+    fn typewriter_loader_resumes_a_live_pool_b_slot() {
+        let mut pack = AssetPack::default();
+        // Synthetic glyphs and terminator, unrelated to any ROM string.
+        pack.frontend.text.blobs.push((0xA0000, [0x0120u16, 0x0140, 0x4040].into_iter().flat_map(u16::to_be_bytes).collect()));
+        let mut game = Game::new(Box::leak(Box::new(pack)));
+        let mut ram = vec![0; 0x10000];
+        let base = POOL_B.0 as usize;
+        ram[base] = 2;
+        ram[base + 4] = 2;
+        ram[base + 5] = 2;
+        ram[base + 0x20..base + 0x22].copy_from_slice(&0x68u16.to_be_bytes());
+        ram[base + 0x80..base + 0x84].copy_from_slice(&0x908100u32.to_be_bytes());
+        ram[base + 0x84..base + 0x86].copy_from_slice(&2u16.to_be_bytes());
+        ram[base + 0x86..base + 0x88].copy_from_slice(&2u16.to_be_bytes());
+        // Resume at the second glyph, without replaying the first position block.
+        ram[base + 0x88..base + 0x8C].copy_from_slice(&0xA0002u32.to_be_bytes());
+        game.trace_load(&ram, &vec![0; 0x30000]);
+        game.pool_b_update();
+        assert_eq!(game.props.slots[0].b.live, 2);
+        assert_eq!(game.vram.scroll1[0x100 / 4].code, 0);
+        game.pool_b_update();
+        assert_eq!(game.vram.scroll1[0x100 / 4].code, 0x0140);
+        for _ in 0..3 { game.pool_b_update(); }
+        assert_eq!(game.props.slots[0].b.mode, 4);
+        game.pool_b_update();
+        assert_eq!(game.props.slots[0].b.live, 0);
+        assert!(game.flow.typers.is_empty());
     }
 
     /// A poke into an object's field needs the object: a free pool slot keeps only +$00.
