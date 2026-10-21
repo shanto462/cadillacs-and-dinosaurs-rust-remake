@@ -733,8 +733,8 @@ m21f_coin7.step: scroll1 4-4	# U21
 # EEPROM-seeded control slices (m21c_*): same X / A2 / N loader limits as the M10-19 / M10-20 cases above.
 # X: sprite-buffer wipe across the game-over lag; A2: step loader cannot rebuild the attract-to-select task waits.
 # N: the new game starts inside a lag record; the tilemap strip is absent after the resync and persists until redrawn.
-m21c_cont_off.step: sprites 1953-1956	# X
-m21c_lives0.step: sprites 2649-2652	# X
+# (Task 75, 2026-10-21: the two X rules m21c_cont_off.step sprites 1953-1956 and m21c_lives0.step sprites 2649-2652 were removed. They fall on lag records that
+#  the default step check does not compare (task 73); final.txt C10.)
 m21c_lives0.step: * 2800-5098	# A2
 m21c_lives0.lagsync: scroll2 3155-5098	# N
 m21c_lives0.lagsync: scroll3 3156-5098	# N
