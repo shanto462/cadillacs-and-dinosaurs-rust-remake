@@ -149,11 +149,10 @@ impl Game {
     pub fn boss_aggression_gate(&mut self, e: &mut Enemy, ai: BossAi) -> bool {
         let limit = self.boss_gate_limit(e, ai) as u16;
         let pass = (self.rand() & 31) < limit;
-        if matches!(ai, BossAi::Tyrog | BossAi::Tyrog2) {
-            if pass && e.m.b(0xA4) == 0 {
+        if matches!(ai, BossAi::Tyrog | BossAi::Tyrog2)
+            && pass && e.m.b(0xA4) == 0 {
                 e.m.sb(0xA4, 1);
             }
-        }
         pass
     }
 

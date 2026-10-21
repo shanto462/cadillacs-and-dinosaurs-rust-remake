@@ -15,7 +15,7 @@
 //! | 0xA | 0x69FB6: walks right 3 pixels a frame (the three heroes' X words follow) to X 0x1200 |
 //! | 0xC | 0x69FEC: the stand in of Mustapha (variant 2) makes the aura (pool C 39, 0x974FA); all walk on for ever, dragging the heroes |
 
-use super::{Enemy, off::ATTACKING};
+use super::Enemy;
 use crate::game::{Game, Handle};
 
 const ANIM_PTRS: u32 = 0x6A010;

@@ -39,7 +39,7 @@ impl Game {
     }
 
     /// 0x8576E: rain streaks frame step.
-    fn prop_b55_step(&mut self, p: &mut Prop, i: usize) {
+    fn prop_b55_step(&mut self, p: &mut Prop, _i: usize) {
         // 0x8576E: cmpi.w #$500, $744(a5)
         if self.cam.s2.cam_x >= 0x500 {
             // 0x85796: move.b #$4, $4(a6) ; lea $857A6, a0 ; jmp $F94

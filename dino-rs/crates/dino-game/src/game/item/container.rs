@@ -52,7 +52,7 @@ impl Game {
     /// data); the object is freed then.
     fn container_init(&mut self, it: &mut Item, h: Handle) -> bool {
         let k = (it.b.var26 / 2) as usize;
-        if it.b.var26 % 2 != 0 || k >= ANIMS.len() {
+        if !it.b.var26.is_multiple_of(2) || k >= ANIMS.len() {
             it.b.mode = 6;
             return false;
         }

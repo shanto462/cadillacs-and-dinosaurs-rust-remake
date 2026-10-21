@@ -1808,8 +1808,8 @@ impl Game {
             return false;
         }
         let dx = t.xi().wrapping_sub(e.b.xi());
-        let mask: u32;
-        if !in_win(dx, 0xC8) {
+        
+        let mask: u32 = if !in_win(dx, 0xC8) {
             let c = e.m.b(DASH_T).wrapping_sub(1);
             e.m.sb(DASH_T, c);
             if c != 0 {
@@ -1817,7 +1817,7 @@ impl Game {
             }
             e.m.sb(DASH_T, 0x14);
             e.m.sb(DASH_KIND, 1);
-            mask = 0x4541;
+            0x4541
         } else {
             if t.act != 2 || in_win(dx, 0xA0) {
                 return false;
@@ -1829,8 +1829,8 @@ impl Game {
             }
             e.m.sb(DASH_T, 0xA);
             e.m.sb(DASH_KIND, 0);
-            mask = 0x914B;
-        }
+            0x914B
+        };
         let r = self.rand() & 0xF;
         if (mask >> r) & 1 == 0 {
             return false;

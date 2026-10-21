@@ -431,11 +431,10 @@ impl Planner {
         let snap = Snap::of(g, prm);
         let wide = Self::near_enemy(g);
         let mut root_cands = candidates(g, wide);
-        if let Some(&m) = self.plan.get(1) {
-            if !root_cands.contains(&m) {
+        if let Some(&m) = self.plan.get(1)
+            && !root_cands.contains(&m) {
                 root_cands.push(m);
             }
-        }
         let mut level: Vec<Node> = vec![Node { g: g.clone(), path: Vec::new(), val: 0 }];
         let mut best: Option<(i64, Vec<Macro>)> = None;
         for d in 0..prm.depth {
@@ -724,13 +723,13 @@ impl Smart {
             t -= (60 * (leg + 1)).min(240);
             leg += 1;
         }
-        Some(RIGHT | if leg % 2 == 0 { UP } else { DOWN } | if tick % 60 < 4 { ATTACK } else { 0 } | if tick % 180 < 8 { JUMP } else { 0 })
+        Some(RIGHT | if leg.is_multiple_of(2) { UP } else { DOWN } | if tick % 60 < 4 { ATTACK } else { 0 } | if tick % 180 < 8 { JUMP } else { 0 })
     }
 
     /// After a tick: the lines and the stats.
     pub fn report(&mut self, g: &Game, tick: u32) {
         self.stats.frames = tick + 1;
-        if self.diag_every != 0 && tick % self.diag_every == 0 && g.flow.in_game != 0 {
+        if self.diag_every != 0 && tick.is_multiple_of(self.diag_every) && g.flow.in_game != 0 {
             let p = &g.players[0];
             let en: Vec<String> = g.enemies.slots.iter().filter(|e| hostile(e)).map(|e| format!("{}@{},{}:h{}", e.b.k20 / 4, e.b.xi() as i32 - p.b.xi() as i32, e.b.zi() as i32 - p.b.zi() as i32, e.b.hp)).collect();
             let all: Vec<String> = g.enemies.slots.iter().filter(|e| e.b.live != 0).map(|e| format!("{}@{},{}:m{:x}h{}f{:x}", e.b.k20 / 4, e.b.xi() as i32 - p.b.xi() as i32, e.b.zi() as i32 - p.b.zi() as i32, e.b.mode, e.b.hp, e.m.b(0x7D))).collect();

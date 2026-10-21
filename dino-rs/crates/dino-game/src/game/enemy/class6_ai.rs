@@ -394,11 +394,10 @@ impl Game {
     /// 0x3A5D2: retarget when target is invalid or timer expired.
     pub fn enemy_c6_retarget(&mut self, e: &mut Enemy) {
         // 0x3A5D2: a target in the action 0x23 (down for good) is replaced by the 0x3A66A rules: no random number with one or two heroes
-        if let Some(Slot::Player(p)) = slot_of(e.m.w(0x76)) {
-            if self.players[p].action == 0x23 {
+        if let Some(Slot::Player(p)) = slot_of(e.m.w(0x76))
+            && self.players[p].action == 0x23 {
                 return self.enemy_c6_retarget_down(e);
             }
-        }
         let r = (self.rand() & 0xF) as u32;
         let p_count = self.enemy_c6_scan_players(e);
         let offset = self.assets.enemy.t.u16(0x3A634, p_count * 2) as u32;

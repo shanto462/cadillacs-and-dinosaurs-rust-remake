@@ -257,16 +257,14 @@ impl Game {
     /// 0x62A04: `+$AC` 3, bit 1 off when the left head's `+$A8` word is negative, bit 0 off for the right head.
     fn c84_heads_ready(&self, e: &mut Enemy) {
         let mut d0 = 3u8;
-        if let Some(k) = Self::c84_slot(e, o::P_HEAD_L) {
-            if (self.enemies.slots[k].m.w(0xA8) as i16) < 0 {
+        if let Some(k) = Self::c84_slot(e, o::P_HEAD_L)
+            && (self.enemies.slots[k].m.w(0xA8) as i16) < 0 {
                 d0 = 1;
             }
-        }
-        if let Some(k) = Self::c84_slot(e, o::P_HEAD_R) {
-            if (self.enemies.slots[k].m.w(0xA8) as i16) < 0 {
+        if let Some(k) = Self::c84_slot(e, o::P_HEAD_R)
+            && (self.enemies.slots[k].m.w(0xA8) as i16) < 0 {
                 d0 &= !1;
             }
-        }
         e.m.sb(o::HEADS, d0);
     }
 
@@ -482,7 +480,7 @@ impl Game {
             d1 = k * 0x20;
         }
         e.m.sw(o::LIMIT, 0x1E0);
-        let r = (self.rand() & 0x1F) as u16;
+        let r = self.rand() & 0x1F;
         match self.assets.enemy.t.u8(t::PICKER, (d1 + r) as u32) {
             0 => Self::c84_set(e, 6, false, true),
             1 => Self::c84_set(e, 8, false, false),
@@ -503,7 +501,7 @@ impl Game {
         }
         e.m.sb(o::GATE_T, 0xF);
         let limit = self.assets.enemy.t.u8(t::GATE, self.w.level as u32) as u16;
-        let r = (self.rand() & 0x1F) as u16;
+        let r = self.rand() & 0x1F;
         limit >= r
     }
 
@@ -602,7 +600,7 @@ impl Game {
             d1 += 1;
         }
         e.m.sb(o::BB, d1 as u8);
-        let r = (self.rand() & 0x1F) as u16;
+        let r = self.rand() & 0x1F;
         let row = ((d1 & 0x1F) << 5).wrapping_add(r);
         let tb = &self.assets.enemy.t;
         let cell = tb.u8(t::WALK_PICK, row as u32);
@@ -1715,7 +1713,7 @@ impl Game {
                     let d0 = ((self.rand() & 0x7F) as i16).wrapping_sub(0x40).wrapping_add(e.b.xi());
                     self.c84_blast(d0, d1, e.b.zi(), 0); // 0x27DAA
                 }
-                let d3 = (self.rand() & 7) as u16;
+                let d3 = self.rand() & 7;
                 let d1 = ((self.rand() & 0x1F) as i16).wrapping_add(e.b.yi());
                 let d0 = ((self.rand() & 0x7F) as i16).wrapping_sub(0x40).wrapping_add(e.b.xi());
                 self.fx40_spawn(d0, d1, e.b.zi(), d3); // 0x9764E

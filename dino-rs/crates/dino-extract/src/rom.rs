@@ -108,14 +108,14 @@ impl Rom {
         let mut program = Vec::with_capacity(0x180000);
         for name in PROGRAM {
             let chunk = &files[name];
-            for pair in chunk.chunks_exact(2) {
+            for pair in chunk.as_chunks::<2>().0 {
                 program.extend_from_slice(&[pair[1], pair[0]]);
             }
         }
 
         let mut gfx = vec![0u8; 0x400000];
         for (name, base, offset) in GFX {
-            for (i, pair) in files[name].chunks_exact(2).enumerate() {
+            for (i, pair) in files[name].as_chunks::<2>().0.iter().enumerate() {
                 let at = base + offset + i * 8;
                 gfx[at] = pair[0];
                 gfx[at + 1] = pair[1];

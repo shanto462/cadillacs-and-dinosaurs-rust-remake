@@ -42,11 +42,10 @@ impl Game {
     /// and the playfield clamp 0x193E.
     fn c52_run(&mut self, e: &mut Enemy, h: Handle, i: usize) {
         let owner = e.m.w(0xA2);
-        if let Some(Slot::Enemy(o)) = slot_of(owner) {
-            if self.enemies.slots[o].b.mode >= 4 {
+        if let Some(Slot::Enemy(o)) = slot_of(owner)
+            && self.enemies.slots[o].b.mode >= 4 {
                 return self.enemy_free_pool_a(e, i);
             }
-        }
         match e.b.sub {
             0 => self.c52_held(e, h),
             2 => {

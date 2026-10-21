@@ -286,7 +286,7 @@ impl Game {
         let mut straight = false;
         if b81 != 0 {
             self.players[i].set_b81(b81 - 1);
-            straight = b81 - 1 >= 0x14;
+            straight = b81 > 0x14;
         }
         if !straight && nib != 0 {
             self.player_walk_move(i, nib); // 0x1BD94

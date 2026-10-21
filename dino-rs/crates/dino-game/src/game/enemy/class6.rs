@@ -58,7 +58,7 @@ impl Game {
 
         // 0x3339A: jsr $16c6.l (init anim ptr to special slot Ram, frame to Ram + 10)
         let spec_h = self.specials.handle(spec_idx);
-        e.m.sw(0xA4, (spec_h as u16).wrapping_add(12));
+        e.m.sw(0xA4, spec_h.wrapping_add(12));
         e.b.set_frame(slot_frame(spec_idx));
         let (a, b, c, d) = self.specials.slots[spec_idx].record_params();
         (e.b.param_a, e.b.param_b, e.b.kind, e.b.timer) = (a, b, c, d);
@@ -137,7 +137,7 @@ impl Game {
 
         // 0x392A8: cmpa.w a0, a1; bcs 0x392b0; exg.l a0, a1
         // a0 is ALWAYS max(h, new_h), a1 is ALWAYS min(h, new_h).
-        let (part0_h, bludge_h, current_is_part0) = if (h as u16) <= (new_h as u16) {
+        let (part0_h, bludge_h, current_is_part0) = if h <= new_h {
             (h, new_h, true)
         } else {
             (new_h, h, false)
@@ -153,7 +153,7 @@ impl Game {
             // a1 (Part 0): class 0, sub 0, +$A0 = bludge_h
             e.b.k20 = 0;
             e.b.sub = 0;
-            e.m.sw(0xA0, bludge_h as u16);
+            e.m.sw(0xA0, bludge_h);
 
             // a0 (Bludge): class 0x18, sub 2, +$C0 = part0_h, coordinates from spawning slot
             let other = &mut self.enemies.slots[new_idx];
@@ -166,7 +166,7 @@ impl Game {
             other.b.set_xi(old_x);
             other.b.set_yi(old_y);
             other.b.set_zi(old_z);
-            other.m.sw(0xC0, part0_h as u16);
+            other.m.sw(0xC0, part0_h);
             other.m.sb(0xC3, 0);
             other.m.sb(0x96, old_drop);
         } else {
@@ -175,7 +175,7 @@ impl Game {
             e.b.live = 1;
             e.b.k20 = 0x18;
             e.b.sub = 2;
-            e.m.sw(0xC0, other_h as u16);
+            e.m.sw(0xC0, other_h);
             e.m.sb(0xC3, 0);
 
             // Other slot is Part 0 (lower handle)
@@ -184,7 +184,7 @@ impl Game {
             other.b.k20 = 0;
             other.b.mode = 0;
             other.b.sub = 0;
-            other.m.sw(0xA0, h as u16);
+            other.m.sw(0xA0, h);
         }
     }
 
@@ -197,7 +197,7 @@ impl Game {
                 spec_ram.sb(k, 0);
             }
             let spec_h = self.specials.handle(spec_idx);
-            let buf_addr = (spec_h as u16).wrapping_add(16);
+            let buf_addr = spec_h.wrapping_add(16);
             e.m.sw(0xD2, buf_addr);
             e.m.sw(0xD4, buf_addr);
             e.m.sw(0xD6, 0);
@@ -388,7 +388,7 @@ impl Game {
             2 => {
                 // 0x395BE: step 2, check camera proximity
                 let center = self.cam.s2.cam_x.wrapping_add(0xC0);
-                let d0 = (center as u16).wrapping_sub(e.b.xi() as u16).wrapping_add(0xC0);
+                let d0 = center.wrapping_sub(e.b.xi() as u16).wrapping_add(0xC0);
                 if d0 < 0x180 {
                     e.b.act = 4;
                 }
@@ -423,8 +423,8 @@ impl Game {
         let ez = e.b.zi();
         for p in &self.players {
             if p.b.live != 0 {
-                let dx = (p.b.xi().wrapping_sub(ex)).abs() as u16;
-                let dz = (p.b.zi().wrapping_sub(ez)).abs() as u16;
+                let dx = (p.b.xi().wrapping_sub(ex)).unsigned_abs();
+                let dz = (p.b.zi().wrapping_sub(ez)).unsigned_abs();
                 if dx.wrapping_add(dz) < 0x50 {
                     return true;
                 }
@@ -469,7 +469,7 @@ impl Game {
     fn enemy_c6_dying(&mut self, e: &mut Enemy, h: Handle) {
         if e.b.sub == 0 {
             // 0x3A1F2: the kill score 8,000, the death timer, the last eaten item comes back and the others are freed; the code falls into 0x3A20A
-            self.enemy_award_kill_score(&mut e.b); // 0x325E6
+            self.enemy_award_kill_score(&e.b); // 0x325E6
             e.m.sw(0x80, 0x78);
             e.b.sub = e.b.sub.wrapping_add(2);
             self.enemy_c6_give_back(e); // 0x3B086

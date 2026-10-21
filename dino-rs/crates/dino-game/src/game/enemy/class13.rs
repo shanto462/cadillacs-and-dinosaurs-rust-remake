@@ -528,7 +528,7 @@ impl Game {
     /// 0x3EFD0: copy step `d2` (0, 4, 8, 0xC) of the fade palettes of the variant into the object palette 0x914160, keeping the high
     /// nibble of each colour word.
     pub(super) fn enemy_c13_3efd0(&mut self, e: &Enemy, d2: u32) {
-        let v = Self::enemy_c13_variant(e) as u32;
+        let v = Self::enemy_c13_variant(e);
         let tb = &self.assets.enemy.t;
         let dest = tb.u32(t::FADE_DEST, v * 2);
         let src = tb.u32(t::FADE_SRC, v * 8 + d2);
@@ -701,7 +701,7 @@ impl Game {
         let diff = if d0 < e.b.x { e.b.x.wrapping_sub(e.m.l(FROM_X) as i32) } else { d0.wrapping_sub(e.b.x) };
         e.b.vx = Self::enemy_c13_steps(diff) as i16;
         let d1 = Self::enemy_c13_steps(e.m.l(FROM_Z) as i32);
-        e.b.vz = ((d1 as i16) >> 1) as i16;
+        e.b.vz = (d1 as i16) >> 1;
         e.b.vy = 0x900;
         e.b.ax = 0;
         e.b.ay = 0xFFC0u16 as i16;

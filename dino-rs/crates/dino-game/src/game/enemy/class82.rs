@@ -104,8 +104,8 @@ impl Game {
     fn enemy_zeke_pick_target(&mut self, e: &mut Enemy) {
         let target = self.enemy_pick_target(&e.b); // jsr $32032.l
         let mut chosen = target;
-        if let Some(crate::game::Slot::Player(pi)) = crate::game::slot_of(target) {
-            if self.players[pi].b116 != 0 {
+        if let Some(crate::game::Slot::Player(pi)) = crate::game::slot_of(target)
+            && self.players[pi].b116 != 0 {
                 // 0x60D82..0x60DCC: each step takes d0 = who(a0) + 1 & 3 and a0 = table[d0] (0x60DDC: P1, P2, P3, P1).
                 // Candidates 1 and 2 must be live (tst.b $0(a0)); candidate 3 is taken whether it is live or not.
                 let mut cand = pi;
@@ -119,7 +119,6 @@ impl Game {
                     break;
                 }
             }
-        }
         if let Some(crate::game::Slot::Player(pi)) = crate::game::slot_of(chosen) {
             self.players[pi].b116 = 1; // 0x60DD0: move.b #$1, $116(a0)
         }
@@ -349,12 +348,11 @@ impl Game {
             }
             2 => {
                 // 06092a
-                if self.enemy_step(&mut e.b) {
-                    if self.enemy_zeke_test_altitude(e) {
+                if self.enemy_step(&mut e.b)
+                    && self.enemy_zeke_test_altitude(e) {
                         self.enemy_zeke_pick_altitude(e);
                         self.enemy_zeke_flap_anim(e);
                     }
-                }
                 let arrived = self.enemy_zeke_approach(e, 0xA);
                 if !arrived {
                     self.enemy_move_dir(&mut e.b);
@@ -447,12 +445,11 @@ impl Game {
             }
             2 => {
                 // 060a9e
-                if self.enemy_step(&mut e.b) {
-                    if self.enemy_zeke_test_altitude(e) {
+                if self.enemy_step(&mut e.b)
+                    && self.enemy_zeke_test_altitude(e) {
                         self.enemy_zeke_pick_altitude(e);
                         self.enemy_zeke_flap_anim(e);
                     }
-                }
                 let arrived = self.enemy_zeke_approach(e, 0x14);
                 if !arrived {
                     self.enemy_move_dir(&mut e.b);
@@ -544,12 +541,11 @@ impl Game {
             }
             2 => {
                 // 060c02
-                if self.enemy_step(&mut e.b) {
-                    if self.enemy_zeke_test_altitude(e) {
+                if self.enemy_step(&mut e.b)
+                    && self.enemy_zeke_test_altitude(e) {
                         self.enemy_zeke_pick_altitude(e);
                         self.enemy_zeke_flap_anim(e);
                     }
-                }
                 let arrived = self.enemy_zeke_approach(e, 0x1E);
                 if arrived {
                     let (mut vx, mut ax) = (-128i16, 0i16);

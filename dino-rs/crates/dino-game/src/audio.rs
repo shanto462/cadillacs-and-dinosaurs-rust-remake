@@ -163,7 +163,7 @@ impl Output {
         let target_len = (rate as f64 * channels as f64 * TARGET_BUFFER_SECS) as usize;
         // Pre-fill cushion with silence so the callback never starves on startup
         if let Ok(mut q) = ring.lock() {
-            q.extend(std::iter::repeat(0.0f32).take(target_len));
+            q.extend(std::iter::repeat_n(0.0f32, target_len));
         }
         stream.play().map_err(|e| format!("start stream: {e}"))?;
         Ok(Output {
@@ -199,7 +199,7 @@ impl Output {
             Ok(q) => q,
             Err(poisoned) => poisoned.into_inner(),
         };
-        for pair in self.scratch.chunks_exact(2) {
+        for pair in self.scratch.as_chunks::<2>().0 {
             let (l, r) = (pair[0], pair[1]);
             if self.channels == 1 {
                 q.push_back((l + r) * 0.5);

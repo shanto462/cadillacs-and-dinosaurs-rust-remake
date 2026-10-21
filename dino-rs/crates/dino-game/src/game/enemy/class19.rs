@@ -200,7 +200,7 @@ impl Game {
         self.enemy_draw_check(&mut e.b, h);
         self.enemy_monster_register(h);
         // 0x456C4: below the screen (camera Y + 0xD8 at or below Y + Z, unsigned) mode 6.
-        let d0 = (self.cam.s2.cam_y as u16).wrapping_add(0xD8);
+        let d0 = self.cam.s2.cam_y.wrapping_add(0xD8);
         let d1 = (e.b.yi() as u16).wrapping_add(e.b.zi() as u16);
         if d0 <= d1 {
             e.b.mode = 6;

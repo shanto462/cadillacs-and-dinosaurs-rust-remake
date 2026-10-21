@@ -175,7 +175,7 @@ pub fn draw_window(menu: &mut Menu, god: bool) {
         };
         draw_text(&l.text, 52.0, top + line * k as f32, 20.0, color);
     }
-    draw_text(&format!("{}  {}", FOOTER[0], FOOTER[1]), 52.0, h - 50.0, 20.0, Color::new(0.7, 0.7, 0.7, 1.0));
+    draw_text(format!("{}  {}", FOOTER[0], FOOTER[1]), 52.0, h - 50.0, 20.0, Color::new(0.7, 0.7, 0.7, 1.0));
 }
 
 #[cfg(test)]

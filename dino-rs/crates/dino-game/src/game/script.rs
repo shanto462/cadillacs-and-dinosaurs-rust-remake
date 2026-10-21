@@ -1037,7 +1037,6 @@ impl Game {
                 if self.players[i].b.param_a != 0 {
                     self.players[i].b90 += 2;
                     self.fx_spawn_smoke_ring(Game::player_handle(i), 0); // jmp 0x965A2, d0 = 0
-                    return;
                 }
             }
             2 => {
@@ -1057,7 +1056,6 @@ impl Game {
                 if self.players[i].b.param_a != 0 {
                     self.players[i].b90 += 2;
                     self.fx_spawn_smoke_ring(Game::player_handle(i), 2); // jmp 0x965A2, d0 = 2
-                    return;
                 }
             }
             6 => {

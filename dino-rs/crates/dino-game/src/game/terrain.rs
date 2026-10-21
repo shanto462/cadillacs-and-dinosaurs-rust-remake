@@ -543,11 +543,10 @@ impl Game {
     fn terrain_segs(&self) -> &'static [FloorSegment] {
         let t = &self.assets.terrain;
         // The list G.$6AC points to: the one of the area start (`terrain.list`), not the current stage's (a stage change does not move it).
-        if self.terrain.list != 0 {
-            if let Some(l) = t.floor.iter().flatten().find(|l| l.addr == self.terrain.list) {
+        if self.terrain.list != 0
+            && let Some(l) = t.floor.iter().flatten().find(|l| l.addr == self.terrain.list) {
                 return l.segs.as_slice();
             }
-        }
         t.floor
             .get(self.w.stage as usize)
             .and_then(|a| a.get(self.cam.s2.area as usize))

@@ -39,7 +39,7 @@ impl Game {
             self.w.attack_serial = self.w.attack_serial.wrapping_add(1);
             e.m.sw(0xAA, 5);
             self.enemy_floor_collision(e);
-            let r = (self.rand() & 3) as u16;
+            let r = self.rand() & 3;
             self.enemy_anim(&mut e.b, r);
             e.b.mode = 2;
         } else if e.b.mode != 2 {

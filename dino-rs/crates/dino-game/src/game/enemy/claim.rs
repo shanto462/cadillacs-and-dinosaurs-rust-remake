@@ -31,15 +31,14 @@ impl Game {
         // List A: flag +$7E, the candidates must not carry +$7F.
         if self.players[pi].b7e == 0 {
             let list = self.combat.get(0x6A5A).to_vec();
-            if !list.is_empty() {
-                if self.claim_pick(pi, &list, 0x7F) && (self.players[pi].w88 as i16) >= 0 {
+            if !list.is_empty()
+                && self.claim_pick(pi, &list, 0x7F) && (self.players[pi].w88 as i16) >= 0 {
                     self.players[pi].b7e = 1;
                     let a0 = self.players[pi].w76;
                     self.claim_ram_set(a0, 0x7E, 1);
                     self.claim_ram_set(a0, TARGET, (me >> 8) as u8);
                     self.claim_ram_set(a0, TARGET + 1, me as u8);
                 }
-            }
         }
         // List B: flag +$7F, the candidates must not carry +$7E.
         if self.players[pi].b7f != 0 {

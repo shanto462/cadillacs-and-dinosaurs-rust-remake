@@ -345,7 +345,7 @@ impl Game {
         if tx >= e.b.xi() {
             e.b.vx = e.b.vx.wrapping_neg();
         }
-        let r = (self.rand() & 0xF) as u16;
+        let r = self.rand() & 0xF;
         let bz = self.assets.enemy.t.u8(t::SIDE_Z, ((zc << 4).wrapping_add(r)) as u32);
         e.b.vz = if bz == 0 {
             0

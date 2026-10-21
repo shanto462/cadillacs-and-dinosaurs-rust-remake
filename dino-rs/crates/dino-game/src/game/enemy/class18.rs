@@ -305,8 +305,8 @@ impl Game {
     /// instead (M7-06: ep4_3p 6562, a hero dies while the Walther fights him): the next hero of the list, by a random choice only with three.
     fn enemy_vice_retarget(&mut self, e: &mut Enemy) {
         let target = e.m.w(0x76);
-        if let Some(crate::game::Slot::Player(i)) = crate::game::slot_of(target) {
-            if self.players[i].action == 0x23 {
+        if let Some(crate::game::Slot::Player(i)) = crate::game::slot_of(target)
+            && self.players[i].action == 0x23 {
                 // 0x443A6
                 let d1 = self.enemy_vice_target_list(e);
                 match d1 {
@@ -331,7 +331,6 @@ impl Game {
                 }
                 return;
             }
-        }
         let r = self.rand() & 15;
         let last = self.enemy_vice_target_list(e);
         let row = self.assets.enemy.t.u16(0x44370, last as u32 * 2);
@@ -1054,8 +1053,8 @@ impl Game {
             let x = self.assets.enemy.t.u16(table, i * 4);
             let z = self.assets.enemy.t.u16(table, i * 4 + 2);
             let (sx, sz) = (e.b.xi() as u16, e.b.zi() as u16);
-            let dx = if x < sx { sx - x } else { x - sx };
-            let dz = if z < sz { sz - z } else { z - sz };
+            let dx = sx.abs_diff(x);
+            let dz = sz.abs_diff(z);
             let d = dx.wrapping_add(dz) as i16;
             if d > distance { distance = d; cell = i as u8; }
         }

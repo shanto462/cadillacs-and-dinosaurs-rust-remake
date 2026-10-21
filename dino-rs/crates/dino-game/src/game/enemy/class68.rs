@@ -68,8 +68,8 @@ impl Game {
                 }
                 if e.b.airborne == 0 {
                     self.enemy_anim(&mut e.b, 0);
-                    if e.b.var26 == 1 {
-                        if let Some(j) = self.items.alloc() {
+                    if e.b.var26 == 1
+                        && let Some(j) = self.items.alloc() {
                             let r = &mut self.items.slots[j];
                             r.b.live = 1;
                             r.b.k20 = 0;
@@ -78,7 +78,6 @@ impl Game {
                             r.b.set_yi_keep(e.b.yi());
                             r.b.set_zi_keep(e.b.zi());
                         }
-                    }
                     e.b.mode = 4;
                     return;
                 }

@@ -335,7 +335,7 @@ impl Game {
         if addr >= bank.base {
             let offset = (addr - bank.base) as usize;
             if let Some(&w) = bank.words.get(offset / 2) {
-                return if offset % 2 == 0 { (w as u16 >> 8) as u8 } else { w as u8 };
+                return if offset.is_multiple_of(2) { (w as u16 >> 8) as u8 } else { w as u8 };
             }
         }
         for (start, data) in self.assets.enemy.t.blobs.iter().chain(self.assets.text.blobs.iter()) {

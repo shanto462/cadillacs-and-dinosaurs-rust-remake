@@ -169,10 +169,10 @@ impl Bot {
                 t -= (60 * (leg + 1)).min(240);
                 leg += 1;
             }
-            f.players[0] |= if leg % 2 == 0 { UP } else { DOWN };
+            f.players[0] |= if leg.is_multiple_of(2) { UP } else { DOWN };
         }
         // `DINO_AUTO_NOKILL=1`: no kill all presses (the waves are cleared by the bot's own punches and walks; god mode stays).
-        if tick % KILL_EVERY == 0 && std::env::var_os("DINO_AUTO_NOKILL").is_none() {
+        if tick.is_multiple_of(KILL_EVERY) && std::env::var_os("DINO_AUTO_NOKILL").is_none() {
             debug.kill_all();
         }
         f
@@ -240,7 +240,7 @@ impl Bot {
                 }
                 _ => self.progress = Some((now, tick)),
             }
-            if std::env::var_os("DINO_AUTO_DIAG").is_some() && (tick % DIAG_EVERY == 0 || Self::in_range(tick)) {
+            if std::env::var_os("DINO_AUTO_DIAG").is_some() && (tick.is_multiple_of(DIAG_EVERY) || Self::in_range(tick)) {
                 eprintln!("autoplay: diag {tick}: {}", Self::state_line(g));
                 eprintln!("autoplay: flow {tick}: {}", Self::flow_line(g));
             }

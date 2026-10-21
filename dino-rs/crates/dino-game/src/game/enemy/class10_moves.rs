@@ -400,7 +400,7 @@ impl Game {
             return self.c10_3c916(e);
         }
         if live == 0 || sub == 0 {
-            return self.c10_3c916(e);
+            self.c10_3c916(e)
         }
     }
 

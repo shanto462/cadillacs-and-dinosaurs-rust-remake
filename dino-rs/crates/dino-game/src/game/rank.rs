@@ -187,7 +187,7 @@ impl Game {
             if r.downs_t == 0 {
                 r.downs -= 1;
                 r.downs_t = 0x4B0;
-                self.w.rank = self.w.rank.checked_sub(1).unwrap_or(0);
+                self.w.rank = self.w.rank.saturating_sub(1);
             }
         }
         let r = &mut self.rank;
@@ -275,7 +275,7 @@ impl Game {
         let k = (lives as u32 * 2) + (b4cf == 0) as u32;
         let v = self.assets.enemy.t.u8(0x184C4, k);
         if v == 0 {
-            self.w.rank = self.w.rank.checked_sub(3).unwrap_or(0);
+            self.w.rank = self.w.rank.saturating_sub(3);
             return;
         }
         let d = v.wrapping_sub(b4e6);
@@ -297,7 +297,7 @@ impl Game {
         if self.rank.w606 != 0 {
             d = t.u16(0x187F0, 0);
         }
-        self.w.rank = self.w.rank.checked_sub(d).unwrap_or(0);
+        self.w.rank = self.w.rank.saturating_sub(d);
         self.rank.w606 = self.assets.enemy.t.u16(0x187F2, 0);
         self.rank_event_1843c(lives, b4cf, b4e6);
         self.rank_compute_level();
