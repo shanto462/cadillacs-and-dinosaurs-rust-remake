@@ -1918,3 +1918,22 @@ Hero moves of D2a that the older scenarios cover and that stay equal: `m515_a1` 
 What the port got from these checks (original addresses): the shadow type and wading clip bytes +$4C..+$4F of effects and props (0x1236 / 0x120E / 0x143C8 / 0x14BC6, `fx_start_obj`, class 18 `fx_load_sprite_frame`), the muzzle flash of Fessenden's heads takes the facing of the head (0x92422), the game over exit does not count G.$0 in its sleeps (0xAC06 / 0xAC26); one model for the exit after the ending and after the continue strip (the pass with the clear 0xAE0 overruns the frame: one lag frame, then the sound and the exit two frames later; a game clock record joins the pass, the lag frame and the next pass: `m328_end-*` 5540 .. 5542 and `m523_ep1_2p_full` 30614 .. 30616), the five ticks after the exit are one record (the attract task starts), the two heroes of the ranking car keep the car's handle sign-extended in +$AC (0x8B4FC, `0xFFFFxxxx`: the rule `enemy.dash_chk` of `allow/m1.txt` is gone), the label of the block in state 0xC (0x754C: 0x8196 at G.$4DA & 0x3F = 0, 0x80A2 at 0x30), the continue return in the lift (0xEF6E), the rank blink counter G.$7017 and the name entry blocks (G.-$711C) in the trace, the cloud speed long +$60 of pool C class 32 (0x96A7E), the pointers of the boss controller left in a freed slot (0x4938, +$A0 / +$A4), the camera event pointer of a new game (0 until the first event load).
 
 **After the merge with integ (2026-10-21).** One model of the game over exit for the ending and the continue strip (Opus's lag frame, see D5-errata); the lagsync rules E of `ep8_jack` / `ep8_mess` / `ep8_3p` and A of `ep8_mess` are gone (the whole ending and the new game are equal in lagsync, except cause N), `enemy.dash_chk` of `allow/m1.txt` is gone (class 17 owner long, 0x8B4FC). Checked: `m328_end-*` in run mode with `allow/m3e.txt` and the game clock (`DINO_GAME_CLOCK=1 MODE=run re/harness/port.sh re/out/traces/m328_end-jack.input.txt m328_end-jack 5700`, then `diff.py ... --allow re/harness/allow/m3e.txt`): 7 of 8 equal for all 5700 records (the integ build before the merge differed from record 5543 on), `m328_end-hiscore` first differs at 6194 (integ: 5773, a lag record of the attract after the name entry); all natural whole runs in step and lagsync equal with their rules (48 recordings, `m10_check.sh`), `m10_sound_check.sh` 30 of 30 with 0 sound only differences, `m10_loop_check.sh` states equal, 385 of 416 pictures exact.
+
+## Task 22: an enemy holds a hero, the bazooka recoil and the air special (M10-19 follow-ups)
+
+Probe batches (one headless MAME process each): `re/harness/pokes/t22_holds.txt` and `re/harness/pokes/t22_moves.txt`, recorded with
+`re/harness/probe/probe_record.sh FILE all`, compared with `re/harness/m10_check.sh NAME:FRAMES` (step, lagsync, run).
+
+| Recordings | Frames | Scene | Step / lagsync / run |
+| --- | ---: | --- | --- |
+| `t22_zgrab_jack`, `_mustapha`, `_hannah`, `t22_zeke_mess_mash` | 400 | Zeke's dive grab (Episode 5 area 0, `jump 5 0 0xC0`), the hero mashes free (`+$C7` = 0: free at mash 0, record 121) | 0 / 0 / 0 |
+| `t22_zesc_jack`, `_mustapha`, `_hannah`, `t22_zeke_mess_esc2` | 400 | the same with the hero's step byte poked to 2 after the grab (the `+$C7` path): the escape attack 0x1D3F8, then Zeke throws the hero | 0 / 0 / 0 (`_mustapha` run: equal to the record holding 6 game frames, 392) |
+| `t22_zrev_mustapha` | 36 | the same with fast mashing: Mustapha reverses the hold (0x1D41E, Zeke in state 0x02060000) | 0 / 0 / 0 |
+| `t22_bazedge_mustapha`, `_hannah`, `_mess` | 320 | the bazooka fired three times with the hero at the left screen edge (the recoil stops at the camera + 0x10) | 0 / 0 / 0 |
+| `t22_bazleft_mustapha`, `_hannah`, `_mess` | 320 | the bazooka fired facing left (the recoil pushes to the right) | 0 / 0 / 0 |
+| `t22_airspecial_mustapha` | 240 | Mustapha's air special 0x1AAE6 into three thugs (HP 100 to 86) | 0 / 0 / 0 |
+
+The escape attack and the reversal come only from a hold with `+$C7` set, which only the class 10 stomp gives (0x3C958), and its window 0x3C9C8 never
+opens (D5 errata). Forced onto Zeke's hold the original stops: the escape attack that hits Zeke inside his grab ends in ILLEGAL INSTRUCTION in his hit
+reaction (A0 = 0x60F1E), and a Zeke held by Mustapha in ADDRESS ERROR (PC 0x60F2A, Zeke has no code for being held); `t22_zrev_mustapha` ends before it.
+The port goes on there (Zeke is thrown); this is not reachable in natural play.
