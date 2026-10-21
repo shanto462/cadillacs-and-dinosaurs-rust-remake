@@ -295,11 +295,7 @@ impl Game {
         let a = Game::enemy_angle_to(&e.b, tx as u16, tz as u16);
         let (pre, post): (u8, u8) = if e.b.facing == 0 { (8u8.wrapping_neg(), 8) } else { (8, 8u8.wrapping_neg()) };
         let mut d = a.wrapping_add(pre) & 0x1F;
-        if d > 0x14 {
-            d = 0x14;
-        } else if d < 0xC {
-            d = 0xC;
-        }
+        d = d.clamp(0xC, 0x14);
         e.b.dir = d.wrapping_add(post) & 0x1F;
     }
 

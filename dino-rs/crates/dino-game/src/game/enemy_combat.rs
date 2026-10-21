@@ -667,7 +667,7 @@ impl Game {
         if e.b.kind == 4 {
             let m = t.u16(0xA320C, 2 * e.b.atk as u32) as u32;
             if m != 0 {
-                d = lo(d) * m >> 5; // mulu.w ; lsr.l #5
+                d = (lo(d) * m) >> 5; // mulu.w ; lsr.l #5
             }
         }
         let w84 = e.m.w(W84) as u32;

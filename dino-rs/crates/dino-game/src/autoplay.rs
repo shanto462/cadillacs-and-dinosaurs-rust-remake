@@ -225,9 +225,9 @@ impl Bot {
         if g.flow.in_game != 0 && g.flow.mode == 0x1C && self.ending.is_none() {
             self.ending = Some(tick);
         }
-        if g.flow.in_game == 0 && self.ending.is_some() && self.finished.is_none() {
+        if let (0, Some(began), None) = (g.flow.in_game, self.ending, self.finished) {
             self.finished = Some(tick);
-            eprintln!("autoplay: the ending began at frame {}; back in the attract loop at frame {tick}", self.ending.unwrap());
+            eprintln!("autoplay: the ending began at frame {began}; back in the attract loop at frame {tick}");
         }
         if g.flow.in_game != 0 && g.flow.mode == 0xC {
             let now = [g.cam.s2.cam_x, g.cam.s2.cam_y, g.players[0].b.xi() as u16];

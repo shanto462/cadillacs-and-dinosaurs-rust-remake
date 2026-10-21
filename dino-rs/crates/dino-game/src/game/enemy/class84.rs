@@ -120,9 +120,9 @@ impl Game {
             return;
         }
         let mut d = [0u16; 6];
-        for k in 0..5 {
+        for slot in d.iter_mut().take(5) {
             let Some(j) = self.enemies.alloc() else { return };
-            d[k] = self.enemies.handle(j);
+            *slot = self.enemies.handle(j);
         }
         d[5] = h;
         for _ in 0..5 {

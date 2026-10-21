@@ -92,8 +92,8 @@ impl Game {
         // the record a start loaded (0x15E4 with a0 = the table entry), `None` when no start happened
         let mut started = None;
         if changed {
-            for k in 0..3 {
-                self.effects.slots[i].set_seen(k, seats[k]);
+            for (k, &seat) in seats.iter().enumerate() {
+                self.effects.slots[i].set_seen(k, seat);
             }
             if car.b.live == 0 || car.b.k20 != 0x160 {
                 return self.fx_free(i); // 0x9714A: jmp 0x4964

@@ -371,9 +371,7 @@ impl Game {
         }
         let old = *e;
         *e = m;
-        for k in keep..8 {
-            e[k] = old[k];
-        }
+        e[keep..8].copy_from_slice(&old[keep..8]);
         self.hud.ring_w[ring] = w.wrapping_add(0x10);
     }
 

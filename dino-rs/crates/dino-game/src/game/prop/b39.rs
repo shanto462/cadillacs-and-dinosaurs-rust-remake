@@ -6,6 +6,7 @@
 //! steps the phase word `+$A2` through 4, 8, 0xC, 0, then writes two blocks:
 //! 1. Staircase block cols 48..63, rows 43..47 (0x83118).
 //! 2. Rectangular block cols 0..15, rows 43..47 (0x8318C).
+//!
 //! Mode 4 and mode 6 are 0x8369E (`jmp 0x4938`).
 
 use super::tile_block::TilePos;

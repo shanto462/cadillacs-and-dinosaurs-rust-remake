@@ -875,8 +875,8 @@ impl Game {
             // Largest score (BCD long +$100), ties keep the earlier player: +1.
             let mut a0 = n;
             let mut v = 0u32;
-            for p in 0..3 {
-                if present[p] && (p == 0 || self.enemy_player_score(p) > v) {
+            for (p, &here) in present.iter().enumerate() {
+                if here && (p == 0 || self.enemy_player_score(p) > v) {
                     v = self.enemy_player_score(p);
                     a0 = p;
                 }
@@ -884,8 +884,8 @@ impl Game {
             score[a0] = score[a0].wrapping_add(1);
             // Largest vitality: +2.
             let mut v = 0u16;
-            for p in 0..3 {
-                if present[p] && (p == 0 || self.players[p].b.hp > v) {
+            for (p, &here) in present.iter().enumerate() {
+                if here && (p == 0 || self.players[p].b.hp > v) {
                     v = self.players[p].b.hp;
                     a0 = p;
                 }
@@ -1668,9 +1668,7 @@ impl Game {
         let tb = self.body(t);
         let mut s: u8 = if l > r as i8 {
             3
-        } else if l < r as i8 {
-            r
-        } else if neg_near(e.b.xi().wrapping_sub(tb.xi())) {
+        } else if l < r as i8 || neg_near(e.b.xi().wrapping_sub(tb.xi())) {
             r
         } else {
             3
@@ -2021,9 +2019,7 @@ impl Game {
         }
         e.m.sb(DASH_CHK, 0x1E);
         let t = self.body(e.m.w(TARGET)).clone();
-        let stop = if in_win(t.xi().wrapping_sub(e.b.xi()), 0x70) {
-            true
-        } else if in_win(e.b.xi().wrapping_sub(e.m.w(DASH_X) as i16), 0x10) {
+        let stop = if in_win(t.xi().wrapping_sub(e.b.xi()), 0x70) || in_win(e.b.xi().wrapping_sub(e.m.w(DASH_X) as i16), 0x10) {
             true
         } else if e.m.b(DASH_KIND) != 0 || t.sub != 0 {
             false
