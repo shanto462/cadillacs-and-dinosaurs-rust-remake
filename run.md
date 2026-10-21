@@ -16,10 +16,13 @@ Keys (player 1 on the keyboard):
 - Attack: J or Z. Jump: K or X.
 - Start: 1, 2, 3 (Enter also starts player 1). Coin: 5, 6, 7 (for slots 1, 2, 3).
 - SERVICE: 9 (adds a credit for every player).
+- Fullscreen: F11 or Alt+Enter (Option+Enter on Mac) toggles fullscreen. Window scaling uses integer zoom to preserve the arcade 384x224 aspect ratio with crisp pixels and black borders.
 - Players 2 and 3 use gamepads: the first three pads drive players 1 to 3. D-pad or left stick moves, South (A / Cross) attacks, East (B / Circle) jumps, Start starts, Select / Back is a coin.
 
 Options:
 
+- `--fullscreen`: start in fullscreen mode.
+- `--frames N`: exit automatically after N frames (works in windowed and headless runs).
 - `--mute`: no sound (for windowed runs).
 - `--config FILE`: read the settings from this file. Without it, `dino.cfg` next to the ROM is read if it exists.
 - `--print-config`: print the factory settings file (a starting point for `dino.cfg`).
