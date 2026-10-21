@@ -294,7 +294,7 @@ fn main() {
     let config = load_config(args.config.as_deref());
     if let Some(trace) = &args.trace {
         // Headless harness run: no window.
-        let frames = std::env::args().any(|a| a == "--frames").then_some(args.frames).unwrap_or(600);
+        let frames = if std::env::args().any(|a| a == "--frames") { args.frames } else { 600 };
         let assets = load_assets(args.load_state.as_deref(), args.step_from.as_deref());
         let (load, step) = (args.load_state.as_deref(), args.step_from.as_deref());
         let follow = args.follow_rng.as_deref();
@@ -413,16 +413,16 @@ impl HeroWatch {
 fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Frame, audio: &mut Option<audio::Audio>) {
     // `--area`: the game's own end of area (camera mode 1 sub 4, the debug key F6) once the hero has control, area after
     // area like the probe `jump`, then `--camx`. Episode 3 has one area (`--area` above 0 is refused at the start).
-    if let Some((area, camx)) = args.goto {
-        if game.flow.mode == 0xC && game.w.scripted == 0 && game.cam.s2.mode == 0 {
-            if game.cam.s2.area < area {
-                debug::next_area(game);
-            } else {
-                if camx != 0 {
-                    game.flow_jump_camera(camx);
-                }
-                args.goto = None;
+    if let Some((area, camx)) = args.goto
+        && game.flow.mode == 0xC && game.w.scripted == 0 && game.cam.s2.mode == 0
+    {
+        if game.cam.s2.area < area {
+            debug::next_area(game);
+        } else {
+            if camx != 0 {
+                game.flow_jump_camera(camx);
             }
+            args.goto = None;
         }
     }
     if let Some(bot) = &mut args.autoplay {

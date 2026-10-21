@@ -85,7 +85,7 @@ impl<'a> Cpu<'a> {
     }
 
     fn rasterize(&mut self) {
-        for p in self.pixels.chunks_exact_mut(4) {
+        for p in self.pixels.as_chunks_mut::<4>().0 {
             p.copy_from_slice(&[0, 0, 0, 255]);
         }
         // Stable order also preserves the sprite list order within each layer.
