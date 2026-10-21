@@ -7,7 +7,7 @@
 
 use crate::sprites::AttackRecord;
 use std::collections::{BTreeSet, HashMap};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 
 /// One spawn record. List 1 records are 14 bytes (`b5b`/`b96` are 0), list 2 and wave records 16.
 /// In wave scripts and boss reinforcement lists `trig` is the delay in frames.
@@ -75,6 +75,45 @@ pub struct StageScript {
 pub struct ByteTables {
     pub blobs: Vec<(u32, Vec<u8>)>,
     pub program: Vec<u8>,
+    /// A search index over `blobs`, built at the first read (`BlobIndex`). A read after `blobs` changed in length scans the blobs, as before.
+    pub index: OnceLock<BlobIndex>,
+}
+
+/// The blob that holds an address, found by a binary search: the segments of the address space the blobs cover, each with the first blob
+/// (in list order) that covers it, so a read gets the same byte as the scan of the list (the blobs may overlap). A game tick reads
+/// a thousand table bytes in some areas (the rain streaks), and the list has hundreds of blobs.
+#[derive(Clone, Debug, Default)]
+pub struct BlobIndex {
+    /// The number of blobs it was built for.
+    n: usize,
+    /// (start, end, blob) by start, disjoint.
+    segs: Vec<(u32, u32, usize)>,
+}
+
+impl BlobIndex {
+    pub fn new(blobs: &[(u32, Vec<u8>)]) -> BlobIndex {
+        let mut cuts: Vec<u32> = blobs.iter().flat_map(|(s, d)| [*s, s.saturating_add(d.len() as u32)]).collect();
+        cuts.sort_unstable();
+        cuts.dedup();
+        let mut segs: Vec<(u32, u32, usize)> = Vec::new();
+        for w in cuts.windows(2) {
+            let (a, b) = (w[0], w[1]);
+            let first = blobs.iter().position(|(s, d)| a >= *s && ((a - s) as usize) < d.len());
+            if let Some(k) = first {
+                match segs.last_mut() {
+                    Some(last) if last.1 == a && last.2 == k => last.1 = b,
+                    _ => segs.push((a, b, k)),
+                }
+            }
+        }
+        BlobIndex { n: blobs.len(), segs }
+    }
+
+    /// The first blob that covers `addr`.
+    pub fn find(&self, addr: u32) -> Option<usize> {
+        let i = self.segs.partition_point(|s| s.0 <= addr);
+        i.checked_sub(1).map(|i| self.segs[i]).filter(|s| addr < s.1).map(|s| s.2)
+    }
 }
 
 /// The table addresses already reported as missing (debug builds print each one once).
@@ -82,9 +121,17 @@ static MISSING: Mutex<BTreeSet<u32>> = Mutex::new(BTreeSet::new());
 
 impl ByteTables {
     fn find(&self, addr: u32) -> (&[u8], usize) {
-        for (start, data) in &self.blobs {
-            if addr >= *start && ((addr - start) as usize) < data.len() {
+        let index = self.index.get_or_init(|| BlobIndex::new(&self.blobs));
+        if index.n == self.blobs.len() {
+            if let Some(k) = index.find(addr) {
+                let (start, data) = &self.blobs[k];
                 return (data, (addr - start) as usize);
+            }
+        } else {
+            for (start, data) in &self.blobs {
+                if addr >= *start && ((addr - start) as usize) < data.len() {
+                    return (data, (addr - start) as usize);
+                }
             }
         }
         if (addr as usize) < self.program.len() {
@@ -149,7 +196,7 @@ mod byte_table_tests {
 
     /// A blob covers 0x100..0x104; the program image covers 0..0x200 (test data, not ROM bytes).
     fn tables() -> ByteTables {
-        ByteTables { blobs: vec![(0x100, vec![1, 2, 3, 4])], program: (0..0x200u32).map(|x| (x as u8) ^ 0x5A).collect() }
+        ByteTables { blobs: vec![(0x100, vec![1, 2, 3, 4])], program: (0..0x200u32).map(|x| (x as u8) ^ 0x5A).collect(), ..Default::default() }
     }
 
     #[test]
@@ -174,7 +221,19 @@ mod byte_table_tests {
 
     #[test]
     fn an_empty_program_image_means_no_fallback() {
-        let t = ByteTables { blobs: vec![(0x100, vec![1])], program: Vec::new() };
+        let t = ByteTables { blobs: vec![(0x100, vec![1])], program: Vec::new(), ..Default::default() };
         assert_eq!(t.u8(0x100, 0), 1);
+    }
+
+    /// The index gives the byte the scan of the list gives, also where blobs overlap (the first blob in the list wins) and where they touch.
+    #[test]
+    fn the_index_reads_what_the_scan_reads() {
+        let blobs: Vec<(u32, Vec<u8>)> = vec![(0x100, vec![1, 2, 3, 4]), (0x102, vec![9, 9, 9, 9]), (0x50, vec![7; 0x60]), (0x104, vec![5, 5]), (0x400, vec![])];
+        let t = ByteTables { blobs: blobs.clone(), ..Default::default() };
+        for a in 0..0x500u32 {
+            let scan = blobs.iter().find(|(s, d)| a >= *s && ((a - s) as usize) < d.len()).map(|(s, d)| d[(a - s) as usize]);
+            let got = std::panic::catch_unwind(|| t.u8(a, 0)).ok();
+            assert_eq!(got, scan, "address {a:#x}");
+        }
     }
 }
