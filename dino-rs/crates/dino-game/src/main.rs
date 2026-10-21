@@ -26,7 +26,8 @@
 //! `DINO_POKES`: `frame hexaddr size value`, power frames unless `--poke-clock game`; see
 //! `harness.rs`, `PokeSet`). An address the port has no field for is an error.
 //! See `input.rs` for keys and the input script format, `harness.rs` and `re/harness/README.md`
-//! for `--load-state` (start from a MAME snapshot) and `--trace` (headless run for the diff).
+//! for `--load-state` (start from a MAME snapshot) and `--trace` (headless run for the diff). `--keep-dip` (with `--trace`): a loaded
+//! snapshot keeps the settings of `--config` (G.$777A..C of the port) instead of the bytes of the snapshot.
 
 mod audio;
 mod autoplay;
@@ -290,6 +291,7 @@ fn main() {
         let follow = args.follow_rng.as_deref();
         let lagsync = args.lagsync.as_deref();
         let start = harness::Start { boot: !args.direct, stage: args.stage, area: args.area, camx: args.camx, chars: &args.chars };
+        game::trace::set_keep_dip(std::env::args().any(|a| a == "--keep-dip"));
         let r = harness::run(assets, trace, load, step, follow, lagsync, start, config, args.script.as_ref(), args.pokes, frames);
         if let Err(e) = r {
             eprintln!("error: {e}");

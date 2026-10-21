@@ -43,6 +43,31 @@ Start with `step`: it tells you which classes and routines are wrong or missing.
 the whole run is exact. In `step` mode a VRAM or sound write that an unported routine makes shows up
 as a difference in that one frame only.
 
+### Settings from `--config` (`--keep-dip`)
+
+A snapshot holds the settings bytes G.$777A..C of the original (`dip_a`, `dip_b`, `dip_c`). By default a
+loaded snapshot (`--load-state`, `--step-from`, `--lagsync`) copies them into the port, so the port
+plays with the settings of MAME, and a `--config` file has no effect in these modes (`trace.rs`, the
+`dip` fields of the flow loader). `--keep-dip` (with `--trace`) keeps the port's own cooked settings
+(`--config` or `dino.cfg`, `Config::cook`) instead. The loader still copies the rest of the snapshot.
+The default (no flag) is unchanged.
+
+Settings check (M10-21): record MAME with the bytes poked at power frame 150 (before the sync point
+and after the boot cook at frame 68), with the same settings in a config file, then compare:
+
+```sh
+# MAME: poke G.$777A..C (absolute 0xFFF77A..0xFFF77C) at power frame 150, snapshot at 1800 (in play)
+re/harness/probe/probe_record.sh BATCH.txt all          # BATCH: `segment NAME`, `150 FFF77B 1 0x4F`, ..., `1800 snapshot`, `trace 1400`
+# port: the variant's config, the bytes kept from the port's own cook
+PORT_OPTS="--keep-dip --config variant.cfg" MODE=step re/harness/port.sh re/out/traces/NAME.input.txt NAME 1400
+re/.venv/bin/python -I re/harness/diff.py re/out/traces/NAME.mame.trc re/out/traces/NAME.step.trc
+```
+
+Use the address of the original (`G.$777B` = 0xFFF77B, G is 0xFF8000), not 0xFF777B. Snapshots taken
+after the coin (and the game start) cannot show the coin, free play, continue or start lives options
+(the original reads them before the snapshot); the bytes themselves are compared in every snapshot.
+The variants checked at M10-21 are in re/out/m21 (not committed).
+
 ## Reference scenarios
 
 ### Power-on references

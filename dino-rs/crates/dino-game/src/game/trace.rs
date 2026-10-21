@@ -12,6 +12,21 @@
 //! Fields the port keeps in another form (indexes instead of ROM pointers, frame ids instead of
 //! frame record addresses) are converted here in both directions.
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/// `--keep-dip` (main.rs): the snapshot loader keeps the port's cooked settings G.$777A..C (from `--config`) instead of MAME's bytes.
+static KEEP_DIP: AtomicBool = AtomicBool::new(false);
+
+/// Sets `--keep-dip` for this run (see [`keep_dip`]).
+pub fn set_keep_dip(on: bool) {
+    KEEP_DIP.store(on, Ordering::Relaxed);
+}
+
+/// Whether a loaded snapshot keeps the port's own settings (`--keep-dip`).
+pub fn keep_dip() -> bool {
+    KEEP_DIP.load(Ordering::Relaxed)
+}
+
 use super::body::Body;
 use super::effect::{Effect, Special};
 use super::enemy::{Enemy, Ram};
@@ -1739,9 +1754,12 @@ impl Game {
             }
             f.u8(0x05CC + k as u32, "continue", &mut fl.cont.raw.0[k]);
         }
-        f.u8(0x777A, "dip_a", &mut fl.dip.dip_a);
-        f.u8(0x777B, "dip_b", &mut fl.dip.dip_b);
-        f.u8(0x777C, "dip_c", &mut fl.dip.dip_c);
+        // `--keep-dip` (harness): a loaded snapshot keeps the port's own cooked settings (`--config`, Flow::dip) instead of MAME's bytes.
+        if !(f.loading() && keep_dip()) {
+            f.u8(0x777A, "dip_a", &mut fl.dip.dip_a);
+            f.u8(0x777B, "dip_b", &mut fl.dip.dip_b);
+            f.u8(0x777C, "dip_c", &mut fl.dip.dip_c);
+        }
         if f.loading() {
             self.rank.dip = fl.dip.dip_b;
         }
