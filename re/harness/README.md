@@ -1986,3 +1986,14 @@ records only when the attacker's +$82 is 0 (a hero; pools A / B / E hold their p
 * `m328_end-hiscore` (run mode, game clock) is equal for all 6901 records (8 of 8 `m328_end-*` equal). The attract after the name entry has three lag records that the port had as plain ticks: the ranking end of a game over (0x97C94 -> 0x97D84: clear, palettes, title, 6 vertical blanks, 6194), the profile cards start (3, 6794) and the card start pass (2, 6805): `join_next` / `attract_join` join them (`flow_attract_ranking_end`, `flow_attract_after_title`, `pst::CUT`). A snapshot taken in a running game does not start at the first title and profile run since power on (`flow_title_runs_late`: the measured first-run cuts of `TITLE_RUNS` / `profile_first_run` do not apply).
 * The story panel loader (`trace_load_tasks`, the patch `t18_story_palette_patch.diff` of Desktop Sonnet, taken over) ends the staged entry clear (`clear_stage`, `clear3_cut`) and restores the Episode 8 palette play (0xE0E4: the step and the counter from the saved d2 / d1 at the return 0xE148). The rules S of ep2_3p, ep3_jack, ep3_3p, ep4_jack, ep4_3p and ep7_3p are gone, ep6_3p keeps one (`global.coin_pulse_timer` 42639 .. 42650); ep2_jack (G.$744, G.$77E) and the step mode of the m517 Episode 1 runs keep theirs. Gate of this change: all 53 recordings (the 48 of `m10_check.sh` and the five m517 Episode 1 runs) equal with the rules in step and lagsync mode (106 of 106), `regress.sh` 52 of 52 at 0, `m10_demo_check.sh` 12 of 12, `m328_end-*` 8 of 8.
 
+
+## Code coverage of the original (which code no recording runs)
+
+`re/harness/coverage/` replays the recordings of this harness in MAME with debugger breakpoints that switch themselves off after
+the first hit (no window), checks that every replay equals its recording, and maps the hits to the routines of the original and
+to the port. Results, method and the list of code that normal play reaches but no recording covers: `re/harness/coverage/REPORT.md`.
+
+```sh
+re/harness/coverage/all.sh                                   # every job (about three hours, one MAME process at a time), then the map
+re/.venv/bin/python -I re/harness/coverage/map.py            # the numbers and re/out/coverage/*.tsv from the hits
+```
