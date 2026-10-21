@@ -1949,3 +1949,14 @@ The escape attack and the reversal come only from a hold with `+$C7` set, which 
 opens (D5 errata). Forced onto Zeke's hold the original stops: the escape attack that hits Zeke inside his grab ends in ILLEGAL INSTRUCTION in his hit
 reaction (A0 = 0x60F1E), and a Zeke held by Mustapha in ADDRESS ERROR (PC 0x60F2A, Zeke has no code for being held); `t22_zrev_mustapha` ends before it.
 The port goes on there (Zeke is thrown); this is not reachable in natural play.
+
+## Code coverage of the original (which code no recording runs)
+
+`re/harness/coverage/` replays the recordings of this harness in MAME with debugger breakpoints that switch themselves off after
+the first hit (no window), checks that every replay equals its recording, and maps the hits to the routines of the original and
+to the port. Results, method and the list of code that normal play reaches but no recording covers: `re/harness/coverage/REPORT.md`.
+
+```sh
+re/harness/coverage/all.sh                                   # every job (about three hours, one MAME process at a time), then the map
+re/.venv/bin/python -I re/harness/coverage/map.py            # the numbers and re/out/coverage/*.tsv from the hits
+```

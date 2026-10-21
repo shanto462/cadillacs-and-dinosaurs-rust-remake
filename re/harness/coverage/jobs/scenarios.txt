@@ -1,0 +1,6 @@
+# The plain record.sh recordings (phase 1 classes and items, the M2-30 two and three player scenarios, M9 tag team, ...):
+# the list scenarios.list (made by scenarios.py from the headers and snapshots in re/out/traces), replayed by multi.lua,
+# about 60 recordings in ONE MAME process per job, each with its own hits (a recording whose replay differs does not count). Run: re/harness/coverage/run.sh re/harness/coverage/jobs/scenarios.txt
+s_1_60: re/harness/coverage/multi.sh re/harness/coverage/jobs/scenarios.list 1 60
+s_61_120: re/harness/coverage/multi.sh re/harness/coverage/jobs/scenarios.list 61 120
+s_121_181: re/harness/coverage/multi.sh re/harness/coverage/jobs/scenarios.list 121 999

@@ -1,0 +1,5 @@
+# Natural whole runs (see natural_ep1.txt).
+ep6_jack: DINO_TIMEOUT=3600 DINO_BOOT=re/harness/scripts/boot_jack.txt DINO_POKES=re/harness/pokes/ep6_boot.txt DINO_SYNC=control re/harness/record.sh re/harness/scripts/ep6_jack.txt ep6_jack 70000
+ep6_3p: DINO_TIMEOUT=3600 DINO_BOOT=re/harness/scripts/boot_3p.txt DINO_POKES=re/harness/pokes/ep6_boot.txt DINO_SYNC=control re/harness/record.sh re/harness/scripts/ep6_3p.txt ep6_3p 70000
+ep7_jack: DINO_TIMEOUT=3600 DINO_BOOT=re/harness/scripts/boot_jack.txt DINO_POKES=re/harness/pokes/ep7_boot.txt DINO_SYNC=control re/harness/record.sh re/harness/scripts/ep7_jack.txt ep7_jack 60000
+ep7_3p: DINO_TIMEOUT=3600 DINO_BOOT=re/harness/scripts/boot_3p.txt DINO_POKES=re/harness/pokes/ep7_boot.txt DINO_SYNC=control re/harness/record.sh re/harness/scripts/ep7_3p.txt ep7_3p 60000

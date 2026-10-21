@@ -1,0 +1,22 @@
+#!/bin/sh
+# The coverage shim (re/harness/coverage/README.md): run.sh puts this folder first in PATH, so every harness tool
+# that calls `mame` (record.sh, probe_record.sh, probe.sh, sound.sh) gets MAME with the debugger on (no window:
+# `-debugger none`) and cov.lua as the autoboot script; cov.lua runs the tool's own autoboot script (COV_INNER).
+# Every MAME process writes its hits to COV_HITS/COV_JOB-N.hits.
+REAL=${COV_REAL_MAME:-/opt/homebrew/bin/mame}
+HERE=$(cd "$(dirname "$0")/.." && pwd)
+inner=""
+take=0
+for a do
+  shift
+  if [ "$take" = 1 ]; then inner=$a; set -- "$@" "$HERE/cov.lua"; take=0; continue; fi
+  [ "$a" = "-autoboot_script" ] && take=1
+  set -- "$@" "$a"
+done
+: "${COV_HITS:?the shim runs only under run.sh}"
+mkdir -p "$COV_HITS"
+n=1
+while [ -e "$COV_HITS/${COV_JOB:-job}-$n.hits" ] || [ -e "$COV_HITS/${COV_JOB:-job}-$n.claim" ]; do n=$((n + 1)); done
+: > "$COV_HITS/${COV_JOB:-job}-$n.claim"
+export COV_INNER=$inner COV_OUT="$COV_HITS/${COV_JOB:-job}-$n.hits"
+exec "$REAL" "$@" -debug -debugger none

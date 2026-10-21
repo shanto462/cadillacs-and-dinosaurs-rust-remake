@@ -1,0 +1,11 @@
+# The natural whole runs (record.sh, one MAME process each, run one after the other), with the lengths of the harness recordings
+# (re/harness/m10_sound_check.sh). The Episode 1 runs of M5-17 were first recorded 40000 frames long (NAME.full) with an older script;
+# the current scripts give the same records up to the cut of NAME.mame.trc only, so the replays stop there. Each replay is
+# compared with the recording (same.py). Run: re/harness/coverage/run.sh re/harness/coverage/jobs/natural_ep1.txt
+m517_ep1_jack: DINO_TIMEOUT=3600 DINO_BOOT=re/harness/scripts/boot_jack.txt re/harness/record.sh re/harness/scripts/m517_ep1_jack.txt m517_ep1_jack 29857
+m517_ep1_mustapha: DINO_TIMEOUT=3600 DINO_BOOT=re/harness/scripts/boot_mustapha.txt re/harness/record.sh re/harness/scripts/m517_ep1_mustapha.txt m517_ep1_mustapha 30544
+m517_ep1_hannah: DINO_TIMEOUT=3600 DINO_BOOT=re/harness/scripts/boot_hannah.txt re/harness/record.sh re/harness/scripts/m517_ep1_hannah.txt m517_ep1_hannah 15456
+m517_ep1_mess: DINO_TIMEOUT=3600 DINO_BOOT=re/harness/scripts/boot_mess.txt re/harness/record.sh re/harness/scripts/m517_ep1_mess.txt m517_ep1_mess 16145
+m517_ep1_3p: DINO_TIMEOUT=3600 DINO_BOOT=re/harness/scripts/boot_3p.txt re/harness/record.sh re/harness/scripts/m517_ep1_3p.txt m517_ep1_3p 24336
+m523_ep1_2p: DINO_TIMEOUT=3600 DINO_BOOT=re/harness/scripts/boot_2p.txt re/harness/record.sh re/harness/scripts/m523_ep1_2p.txt m523_ep1_2p_full 40000 && re/.venv/bin/python -I re/harness/coverage/same.py $COV_ORIG/m523_ep1_2p.mame.trc re/out/traces/m523_ep1_2p_full.mame.trc
+m523_ep1_3pjhm: DINO_TIMEOUT=3600 DINO_BOOT=re/harness/scripts/boot_3p_jhm.txt re/harness/record.sh re/harness/scripts/m517_ep1_3p.txt m523_ep1_3pjhm_full 40000 && re/.venv/bin/python -I re/harness/coverage/same.py $COV_ORIG/m523_ep1_3pjhm.mame.trc re/out/traces/m523_ep1_3pjhm_full.mame.trc
