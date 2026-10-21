@@ -104,7 +104,7 @@ Jump points (the boss scene points were removed on 2026-10-21; start at the epis
 
 ## 4. Headless runs (no window)
 
-Every enemy class of the game runs its own code now. The placeholder stand-ins (labelled boxes) and the flag `--list-placeholders` are gone (task 14, M9-14). A class word the port does not know is freed with the message `pool A class N not ported (freed)` on stderr; the census of the bot (`DINO_AUTO_CENSUS=1`) prints `class:count` pairs without a marker.
+Every enemy class of the game runs its own code. A class word the port does not know is freed with the message `pool A class N not ported (freed)` on stderr; the census of the bot (`DINO_AUTO_CENSUS=1`) prints `class:count` pairs without a marker.
 
 - `--headless --autoplay`: a bot (god mode, the flow test) plays from power on through the eight episodes to the ending and back to the attract loop. It stops there (a few seconds). Mode changes go to stderr.
 - `--headless --screenshots 60,600 --shot-dir DIR`: runs the game and saves the pictures at frames 60 and 600 as `DIR/f00060.png` and `DIR/f00600.png`. Add `--jump NAME` (or `--episode`, `--area`, `--camx`) to choose the start.
@@ -134,3 +134,22 @@ A bot that plays like a player, with a planner (`planner.rs`). It presses only i
 - Speed: planning costs 4 to 10 times the game (it uses up to 8 cores); headless it runs at several hundred frames per second, so the whole game takes a few minutes; in a window it should keep up with the normal 60 frames per second (not checked yet).
 
 `--help` prints all the options.
+
+## Debug and test paths
+
+Every path below is off in a plain `cargo run -p dino-game -- --rom ../dino.zip` (windowed, from power on). Only the F1 hit box overlay is reachable without a flag, and it is a player option (section 2).
+
+- F1 hit box overlay: no flag; windowed only; turns the sprite hit boxes on or off (`main.rs`). Player option, documented in section 2.
+- Debug keys F2 kill all, F3 skip wave, F4 time 5:00, F5 god mode, F6 next area: `--debug-keys` (or `--test`), windowed only (`debug.rs`).
+- Test menu: `--test` (open at start), or F1 with `--debug-keys` (`menu.rs`). Headless picture of it: `--test --headless --screenshots F --shot-dir DIR`.
+- God mode: F5 or `God mode` in the test menu, with the debug keys on only (`debug.rs`).
+- Jump start flags `--jump`, `--episode`, `--stage`, `--area`, `--camx`, `--chars`: a start in the middle of the game, not from power on (`main.rs`, `jumps.rs`).
+- Autoplay bot `--autoplay` (god mode, flow test) and `--autoplay smart` (planner, presses inputs only): the flag is needed (`autoplay.rs`, `planner.rs`).
+- Bot env vars: `DINO_AUTO_MORTAL`, `DINO_AUTO_NOKILL`, `DINO_AUTO_CENSUS`, `DINO_AUTO_DIAG`, `DINO_AUTO_RANGE` (read only by `--autoplay`); `DINO_SMART_*` and `DINO_SMART_DIAG` (read only by `--autoplay smart`).
+- Harness flags `--trace`, `--step-from`, `--follow-rng`, `--lagsync`, `--load-state`, `--keep-dip`, `--poke`, `--poke-file`, `--poke-clock` (`harness.rs`, `main.rs`): need the flag. Harness env vars `DINO_GAME_CLOCK`, `DINO_STEP_PLAYERS`, `DINO_LAGSYNC_EVERY`, `DINO_LAGSYNC_RANGE`, `DINO_LAGSYNC_TICKS`: read only in a `--trace` run.
+- Scripted input `--input`, `--input-file` (`input.rs`): need the flag.
+- Asset viewer `--viewer` or `--view char,set,anim` (`viewer.rs`): need the flag; its F key is read only there.
+- Screenshots `--screenshot`, `--screenshots`, `--shot-dir`: need the flag; they make a headless run when no window is asked.
+- Info exits `--help`, `--list-jumps`, `--print-config`: print and exit.
+- Test-only: `DINO_WAV_OUT` (audio listening files, `audio.rs`) and the `#[ignore]` review runs (`game/flow/mame_check.rs`, `planner.rs`): only under `cargo test`.
+- Messages a player can see on the terminal in a plain run: none on a normal start. `audio: ...` appears only when no audio device opens (the game runs silent). `error: ...` appears only on a failure (for example a missing `dino.zip`). `pool A class N not ported (freed)` appears only if a class is not ported (none is left).

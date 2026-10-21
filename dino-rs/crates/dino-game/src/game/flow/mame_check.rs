@@ -2975,7 +2975,7 @@ fn ending_report() {
     println!("{} differences: {kinds:?}", bad.len());
 }
 
-/// Review run (not a MAME check): Episode 8 from a direct start with the placeholder bosses, one hero who cannot die, the right key and kill all every 400
+/// Review run (not a MAME check): Episode 8 from a direct start, one hero who cannot die, the right key and kill all every 400
 /// frames, to the ending and back to the attract loop (`cargo test -p dino-game episode_eight_reaches_the_ending -- --ignored --nocapture`).
 #[test]
 #[ignore]
@@ -2992,7 +2992,7 @@ fn episode_eight_reaches_the_ending() {
         if t % 600 == 0 {
             g.spawn.g.kill_all = 2;
         }
-        // the debug key F6 (`debug::next_area`) takes the hero to the last area, where the placeholder Fessenden is
+        // the debug key F6 (`debug::next_area`) takes the hero to the last area, where Fessenden is
         if g.cam.s2.area < 3 && g.flow.mode == 0xC && g.w.scripted == 0 && g.cam.s2.mode == 0 && t > 300 {
             crate::debug::next_area(&mut g);
         }

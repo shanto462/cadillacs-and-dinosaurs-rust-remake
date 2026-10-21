@@ -69,9 +69,8 @@ mod tests {
 
     /// Needs the user's ROM set at `../dino.zip` (skipped otherwise). A frame record that no
     /// registered table reaches is decoded on demand; an address that is not a frame record is skipped.
-    /// The candidate is a frame record of a placeholder class (`game/placeholder.rs`) whose animation table is not
-    /// registered yet: 0x86D00 (class 65, BARREL). If the base set has it, the test fails, so pick a new candidate
-    /// (cargo run -p dino-game -- --list-placeholders).
+    /// The candidate is the frame record 0x86D00 (class 65, BARREL), whose animation table is not in the base set.
+    /// If the base set ever gains it, this test fails: pick another frame record that no table reaches.
     #[test]
     fn extra_frames_are_decoded_on_demand() {
         let path = Path::new("../../../dino.zip");

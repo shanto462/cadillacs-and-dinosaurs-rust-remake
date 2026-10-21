@@ -2,8 +2,7 @@
 # (the drums, the M-16 drops and the tires), the natural recordings ep4_jack and ep4_3p (1 and 3 players), in step mode and run mode.
 #   MODE=step re/harness/port.sh re/harness/scripts/NAME.txt NAME FRAMES                       (the traces here were made with the names a416_NAME: no old trace was overwritten)
 #   re/.venv/bin/python -I re/harness/diff.py re/out/traces/NAME.mame.trc re/out/traces/NAME.step.trc --allow re/harness/allow/m7.txt [--frame-list]
-# `--list-placeholders` has no Episode 4 class (the registry holds the Bludge, the Brontosaurus foot, Morgan, the villagers, Morgue, the Slisaur and Fessenden form 2); the two natural
-# recordings run all 27,954 records without the line "not ported (freed)" and the class report of diff.py has no [NOT PORTED] class.
+# The two natural recordings run all 27,954 records without the line "not ported (freed)" and the class report of diff.py has no [NOT PORTED] class.
 #
 # Result in step mode, 57 scenarios (every Episode 4 scenario of the list above): 48 equal without any rule, 9 differ: the 4 opening scenes (cause 2) and the 5 fence scenes (cause 3).
 # Result in run mode, 48 scenarios (the list without the opening scenes and the fence scenes): 45 equal, the 3 bikers (H13) differ in the free list only (cause 5).
