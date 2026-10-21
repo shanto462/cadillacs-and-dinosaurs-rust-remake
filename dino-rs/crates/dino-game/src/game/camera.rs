@@ -157,7 +157,7 @@ pub struct ScrollLatch {
     filled: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Camera {
     pub s2: Scroll2,
     pub s3: Scroll3,
@@ -193,13 +193,6 @@ pub struct Camera {
     pub shake_scroll1_y: u16,
     /// The shadows of the last frames (see [`VIDEO_LATENCY`]).
     pub latch: ScrollLatch,
-}
-
-impl Default for Camera {
-    fn default() -> Self {
-        Camera { s2: Scroll2::default(), s3: Scroll3::default(), row: RowScroll::default(), car: 0, cam1_x: 0, cam1_y: 0, cam1_y_frac: 0, shake_req: 0, shake_state: 0, shake_strength: 0, shake_timer: 0, shake_sign: 0, shake_amp: 0,
-            shake_dy1: 0, shake_dy2: 0, display_y1: 0, display_y2: 0, shake_scroll1_y: 0, latch: ScrollLatch::default() }
-    }
 }
 
 impl Scroll3 {
@@ -1183,13 +1176,11 @@ impl Game {
                 }
             }
             4 => self.area_end_next_area(false),
-            6 => {
-                if self.cam.s2.go == 0 {
-                    self.load_event_index_mode();
-                    self.cam.s2.next_event += 1;
-                    self.cam.s2.sub = 0;
-                    self.brightness_full();
-                }
+            6 if self.cam.s2.go == 0 => {
+                self.load_event_index_mode();
+                self.cam.s2.next_event += 1;
+                self.cam.s2.sub = 0;
+                self.brightness_full();
             }
             _ => {}
         }
@@ -1626,15 +1617,7 @@ impl Game {
                 let s = &mut self.cam.s2;
                 let d = car_x.wrapping_sub(s.cam_x.wrapping_add(0xC0)) as i16; // sub.w d3, d0
                 // 0x22A98..0x22ABE: a signed word; negative takes 8, above 0x14 takes 0x14, below 8 takes 8 (`bmi`, `ble`, `bge`)
-                let step: i16 = if d < 0 {
-                    8
-                } else if d > 0x14 {
-                    0x14
-                } else if d < 8 {
-                    8
-                } else {
-                    d
-                };
+                let step: i16 = d.clamp(8, 0x14);
                 s.cam_x = s.cam_x.wrapping_add(step as u16); // add.w d0, 8(a6)
             }
         }
