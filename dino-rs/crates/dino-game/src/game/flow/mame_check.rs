@@ -3078,8 +3078,9 @@ fn front_end_sound_args_match_mame() {
     let codes: std::collections::BTreeSet<u16> = outside.iter().flat_map(|(_, m, _)| m.iter().map(|e| e.0)).collect();
     assert_eq!(codes.into_iter().collect::<Vec<_>>(), vec![0x24, 0x25, 0x61], "only the known leftover codes differ");
     let records: Vec<usize> = outside.iter().map(|(k, _, _)| *k).collect();
-    // (the flock's 0x61 at 12486 to 12526 equals MAME since M6-16 gave class 46 its d1 / d2)
-    assert_eq!(records, [4670, 6075, 12392, 12478]);
+    // (the flock's 0x61 at 12486 to 12526 equals MAME since M6-16 gave class 46 its d1 / d2, the hunter's 0x61 at 12478 since M10-06
+    // gave class 11 its `moveq #$10,d1 ; moveq #0,d2`, 0x3DAB8)
+    assert_eq!(records, [4670, 6075, 12392]);
     // the codes of the same records are equal: only d1 or d2 differ
     for (k, m, p) in &outside {
         let (mc, pc): (Vec<u16>, Vec<u16>) = (m.iter().map(|e| e.0).collect(), p.iter().map(|e| e.0).collect());

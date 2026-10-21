@@ -236,9 +236,9 @@ mod tests {
             g.flow_game_over();
             assert_eq!((g.flow.cont.exit_wait, g.flow.resume, g.flow.join_next), want, "wait ticks of the mode 0x14");
         }
-        g.flow_game_over(); // the pass of 0xAC06: the mode 0x18 and the clear
-        assert_eq!((g.flow.mode, g.flow.cont.exit_wait, g.flow.resume), (0x18, 4, true));
-        for want in [3, 2, 1] {
+        g.flow_game_over(); // the pass of 0xAC06: the mode 0x18 and the clear (it overruns the frame: one lag frame)
+        assert_eq!((g.flow.mode, g.flow.cont.exit_wait, g.flow.resume, g.flow.lag), (0x18, 3, true, 1));
+        for want in [2, 1] {
             g.flow_game_over();
             assert_eq!((g.flow.cont.exit_wait, g.flow.resume, g.flow.join_next), (want, true, false), "wait ticks of the mode 0x18");
         }

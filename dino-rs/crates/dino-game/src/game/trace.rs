@@ -12,6 +12,21 @@
 //! Fields the port keeps in another form (indexes instead of ROM pointers, frame ids instead of
 //! frame record addresses) are converted here in both directions.
 
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/// `--keep-dip` (main.rs): the snapshot loader keeps the port's cooked settings G.$777A..C (from `--config`) instead of MAME's bytes.
+static KEEP_DIP: AtomicBool = AtomicBool::new(false);
+
+/// Sets `--keep-dip` for this run (see [`keep_dip`]).
+pub fn set_keep_dip(on: bool) {
+    KEEP_DIP.store(on, Ordering::Relaxed);
+}
+
+/// Whether a loaded snapshot keeps the port's own settings (`--keep-dip`).
+pub fn keep_dip() -> bool {
+    KEEP_DIP.load(Ordering::Relaxed)
+}
+
 use super::body::Body;
 use super::effect::{Effect, Special};
 use super::enemy::{Enemy, Ram};
@@ -317,7 +332,8 @@ impl Body {
 
     /// +$30..+$3F: split body (only when +$25 bit 0 is set).
     pub fn trace_split(&mut self, f: &mut F) {
-        if f.all() || self.draw_flags & 1 != 0 {
+        // A load restores the layer even while it is off: the stale frame and bytes of a stopped layer are the start values of the next walk (0x5CA6 reads +$34)
+        if f.all() || f.loading() || self.draw_flags & 1 != 0 {
             f.frame(0x30, "frame2", &mut self.frame2, &mut self.frame2_loads, false, false, self.live != 0);
             f.u16(0x34, "w34", &mut self.w34);
             f.u16(0x36, "w36", &mut self.w36);
@@ -1605,7 +1621,7 @@ impl Game {
                 }
                 None => match list_index(p, ev_base, 16) {
                     Some(k) => {
-                        s.event_base = ev_base;
+                        s.event_base = if list_index(p, ev_stage, 16) == Some(k) { ev_stage } else { ev_base };
                         s.next_event = k;
                     }
                     None => {
@@ -1803,9 +1819,12 @@ impl Game {
             }
             f.u8(0x05CC + k as u32, "continue", &mut fl.cont.raw.0[k]);
         }
-        f.u8(0x777A, "dip_a", &mut fl.dip.dip_a);
-        f.u8(0x777B, "dip_b", &mut fl.dip.dip_b);
-        f.u8(0x777C, "dip_c", &mut fl.dip.dip_c);
+        // `--keep-dip` (harness): a loaded snapshot keeps the port's own cooked settings (`--config`, Flow::dip) instead of MAME's bytes.
+        if !(f.loading() && keep_dip()) {
+            f.u8(0x777A, "dip_a", &mut fl.dip.dip_a);
+            f.u8(0x777B, "dip_b", &mut fl.dip.dip_b);
+            f.u8(0x777C, "dip_c", &mut fl.dip.dip_c);
+        }
         if f.loading() {
             self.rank.dip = fl.dip.dip_b;
         }
@@ -1924,9 +1943,11 @@ impl Game {
         self.w.stage = l.read(g(0x04D9), 1) as u8;
         self.cam.s2.area = l.read(g(0x073C + 0x4A), 1) as u8;
         self.trace_visit(&mut l);
+        // (0x7EC48: the typewriters of the snapshot are taken over by `trace_load_typers` below.)
         self.trace_unmapped = l.unmapped;
         let mut warn = l.errors;
         self.trace_load_tasks(ram, &mut warn);
+        self.trace_load_typers();
         self.trace_load_gfx(gfx);
         // The sprite buffer the screen shows (0x69B4 picks it, as `trace.py` `mame_sprite_list`): all zero after the clear 0xAE0, which no build has refilled
         // yet (the game start of ep8_mustapha 68906 .. 68908: the select setup builds no list before its second part).
@@ -1965,6 +1986,26 @@ impl Game {
             self.trace_player_extras(i, &mut f);
         }
         self.trace_unmapped = l.unmapped;
+    }
+
+    /// The typewriter objects of the level (pool B class 26, 0x7EC48) keep their text pointer, write address and counters in the object's bytes: +$80 write address (the text
+    /// pointer while the object is new), +$84 frames to the next item, +$86 frames per item, +$88 read pointer, +$8C skip flag. The port keeps them in `flow.typers`.
+    fn trace_load_typers(&mut self) {
+        self.flow.typers.retain(|t| t.slot.is_none());
+        for i in 0..self.props.slots.len() {
+            let p = &self.props.slots[i];
+            if p.b.live == 0 || p.b.k20 != 0x68 {
+                continue;
+            }
+            let (state, sub) = (p.b.mode, p.b.sub);
+            let text = &self.assets.frontend.text;
+            let t = if sub == 0 {
+                super::flow::text::Typer::restore(state, sub, text.slice_from(p.m.l(0x80)), 0, 0, p.m.w(0x86), false, i)
+            } else {
+                super::flow::text::Typer::restore(state, sub, text.slice_from(p.m.l(0x88)), p.m.l(0x80), p.m.w(0x84), p.m.w(0x86), p.m.b(0x8C) != 0, i)
+            };
+            self.flow.typers.push(t);
+        }
     }
 
     /// Abstract state the port keeps instead of the task table (0xFF0052, 16 bytes per slot:
@@ -2008,6 +2049,18 @@ impl Game {
             // 68866 .. 68868; the video clock probes show 4 frames: the clear takes less time there), the port's wait counts 4 ticks.
             if self.flow.cont.exit_wait > 2 {
                 self.flow.cont.exit_wait = 2;
+            }
+        }
+        // The story panel (mode 8, cause S): the part is the sleep's return on the task stack (`Story::part_at_sleep_return`); the
+        // wait loop's counter is G.-$719A (the word at 0x0E66, the frames left). The other parts keep their default counter (not in RAM yet).
+        if self.flow.mode == 8 && self.flow.resume && self.flow.select_exit == 0 {
+            let ret = u32::from_be_bytes(ram[sp + 0x40..sp + 0x44].try_into().unwrap());
+            if let Some(p) = super::flow::cards::Story::part_at_sleep_return(ret) {
+                self.flow.story.part = p;
+                self.sprites.wipe(); // the entry's clear (0xAE0, `flow_attract_clear`) ran before the sleep in the original: no sprites until the next draw
+                if p == super::flow::cards::Story::WAIT_PART {
+                    self.flow.story.counter = u16::from_be_bytes(ram[0x0E66..0x0E68].try_into().unwrap());
+                }
             }
         }
         // Slot 3 (0x30): stage intro or stage clear task. Both keep their state in the struct G.$735E (loaded with the globals). The
@@ -2702,6 +2755,74 @@ mod tests {
         assert_eq!((game.spawn.l1, game.spawn.l2), (5, 7));
         assert_eq!((game.props.slots[0].m.w(0xA0), game.props.slots[0].m.w(0xA2)), (1, 0));
         assert!(warnings.iter().all(|w| !w.contains("wave controller")), "{warnings:?}");
+    }
+
+    /// 0x2099A / 0x209C0: the first lock after a stage change uses the new
+    /// event list even when the previous list has the same record alignment.
+    #[test]
+    fn camera_loader_changes_list_base_between_stages() {
+        use dino_assets::stage::{Area, CameraEvent, Stage};
+        let mut pack = AssetPack::default();
+        // Synthetic adjacent lists. The stale base would decode index 5
+        // instead of the new list's lock at index 1.
+        pack.stages.stages = vec![
+            Stage { camera_events_addr: 0x1000, camera_events: vec![CameraEvent::default(); 4], ..Default::default() },
+            Stage {
+                camera_events_addr: 0x1040,
+                areas: vec![Area::default()],
+                camera_events: vec![
+                    CameraEvent::default(),
+                    CameraEvent { x: 0x80, mode: 4, ..Default::default() },
+                    CameraEvent { x: 0xFFFF, ..Default::default() },
+                ],
+                ..Default::default()
+            },
+        ];
+        let mut game = Game::new(Box::leak(Box::new(pack)));
+        game.cam.s2.event_base = 0x1000;
+        let mut ram = vec![0; 0x10000];
+        ram[0x84D9] = 1;
+        ram[0x8740] = 2;
+        ram[0x8744..0x8746].copy_from_slice(&0x80u16.to_be_bytes());
+        ram[0x8792..0x8796].copy_from_slice(&0x1050u32.to_be_bytes());
+        ram[0x87A8] = 1;
+        game.trace_load(&ram, &vec![0; 0x30000]);
+        assert_eq!((game.cam.s2.event_base, game.cam.s2.next_event), (0x1040, 1));
+        game.background_update();
+        assert_eq!((game.cam.s2.mode, game.cam.s2.event_idx, game.cam.s2.next_event), (4, 2, 2));
+        assert_eq!(game.cam.s2.cam_x, 0x80);
+    }
+
+    /// 0x7EC48 / 0x7ECCC: a loaded typewriter keeps its cursor and countdown,
+    /// reads the remaining text, and frees at the normal end of the string.
+    #[test]
+    fn typewriter_loader_resumes_a_live_pool_b_slot() {
+        let mut pack = AssetPack::default();
+        // Synthetic glyphs and terminator, unrelated to any ROM string.
+        pack.frontend.text.blobs.push((0xA0000, [0x0120u16, 0x0140, 0x4040].into_iter().flat_map(u16::to_be_bytes).collect()));
+        let mut game = Game::new(Box::leak(Box::new(pack)));
+        let mut ram = vec![0; 0x10000];
+        let base = POOL_B.0 as usize;
+        ram[base] = 2;
+        ram[base + 4] = 2;
+        ram[base + 5] = 2;
+        ram[base + 0x20..base + 0x22].copy_from_slice(&0x68u16.to_be_bytes());
+        ram[base + 0x80..base + 0x84].copy_from_slice(&0x908100u32.to_be_bytes());
+        ram[base + 0x84..base + 0x86].copy_from_slice(&2u16.to_be_bytes());
+        ram[base + 0x86..base + 0x88].copy_from_slice(&2u16.to_be_bytes());
+        // Resume at the second glyph, without replaying the first position block.
+        ram[base + 0x88..base + 0x8C].copy_from_slice(&0xA0002u32.to_be_bytes());
+        game.trace_load(&ram, &vec![0; 0x30000]);
+        game.pool_b_update();
+        assert_eq!(game.props.slots[0].b.live, 2);
+        assert_eq!(game.vram.scroll1[0x100 / 4].code, 0);
+        game.pool_b_update();
+        assert_eq!(game.vram.scroll1[0x100 / 4].code, 0x0140);
+        for _ in 0..3 { game.pool_b_update(); }
+        assert_eq!(game.props.slots[0].b.mode, 4);
+        game.pool_b_update();
+        assert_eq!(game.props.slots[0].b.live, 0);
+        assert!(game.flow.typers.is_empty());
     }
 
     /// A poke into an object's field needs the object: a free pool slot keeps only +$00.

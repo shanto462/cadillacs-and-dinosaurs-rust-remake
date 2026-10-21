@@ -43,6 +43,31 @@ Start with `step`: it tells you which classes and routines are wrong or missing.
 the whole run is exact. In `step` mode a VRAM or sound write that an unported routine makes shows up
 as a difference in that one frame only.
 
+### Settings from `--config` (`--keep-dip`)
+
+A snapshot holds the settings bytes G.$777A..C of the original (`dip_a`, `dip_b`, `dip_c`). By default a
+loaded snapshot (`--load-state`, `--step-from`, `--lagsync`) copies them into the port, so the port
+plays with the settings of MAME, and a `--config` file has no effect in these modes (`trace.rs`, the
+`dip` fields of the flow loader). `--keep-dip` (with `--trace`) keeps the port's own cooked settings
+(`--config` or `dino.cfg`, `Config::cook`) instead. The loader still copies the rest of the snapshot.
+The default (no flag) is unchanged.
+
+Settings check (M10-21): record MAME with the bytes poked at power frame 150 (before the sync point
+and after the boot cook at frame 68), with the same settings in a config file, then compare:
+
+```sh
+# MAME: poke G.$777A..C (absolute 0xFFF77A..0xFFF77C) at power frame 150, snapshot at 1800 (in play)
+re/harness/probe/probe_record.sh BATCH.txt all          # BATCH: `segment NAME`, `150 FFF77B 1 0x4F`, ..., `1800 snapshot`, `trace 1400`
+# port: the variant's config, the bytes kept from the port's own cook
+PORT_OPTS="--keep-dip --config variant.cfg" MODE=step re/harness/port.sh re/out/traces/NAME.input.txt NAME 1400
+re/.venv/bin/python -I re/harness/diff.py re/out/traces/NAME.mame.trc re/out/traces/NAME.step.trc
+```
+
+Use the address of the original (`G.$777B` = 0xFFF77B, G is 0xFF8000), not 0xFF777B. Snapshots taken
+after the coin (and the game start) cannot show the coin, free play, continue or start lives options
+(the original reads them before the snapshot); the bytes themselves are compared in every snapshot.
+The variants checked at M10-21 are in re/out/m21 (not committed).
+
 ## Reference scenarios
 
 ### Power-on references
@@ -1827,18 +1852,51 @@ Results (2026-10-21): the five runs of M5-17 are equal for every record in `lags
 
 Catch-up records: after an area start MAME has a record that is not flagged as a lag record but holds 2 to 0x100 game frames (G.$0 jumps by more than 1: 0x23 to 0x29 at record 2369 of the Jack run). One port tick cannot replay it. `MODE=lagsync` resyncs after it like after a lag record, `diff.py` leaves it out in lagsync mode, and `--lag-jumps` leaves it out in step mode (not by default, so the sweeps keep their numbers). The harness itself: `harness.rs` `catch_up_record`.
 
+## Sound streams, register traces and the attract loop with sound (M10-22, M10-23, M10-06)
+
+`snd_stream.py MAME PORT [--allow FILE] [--state DIFF.txt] [--heard] [--json OUT]` compares the sound requests (code, d1, d2) of two traces
+record by record (MAME: the ring G.$3A / G.$34; port: `snd` / `snd_d`). It reads only the RAM blocks of the ring and the filter state, so a
+70000 record trace takes seconds. `--state` takes `diff.py --frame-list` of the same pair and counts a difference in a record whose state
+differs too apart (a consequence of that state difference); `--heard` keeps the requests that the flush 0x610 sends (the attract filter).
+Allow keys: `sounds` (the record) and `sound.CODE`, `sound.CODE.d1`, `sound.CODE.d2` (hex code, at least two digits).
+
+```sh
+re/harness/m10_sound_check.sh        # M10-22: the 30 natural whole runs in step mode (PORT_OUT, default re/out/m10snd), rules: allow/m10_runs.txt (R1 .. R6)
+re/harness/m10_loop_check.sh         # M10-06: the two attract loops from power on: states (allow/m1.txt + allow/m10.txt), heard sounds, pictures
+```
+
+Result (2026-10-21): no sound-only difference in the 30 runs (1,645 hit sounds had the other pan mode before the fix of the a6 that 0x962A
+reads, D5-errata M10-22); what is left is in records whose state differs too (Episodes 4 to 8 and the three player runs: the camera events of
+Episode 5, 6 and 7, the ranking after the Episode 8 ending, the story cards in lag records). The attract loop: every record equal, the heard
+requests equal, 385 of 416 pictures exact (the rest in allow/m1.txt section 4).
+
+M10-23, the register traces of every effect request the whole runs and the attract loop use (one MAME process, about 3 minutes):
+
+```sh
+re/.venv/bin/python -I re/harness/snd_requests.py re/out/m1023/requests.txt TRACES...     # the MAME traces of the list below
+SQ_INPUT=re/out/m1023/requests.txt SQ_FRAMES=900 SQ_TIMEOUT=3600 re/harness/probe/sound.sh
+cd dino-rs && cargo run --release -p dino-sound --example compare -- ../re/out/m1023/requests.txt ../re/out/sound 900
+```
+(the trace list of M10-23: `re/out/traces/NAME.mame.trc` of the 30 natural whole runs in the list of `m10_sound_check.sh` and
+`flow_m1003-loop`: 3,459 distinct requests of 197 codes)
+
+315 cases (each effect code in pan mode 0 with its most used request; each code, mode, spread and speed of the modes 3 to 7 with a pan below
+and from 0x11; the fade 0xFF07 after an area tune): all register equal (77,863 DSP writes). The music codes read no request byte (M4-10 covers
+all 39). The whole game through the mixer: `cargo test --release -p dino-game whole_game_mix -- --ignored --nocapture` (`DINO_WAV_OUT=DIR`
+writes the first minute of each part as WAV for a listening check).
+
 ## The other heroes and the flows with real content (M10-19, M10-20)
 
 **The game clock.** Every natural recording (`record.sh`, `probe_record.sh` snapshots) uses record.lua's game clock: a record is taken at a vertical blank where no game task is busy, the vblanks of a game frame that overran are left out and the next record carries the lag flag (G.$0 can move by 2 in it). The port has to join the ticks of its own lags (`Flow::lag`, the exit of the game over, the continue start, the game start) into one record the same way: `DINO_GAME_CLOCK=1` (`harness.rs`). `m10_check.sh` sets it; for a hand run write `DINO_GAME_CLOCK=1 MODE=lagsync re/harness/port.sh ...`. Without it the ending start, the game over exit and the game start are one record out. The lagsync resync (`Flow::resume`, `wait`, the attract and join tasks, the name entry blocks, the sprite wipe) is derived from the loaded RAM where the original keeps it there (`Game::trace_load_tasks`, `trace_load`).
 
-**Results** (2026-10-21, desktop sonnet worktree; the rules are in `allow/m10_runs.txt`, the causes X, A, N, C, S there; run = equal up to the first MAME lag record in every row):
+**Results** (2026-10-21, desktop sonnet worktree; the rules are in `allow/m10_runs.txt`, the causes X, A2, N there; run = equal up to the first MAME lag record in every row):
 
 | recording | step | lagsync |
 | --- | --- | --- |
 | `ep3_mustapha`, `ep3_hannah`, `ep3_mess` (M10-09 rules) | equal with the listed causes S, K | equal with the listed causes |
-| `ep5_mustapha`, `ep5_hannah`, `ep5_mess` (65000 records, 8, 6, 7 lives lost) | equal (ep5_hannah 57870 S, ep5_mess 45375 C) | equal for every record |
+| `ep5_mustapha`, `ep5_hannah`, `ep5_mess` (65000 records, 8, 6, 7 lives lost) | equal (ep5_hannah 57870 and ep5_mess 45375: the K rules of M10-11) | equal for every record |
 | `ep8_hannah` (70000, the ending and the name entry after it) | equal for every record | equal for every record |
-| `ep8_mustapha`, `ep8_mess` (the ending, the name entry after it, the game over, the next game) | equal to the game over, then A | equal for every record except N (the next game's first level frames, 9 and 3 items) |
+| `ep8_mustapha`, `ep8_mess` (the ending, the name entry after it, the game over, the next game) | equal to the game over, then A2 | equal for every record except N (the next game's first level frames, 9 and 3 items) |
 | `m517_ep1_mustapha`, `m517_ep1_hannah`, `m517_ep1_mess` | the story panel at the end (M10-07 rules) | equal for every record |
 | `m523_ep1_2p_full`, `m523_ep1_3pjhm_full` (40000 records: joins, continues, name entries in the level and in the continue mode, the game over, the attract) | equal, 3 records of X | equal for every record |
 
@@ -1857,4 +1915,6 @@ The name entry after the ending (D4d A21) is in `ep8_hannah`, `ep8_mustapha` and
 
 Hero moves of D2a that the older scenarios cover and that stay equal: `m515_a1` to `a14` (all four heroes, 90 of 90 equal in step mode), the knife swings and bazookas of `m516_*` (255 of 256, the food 18 is unrelated), the three weapons sets `m519` / `m520h` (269 of 269). A thug that holds the hero was not recorded: the thug of class 10 never grabs (the window of 0x3C74A carries a bias of 0x400), a Rock Hopper did not close in and the Butcher did not take the hero in the scenarios tried; the natural runs hold the hero (Zeke's dive grab, `ep5_mustapha` 962 and 9594) and are equal.
 
-What the port got from these checks (original addresses): the shadow type and wading clip bytes +$4C..+$4F of effects and props (0x1236 / 0x120E / 0x143C8 / 0x14BC6, `fx_start_obj`, class 18 `fx_load_sprite_frame`), the muzzle flash of Fessenden's heads takes the facing of the head (0x92422), the game over exit does not count G.$0 in its sleeps (0xAC06 / 0xAC26) and its first pass after the clear is the 2nd vertical blank away in a real run, the label of the block in state 0xC (0x754C: 0x8196 at G.$4DA & 0x3F = 0, 0x80A2 at 0x30), the continue return in the lift (0xEF6E), the rank blink counter G.$7017 and the name entry blocks (G.-$711C) in the trace, the cloud speed long +$60 of pool C class 32 (0x96A7E), the pointers of the boss controller left in a freed slot (0x4938, +$A0 / +$A4), the camera event pointer of a new game (0 until the first event load).
+What the port got from these checks (original addresses): the shadow type and wading clip bytes +$4C..+$4F of effects and props (0x1236 / 0x120E / 0x143C8 / 0x14BC6, `fx_start_obj`, class 18 `fx_load_sprite_frame`), the muzzle flash of Fessenden's heads takes the facing of the head (0x92422), the game over exit does not count G.$0 in its sleeps (0xAC06 / 0xAC26); one model for the exit after the ending and after the continue strip (the pass with the clear 0xAE0 overruns the frame: one lag frame, then the sound and the exit two frames later; a game clock record joins the pass, the lag frame and the next pass: `m328_end-*` 5540 .. 5542 and `m523_ep1_2p_full` 30614 .. 30616), the five ticks after the exit are one record (the attract task starts), the two heroes of the ranking car keep the car's handle sign-extended in +$AC (0x8B4FC, `0xFFFFxxxx`: the rule `enemy.dash_chk` of `allow/m1.txt` is gone), the label of the block in state 0xC (0x754C: 0x8196 at G.$4DA & 0x3F = 0, 0x80A2 at 0x30), the continue return in the lift (0xEF6E), the rank blink counter G.$7017 and the name entry blocks (G.-$711C) in the trace, the cloud speed long +$60 of pool C class 32 (0x96A7E), the pointers of the boss controller left in a freed slot (0x4938, +$A0 / +$A4), the camera event pointer of a new game (0 until the first event load).
+
+**After the merge with integ (2026-10-21).** One model of the game over exit for the ending and the continue strip (Opus's lag frame, see D5-errata); the lagsync rules E of `ep8_jack` / `ep8_mess` / `ep8_3p` and A of `ep8_mess` are gone (the whole ending and the new game are equal in lagsync, except cause N), `enemy.dash_chk` of `allow/m1.txt` is gone (class 17 owner long, 0x8B4FC). Checked: `m328_end-*` in run mode with `allow/m3e.txt` and the game clock (`DINO_GAME_CLOCK=1 MODE=run re/harness/port.sh re/out/traces/m328_end-jack.input.txt m328_end-jack 5700`, then `diff.py ... --allow re/harness/allow/m3e.txt`): 7 of 8 equal for all 5700 records (the integ build before the merge differed from record 5543 on), `m328_end-hiscore` first differs at 6194 (integ: 5773, a lag record of the attract after the name entry); all natural whole runs in step and lagsync equal with their rules (48 recordings, `m10_check.sh`), `m10_sound_check.sh` 30 of 30 with 0 sound only differences, `m10_loop_check.sh` states equal, 385 of 416 pictures exact.

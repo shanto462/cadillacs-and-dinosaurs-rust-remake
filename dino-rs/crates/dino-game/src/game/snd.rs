@@ -6,7 +6,9 @@
 //! Many routines alternate between two codes with `bchg #n,$43A(a5)`: the toggle bits of the
 //! byte G.$43A are shared by all callers, so the codes depend on the history of all requests.
 
-use super::Game;
+use super::body::Body;
+use super::{Game, Handle, slot_of};
+use dino_assets::HitBox;
 
 /// 0xA63C: one entry of the sound queue, the code word and the two longs the sound port reads: d1 (the pan mode in the
 /// high word, the pan byte in the low byte, 0x10 = no pan) and d2 (volume and the like). Every request is recorded
@@ -263,17 +265,90 @@ impl Game {
     /// 0x962A: the hit sound of an attack record (`sound` = record byte 4, a byte offset into
     /// the table 0x96AA of 3-byte entries: toggle bit number, code, code). The original toggles
     /// the bit in a register copy of G.$43C only, so G.$43C decides and never changes.
-    /// d1 = (3, or 4 when the object at a6 faces right: +$24 nonzero) << 16 | 0x2000 | the pan byte of the
-    /// attacker's X (a2, +$08), d2 = 0x15000000. `ax` is a2's X, `victim_facing` is a6's +$24.
-    pub fn snd_hit(&mut self, sound: u8, ax: i16, victim_facing: u8) {
+    /// d1 = (3, or 4 when the byte +$24 of a6 is not 0) << 16 | 0x2000 | the pan byte of a2's X (+$08), d2 = 0x15000000.
+    /// `ax` is a2's X, `a6_24` the byte +$24 of the a6 the caller left (`snd_a6_byte`; an object's facing when a6 is an object).
+    pub fn snd_hit(&mut self, sound: u8, ax: i16, a6_24: u8) {
         let off = sound as i8 as i32 as u32; // ext.w d0 (then used as a word offset)
         let t = &self.assets.text;
         let bit = t.u8(0x96AA, off) as u32;
         let set = (self.w.snd_hit_toggle as u32 >> bit) & 1 != 0;
         let code = t.u8(0x96AA, off + 1 + set as u32);
-        let mode = if victim_facing != 0 { 4 } else { 3 };
+        let mode = if a6_24 != 0 { 4 } else { 3 };
         let pan = self.snd_pan_x(ax) as u32;
         self.sound_ex(code as u16, (mode << 16) | 0x2000 | pan, 0x1500_0000);
+    }
+
+    /// The byte that 0x962A tests at +$24 of a6 (`tst.b $24(a6)`: the mode 4 when it is not 0, else 3). None of the 21 callers of
+    /// 0x962A loads a6 for the sound: a6 is what the code before the call left, a 24-bit address here:
+    /// - the box record that the box test 0x128F8 stepped to (`snd_a6_128f8`): a ROM byte of the box tables;
+    /// - a table that a damage routine pointed a6 at: 0x2BB4E (the end of 0x2B904, 0x2BA10), 0x2BC4E (the end of 0x2BA2A, 0x2BB08),
+    ///   0x11CC4 (the reaction table of the monster passes, 0x1144C / 0x11524 / 0x11BEC / 0x12406);
+    /// - the box record after 0x6422, which saves a6 with `move.w a6,-(a7)` and restores it with `movea.w (a7)+,a6` (0x6434 / 0x64EE): the
+    ///   low word sign extended, so a byte of the low program (below 0x8000) or of RAM (`snd_a6_word`);
+    /// - an object (0xFF0000 + its handle: the partner +$70, or the object of the routine): its +$24, the facing.
+    /// RAM that is not an object start is not kept by the port (0).
+    pub(crate) fn snd_a6_byte(&self, a6: u32) -> u8 {
+        let a = a6.wrapping_add(0x24) & 0xFF_FFFF;
+        if a >= 0xFF_0000 {
+            let h = a6 as u16;
+            return if slot_of(h).is_some() { self.body(h).facing } else { 0 };
+        }
+        self.snd_rom_u8(a)
+    }
+
+    /// An object as a6 (`lea (a2),a6`, `movea.w $70(a2),a6`): the RAM address of its slot.
+    pub(crate) fn snd_a6_obj(h: Handle) -> u32 {
+        0xFF_0000 | h as u32
+    }
+
+    /// 0x6422 (and 0x125C0 / 0x12686 around 0x2B904) keep a6 as a word only: `movea.w (a7)+,a6` sign extends the low word.
+    pub(crate) fn snd_a6_word(a6: u32) -> u32 {
+        a6 as u16 as i16 as i32 as u32 & 0xFF_FFFF
+    }
+
+    /// 0x128F8: the address a6 holds when the box test returns with a hit (carry set); `ab` is a2 (the attacker), `db` a3 (the
+    /// defender), `ib` the defender's box index (d1) and `hb` the defender box that matched.
+    /// - 0x12916 (neither has multi boxes, +$4A): a6 = table + 12 * ib, then six `(a6)+` reads (0x1293C, 0x12944, 0x12966, 0x12968, 0x1298E,
+    ///   0x12996): + 12;
+    /// - 0x129A8 (attacker single, defender multi): a6 = the sub table + 2 (after the count word, 0x129C4) + 12 per box tried before the hit;
+    /// - 0x12A5C (attacker multi, defender single): a6 = table + 12 * ib (no post-increments);
+    /// - 0x12B0E (both multi): a6 = the sub table + 2, restored from the stack at the hit (0x12BBC).
+    pub(crate) fn snd_a6_128f8(&self, ab: &Body, db: &Body, ib: u8, hb: &HitBox) -> u32 {
+        let table = db.box_table & 0xFF_FFFF;
+        // `add.w d1,d1 ; move.w (a6,d1.w),d1 ; lea (a6,d1.w),a6`: the sub table of a multi box entry
+        let sub = || table.wrapping_add(self.snd_rom_i16(table.wrapping_add(2 * ib as u32)) as i32 as u32);
+        match (ab.multi_box, db.multi_box) {
+            (false, false) => table.wrapping_add(12 * ib as u32).wrapping_add(12),
+            (false, true) => {
+                let k = self.assets.sprites.hitboxes.multi(table, ib).iter().position(|b| b == hb).unwrap_or(0) as u32;
+                sub().wrapping_add(2).wrapping_add(12 * k)
+            }
+            (true, false) => table.wrapping_add(12 * ib as u32),
+            (true, true) => sub().wrapping_add(2),
+        }
+    }
+
+    /// A ROM byte that a quirk reads as data (the box tables, the low program): the hit box bank, the extracted tables, then the program image.
+    pub(crate) fn snd_rom_u8(&self, addr: u32) -> u8 {
+        let addr = addr & 0xFF_FFFF;
+        let bank = &self.assets.sprites.hitboxes;
+        if addr >= bank.base {
+            let offset = (addr - bank.base) as usize;
+            if let Some(&w) = bank.words.get(offset / 2) {
+                return if offset % 2 == 0 { (w as u16 >> 8) as u8 } else { w as u8 };
+            }
+        }
+        for (start, data) in self.assets.enemy.t.blobs.iter().chain(self.assets.text.blobs.iter()) {
+            if addr >= *start && ((addr - start) as usize) < data.len() {
+                return data[(addr - start) as usize];
+            }
+        }
+        self.assets.enemy.t.program.get(addr as usize).copied().unwrap_or(0)
+    }
+
+    /// The big-endian word of `snd_rom_u8`.
+    pub(crate) fn snd_rom_i16(&self, addr: u32) -> i16 {
+        i16::from_be_bytes([self.snd_rom_u8(addr), self.snd_rom_u8(addr.wrapping_add(1))])
     }
 
     /// 0xA4CA: extra life jingle 0x4A. The routine computes the pan byte into d1 and then overwrites d1 with the constant
@@ -550,6 +625,35 @@ mod tests {
         g.snd_hit(3, 0, 0);
         assert_eq!(g.w.sounds, vec![0x11, 0x11]);
         assert_eq!(g.w.snd_hit_toggle, 0);
+    }
+
+    /// The byte 0x962A tests at +$24 of a6 (M10-22): an object's facing when a6 is an object (0xFF0000 + its handle), a ROM byte when a6
+    /// is a ROM address (the box bank, the tables, the program image), 0 for other RAM; the word restore of 0x6422 sign extends the low
+    /// word (a box record in 0x10xxxx becomes a low program address, one at 0x....8000 and up becomes RAM).
+    #[test]
+    fn the_hit_sound_mode_byte_follows_the_a6_the_caller_left() {
+        let mut a = AssetPack::default();
+        a.sprites.hitboxes = dino_assets::HitBoxBank { base: 0x100000, words: vec![0; 0x20].into_iter().chain([0x0100]).collect() };
+        a.enemy.t = dino_assets::enemy::ByteTables { blobs: vec![(0x2BB4E, vec![7; 0x30]), (0xA66A, vec![0; 0x30])], program: (0..=0xFFu8).cycle().take(0x40).collect() };
+        a.text = TextData { blobs: vec![(0x96AA, vec![0, 0x39, 0x39])] };
+        let mut g = Game::new(Box::leak(Box::new(a)));
+        let h = Game::player_handle(1);
+        g.players[1].b.facing = 1;
+        assert_eq!(g.snd_a6_byte(Game::snd_a6_obj(h)), 1, "an object: its facing");
+        g.players[1].b.facing = 0;
+        assert_eq!(g.snd_a6_byte(Game::snd_a6_obj(h)), 0);
+        assert_eq!(g.snd_a6_byte(0x100000 + 0x40 - 0x24), 0x01, "the box bank: the high byte of the word at 0x100040");
+        assert_eq!(g.snd_a6_byte(0x2BB4E), 7, "a table blob");
+        assert_eq!(g.snd_a6_byte(0x10), 0x34, "the program image");
+        assert_eq!(g.snd_a6_byte(0xFF_8100), 0, "RAM that is no object start");
+        assert_eq!(Game::snd_a6_word(0x0010_0C18), 0x0C18, "movea.w: the low word, positive");
+        assert_eq!(Game::snd_a6_word(0x0010_B274), 0xFF_B274, "movea.w: negative, the RAM of a5's half");
+        assert_eq!(Game::snd_a6_word(Game::snd_a6_obj(h)), Game::snd_a6_obj(h), "an object handle survives the word restore");
+        let (x, f) = (g.players[1].b.xi(), 0);
+        g.snd_hit(0, x, f); // a made-up table 0x96AA (bit 0, the codes 0x39 / 0x39): mode 3
+        assert_eq!(g.w.snd_reqs[0].d1 >> 16, 3);
+        g.snd_hit(0, x, g.snd_a6_byte(0x2BB4E));
+        assert_eq!(g.w.snd_reqs[1].d1 >> 16, 4, "a nonzero byte picks the mode 4");
     }
 
     /// Every request keeps its d1 and d2 (the original's ring of 63 entries is drained by the Z80 flush, not here).

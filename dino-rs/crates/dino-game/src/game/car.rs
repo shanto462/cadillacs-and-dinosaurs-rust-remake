@@ -809,13 +809,14 @@ impl Game {
                 continue;
             }
             let Some((ha, hb)) = collide::boxes_hit(&self.assets.sprites, &car, car.attack_box, &d, d.body_box) else { continue };
+            let a6 = self.snd_a6_128f8(&car, &d, d.body_box, &hb); // 0x12236: the box test leaves a6 on the box record
             let rec = self.car_hit_common(a2, a3);
             let v = self.body_mut(a3);
             v.act = rec.reaction;
             v.step = 0;
             v.hitstop = rec.hit_stop;
             if rec.sound != 0 {
-                self.snd_hit(rec.sound, car.xi(), d.facing); // 0x962A (the mode byte from a6: see the report)
+                self.snd_hit(rec.sound, car.xi(), self.snd_a6_byte(a6)); // 0x122AC -> 0x962A
             }
             self.car_score_all(0x1C);
             self.body_mut(a3).b9a = rec.b7;
@@ -913,7 +914,8 @@ impl Game {
             v.step = 0;
             v.hitstop = rec.hit_stop;
             if rec.sound != 0 {
-                self.snd_hit(rec.sound, car.xi(), d.facing); // 0x962A
+                // 0x12420: a6 holds the reaction table 0x11CC4 (0x12406)
+                self.snd_hit(rec.sound, car.xi(), self.snd_a6_byte(0x11CC4)); // 0x962A
             }
             self.car_score_all(rec.score);
             self.body_mut(a3).b9a = rec.b7;
@@ -956,7 +958,9 @@ impl Game {
             v.step = 0;
             v.hitstop = rec.hit_stop;
             if rec.sound != 0 {
-                self.snd_hit(rec.sound, m.xi(), car.facing); // 0x962A
+                // 0x12514: a6 is the box record of the box test (0x124A6)
+                let a6 = self.snd_a6_128f8(&m, &car, car.body_box, &hb);
+                self.snd_hit(rec.sound, m.xi(), self.snd_a6_byte(a6)); // 0x962A
             }
             self.spawn_hit_spark(a2, a3, ha, hb, rec.spark); // 0x12720
         }

@@ -4,10 +4,10 @@
 //!         [--config FILE] [--print-config]
 //!         [--input SCRIPT | --input-file PATH] [--viewer] [--view char,set,anim]
 //!         [--screenshot out.png --frames N] [--screenshots F1,F2 --shot-dir DIR]
-//!         [--headless | --windowed] [--mute] [--load-state FILE] [--trace FILE --frames N]
+//!         [--headless | --windowed] [--fullscreen] [--mute] [--load-state FILE] [--trace FILE --frames N]
 //!         [--step-from MAME.trc] [--follow-rng MAME.trc] [--lagsync MAME.trc]
 //!         [--poke FRAME:ADDR:SIZE:VALUE]... [--poke-file FILE]... [--poke-clock power|game]
-//!         [--episode 1..8 | --stage 0..7] [--area 0..3] [--camx X] [--autoplay] [--debug-keys] [--list-placeholders]
+//!         [--episode 1..8 | --stage 0..7] [--area 0..3] [--camx X] [--autoplay] [--debug-keys]
 //!         [--jump NAME] [--list-jumps] [--test]`
 //! Without `--stage`, `--episode` and `--chars` the game starts from power on (the boot screens and the attract
 //! mode); `--stage N` / `--episode N` / `--chars` start directly in a stage (development). `--area` and `--camx` (hex or
@@ -17,6 +17,7 @@
 //! `--config FILE` reads the settings file (`key = value` lines: difficulty, coin mode, free play ...; without the
 //! option `dino.cfg` next to the ROM is read, see `game/flow/config.rs`), `--print-config` prints the factory settings file.
 //! `--mute` (windowed runs) opens no audio device: the game runs silent, the same as `sound = off` in `dino.cfg`.
+//! `--fullscreen` starts the game in fullscreen mode (F11 or Alt+Enter / Option+Enter toggles fullscreen).
 //! `--jump NAME` starts at a named point (episode start, area start or the place before a boss fight; `--list-jumps` prints them):
 //! the same start as `--episode E --area A --camx X`, and it takes `--chars`. It cannot be combined with those flags.
 //! `--test` is a windowed run with the debug keys on and the test menu open (`menu.rs`); `--test --headless --screenshots F --shot-dir DIR`
@@ -26,7 +27,8 @@
 //! `DINO_POKES`: `frame hexaddr size value`, power frames unless `--poke-clock game`; see
 //! `harness.rs`, `PokeSet`). An address the port has no field for is an error.
 //! See `input.rs` for keys and the input script format, `harness.rs` and `re/harness/README.md`
-//! for `--load-state` (start from a MAME snapshot) and `--trace` (headless run for the diff).
+//! for `--load-state` (start from a MAME snapshot) and `--trace` (headless run for the diff). `--keep-dip` (with `--trace`): a loaded
+//! snapshot keeps the settings of `--config` (G.$777A..C of the port) instead of the bytes of the snapshot.
 
 mod audio;
 mod autoplay;
@@ -47,19 +49,28 @@ use dino_extract::rom::Rom;
 use macroquad::prelude::*;
 use render::Gpu;
 
-/// The original runs one game tick per video frame (about 59.6 Hz). We run a fixed 60 Hz tick
-/// so every rule that counts frames behaves exactly as in the original.
-const TICK: f64 = 1.0 / 60.0;
+/// CPS1 master clock and raster dimensions (MAME `mame -listxml dino`, `re/specs/sound/SPEC.md` section 2).
+/// Pixel clock: 8 MHz. Htotal: 512 dots. Vtotal: 262 lines.
+/// Refresh rate = 8,000,000 / (512 * 262) = 59.63740458015267 Hz (~59.64 Hz).
+/// Frame duration = (512 * 262) / 8,000,000 s = 0.016768 s = 16.768 ms = 16,768,000 ns.
+pub const CPS1_PIXCLOCK: f64 = 8_000_000.0;
+pub const CPS1_HTOTAL: f64 = 512.0;
+pub const CPS1_VTOTAL: f64 = 262.0;
+pub const VIDEO_HZ: f64 = CPS1_PIXCLOCK / (CPS1_HTOTAL * CPS1_VTOTAL);
+pub const FRAME_TIME_SECS: f64 = (CPS1_HTOTAL * CPS1_VTOTAL) / CPS1_PIXCLOCK;
+pub const FRAME_DURATION: std::time::Duration = std::time::Duration::from_nanos(16_768_000);
 
 /// The length of an autoplay run that has no `--frames`: far more than one game from power on to the ending (about 240,000 ticks).
 const AUTOPLAY_CAP: u32 = 1_000_000;
 
-fn window_conf() -> Conf {
+fn window_conf(fullscreen: bool) -> Conf {
     Conf {
         window_title: "dino-rs".to_string(),
         window_width: 384 * 3,
         window_height: 224 * 3,
         high_dpi: false,
+        fullscreen,
+        window_resizable: true,
         ..Default::default()
     }
 }
@@ -95,6 +106,8 @@ struct Args {
     pokes: harness::PokeSet,
     /// `--mute`: no audio device (windowed runs only).
     mute: bool,
+    /// `--fullscreen`: start in fullscreen mode.
+    fullscreen: bool,
     /// `--test`: the debug keys are on and the test menu is open at start.
     test: bool,
 }
@@ -195,6 +208,7 @@ fn args() -> Args {
         lagsync: value("--lagsync"),
         pokes: pokes(&a),
         mute: a.iter().any(|x| x == "--mute"),
+        fullscreen: a.iter().any(|x| x == "--fullscreen"),
     }
 }
 
@@ -268,10 +282,6 @@ fn main() {
         println!("{}", usage());
         return;
     }
-    if std::env::args().any(|a| a == "--list-placeholders") {
-        print!("{}", game::placeholder::list_text());
-        return;
-    }
     if std::env::args().any(|a| a == "--list-jumps") {
         print!("{}", jumps::list_text());
         return;
@@ -290,6 +300,7 @@ fn main() {
         let follow = args.follow_rng.as_deref();
         let lagsync = args.lagsync.as_deref();
         let start = harness::Start { boot: !args.direct, stage: args.stage, area: args.area, camx: args.camx, chars: &args.chars };
+        game::trace::set_keep_dip(std::env::args().any(|a| a == "--keep-dip"));
         let r = harness::run(assets, trace, load, step, follow, lagsync, start, config, args.script.as_ref(), args.pokes, frames);
         if let Err(e) = r {
             eprintln!("error: {e}");
@@ -306,7 +317,7 @@ fn main() {
         run_headless(args, config);
         return;
     }
-    macroquad::Window::from_config(window_conf(), windowed(args, config));
+    macroquad::Window::from_config(window_conf(args.fullscreen), windowed(args, config));
 }
 
 /// The start of a direct run (`--jump`, `--episode`, `--stage`, `--area`, `--camx`, `--chars`) and of a menu jump: a new game in
@@ -438,11 +449,20 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
         gpu.upload_palettes(&viewer::Viewer::palettes(assets).words);
     }
 
-    let mut acc = 0.0;
+    let mut is_fullscreen = args.fullscreen;
     let mut frame = 0u32;
     let screenshot_run = !args.shots.is_empty();
+    let mut next_frame_time = std::time::Instant::now();
     loop {
-        acc += get_frame_time() as f64;
+        // Fullscreen toggle: F11 or Alt+Enter / Option+Enter
+        let alt_enter = (is_key_down(KeyCode::LeftAlt) || is_key_down(KeyCode::RightAlt))
+            && (is_key_pressed(KeyCode::Enter) || is_key_pressed(KeyCode::KpEnter));
+        let f11 = is_key_pressed(KeyCode::F11);
+        if alt_enter || f11 {
+            is_fullscreen = !is_fullscreen;
+            macroquad::window::set_fullscreen(is_fullscreen);
+        }
+
         let menu_ok = viewer.is_none() && args.debug.enabled;
         if menu_ok && is_key_pressed(KeyCode::F1) {
             menu.toggle();
@@ -464,7 +484,7 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
             if is_key_pressed(KeyCode::Right) {
                 menu.side(1);
             }
-            if is_key_pressed(KeyCode::Enter) || is_key_pressed(KeyCode::KpEnter) {
+            if (is_key_pressed(KeyCode::Enter) || is_key_pressed(KeyCode::KpEnter)) && !alt_enter {
                 match menu.enter() {
                     menu::Enter::Jump(j) => {
                         // the same start as the command line (`enter_target`), in place: a new game object, the sound goes on
@@ -480,26 +500,22 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
         }
         let paused = menu.open && menu_ok;
         if paused {
-            // the game stands still; the sound keeps running at 60 Hz (no game tick, no requests)
-            acc = acc.min(TICK * 4.0);
-            while acc >= TICK {
-                acc -= TICK;
-                if let Some(a) = &mut audio {
-                    a.frame(&mut game);
-                }
+            // the game stands still; the sound keeps running at the frame rate (no game tick, no requests)
+            if let Some(a) = &mut audio {
+                a.frame(&mut game);
             }
         }
-        // Screenshots run exactly one tick per rendered frame, so they are reproducible.
-        let mut ticks = if screenshot_run {
+
+        // Screenshots fast-forward ticks up to the target shot frame so export is instantaneous.
+        // In normal play, we keep exactly one fixed logic step per paced video frame.
+        let ticks = if screenshot_run {
             args.shots.iter().find(|s| s.0 > frame).map_or(1, |s| s.0 - frame)
-        } else { 0 };
-        while !screenshot_run && !paused && acc >= TICK && ticks < 4 {
-            acc -= TICK;
-            ticks += 1;
-        }
-        if ticks == 4 {
-            acc = 0.0;
-        }
+        } else if paused {
+            0
+        } else {
+            1
+        };
+
         for _ in 0..ticks {
             match &mut viewer {
                 Some(v) => v.update(assets),
@@ -533,7 +549,27 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
         for (_, path) in args.shots.iter().filter(|s| s.0 == frame) {
             get_screen_data().export_png(path);
         }
-        if screenshot_run && frame >= args.frames { break; }
+        if (screenshot_run || args.frames_given) && frame >= args.frames {
+            break;
+        }
+
         next_frame().await;
+
+        // Pacing at the original frame rate (~59.64 Hz, 16.768 ms per frame):
+        if !screenshot_run {
+            next_frame_time += FRAME_DURATION;
+            let now = std::time::Instant::now();
+            if now < next_frame_time {
+                let remaining = next_frame_time - now;
+                if remaining > std::time::Duration::from_millis(1) {
+                    std::thread::sleep(remaining - std::time::Duration::from_millis(1));
+                }
+                while std::time::Instant::now() < next_frame_time {
+                    std::hint::spin_loop();
+                }
+            } else if now > next_frame_time + FRAME_DURATION * 4 {
+                next_frame_time = now;
+            }
+        }
     }
 }

@@ -9,6 +9,7 @@
 //! tests never open a device; the tests drive `Feed` directly and check the samples.
 
 use std::collections::VecDeque;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
@@ -17,9 +18,21 @@ use dino_sound::{Driver, Mixer, RATE};
 
 use crate::game::Game;
 
-/// The 250 Hz sequencer tick (SPEC 2) and the video frame rate of the cabinet (SPEC 2).
-const TICKS_PER_SEC: f64 = 250.0;
-const VIDEO_HZ: f64 = 59.6374;
+/// CPS1 master clock and raster dimensions (MAME `mame -listxml dino`, `re/specs/sound/SPEC.md` section 2).
+/// Pixel clock: 8 MHz. Htotal: 512 dots. Vtotal: 262 lines.
+pub const CPS1_PIXCLOCK: f64 = 8_000_000.0;
+pub const CPS1_HTOTAL: f64 = 512.0;
+pub const CPS1_VTOTAL: f64 = 262.0;
+/// Video refresh rate: 8,000,000 / (512 * 262) = 59.63740458015267 Hz (~59.64 Hz).
+pub const VIDEO_HZ: f64 = CPS1_PIXCLOCK / (CPS1_HTOTAL * CPS1_VTOTAL);
+/// Per-frame video duration: (512 * 262) / 8,000,000 = 0.016768 s = 16.768 ms = 16,768,000 ns.
+pub const FRAME_DURATION: std::time::Duration = std::time::Duration::from_nanos(16_768_000);
+
+/// The 250 Hz sequencer tick (SPEC 2).
+/// Sequencer ticks per video frame: 250.0 / VIDEO_HZ = 4.192 ticks/frame.
+pub const TICKS_PER_SEC: f64 = 250.0;
+/// Target audio cushion in the ring buffer (~50 ms, about 3 video frames) to prevent underruns.
+const TARGET_BUFFER_SECS: f64 = 0.05;
 /// How much rendered audio the ring buffer holds before the oldest samples are dropped (keeps the latency bounded).
 const RING_SECONDS: f64 = 0.5;
 
@@ -123,8 +136,11 @@ pub struct Output {
     ring: Ring,
     channels: usize,
     capacity: usize,
+    target_len: usize,
+    device_rate: u32,
     resampler: Resampler,
     scratch: Vec<f32>,
+    underruns: Arc<AtomicUsize>,
 }
 
 impl Output {
@@ -135,28 +151,48 @@ impl Output {
         let format = supported.sample_format();
         let config: cpal::StreamConfig = supported.config();
         let ring: Ring = Arc::new(Mutex::new(VecDeque::new()));
+        let underruns = Arc::new(AtomicUsize::new(0));
         let stream = match format {
-            cpal::SampleFormat::F32 => build::<f32>(&device, &config, ring.clone())?,
-            cpal::SampleFormat::I16 => build::<i16>(&device, &config, ring.clone())?,
-            cpal::SampleFormat::U16 => build::<u16>(&device, &config, ring.clone())?,
+            cpal::SampleFormat::F32 => build::<f32>(&device, &config, ring.clone(), underruns.clone())?,
+            cpal::SampleFormat::I16 => build::<i16>(&device, &config, ring.clone(), underruns.clone())?,
+            cpal::SampleFormat::U16 => build::<u16>(&device, &config, ring.clone(), underruns.clone())?,
             other => return Err(format!("unsupported sample format {other:?}")),
         };
-        stream.play().map_err(|e| format!("start stream: {e}"))?;
         let channels = config.channels as usize;
         let rate = config.sample_rate.0;
+        let target_len = (rate as f64 * channels as f64 * TARGET_BUFFER_SECS) as usize;
+        // Pre-fill cushion with silence so the callback never starves on startup
+        if let Ok(mut q) = ring.lock() {
+            q.extend(std::iter::repeat(0.0f32).take(target_len));
+        }
+        stream.play().map_err(|e| format!("start stream: {e}"))?;
         Ok(Output {
             _stream: stream,
             ring,
             channels,
             capacity: (rate as f64 * channels as f64 * RING_SECONDS) as usize,
+            target_len,
+            device_rate: rate,
             resampler: Resampler::new(rate),
             scratch: Vec::new(),
+            underruns,
         })
     }
 
     /// Queues stereo samples at `RATE`: they are resampled, spread over the device channels (mono devices get the mean
     /// of left and right, extra channels get silence) and appended to the ring.
     pub fn push(&mut self, samples: &[f32]) {
+        let q_len = match self.ring.lock() {
+            Ok(q) => q.len(),
+            Err(poisoned) => poisoned.into_inner().len(),
+        };
+        // Dynamic Rate Control: subtle resampler step adjustment (±0.5% max) to maintain
+        // the target ~50 ms cushion without drift or clicks over long play sessions.
+        let base_step = RATE as f64 / self.device_rate as f64;
+        let diff = (q_len as f64 - self.target_len as f64) / self.target_len as f64;
+        let adjust = (diff * 0.05).clamp(-0.005, 0.005);
+        self.resampler.step = base_step * (1.0 + adjust);
+
         self.scratch.clear();
         self.resampler.process(samples, &mut self.scratch);
         let mut q = match self.ring.lock() {
@@ -179,10 +215,15 @@ impl Output {
             q.pop_front();
         }
     }
+
+    /// Number of sample underruns experienced by the audio callback since startup.
+    pub fn underruns(&self) -> usize {
+        self.underruns.load(Ordering::Relaxed)
+    }
 }
 
 /// The stream for one sample format: the callback copies samples from the ring.
-fn build<T>(device: &cpal::Device, config: &cpal::StreamConfig, ring: Ring) -> Result<cpal::Stream, String>
+fn build<T>(device: &cpal::Device, config: &cpal::StreamConfig, ring: Ring, underruns: Arc<AtomicUsize>) -> Result<cpal::Stream, String>
 where
     T: cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -195,7 +236,13 @@ where
                     Err(poisoned) => poisoned.into_inner(),
                 };
                 for s in data.iter_mut() {
-                    *s = T::from_sample(q.pop_front().unwrap_or(0.0));
+                    match q.pop_front() {
+                        Some(sample) => *s = T::from_sample(sample),
+                        None => {
+                            *s = T::from_sample(0.0);
+                            underruns.fetch_add(1, Ordering::Relaxed);
+                        }
+                    }
                 }
             },
             |err| eprintln!("audio: {err}"),
@@ -240,6 +287,11 @@ impl<'a> Audio<'a> {
     pub fn frame(&mut self, game: &mut Game) {
         feed_frame(&mut self.feed, game, &mut self.samples);
         self.out.push(&self.samples);
+    }
+
+    /// Number of sample underruns recorded by the output stream.
+    pub fn underruns(&self) -> usize {
+        self.out.underruns()
     }
 }
 
@@ -399,6 +451,80 @@ mod tests {
             if let Some(dir) = std::env::var_os("DINO_WAV_OUT") {
                 std::fs::create_dir_all(&dir).expect("the output directory exists");
                 write_wav(&Path::new(&dir).join(format!("{name}.wav")), &all);
+            }
+        }
+    }
+
+    /// M10-23, the whole game once through the sound side (the ear check without ears): the flow bot (`--autoplay`, god mode and the
+    /// clock top up, as `the_bot_plays_from_power_on_through_all_eight_episodes_to_the_ending`) plays from power on through the eight
+    /// episodes and the ending back to the attract loop, every frame's requests go to the driver and the mixer as in the windowed run.
+    /// Per part of the game (the attract loop before the coin, each episode, the ending): no NaN, no clipping (the peak stays below full
+    /// scale), sound in most of the part. With `DINO_WAV_OUT=dir` the first 60 seconds of each part are written as WAV files for a person
+    /// to listen to. Slow (the mixer renders about 50 minutes of audio): `cargo test --release -p dino-game whole_game_mix -- --ignored --nocapture`.
+    #[test]
+    #[ignore]
+    fn whole_game_mix_is_finite_audible_and_does_not_clip() {
+        let Some(assets) = rom() else {
+            eprintln!("skipped: no dino.zip");
+            return;
+        };
+        let mut g = crate::game::Game::new(assets);
+        g.flow_apply_config(Config::default());
+        g.flow_boot();
+        let (mut debug, mut bot) = (crate::debug::Debug::new(false), crate::autoplay::Bot::default());
+        let mut feed = Feed::new(&assets.sound, true);
+        let mut samples = Vec::new();
+        // (name, frames, audible frames, frames above 0.9, peak, the first 60 seconds of samples)
+        let mut parts: Vec<(String, u32, u32, u32, f32, Vec<f32>)> = Vec::new();
+        let keep = 60 * RATE as usize * 2;
+        for tick in 0..600_000u32 {
+            let f = bot.frame(&mut g, tick, &mut debug);
+            g.w.input = f.players;
+            g.w.system = f.system | 0x08;
+            g.w.coins = f.coins;
+            debug.before_tick(&mut g);
+            g.tick();
+            debug.after_tick(&mut g);
+            bot.report(&g, tick);
+            feed_frame(&mut feed, &mut g, &mut samples);
+            let name = if g.flow.mode == 0x1C {
+                "ending".to_string()
+            } else if g.flow.in_game != 0 {
+                format!("episode{}", g.w.stage + 1)
+            } else if parts.is_empty() {
+                "attract".to_string()
+            } else {
+                parts.last().unwrap().0.clone()
+            };
+            if parts.last().is_none_or(|p| p.0 != name) {
+                parts.push((name, 0, 0, 0, 0.0, Vec::new()));
+            }
+            let p = parts.last_mut().unwrap();
+            let peak = samples.iter().fold(0.0f32, |m, &x| m.max(x.abs()));
+            assert!(samples.iter().all(|x| x.is_finite()), "{}: NaN or infinity in the mix at tick {tick}", p.0);
+            p.1 += 1;
+            p.2 += (peak > 1e-3) as u32;
+            p.3 += (peak > 0.9) as u32;
+            p.4 = p.4.max(peak);
+            if p.5.len() < keep {
+                p.5.extend_from_slice(&samples);
+            }
+            if bot.done() {
+                break;
+            }
+        }
+        assert!(bot.done(), "the bot did not reach the ending and the attract loop");
+        for (name, frames, loud, over, peak, first) in &parts {
+            eprintln!("{name}: {frames} frames, {loud} audible ({:.0} %), {over} above 0.9, peak {peak:.3}", 100.0 * *loud as f64 / *frames as f64);
+            if let Some(dir) = std::env::var_os("DINO_WAV_OUT") {
+                std::fs::create_dir_all(&dir).expect("the output directory exists");
+                write_wav(&Path::new(&dir).join(format!("{name}.wav")), first);
+            }
+        }
+        for (name, frames, loud, _, peak, _) in &parts {
+            assert!(*peak < 1.0, "{name}: the mix reaches full scale ({peak}): clipping");
+            if name.starts_with("episode") || name == "ending" {
+                assert!(*loud * 2 > *frames, "{name}: sound in only {loud} of {frames} frames");
             }
         }
     }

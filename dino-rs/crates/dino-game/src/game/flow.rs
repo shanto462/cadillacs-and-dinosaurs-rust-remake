@@ -841,9 +841,11 @@ impl Game {
             if self.flow.mode == 0x18 && self.flow.cont.exit_wait == 2 {
                 self.sound(0xFF00); // 0xAC2C (a5d2), after the clear
             }
-            // The clears 0xAE0 / 0xA76 sleep inside the pass: the ticks of the wait do not count G.$0000 / G.$4DA, but the pass of 0xAC06 after the first
-            // clear does (the next tick: mode 0x14 with the wait at 1). In a game clock recording the last two ticks before that pass are in its record (the
-            // task is late at those vertical blanks: m523_ep1_2p_full 30612 .. 30614: the records of T0, T1 and T2 + T3 + T4).
+            // 0xAC06 .. 0xAC42 is one pass of the game task (the clear 0xAE0, the sound, the attract task, then the task ends at 0x910): the ticks of mode 0x18 do
+            // not count G.$0 / G.$4DA (MAME m328_end-jack: G.$0 stays 0x1890 from the record of mode 0x18 on). The clears 0xAE0 / 0xA76 of the continue mode sleep inside
+            // the pass too: the ticks of its wait do not count either, but the pass of 0xAC06 after the first clear does (the next tick: mode 0x14 with the wait at 1).
+            // In a game clock recording the last two ticks before that pass are in its record (the task is late at those vertical blanks: m523_ep1_2p_full 30612 ..
+            // 30614: the records of T0, T1 and T2 + T3 + T4).
             self.flow.resume = !(self.flow.cont.exit_wait == 1 && self.flow.mode == 0x14);
             self.flow.join_next = self.flow.mode == 0x14 && matches!(self.flow.cont.exit_wait, 2 | 1);
             return;
@@ -855,8 +857,12 @@ impl Game {
             self.flow.mode = 0x18;
             self.flow.front.game_over_flag = 1;
             self.flow_clear_screen();
-            self.flow.cont.exit_wait = 4; // clear 0xAE0 crosses two vblanks.
-            self.flow.resume = true;
+            // the clear 0xAE0 overruns the frame (one lag frame: no task runs; a game clock record joins the pass, the lag frame and the next
+            // pass, MAME m328_end-jack 5540 and m523_ep1_2p_full 30614); the sound comes in the pass after it, the exit two frames later: four
+            // video frames after this one
+            self.flow_lag(1);
+            self.flow.cont.exit_wait = 3;
+            self.flow.resume = true; // the same pass goes on (0xAC26)
             return;
         }
         self.flow.cont.exit_wait = 0;

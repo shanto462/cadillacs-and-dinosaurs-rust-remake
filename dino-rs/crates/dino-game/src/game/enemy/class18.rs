@@ -3,7 +3,8 @@ use super::{in_win, Enemy};
 use crate::game::{Game, Handle};
 
 impl Game {
-    /// 0x42590: class 18 always uses its native sprites, including Walther.
+    /// 0x42590: class 18 always uses its native sprites, including Walther (the harness test of the Vice intro reads it).
+    #[cfg(test)]
     pub(crate) fn enemy_vice_intro_active(b: &crate::game::body::Body) -> bool {
         b.k20 == 18 * 4
     }
@@ -1296,7 +1297,7 @@ impl Game {
             let i = self.enemy_index(h);
             let facing = self.enemies.slots[i].b.facing;
             self.enemies.slots[i].b.facing = e.b.facing;
-            self.fx_spawn_spark_at(h, e.b.xi().wrapping_sub(0x50), e.b.yi().wrapping_add(0x40), e.b.zi(), 0);
+            self.fx_spawn_spark_facing(e.b.facing, e.b.xi().wrapping_sub(0x50), e.b.yi().wrapping_add(0x40), e.b.zi(), 0);
             self.enemies.slots[i].b.facing = facing;
             self.snd_request(0x3B, 0x18, 0);
         }
