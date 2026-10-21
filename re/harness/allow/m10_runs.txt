@@ -146,3 +146,17 @@ ep4_jack.lagsync: scroll2 27620-27620 # S
 # summary: 50 frames of 2514 paired requests differ in lagsync, first at 178.
 # Codes 0x18, 0x39..0x3B, 0x3E, 0x62, 0x63 and 0x66 carry stale register or
 # caller/pan differences. M10-22 owns these; no sound-argument rule is added.
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# M10-07, Episode 1 whole runs (m517_ep1_*): lagsync is equal for all five. Step: the only differences are in the story panel after the stage clear (cause S, the same as above:
+# splash_timer G.-$7126 and the frame counters one step off; the panel's routine is not restored by the loader). The ranges are the frames where diff.py reports differences
+# (checked: no difference outside them). Run mode: the first difference is the first MAME lag record (the known slowdown of the original, plan decision), listed once per recording (L).
+m517_ep1_jack.step: * 2369-2400       # S: story panel after the stage clear (lag records 2352..2368); 2400 is one frame of a scripted object (not traced further)
+m517_ep1_mustapha.step: * 23505-23520  # S: story panel, one frame after the lag record 23504
+m517_ep1_hannah.step: * 15393-15420    # S: story panel, one frame after the lag record 15392
+m517_ep1_3p.step: * 6144-6200          # S: story panel; the frame counter one step behind at 6144, then the panel timers (lag records 6145, 6176)
+m517_ep1_jack.run: * 2352-2352         # L: first MAME lag record (slowdown of the original)
+m517_ep1_mustapha.run: * 3328-3328     # L: first MAME lag record (slowdown of the original)
+m517_ep1_hannah.run: * 1696-1696       # L: first MAME lag record (slowdown of the original)
+m517_ep1_mess.run: * 2752-2752         # L: first MAME lag record (slowdown of the original)
+m517_ep1_3p.run: * 2544-2544           # L: first MAME lag record (slowdown of the original)
