@@ -332,7 +332,8 @@ impl Body {
 
     /// +$30..+$3F: split body (only when +$25 bit 0 is set).
     pub fn trace_split(&mut self, f: &mut F) {
-        if f.all() || self.draw_flags & 1 != 0 {
+        // A load restores the layer even while it is off: the stale frame and bytes of a stopped layer are the start values of the next walk (0x5CA6 reads +$34)
+        if f.all() || f.loading() || self.draw_flags & 1 != 0 {
             f.frame(0x30, "frame2", &mut self.frame2, &mut self.frame2_loads, false, false, self.live != 0);
             f.u16(0x34, "w34", &mut self.w34);
             f.u16(0x36, "w36", &mut self.w36);
@@ -1588,18 +1589,10 @@ impl Game {
                     s.event_base = std.0;
                     s.next_event = k;
                 }
-                // 0x2099A / 0x209C0: a stage change can leave the old list base in
-                // the loader. Adjacent lists share the 16-byte grid, so that base
-                // also accepts pointers into the new list, at the wrong index.
-                None if list_index(p, ev_stage, 16).is_some_and(|k| {
-                    self.assets.stages.stages.get(self.w.stage as usize).is_some_and(|st| k < st.camera_events.len())
-                }) => {
-                    s.event_base = ev_stage;
-                    s.next_event = ((p - ev_stage) / 16) as usize;
-                }
-                None => match list_index(p, ev_base, 16) {
+                // a pointer inside the list of the stage that runs belongs to it: the kept base can be the one of the stage before (the story panel counted the stage up)
+                None => match list_index(p, ev_stage, 16).filter(|&k| k < self.assets.stages.stages.get(self.w.stage as usize).map_or(0, |x| x.camera_events.len())).or_else(|| list_index(p, ev_base, 16)) {
                     Some(k) => {
-                        s.event_base = ev_base;
+                        s.event_base = if list_index(p, ev_stage, 16) == Some(k) { ev_stage } else { ev_base };
                         s.next_event = k;
                     }
                     None => {
@@ -1887,26 +1880,11 @@ impl Game {
         self.w.stage = l.read(g(0x04D9), 1) as u8;
         self.cam.s2.area = l.read(g(0x073C + 0x4A), 1) as u8;
         self.trace_visit(&mut l);
-        // 0x7EC48: a typewriter can be created entirely inside a MAME lag
-        // record. Restore its text state as well as its pool B slot, otherwise
-        // prop_class26 frees the slot because flow.typers has no peer for it.
-        self.flow.typers.retain(|t| t.slot.is_none());
-        for (i, p) in self.props.slots.iter().enumerate() {
-            if p.b.live == 0 || p.b.k20 != 0x68 { continue; }
-            let base = self.props.handle(i) as usize;
-            let w = |off| u16::from_be_bytes(ram[base + off..base + off + 2].try_into().unwrap());
-            let l = |off| u32::from_be_bytes(ram[base + off..base + off + 4].try_into().unwrap());
-            let cursor = l(0x80);
-            let text = if p.b.mode <= 2 && p.b.sub <= 2 {
-                self.assets.frontend.text.slice_from(if p.b.sub == 0 { cursor } else { l(0x88) })
-            } else { &[] };
-            self.flow.typers.push(super::flow::text::Typer::from_pool_b_snapshot(
-                text, i, (p.b.mode, p.b.sub), cursor, (w(0x84), w(0x86), w(0x8C)),
-            ));
-        }
+        // (0x7EC48: the typewriters of the snapshot are taken over by `trace_load_typers` below.)
         self.trace_unmapped = l.unmapped;
         let mut warn = l.errors;
         self.trace_load_tasks(ram, &mut warn);
+        self.trace_load_typers();
         self.trace_load_gfx(gfx);
         // Index/count conversions cannot encode null pointers before the corresponding
         // subsystem has initialized. Remember only these nulls, never live ROM pointers.
@@ -1941,6 +1919,26 @@ impl Game {
             self.trace_player_extras(i, &mut f);
         }
         self.trace_unmapped = l.unmapped;
+    }
+
+    /// The typewriter objects of the level (pool B class 26, 0x7EC48) keep their text pointer, write address and counters in the object's bytes: +$80 write address (the text
+    /// pointer while the object is new), +$84 frames to the next item, +$86 frames per item, +$88 read pointer, +$8C skip flag. The port keeps them in `flow.typers`.
+    fn trace_load_typers(&mut self) {
+        self.flow.typers.retain(|t| t.slot.is_none());
+        for i in 0..self.props.slots.len() {
+            let p = &self.props.slots[i];
+            if p.b.live == 0 || p.b.k20 != 0x68 {
+                continue;
+            }
+            let (state, sub) = (p.b.mode, p.b.sub);
+            let text = &self.assets.frontend.text;
+            let t = if sub == 0 {
+                super::flow::text::Typer::restore(state, sub, text.slice_from(p.m.l(0x80)), 0, 0, p.m.w(0x86), false, i)
+            } else {
+                super::flow::text::Typer::restore(state, sub, text.slice_from(p.m.l(0x88)), p.m.l(0x80), p.m.w(0x84), p.m.w(0x86), p.m.b(0x8C) != 0, i)
+            };
+            self.flow.typers.push(t);
+        }
     }
 
     /// Abstract state the port keeps instead of the task table (0xFF0052, 16 bytes per slot:
