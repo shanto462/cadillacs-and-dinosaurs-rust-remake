@@ -1,4 +1,5 @@
 # M9-08 audit A (second pass): mechanics rows, groups A to E and the listed design blocks
+Updated 2026-10-21 (task 67): whole-run checks applied; see the closing section at the end.
 
 Second pass (desk Haiku worker, task 55). Verdicts come from the port code (address or class grep in `dino-rs/crates`) and the recordings in the sweep refresh 6, not from the Port column of `mechanics-seen.md`. No source change.
 
@@ -8,13 +9,15 @@ Second pass (desk Haiku worker, task 55). Verdicts come from the port code (addr
 
 ## Counts
 
-| verdict | rows |
-| --- | --- |
-| equal | 46 |
-| listed difference | 13 |
-| implemented not checked | 306 |
-| missing | 11 |
-| total | 376 |
+Verdicts of the main table (each row once). "Before" is the count at task 55 / 57 / 59; "after" is 2026-10-21.
+
+| verdict | before | after |
+| --- | --- | --- |
+| equal | 46 | 73 |
+| listed difference | 13 | 13 |
+| implemented not checked | 306 | 279 |
+| missing | 11 | 11 |
+| total | 376 | 376 |
 
 ## A. Player
 
@@ -58,7 +61,7 @@ Covering tasks (group level): M2-01, M2-03, M2-04, M2-08, M2-09, M2-12, M2-14 to
 | P34 | Time over kills every living player at once | group A | dino-game/src/game/rank.rs:2 | no recording found by the row tag | implemented not checked |
 | P35 | Players are kept inside the screen, cannot go left of the camera | group A | dino-game/src/game/boss.rs:438 | no recording found by the row tag | implemented not checked |
 | P36 | Wading in water (legs cut at the water line), splash on landing, ripples | group A | dino-game/src/game/enemy_combat.rs:886 | no recording found by the row tag | implemented not checked |
-| P37 | Riding the Cadillac in Episode 3 and the vehicle entrance state 0x432 | group A | dino-game/src/game/enemy_combat.rs:612 | no recording found by the row tag | implemented not checked |
+| P37 | Riding the Cadillac in Episode 3 and the vehicle entrance state 0x432 | group A | dino-game/src/game/enemy_combat.rs:612 | whole run ep3_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | P38 | Scripted control: walk in at the start, automatic walk at area end, stage exit | group A | dino-game/src/game/flow.rs:163 | no recording found by the row tag | implemented not checked |
 | P39 | Per hero voices on hit, attack, special | group A | dino-game/src/game/script.rs:920 | no recording found by the row tag | implemented not checked |
 | P40 | Respawn flash (pool C class 0x38), sparkle (0x5C), 1UP marker (pool B class 0x48) | group A | dino-game/src/game/terrain.rs:13 | no recording found by the row tag | implemented not checked |
@@ -89,7 +92,7 @@ Covering tasks (group level): M3-02, M3-03, M3-14, M3-20, M3-30, M5-13, M5-22, M
 | E16 | Punk / Thug: hops, jump kicks, leaping dive | group B | dino-game/src/game/enemy/class64.rs:1 | no recording found by the row tag | implemented not checked |
 | E17 | Blade / Razor: knife throwers, one record makes 3 objects, parts classes 60, 34, 41, 15..17, drop kn | group B | dino-game/src/game/enemy/class14.rs:1 | no recording found by the row tag | implemented not checked |
 | E18 | Poachers (Poacher J, Skinner, Gutter): ex soldiers with rifles | group B | dino-game/src/game/placeholder.rs:76 | no recording found by the row tag | implemented not checked |
-| E19 | Lash T.: mace in Episode 2 [W:aqm]; appears in 4 later episodes | group B | dino-game/src/game/placeholder.rs:74 | no recording found by the row tag | implemented not checked |
+| E19 | Lash T.: mace in Episode 2 [W:aqm]; appears in 4 later episodes | group B | dino-game/src/game/placeholder.rs:74 | whole run ep2_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | E20 | Bludge: human dinosaur hybrid, tongue attack, acid spit | group B | dino-game/src/game/effect.rs:76 | no recording found by the row tag | implemented not checked |
 | E21 | Walther: leader with a gun, same class as Vice | group B | dino-game/src/game/placeholder.rs:26 | no recording found by the row tag | implemented not checked |
 | E22 | Zeke: pteranodon that flies in, hits the heroes; can be hit only by jumping | group B | dino-game/src/game/enemy/class82.rs:1 | no recording found by the row tag | implemented not checked |
@@ -111,7 +114,7 @@ Covering tasks (group level): M5-10, M6-02 to M6-06, M6-16, M6-17, M7-10 to M7-1
 | D05 | A dinosaur leaves when the camera passes the X in its spawn record | group C | dino-game/src/game/enemy_combat.rs:1996 | no recording found by the row tag | implemented not checked |
 | D06 | Shivat (T. rex) attacks: bite 14, tail swing 10 with knockdown, triple stomp, grab and hold (cooldow | group C | dino-game/src/game/placeholder.rs:78 | no recording found by the row tag | implemented not checked |
 | D07 | Mack (triceratops) hostile | group C | dino-game/src/game/placeholder.rs:80 | no recording found by the row tag | implemented not checked |
-| D08 | Rock Hopper (velociraptor): Vice's partner in Episode 1, two of them in Episode 5 | group C | dino-game/src/game/effect.rs:21 | no recording found by the row tag | implemented not checked |
+| D08 | Rock Hopper (velociraptor): Vice's partner in Episode 1, two of them in Episode 5 | group C | dino-game/src/game/effect.rs:21 | whole run ep1_3p equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | D09 | Zeke (pteranodon, class 82): a big orange flyer that circles above the heroes in long sine like swoo | group C | dino-game/src/game/enemy/class82.rs:1 | no recording found by the row tag | implemented not checked |
 | D10 | Ambient pterodactyls in the sky (bird controllers 49, spawner 73, birds 50) | group C | dino-game/src/game/prop/class86.rs:10 | no recording found by the row tag | implemented not checked |
 | D11 | Brontosaurus legs crush whoever is under them at two places in Episode 6 | group C | dino-game/src/game/prop.rs:281 | no recording found by the row tag | implemented not checked |
@@ -147,25 +150,25 @@ Covering tasks (group level): M2-15, M3-01, M3-08 to M3-14, M3-16, M3-19, M5-06,
 | W01 | Containers (drums, barrels, tires, buckets, armor, TNT) break in 4 HP, can be lifted, thrown, crush  | group E | dino-game/src/game/terrain.rs:16 | no recording found by the row tag | implemented not checked |
 | W02 | TNT barrel: fuse blink stages, then explosion that hurts all | group E | dino-game/src/game/enemy.rs:108 | no recording found by the row tag | implemented not checked |
 | W03 | Food heals 16 to 100 or gives points at full HP; 18 foods | group E | dino-game/src/game/trace.rs:1154 | no recording found by the row tag | implemented not checked |
-| W04 | Treasure gives 1000 to 10000 points; hidden behind trees in Episode 2 | group E | dino-assets/src/sound.rs:50 | no recording found by the row tag | implemented not checked |
+| W04 | Treasure gives 1000 to 10000 points; hidden behind trees in Episode 2 | group E | dino-assets/src/sound.rs:50 | whole run ep2_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | W05 | Drop rolls: enemy table and container table, guns reroll to ammo or a treasure | group E | dino-game/src/game/enemy_combat.rs:39 | no recording found by the row tag | implemented not checked |
 | W06 | Dropped weapons last 3600 f; items bounce back in from the screen edge up to 5 times | group E | dino-game/src/game/enemy_combat.rs:759 | no recording found by the row tag | implemented not checked |
-| W07 | RADIO in Episode 3 calls the Cadillac and triggers kill-all | group E | dino-game/src/game/car.rs:1 | no recording found by the row tag | implemented not checked |
+| W07 | RADIO in Episode 3 calls the Cadillac and triggers kill-all | group E | dino-game/src/game/car.rs:1 | whole run ep3_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | W08 | Torches set enemies on fire | group E | dino-game/src/game/enemy/class6.rs:1 | no recording found by the row tag | implemented not checked |
 | W09 | Fire bombs, dynamite, grenades, bazooka rockets explode with splash | group E | dino-game/src/game/enemy_combat.rs:2258 | no recording found by the row tag | implemented not checked |
-| W10 | Falling rocks on the mountain side (Episode 5) | group E | dino-game/src/game/terrain.rs:878 | no recording found by the row tag | implemented not checked |
-| W11 | Burning huts and flames in the village (Episode 5) | group E | dino-game/src/game/enemy_combat.rs:1184 | no recording found by the row tag | implemented not checked |
+| W10 | Falling rocks on the mountain side (Episode 5) | group E | dino-game/src/game/terrain.rs:878 | whole run ep5_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
+| W11 | Burning huts and flames in the village (Episode 5) | group E | dino-game/src/game/enemy_combat.rs:1184 | whole run ep5_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | W12 | Flame jets in the sewers, lure enemies into them (Episode 8) | group E | dino-game/src/game/enemy_combat.rs:1185 | no recording found by the row tag | implemented not checked |
 | W13 | Barrels rolling down the cave slope (Episode 8), rolling drums with items in the library (Episode 7) | group E | - | no address, class or name hit (addresses tried: none) | missing |
 | W14 | Elevator ride with enemies riding in at each stop (Episode 7) | group E | dino-game/src/game/terrain.rs:20 | no recording found by the row tag | implemented not checked |
 | W15 | Cadillac drive: camera mode 8, car state G.$518, special collision passes, runs over enemies and bar | group E | dino-game/src/game/prop.rs:40 | no recording found by the row tag | implemented not checked |
-| W16 | Row scroll (road bends) in Episode 3 | group E | dino-game/src/game/flow.rs:540 | no recording found by the row tag | implemented not checked |
+| W16 | Row scroll (road bends) in Episode 3 | group E | dino-game/src/game/flow.rs:540 | whole run ep3_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | W17 | Mine lamps (palette cycling), rain | group E | dino-game/src/game/prop.rs:25 | no recording found by the row tag | implemented not checked |
 | W18 | Screen shake on stomps, landings, the lift (0x222D6) | group E | dino-game/src/game/mod.rs:346 | no recording found by the row tag | implemented not checked |
 | W19 | Tile animation (water, fire) and palette cycling objects | group E | dino-game/src/game/terrain.rs:18 | no recording found by the row tag | implemented not checked |
 | W20 | Suits of armor in the Episode 1 hall hide items | group E | - | no address, class or name hit (addresses tried: none) | missing |
 | W21 | Lab tanks (01, 02, 03) open and release Bludge, Hopper, Tyrog 2 (Episode 8) | group E | dino-game/src/game/prop/b44.rs:12 | no recording found by the row tag | implemented not checked |
-| W22 | Garage props (Episode 4), doors, gates | group E | dino-game/src/game/prop/b1.rs:1 | no recording found by the row tag | implemented not checked |
+| W22 | Garage props (Episode 4), doors, gates | group E | dino-game/src/game/prop/b1.rs:1 | whole run ep4_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | W23 | The "GO" burst arrow at the right edge and the idle hint after 600 f | group E | dino-game/src/game/prop.rs:29 | no recording found by the row tag | implemented not checked |
 | W24 | Pool B classes with unknown role: 59 distinct in the scripts, 57 not ported | group E | dino-game/src/game/boss.rs:1 | no recording found by the row tag | implemented not checked |
 | W25 | Breakable parts of the background: pipes in walls (the user saw them), and probably windows, signs,  | group E | dino-game/src/game/prop.rs:6 | no recording found by the row tag | implemented not checked |
@@ -182,7 +185,7 @@ Covering tasks (group level): M2-15, M3-01, M3-08 to M3-14, M3-16, M3-19, M5-06,
 | P47 | Dive kick window is 2 to 3 frames at the top of the jump (Jack and Mess top = split height) | D2a block | dino-game/src/game/player.rs:2273 | no recording found by the row tag | implemented not checked |
 | P48 | Dive (0x0E) and running jump attack (0x10) deal 1.5 times the record damage to almost all enemy type | D2a block | dino-game/src/game/enemy_combat.rs:216 | no recording found by the row tag | implemented not checked |
 | P49 | Attack power factor `$C6` is 32 in 27 of 32 rolls at HP >= 75, re-rolled when the hero is hit; 64 po | D2a block | dino-game/src/game/enemy_combat.rs:39 | no recording found by the row tag | implemented not checked |
-| P50 | Wall jump needs terrain wall bit 4 (or 0x18, 0x1C), found in Episode 1 areas 0 to 2, Episode 5 area  | D2a block | dino-game/src/game/player.rs:9 | no recording found by the row tag | implemented not checked |
+| P50 | Wall jump needs terrain wall bit 4 (or 0x18, 0x1C), found in Episode 1 areas 0 to 2, Episode 5 area | D2a block | dino-game/src/game/player.rs:9 | whole run ep1_3p equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | P51 | Thrown enemies hurt other enemies for 5 damage (enemy attack row 0x11), knock down | D2a block | dino-game/src/game/enemy_combat.rs:398 | no recording found by the row tag | implemented not checked |
 | P52 | Score per hit from the record's score code: 100 / 200 / 300 / 400 / 700 / 800 / 1000 | D2a block | dino-assets/src/text.rs:81 | no recording found by the row tag | implemented not checked |
 | P53 | Hannah's knife stab rate comes from her 5 frame swing animation; the item flashes red when an enemy  | D2a block | dino-game/src/game/body.rs:30 | no recording found by the row tag | implemented not checked |
@@ -241,7 +244,7 @@ Covering tasks (group level): M2-15, M3-01, M3-08 to M3-14, M3-16, M3-19, M5-06,
 | WM22 | `G.$4EF` recount: by 0x655E at area start, respawn, death end (61 frames after the death sequence st | D2c block | dino-game/src/game/flow.rs:662 | no recording found by the row tag | implemented not checked |
 | WM23 | Script records for 2 and 3 players per episode, wave thresholds, boss HP by count (Vice 350 / 550 /  | D2c block | dino-assets/src/enemy.rs:126 | m800_a13_e6a2_boss_intro (equal) | equal |
 | WM24 | Level column by count and the rank clamps (rank 0: level 0 / 4 / 8; rank 12: 10 / 12 / 14); rank spe | D2c block | dino-game/src/game/rank.rs:126 | no recording found by the row tag | implemented not checked |
-| WM25 | Weapon sources: placed weapons only for torches (Episode 5), stones (Episodes 4, 7), rifle, shotgun, | D2c block | dino-game/src/game/enemy/class52.rs:1 | no recording found by the row tag | implemented not checked |
+| WM25 | Weapon sources: placed weapons only for torches (Episode 5), stones (Episodes 4, 7), rifle, shotgun, | D2c block | dino-game/src/game/enemy/class52.rs:1 | whole run ep5_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | WM26 | Enemy thrown dynamite and grenade: created lit with owner 0xFF (blast kind 3, attack 0x6A, record da | D2c block | dino-game/src/game/item/weapon.rs:126 | no recording found by the row tag | implemented not checked |
 | WM27 | Thrown or lifted containers: +500 at the throw, +1000 per hit, no break bonus after a hit; a tire st | D2c block | dino-game/src/game/item/container.rs:8 | m600_h15_h_barrel_hero (equal), m600_h15_h_barrel_poacher (equal), m600_h16_h_barrel_poacher (equal) | equal |
 
@@ -315,7 +318,7 @@ Covering tasks (group level): M2-15, M3-01, M3-08 to M3-14, M3-16, M3-19, M5-06,
 | BS14 | Hogg's bomb (class 42): a lob to a 3 x 3 grid around the car (+-64 X, +-16 Z; weights 1 2 1 / 2 3 3  | D3c block | dino-game/src/game/enemy/class42.rs:70 | no recording found by the row tag | implemented not checked |
 | BS15 | Hogg in car mode: a random walk on a 32 x 8 cell grid around the car (re-drawn every 25 frames), bik | D3c block | dino-game/src/game/enemy/class31.rs:751 | no recording found by the row tag | implemented not checked |
 | BS16 | Hogg's death: the rider is thrown (vy 5 px up, vx 1), the bike breaks into pieces and explodes where | D3c block | dino-extract/src/boss.rs:61 | m600_bs_e1_h4_foot (first diff 4350), m600_bs_h1_h4_foot (first diff 4350) | listed difference |
-| BS17 | Radio: treasure pick up in Episode 3 with `G.$50E = 0` calls 0x8BD24 (3 free pool B slots); sources: | D3c block | dino-game/src/game/car.rs:1 | no recording found by the row tag | implemented not checked |
+| BS17 | Radio: treasure pick up in Episode 3 with `G.$50E = 0` calls 0x8BD24 (3 free pool B slots); sources: | D3c block | dino-game/src/game/car.rs:1 | whole run ep3_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | BS18 | Car arrival timeline (t after the pick up at 5): car at 16 drives in at 5 px, brakes 74 to 100, wait | D3c block | dino-game/src/game/car.rs:135 | no recording found by the row tag | implemented not checked |
 | BS19 | Car steering: every rider with a stick adds 0x800 + (+-768 vx, +-256 vz, diagonals +-256, +-192) to  | D3c block | dino-game/src/game/car.rs:409 | no recording found by the row tag | implemented not checked |
 | BS20 | Car versus the world: flat 20 to every enemy and monster it touches (credit to the taker), container | D3c block | dino-game/src/game/spawn.rs:34 | no recording found by the row tag | implemented not checked |
@@ -376,48 +379,48 @@ Covering tasks (group level): M2-15, M3-01, M3-08 to M3-14, M3-16, M3-19, M5-06,
 | IT16 | Despawn windows: food, treasure, containers, enemies in `[camera X - 0xC0, + 0x240)`; weapons, ammo  | D4a block | dino-game/src/game/enemy.rs:705 | no recording found by the row tag | implemented not checked |
 | IT17 | Nothing on the floor times out (food, treasure, ammo, placed or enemy dropped or container dropped w | D4a block | dino-game/src/game/boss.rs:29 | no recording found by the row tag | implemented not checked |
 | IT18 | A dynamite put down by a weapon swap is lit when it lands (4 stages of 15 frames); the fuse pauses i | D4a block | dino-game/src/game/enemy.rs:104 | no recording found by the row tag | implemented not checked |
-| IT19 | Placed items: 30 on the floor in 5 episodes; Episode 2's pearl record (X 0x1A8 at trigger 0x428) is  | D4a block | dino-game/src/game/flow.rs:981 | no recording found by the row tag | implemented not checked |
-| IT20 | Episode 3 area script: 12 radios (4 containers, 8 enemies), 17 empty containers, no food or weapon;  | D4a block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | implemented not checked |
-| IT21 | 42 item or drop records exist only for 2 or 3 players: rod and club (Episode 1), shotgun and M-16 (E | D4a block | dino-game/src/game/terrain.rs:638 | no recording found by the row tag | implemented not checked |
+| IT19 | Placed items: 30 on the floor in 5 episodes; Episode 2's pearl record (X 0x1A8 at trigger 0x428) is | D4a block | dino-game/src/game/flow.rs:981 | whole run ep2_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
+| IT20 | Episode 3 area script: 12 radios (4 containers, 8 enemies), 17 empty containers, no food or weapon; | D4a block | dino-game/src/game/flow.rs:86 | whole run ep3_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
+| IT21 | 42 item or drop records exist only for 2 or 3 players: rod and club (Episode 1), shotgun and M-16 (E | D4a block | dino-game/src/game/terrain.rs:638 | whole run ep1_3p equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | IT22 | 23 records change with the level: Uzi 31 of 32 or 8 of 32 (Episode 7 area 0), lobster or parfait, ca | D4a block | dino-game/src/game/boss.rs:245 | no recording found by the row tag | implemented not checked |
 | IT23 | Boss helper lists of Episodes 1 to 4 carry drop rows (Vice steak and small foods, Butcher food rows, | D4a block | dino-game/src/game/boss.rs:1 | no recording found by the row tag | implemented not checked |
 | IT24 | Every GameFAQs barrel and drop note checked agrees with the rows (section 10) | D4a block | dino-game/src/game/boss.rs:4 | no recording found by the row tag | implemented not checked |
 | IT25 | Walther (class 18 var 0x200) drops a revolver 32 of 32 in Episodes 4 and 5 and the radio in Episode  | D4a block | dino-game/src/game/enemy/class18.rs:1 | no recording found by the row tag | implemented not checked |
 | IT26 | The HUD item message: FooD icon with name and GOOD !! or points; Pts icon with name and points; a ra | D4a block | dino-game/src/game/terrain.rs:638 | no recording found by the row tag | implemented not checked |
 | IT27 | Rolling barrels are freed 64 px left of the camera (near window), which is the "only if you go slowl | D4a block | dino-game/src/game/enemy/class65.rs:1 | no recording found by the row tag | implemented not checked |
-| IT28 | The Episode 2 treasures are drawn behind the foreground trunks; the hero at depth 16 is half hidden  | D4a block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | implemented not checked |
-| IT29 | **Port bug:** the extracted drop table ends at 0xB7312 (enemy row 0x2F); Episode 1 wave 4 uses enemy | D4a block | dino-game/src/game/boss.rs:1 | no recording found by the row tag | implemented not checked |
-| IT30 | The Episode 5 area 0 drum for 3 players (X 0x2D0, trigger 0x80) is past the far window when it fires | D4a block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | implemented not checked |
+| IT28 | The Episode 2 treasures are drawn behind the foreground trunks; the hero at depth 16 is half hidden | D4a block | dino-game/src/game/flow.rs:86 | whole run ep2_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
+| IT29 | **Port bug:** the extracted drop table ends at 0xB7312 (enemy row 0x2F); Episode 1 wave 4 uses enemy | D4a block | dino-game/src/game/boss.rs:1 | whole run ep1_3p equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
+| IT30 | The Episode 5 area 0 drum for 3 players (X 0x2D0, trigger 0x80) is past the far window when it fires | D4a block | dino-game/src/game/flow.rs:86 | whole run ep5_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 
 ## Design block D3e pool B
 
 | row id | the mechanic | covering task | port file:line | evidence | verdict |
 | --- | --- | --- | --- | --- | --- |
-| W27 | Steam pipes in the end wall of Episode 1 area 0: break with one punch (hero depth 296 to 320), then  | D3e pool B block | dino-extract/src/enemy.rs:360 | no recording found by the row tag | implemented not checked |
-| W28 | Episode 1 end door of area 0 is smashed by the hero during the scripted walk (dust, black doorway) | D3e pool B block | dino-game/src/game/script.rs:317 | no recording found by the row tag | implemented not checked |
+| W27 | Steam pipes in the end wall of Episode 1 area 0: break with one punch (hero depth 296 to 320), then | D3e pool B block | dino-extract/src/enemy.rs:360 | whole run ep1_3p equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
+| W28 | Episode 1 end door of area 0 is smashed by the hero during the scripted walk (dust, black doorway) | D3e pool B block | dino-game/src/game/script.rs:317 | whole run ep1_3p equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | W29 | Hall double door opens at the start of wave 1; the hall window shatters when the scripted hero kicks | D3e pool B block | dino-extract/src/enemy.rs:355 | no recording found by the row tag | implemented not checked |
 | W30 | Respawn air strike: five bombs fall in a line, white blast, explosions around the dropping hero, spe | D3e pool B block | dino-extract/src/enemy.rs:342 | no recording found by the row tag | implemented not checked |
 | W31 | Breakable family of pool B: classes 0 (generic wall panel, 15 variants), 1 (chain-link fence), 3 (wa | D3e pool B block | dino-game/src/game/prop.rs:13 | no recording found by the row tag | implemented not checked |
-| W32 | Episode 2 ambient life: small blue bird flocks (B72, A46 with A48 trail) harmless; ground critters ( | D3e pool B block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | implemented not checked |
+| W32 | Episode 2 ambient life: small blue bird flocks (B72, A46 with A48 trail) harmless; ground critters ( | D3e pool B block | dino-game/src/game/flow.rs:86 | whole run ep2_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | W33 | Tile animation family of pool B: periodic scroll2, scroll3 or palette writers (23 classes), some key | D3e pool B block | dino-game/src/game/terrain.rs:18 | no recording found by the row tag | implemented not checked |
 | W34 | Class 69 is a debug object (frees itself unless G.$4AA); class 66 has an anti tamper check (0x86B3C) | D3e pool B block | dino-game/src/game/prop/class66.rs:9 | no recording found by the row tag | implemented not checked |
-| W35 | Class 95 blends 3 palettes toward a target set along the Episode 3 road (sky colours); classes 83, 8 | D3e pool B block | dino-game/src/game/boss.rs:1 | no recording found by the row tag | implemented not checked |
+| W35 | Class 95 blends 3 palettes toward a target set along the Episode 3 road (sky colours); classes 83, 8 | D3e pool B block | dino-game/src/game/boss.rs:1 | whole run ep3_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | W36 | Container variants of E class 5: 0 pail, 2 drum, 4 barrel, 6 stone, 8 boulder, 0xA armor statue (sol | D3e pool B block | dino-game/src/game/enemy/class5.rs:1 | no recording found by the row tag | implemented not checked |
 | W37 | "STAGE CLEARED!" and digits 1 to 8 are frames of pool C class 9 (0x93184); 1P, 2P, 3P tags are B68;  | D3e pool B block | dino-game/src/game/effect.rs:612 | no recording found by the row tag | implemented not checked |
-| W38 | Treasures of Episode 2 area 0 sit at depth 16, height 64, behind the big yellow trunks (E class 9 va | D3e pool B block | dino-sound/src/driver.rs:458 | no recording found by the row tag | implemented not checked |
+| W38 | Treasures of Episode 2 area 0 sit at depth 16, height 64, behind the big yellow trunks (E class 9 va | D3e pool B block | dino-sound/src/driver.rs:458 | whole run ep2_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 
 ## Design block D3e part 2
 
 | row id | the mechanic | covering task | port file:line | evidence | verdict |
 | --- | --- | --- | --- | --- | --- |
-| W201 | Episode 3 uses one continuous area with separate foot-lock and car paths | D3e part 2 block | dino-assets/src/stage.rs:75 | no recording found by the row tag | implemented not checked |
+| W201 | Episode 3 uses one continuous area with separate foot-lock and car paths | D3e part 2 block | dino-assets/src/stage.rs:75 | whole run ep3_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | W202 | B95 changes 16 colours in one palette per object, not three palettes | D3e part 2 block | dino-game/src/game/prop/b95.rs:45 | no recording found by the row tag | implemented not checked |
 | W203 | Seven B95 triggers use periods 15,15,2,2,2,2,2 and three destination palette slots | D3e part 2 block | dino-extract/src/boss.rs:133 | no recording found by the row tag | implemented not checked |
 | W204 | Radio sources include the first barrel, last road pail, middle drum and one rolling barrel | D3e part 2 block | dino-game/src/game/car.rs:1 | no recording found by the row tag | implemented not checked |
-| W205 | Six Episode 3 tire stacks are E5 containers, not map decoration | D3e part 2 block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | implemented not checked |
+| W205 | Six Episode 3 tire stacks are E5 containers, not map decoration | D3e part 2 block | dino-game/src/game/flow.rs:86 | whole run ep3_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | W206 | A70 road riders and A65 hopping barrels hurt heroes and enemies | D3e part 2 block | dino-game/src/game/camera.rs:1337 | no recording found by the row tag | implemented not checked |
 | W207 | Outer entrance crash breaks drums, tires and A27 men; upright gate/posts stay | D3e part 2 block | dino-extract/src/sprites.rs:109 | no recording found by the row tag | implemented not checked |
-| W208 | Episode 4 opening car A16/A17 differs from playable car B88 | D3e part 2 block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | implemented not checked |
+| W208 | Episode 4 opening car A16/A17 differs from playable car B88 | D3e part 2 block | dino-game/src/game/flow.rs:86 | whole run ep4_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | W209 | Walther runs in beside a closed grate at X 0x320,Y 0,Z 0x20 | D3e part 2 block | dino-game/src/game/placeholder.rs:26 | no recording found by the row tag | implemented not checked |
 | W210 | Garage back tires have pizza/steak/sushi and gold-dust/dime rows | D3e part 2 block | dino-game/src/game/prop/b1.rs:1 | no recording found by the row tag | implemented not checked |
 | W211 | Overturned Cadillac is garage scroll2 art, with no separate break or loot | D3e part 2 block | - | no address, class or name hit (addresses tried: none) | missing |
@@ -427,7 +430,7 @@ Covering tasks (group level): M2-15, M3-01, M3-08 to M3-14, M3-16, M3-19, M5-06,
 | W215 | B0/B1 breaks have no container drop call or hostile attack registration | D3e part 2 block | dino-extract/src/enemy.rs:383 | no recording found by the row tag | implemented not checked |
 | W216 | B59 variants 0,1,2 animate foundry far-layer colours | D3e part 2 block | dino-extract/src/enemy.rs:386 | no recording found by the row tag | implemented not checked |
 | W217 | Foundry weapons are placed guns with player-count and level gates | D3e part 2 block | dino-game/src/game/prop.rs:180 | no recording found by the row tag | implemented not checked |
-| W218 | Episode 5 starts in daylight with three torches, two barbecues and an egg | D3e part 2 block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | implemented not checked |
+| W218 | Episode 5 starts in daylight with three torches, two barbecues and an egg | D3e part 2 block | dino-game/src/game/flow.rs:86 | whole run ep5_jack equal in lagsync (M10 whole-run checks; causes S, K, P of allow/m10_runs.txt) | equal |
 | W219 | Torch floor fire is E6 overlay; swung torch burn comes from weapon logic | D3e part 2 block | dino-game/src/game/trace.rs:595 | no recording found by the row tag | implemented not checked |
 | W220 | Meadow diamond is a placed treasure at trigger 0x180, not a broken rock reward | D3e part 2 block | - | no address, class or name hit (addresses tried: AF7F4) | missing |
 | W221 | Hunters wake the sleeping Shivat; kill-all sweep can prevent the scene | D3e part 2 block | dino-game/src/game/enemy.rs:39 | no recording found by the row tag | implemented not checked |
@@ -482,34 +485,38 @@ Covering tasks (group level): M2-15, M3-01, M3-08 to M3-14, M3-16, M3-19, M5-06,
 | W323 | After the final boss death the ending code makes B82, the showers B83 and B84 (200 and 400 frames),  | D3e part 3 block | dino-game/src/game/boss.rs:218 | no recording found by the row tag | implemented not checked |
 | W324 | Probe note: `hold 0xFF850E 1 2` does not kill Lash T. or Walther; `jump ... at=start` does not stop  | D3e part 3 block | dino-game/src/game/flow.rs:251 | no recording found by the row tag | implemented not checked |
 
-## Fix list (missing first, then listed differences)
+## Fix list (after the whole-run checks, 2026-10-21)
 
-Sorted by how much code is missing (judged from the row): "missing" = no code found by address, class or name; "listed difference" = code found and its recording differs (partly done).
+Remaining rows that are missing, a listed difference or not checked. Missing first, then listed differences, then not checked.
 
-| # | row id | what is missing or different | file to look at | verdict |
-| --- | --- | --- | --- | --- |
-| 1 | W13 | Barrels rolling down the cave slope (Episode 8), rolling drums with items in the library (Episode 7) | new code in the module of the group | missing |
-| 2 | W20 | Suits of armor in the Episode 1 hall hide items | new code in the module of the group | missing |
-| 3 | W26 | Catch-all: every other interactive thing in the levels (switches, doors, things that fall or roll when touched | new code in the module of the group | missing |
-| 4 | WM18 | Tag team trigger: counters per other player, reset by the initiator's input and by the partner's invulnerabili | new code in the module of the group | missing |
-| 5 | IT08 | Tire stacks and statues cannot be lifted (9 and 3 offsets tried); a barrel is lifted only from 24 px beside it | new code in the module of the group | missing |
-| 6 | W211 | Overturned Cadillac is garage scroll2 art, with no separate break or loot | new code in the module of the group | missing |
-| 7 | W220 | Meadow diamond is a placed treasure at trigger 0x180, not a broken rock reward | new code in the module of the group | missing |
-| 8 | W226 | Bridge has eight barrels in two depth rows and stays intact when they break | new code in the module of the group | missing |
-| 9 | W227 | Bridge route lowers camY 0x200 to 0x100 through diagonal mode, without fade | new code in the module of the group | missing |
-| 10 | W236 | Fossil bucket is ammonite 30/32 or dime 2/32; last bucket selects cake/coffee by level | new code in the module of the group | missing |
-| 11 | W320 | The meat barrel at X 0xCB0 can be lifted and carried through the sub area switch, the scripted walk and into t | new code in the module of the group | missing |
-| 12 | DS12 | Brontosaurus is one huge foot (A22) with a leg helper (A23): hover 180 frames over the nearest hero in its 80  | dino-extract/src/sprites.rs:54 | listed difference |
-| 13 | P69 | Hero damage factor table 0x2C88E by hero id: Jack 32, Mustapha 34, Hannah 35, Mess 30; enemy to hero order of  | dino-extract/src/enemy.rs:153 | listed difference |
-| 14 | HU15 | Brontosaurus foot and barrels hurt poachers in their way (foot 30 knock down and 1 touch, barrel 10) | dino-game/src/game/placeholder.rs:77 | listed difference |
-| 15 | BS03 | Vice's intro: waits for the camera at X 0x1D0, talk box (sound 0x20), 40 frames, camera mover, anim 0x14, 60 f | dino-game/src/game/boss.rs:29 | listed difference |
-| 16 | BS05 | Vice's summon: after a knockdown at HP <= max / `+$C2` (2, 3, 4): jump back, revolver fired into the air (muzz | dino-game/src/game/enemy/class18.rs:978 | listed difference |
-| 17 | BS12 | Hogg is a rider (class 31) on a bike (class 32, the moving body); foot behaviour: ride across at 5.5 px per fr | dino-game/src/game/enemy/class31.rs:340 | listed difference |
-| 18 | BS16 | Hogg's death: the rider is thrown (vy 5 px up, vx 1), the bike breaks into pieces and explodes where it lands; | dino-extract/src/boss.rs:61 | listed difference |
-| 19 | BT01 | Slisaur starter (pool B 33): 2 Slisaurs, 3 when `G.$4EF != 0`; the last one's hit calls `0xACEE`; the starter  | dino-game/src/game/prop/b33.rs:1 | listed difference |
-| 20 | BT02 | Slisaur class 71: gate table 0x5DB0E, combo table 0x5DB8E, dash ramp 0x5DD1C, attacks 0x36 and 0x37, HP index  | dino-extract/src/boss.rs:156 | listed difference |
-| 21 | BT03 | Slisaur blades (class 19, shared with Slice) and the afterimage (pool C 27, 6 steps of 6 frames, palettes 0x9D | dino-game/src/game/effect/fx27.rs:1 | listed difference |
-| 22 | BT07 | Morgue (class 40): moves 0x40, 0x6C, 0x4B, 0x41 (charge 7 px per frame), 0x42, 0x2B, 0x31, 0x4A; the roar (40  | dino-game/src/game/enemy/class40.rs:1 | listed difference |
-| 23 | BT09 | Tyrog (class 4): three forms by `+26` high byte, HP index 6 halved at every init, music only for var 2, tables | dino-extract/src/boss.rs:135 | listed difference |
-| 24 | BT20 | Last boss end: `0xACEE` at HP 0 (stage index 7 sets `G.$4D7`, `G.$4DB`), 1,000 points at +368 frames, dying st | dino-game/src/game/boss_common.rs:305 | listed difference |
+| # | row id | what is missing or different | verdict |
+| --- | --- | --- | --- |
+| 1 | IT08 | Tire stacks and statues cannot be lifted (9 and 3 offsets tried); a barrel is lifted only from 24 px | missing |
+| 2 | W13 | Barrels rolling down the cave slope (Episode 8), rolling drums with items in the library (Episode 7) | missing |
+| 3 | W20 | Suits of armor in the Episode 1 hall hide items | missing |
+| 4 | W211 | Overturned Cadillac is garage scroll2 art, with no separate break or loot | missing |
+| 5 | W220 | Meadow diamond is a placed treasure at trigger 0x180, not a broken rock reward | missing |
+| 6 | W226 | Bridge has eight barrels in two depth rows and stays intact when they break | missing |
+| 7 | W227 | Bridge route lowers camY 0x200 to 0x100 through diagonal mode, without fade | missing |
+| 8 | W236 | Fossil bucket is ammonite 30/32 or dime 2/32; last bucket selects cake/coffee by level | missing |
+| 9 | W26 | Catch-all: every other interactive thing in the levels (switches, doors, things that fall or roll wh | missing |
+| 10 | W320 | The meat barrel at X 0xCB0 can be lifted and carried through the sub area switch, the scripted walk | missing |
+| 11 | WM18 | Tag team trigger: counters per other player, reset by the initiator's input and by the partner's inv | missing |
+| 12 | BS03 | Vice's intro: waits for the camera at X 0x1D0, talk box (sound 0x20), 40 frames, camera mover, anim | listed difference |
+| 13 | BS05 | Vice's summon: after a knockdown at HP <= max / `+$C2` (2, 3, 4): jump back, revolver fired into the | listed difference |
+| 14 | BS12 | Hogg is a rider (class 31) on a bike (class 32, the moving body); foot behaviour: ride across at 5.5 | listed difference |
+| 15 | BS16 | Hogg's death: the rider is thrown (vy 5 px up, vx 1), the bike breaks into pieces and explodes where | listed difference |
+| 16 | BT01 | Slisaur starter (pool B 33): 2 Slisaurs, 3 when `G.$4EF != 0`; the last one's hit calls `0xACEE`; th | listed difference |
+| 17 | BT02 | Slisaur class 71: gate table 0x5DB0E, combo table 0x5DB8E, dash ramp 0x5DD1C, attacks 0x36 and 0x37, | listed difference |
+| 18 | BT03 | Slisaur blades (class 19, shared with Slice) and the afterimage (pool C 27, 6 steps of 6 frames, pal | listed difference |
+| 19 | BT07 | Morgue (class 40): moves 0x40, 0x6C, 0x4B, 0x41 (charge 7 px per frame), 0x42, 0x2B, 0x31, 0x4A; the | listed difference |
+| 20 | BT09 | Tyrog (class 4): three forms by `+26` high byte, HP index 6 halved at every init, music only for var | listed difference |
+| 21 | BT20 | Last boss end: `0xACEE` at HP 0 (stage index 7 sets `G.$4D7`, `G.$4DB`), 1,000 points at +368 frames | listed difference |
+| 22 | DS12 | Brontosaurus is one huge foot (A22) with a leg helper (A23): hover 180 frames over the nearest hero | listed difference |
+| 23 | HU15 | Brontosaurus foot and barrels hurt poachers in their way (foot 30 knock down and 1 touch, barrel 10) | listed difference |
+| 24 | P69 | Hero damage factor table 0x2C88E by hero id: Jack 32, Mustapha 34, Hannah 35, Mess 30; enemy to hero | listed difference |
+
+## Closing (2026-10-21)
+
+Since the second pass (task 55), the whole-run checks of M10 (the natural recordings ep2_jack, ep2_3p, ep3_jack, ep3_hannah, ep3_mess, ep3_mustapha, ep3_3p, ep4_jack, the five Episode 5 runs, and the three-player runs of Episodes 1 to 6) are equal to MAME in lagsync mode, with the known causes S (story panel inside a lag record), K (skip wait rounds) and P (the title typewriter), listed in `re/harness/allow/m10_runs.txt`. The rows of Episodes 1 to 5 whose mechanic happens in those runs are now "equal" (the recording is named in the evidence column). What is left: the rows of Episodes 6 to 8 (one-player runs still being checked, so they stay "implemented not checked"), the rows with no episode named (no recording can show them as one row), and the 13 listed differences and 11 missing rows of task 55, which are still open (the obstacle slot G.$6A32, the splash timer, the Vice summon request, the team move voice lines, and the rest in the fix list).
 
