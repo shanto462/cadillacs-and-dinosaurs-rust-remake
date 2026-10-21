@@ -359,6 +359,25 @@ fn start_game(assets: &'static dino_assets::AssetPack, args: &mut Args, config: 
     game
 }
 
+/// Player 1's hero stands or walks on the floor and can walk: the combo toggle (Q) starts its command move then.
+fn p1_ready(game: &game::Game) -> bool {
+    // in play (mode 0xC) and not in a scripted scene, as the walk to a later area of `--area` waits for (tick_game)
+    game.flow.mode == 0xC
+        && game.w.scripted == 0
+        && game.players.first().is_some_and(|p| {
+            // standing (0x02000000) or walking (0x02000002), as only the walk state (0x192DE) reads the command flag of 0x6AC8;
+            // after a jab the idle state keeps the hero from walking while the chain timer `+$AE` is 0x24 or more and a press
+            // there continues the chain, so the down / up taps of the move would be lost
+            p.b.live == 1
+                && p.b.airborne == 0
+                && matches!(p.b.kind, 0 | 2)
+                && matches!(p.b.state(), 0x0200_0000 | 0x0200_0002)
+                && p.lock == 0
+                && p.combo_t < 0x24
+                && p.atk_buf == 0
+        })
+}
+
 fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Frame, audio: &mut Option<audio::Audio>) {
     // `--area`: the game's own end of area (camera mode 1 sub 4, the debug key F6) once the hero has control, area after
     // area like the probe `jump`, then `--camx`. Episode 3 has one area (`--area` above 0 is refused at the start).
@@ -450,6 +469,7 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
     }
 
     let mut is_fullscreen = args.fullscreen;
+    let mut user_paused = false;
     let mut frame = 0u32;
     let screenshot_run = !args.shots.is_empty();
     let mut next_frame_time = std::time::Instant::now();
@@ -498,8 +518,12 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
                 }
             }
         }
-        let paused = menu.open && menu_ok;
-        if paused {
+        // P: pause and go on (a feature of the port, the arcade has no pause). The picture stays, the sound stops.
+        if viewer.is_none() && !(menu.open && menu_ok) && is_key_pressed(KeyCode::P) {
+            user_paused = !user_paused;
+        }
+        let paused = (menu.open && menu_ok) || user_paused;
+        if menu.open && menu_ok {
             // the game stands still; the sound keeps running at the frame rate (no game tick, no requests)
             if let Some(a) = &mut audio {
                 a.frame(&mut game);
@@ -520,7 +544,7 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
             match &mut viewer {
                 Some(v) => v.update(assets),
                 None => {
-                    let f = if screenshot_run { input::Frame::default() } else { inputs.poll() };
+                    let f = if screenshot_run { input::Frame::default() } else { inputs.poll(p1_ready(&game)) };
                     tick_game(&mut game, &mut args, tick_no, f, &mut audio);
                     tick_no += 1;
                 }
@@ -543,6 +567,15 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
         }
         if menu.open && menu_ok {
             menu::draw_window(&mut menu, args.debug.is_god());
+        }
+        if user_paused {
+            let (w, h) = (screen_width(), screen_height());
+            let size = (h / 10.0).max(24.0);
+            let dim = measure_text("PAUSED", None, size as u16, 1.0);
+            draw_text("PAUSED", (w - dim.width) / 2.0, h / 2.0, size, WHITE);
+        }
+        if inputs.combo.on {
+            draw_text("COMBO", 8.0, screen_height() - 8.0, (screen_height() / 30.0).max(14.0), YELLOW);
         }
 
         frame += if screenshot_run { ticks } else { 1 };

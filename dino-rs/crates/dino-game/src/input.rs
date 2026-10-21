@@ -10,6 +10,8 @@
 //! * Attack: J or Z. Jump: K or X.
 //! * Special move keys (`Moves`): A command move, S dive kick, D jump attack, F special (mega crush), G dash attack. Each key plays the
 //!   original's own input sequence for the move (D2a sections 4, 6, 7 and 8), so the game logic sees only the buttons a player would press.
+//! * Q: the combo toggle (`Combo`): while it is on, the third attack press of a chain plays the command move (the A key).
+//! * P: pause and continue (main.rs).
 //! * Start 1/2/3: keys 1/2/3 (Enter also starts player 1). Coin 1/2/3: keys 5/6/7. SERVICE: key 9 (MAME's key for it too).
 //! * F1: hit box overlay. With the debug keys on (`--debug-keys`, `--test`) F1 opens the test menu instead (`menu.rs`).
 //!
@@ -175,12 +177,68 @@ impl Move {
 const MOVE_KEYS: [(KeyCode, Move); 5] =
     [(KeyCode::A, Move::Command), (KeyCode::S, Move::Dive), (KeyCode::D, Move::JumpAttack), (KeyCode::F, Move::Special), (KeyCode::G, Move::Dash)];
 
+/// The combo toggle (Q, player 1, keyboard). While it is on, the third attack press of a chain plays the command move (the A key) in place
+/// of the third hit. The command move starts only in the walk state (0x6AC8), so the move waits until the hero is ready again (standing or
+/// walking on the floor) and the third press itself is not passed on. Two presses more than `CHAIN` frames apart start a new chain (the
+/// punch chain's combo window, D2a s2: 40 frames).
+#[derive(Default)]
+pub struct Combo {
+    pub on: bool,
+    presses: u8,
+    since: u32,
+    /// Frames left to wait for the hero to be ready (0: no command move waits).
+    waiting: u32,
+    attack_before: bool,
+}
+
+impl Combo {
+    const CHAIN: u32 = 40;
+    /// How long a waiting command move may wait for the hero (then it is dropped).
+    const WAIT: u32 = 60;
+
+    /// Switches the toggle (and starts a new chain).
+    pub fn toggle(&mut self) {
+        self.on = !self.on;
+        self.presses = 0;
+        self.waiting = 0;
+    }
+
+    /// One frame: `live` is player 1's keyboard buttons, `ready` says the hero can start a command move now. Returns the buttons to pass
+    /// on, and whether the command move starts this frame.
+    pub fn step(&mut self, live: u8, ready: bool) -> (u8, bool) {
+        let attack = live & ATTACK != 0;
+        let press = attack && !self.attack_before;
+        self.attack_before = attack;
+        self.since = self.since.saturating_add(1);
+        if self.since > Self::CHAIN {
+            self.presses = 0;
+        }
+        if self.waiting > 0 {
+            self.waiting = if ready { 0 } else { self.waiting - 1 };
+            return (live & !ATTACK, ready);
+        }
+        if !self.on || !press {
+            return (live, false);
+        }
+        self.since = 0;
+        self.presses += 1;
+        if self.presses < 3 {
+            return (live, false);
+        }
+        self.presses = 0;
+        self.waiting = if ready { 0 } else { Self::WAIT };
+        (live & !ATTACK, ready)
+    }
+}
+
 pub struct Inputs {
     gilrs: Option<Gilrs>,
     /// The frames left of a special move key: while it runs they replace player 1's keyboard buttons.
     moves: std::collections::VecDeque<u8>,
     /// The last horizontal direction player 1 held (the way a dive or a dash goes when no arrow is held).
     last_dir: u8,
+    /// The Q toggle.
+    pub combo: Combo,
 }
 
 /// Enter starts player 1 (bit 0 of the system byte), except while Alt is held: Alt+Enter is the fullscreen toggle (main.rs).
@@ -195,29 +253,38 @@ fn keys(list: &[(KeyCode, u8)]) -> u8 {
 impl Inputs {
     pub fn new() -> Inputs {
         // No gamepad support is not an error: keyboard still works.
-        Inputs { gilrs: Gilrs::new().ok(), moves: Default::default(), last_dir: RIGHT }
+        Inputs { gilrs: Gilrs::new().ok(), moves: Default::default(), last_dir: RIGHT, combo: Combo::default() }
     }
 
-    /// Player 1's keyboard buttons of this frame, with the special move keys: a move key starts its sequence (when none runs), and while
-    /// a sequence runs it replaces the keyboard buttons of player 1.
-    fn player1_keys(&mut self, live: u8) -> u8 {
+    /// Player 1's keyboard buttons of this frame, with the special move keys and the combo toggle: a move key starts its sequence (when
+    /// none runs), and while a sequence runs it replaces the keyboard buttons of player 1. `ready`: the hero can start a command move.
+    fn player1_keys(&mut self, live: u8, ready: bool) -> u8 {
         if live & (LEFT | RIGHT) == RIGHT || live & (LEFT | RIGHT) == LEFT {
             self.last_dir = live & (LEFT | RIGHT);
+        }
+        if is_key_pressed(KeyCode::Q) {
+            self.combo.toggle();
         }
         if self.moves.is_empty() {
             if let Some(&(_, m)) = MOVE_KEYS.iter().find(|(k, _)| is_key_pressed(*k)) {
                 self.moves.extend(m.frames(self.last_dir));
+            } else {
+                let (passed, start) = self.combo.step(live, ready);
+                if !start {
+                    return passed;
+                }
+                self.moves.extend(Move::Command.frames(self.last_dir));
             }
         }
         self.moves.pop_front().unwrap_or(live)
     }
 
-    /// Reads keyboard and gamepads for this frame.
-    pub fn poll(&mut self) -> Frame {
+    /// Reads keyboard and gamepads for this frame. `p1_ready`: player 1's hero stands or walks on the floor (the combo toggle waits for it).
+    pub fn poll(&mut self, p1_ready: bool) -> Frame {
         use KeyCode::*;
         let live = keys(&[(Right, RIGHT), (Left, LEFT), (Down, DOWN), (Up, UP), (J, ATTACK), (Z, ATTACK), (K, JUMP), (X, JUMP)]);
         let mut f = Frame {
-            players: [self.player1_keys(live), 0, 0],
+            players: [self.player1_keys(live, p1_ready), 0, 0],
             system: keys(&[(Key1, 1), (Key2, 2), (Key3, 4), (Key9, SERVICE)])
                 | enter_start_bit(is_key_down(Enter), is_key_down(LeftAlt) || is_key_down(RightAlt)),
             coins: keys(&[(Key5, 1), (Key6, 2), (Key7, 4)]),
@@ -328,5 +395,115 @@ mod enter_tests {
         assert_eq!(enter_start_bit(true, true), 0, "Alt+Enter toggles fullscreen, it does not start");
         assert_eq!(enter_start_bit(false, false), 0);
         assert_eq!(enter_start_bit(false, true), 0);
+    }
+}
+
+#[cfg(test)]
+mod combo_tests {
+    use super::*;
+    use crate::game::Game;
+    use dino_assets::AssetPack;
+
+    fn rom() -> Option<&'static AssetPack> {
+        static A: std::sync::OnceLock<Option<&'static AssetPack>> = std::sync::OnceLock::new();
+        *A.get_or_init(|| {
+            let path = std::path::Path::new("../../dino.zip");
+            let path = if path.exists() { path } else { std::path::Path::new("../../../dino.zip") };
+            path.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(path).expect("the ROM set loads"))))
+        })
+    }
+
+    /// Plays three attack presses 10 frames apart through the combo toggle (on or off) from a standing Jack and returns the attack ids
+    /// (`+$58`) the hero used in the next 150 frames.
+    fn three_presses(on: bool) -> Vec<u8> {
+        let a = rom().expect("dino.zip");
+        let mut g = Game::new(a);
+        g.flow_apply_config(crate::game::flow::Config::default());
+        g.start_stage_at(1, 0, 0, &[0]);
+        let mut calm = 0;
+        for _ in 0..3000 {
+            g.w.input = [0; 3];
+            g.tick();
+            calm = if crate::p1_ready(&g) { calm + 1 } else { 0 };
+            if calm >= 60 {
+                break;
+            }
+        }
+        assert!(calm >= 60, "Jack never stood still");
+        let mut c = Combo::default();
+        if on {
+            c.toggle();
+        }
+        let mut moves: std::collections::VecDeque<u8> = Default::default();
+        let mut ids = Vec::new();
+        for t in 0..180u32 {
+            let live = if t % 10 == 0 && t < 30 { ATTACK } else { 0 };
+            let buttons = if let Some(b) = moves.pop_front() {
+                b
+            } else {
+                let (passed, start) = c.step(live, crate::p1_ready(&g));
+                if start {
+                    moves.extend(Move::Command.frames(RIGHT));
+                    moves.pop_front().unwrap()
+                } else {
+                    passed
+                }
+            };
+            g.w.input = [buttons, 0, 0];
+            g.tick();
+            let atk = g.players[0].b.atk;
+            if ids.last() != Some(&atk) {
+                ids.push(atk);
+            }
+        }
+        ids
+    }
+
+    /// With Q on, the third press of a chain plays the command move (Jack's flip kick, attack ids 0x70 to 0x7A, D2a s8 / s14); with Q off
+    /// it does not.
+    #[test]
+    fn the_combo_toggle_turns_the_third_press_into_the_command_move() {
+        if rom().is_none() {
+            eprintln!("skipped: no dino.zip");
+            return;
+        }
+        // how many times a command move starts
+        let command = |ids: &[u8]| {
+            let cmd = |a: u8| (0x70..=0x7A).contains(&a);
+            ids.iter().enumerate().filter(|&(i, &a)| cmd(a) && (i == 0 || !cmd(ids[i - 1]))).count()
+        };
+        let on = three_presses(true);
+        let off = three_presses(false);
+        assert_eq!(command(&on), 1, "Q on: the attack ids {on:02X?} do not have one command move");
+        assert_eq!(command(&off), 0, "Q off: the attack ids {off:02X?} have a command move");
+    }
+
+    #[test]
+    fn the_combo_counts_presses_in_its_window() {
+        let mut c = Combo::default();
+        c.toggle();
+        // two presses, then a long gap: the chain starts again, so the next two presses are hits too
+        assert_eq!(c.step(ATTACK, true), (ATTACK, false));
+        assert_eq!(c.step(0, true), (0, false));
+        assert_eq!(c.step(ATTACK, true), (ATTACK, false));
+        for _ in 0..50 {
+            c.step(0, true);
+        }
+        assert_eq!(c.step(ATTACK, true), (ATTACK, false));
+        c.step(0, true);
+        assert_eq!(c.step(ATTACK, true), (ATTACK, false));
+        c.step(0, true);
+        // the third press of this chain is held back and the move starts while the hero is ready
+        assert_eq!(c.step(ATTACK, true), (0, true));
+        // not ready: it waits, the attack bit stays back, and it starts once the hero is ready
+        let mut c = Combo::default();
+        c.toggle();
+        for _ in 0..2 {
+            c.step(ATTACK, false);
+            c.step(0, false);
+        }
+        assert_eq!(c.step(ATTACK, false), (0, false));
+        assert_eq!(c.step(ATTACK, false), (0, false));
+        assert_eq!(c.step(0, true), (0, true));
     }
 }
