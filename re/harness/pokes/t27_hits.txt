@@ -1,0 +1,68 @@
+# Task 27 (desktop opus): hits that are not the hero's own attack, and the HUD record of the hit (the enemy's name and life bar in the
+# hero's block: the message rings G.$6BD8 / $6BDE.., 0x16B36 and 0x16B18). Episode 1 area 0, two enemies of class 2 spawned next to the hero.
+# Record: re/harness/probe/probe_record.sh re/harness/pokes/t27_hits.txt all; compare: MODES="step lagsync" re/harness/m10_check.sh NAME:200.
+#   t27_throw_jack / t27_throw_mess: the hero grabs the right enemy and throws it to the left into the other one: the victim's record goes
+#                                    to the hero (the probe's spawn leaves +$02 = 0, so both enemies are credited to player 1 already).
+#   t27_throw_ff_jack / t27_throw_ff_hannah: the same with both enemies uncredited (+$02 = FF, as a stage script spawns them): the victim
+#                                    takes the thrown enemy's credit (an attacker in state 0x0202), then its record goes to the hero.
+#   t27_stone_jack / t27_dynamite_jack: the hero lifts stones (weapon var 0x1C) or dynamite (var 0x18) and throws it at the enemy on the right.
+
+segment t27_throw_jack
+jump 1 0 char=jack
+0 spawn A 2 x=+0xC0 w5c=0x7fff
+0 spawn A 2 x=+0x30 w5c=0x7fff
+1 snapshot
+trace 200
+0-9:R
+19-20:LA
+
+segment t27_throw_mess
+jump 1 0 char=mess
+0 spawn A 2 x=+0xC0 w5c=0x7fff
+0 spawn A 2 x=+0x30 w5c=0x7fff
+1 snapshot
+trace 200
+0-9:R
+19-20:LA
+
+segment t27_stone_jack
+jump 1 0 char=jack
+0 spawn E 0 var=0x1C x=+0xA4
+0 spawn A 2 x=+0x150 w5c=0x7fff
+1 snapshot
+trace 200
+3-4:A
+29-30:A
+
+segment t27_dynamite_jack
+jump 1 0 char=jack
+0 spawn E 0 var=0x18 x=+0xA4
+0 spawn A 2 x=+0x150 w5c=0x7fff
+1 snapshot
+trace 200
+3-4:A
+29-30:A
+
+# The same throws with both enemies uncredited (+$02 = FF, as the stage script spawns them; the probe's spawn leaves 0): the grab credits the
+# thrown one, the victim takes the credit from it (0x0202 attacker).
+segment t27_throw_ff_jack
+jump 1 0 char=jack
+0 spawn A 2 x=+0xC0 w5c=0x7fff
+0 spawn A 2 x=+0x30 w5c=0x7fff
+0 poke 0xFFD996 1 0xFF
+0 poke 0xFFD616 1 0xFF
+1 snapshot
+trace 200
+0-9:R
+19-20:LA
+
+segment t27_throw_ff_hannah
+jump 1 0 char=hannah
+0 spawn A 2 x=+0xC0 w5c=0x7fff
+0 spawn A 2 x=+0x30 w5c=0x7fff
+0 poke 0xFFD996 1 0xFF
+0 poke 0xFFD616 1 0xFF
+1 snapshot
+trace 200
+0-9:R
+19-20:LA

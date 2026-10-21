@@ -381,14 +381,18 @@ impl Game {
         [((kind as u16) << 8) | b.id as u16, b.hp_bar, b.hp_prev, w6, 0xFFFF, e, 0, 0]
     }
 
-    /// 0x16B18: enemy `e` was hit by its last attacker (+$68); if that is a player (other than
-    /// `e`), queue `kind` (0 enemy hit, 1 follow while grabbed, 2 player hit) in its HUD.
+    /// 0x16B18: `e` (the port calls it for a hero, the 18 calls of the hero's hit reactions) was hit by its last attacker (+$68): when the
+    /// attacker's +$82 is 0 (a hero, or a pool C / D object; not pools A, B, E) and it is not `e`, queue `kind` (2: a hero was hit) in the
+    /// HUD of the player in the attacker's +$02 (none when negative). Natural play: only a hero's hit on another hero (friendly fire).
     pub fn hud_hit(&mut self, e: Handle, kind: u8) {
+        // movea.w $68(a6),a0 ; tst.b $82(a0) ; bne (the pool tag: 4, 8, 0xC for pools A, B, E; a hero and pools C / D hold 0 there,
+        // where +$82 of a pool C / D slot is +$02 of the next slot) ; cmpa.w a0,a6 ; beq ; move.b $2(a0),d1 ; bpl: the ring of that player
         let a = self.body(e).attacker;
-        if !Self::hud_is_player(a) || a == e {
+        let base = if a >= 0x8000 { super::trace::RAM | a as u32 } else { a as u32 };
+        if self.orig_u8(base + 0x82) != 0 || a == e {
             return;
         }
-        let who = self.body(a).who;
+        let who = self.orig_u8(base + 2);
         self.hud_push_hit(e, who, kind);
     }
 
@@ -1445,6 +1449,49 @@ mod tests {
     fn cell(g: &Game, a: u32) -> (u16, u16) {
         let idx = (a.wrapping_sub(0x908000) / 4) as usize & 0xFFF;
         (g.vram.scroll1[idx].code, g.vram.scroll1[idx].attr)
+    }
+
+    /// 0x16B18 tests the attacker's +$82 (any pool) and takes the ring from its +$02: a hero gets the record, an enemy (pool tag 4)
+    /// does not, a pool C object does when +$82 (that is +$02 of the next slot) is 0 and its own +$02 is a player.
+    #[test]
+    fn hero_hit_record_follows_the_attackers_82_and_02() {
+        let mut a = AssetPack::default();
+        a.enemy.stages = (0..8).map(|_| Default::default()).collect(); // the field visit of `orig_u8` reads the wave tables
+        let mut g = Game::new(Box::leak(Box::new(a)));
+        g.hud_rings_init();
+        g.enemies = crate::game::pool_a_init();
+        let hero = Game::player_handle(0);
+        let pushed = |g: &Game| g.hud.ring_w;
+        // a hero hit by hero 2 (friendly fire): the record goes to player 2's ring
+        g.players[1].b.who = 1;
+        g.players[0].b.attacker = Game::player_handle(1);
+        g.hud_hit(hero, 2);
+        assert_eq!(pushed(&g), [0, 0x10, 0]);
+        // a hero hit by an enemy credited to player 1 (+$02 = 0): the pool tag 4 at +$82 stops it
+        let e = crate::game::POOL_A.0;
+        g.enemies.slots[0].b.live = 1;
+        g.enemies.slots[0].b.who = 0;
+        g.players[0].b.attacker = e;
+        g.hud_hit(hero, 2);
+        assert_eq!(pushed(&g), [0, 0x10, 0]);
+        // a pool C object of player 3: its +$82 is +$02 of the next slot
+        let c0 = crate::game::POOL_C.0;
+        for k in 0..2 {
+            g.effects.slots[k].b.live = 1;
+        }
+        g.effects.slots[0].b.who = 2;
+        g.effects.slots[1].b.who = 1; // +$82 of slot 0 is not 0: no record
+        g.players[0].b.attacker = c0;
+        g.hud_hit(hero, 2);
+        assert_eq!(pushed(&g), [0, 0x10, 0]);
+        g.effects.slots[1].b.who = 0; // +$82 = 0: the record goes to player 3
+        g.hud_hit(hero, 2);
+        assert_eq!(pushed(&g), [0, 0x10, 0x10]);
+        // the hero is its own attacker (0x16B26: cmpa.w a0,a6)
+        g.players[0].b.attacker = hero;
+        g.players[0].b.who = 0;
+        g.hud_hit(hero, 2);
+        assert_eq!(pushed(&g), [0, 0x10, 0x10]);
     }
 
     #[test]

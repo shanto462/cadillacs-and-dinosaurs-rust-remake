@@ -1,0 +1,20 @@
+# Task 27 (desktop opus): the lives digit of the hero's HUD block (0x163E4: +$A3 is the tile code; 0 is the last life), the cases the natural
+# recordings do not show. Record: re/harness/probe/probe_record.sh re/harness/pokes/t27_lives.txt all; compare: MODES="step lagsync"
+# re/harness/m10_check.sh NAME:300.
+#   t27_lives_3p: three heroes at the start of Episode 1 (factory settings: +$A3 = 1, the digit 1 in the three 3 player blocks 0x162F8),
+#                 hero 2 loses its last but one life (hp 0 at t = 5): 0 after its respawn, the others keep 1.
+#   t27_lives_2p: two heroes with the 2 player layout G.$4CF = 1 (the "two players on one chute" setting, poked before the snapshot): hero 1
+#                 dies, the respawn redraws its block in the 2 player layout 0x16358 with 0.
+
+segment t27_lives_3p
+jump 1 0 char=jack,hannah,mess
+1 snapshot
+trace 300
+5 hp 0 P2
+
+segment t27_lives_2p
+jump 1 0 char=jack,hannah
+0 poke 0xFF84CF 1 1
+1 snapshot
+trace 300
+5 hp 0 P1

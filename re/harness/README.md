@@ -1960,6 +1960,25 @@ opens (D5 errata). Forced onto Zeke's hold the original stops: the escape attack
 reaction (A0 = 0x60F1E), and a Zeke held by Mustapha in ADDRESS ERROR (PC 0x60F2A, Zeke has no code for being held); `t22_zrev_mustapha` ends before it.
 The port goes on there (Zeke is thrown); this is not reachable in natural play.
 
+## Task 27: the HUD record of a hit that is not the hero's own attack, and the lives digit
+
+Probe batches (one headless MAME process each): `re/harness/pokes/t27_hits.txt` and `re/harness/pokes/t27_lives.txt`, recorded with
+`re/harness/probe/probe_record.sh FILE all`, compared with `MODES="step lagsync" re/harness/m10_check.sh NAME:FRAMES`. The message rings
+(G.$6BD8 / $6BDE..) and the HUD blocks in scroll1 are traced fields, so these runs compare the record and the drawn block too.
+
+| Recordings | Frames | Scene | Step / lagsync |
+| --- | ---: | --- | --- |
+| `t27_throw_jack`, `t27_throw_mess` | 200 | Episode 1 area 0: the hero grabs a thug and throws it into another (both credited to player 1 by the probe's spawn) | 0 / 0 |
+| `t27_throw_ff_jack`, `t27_throw_ff_hannah` | 200 | the same with both thugs uncredited (+$02 = FF, as a script spawns them): the victim takes the thrown thug's credit | 0 / 0 |
+| `t27_stone_jack`, `t27_dynamite_jack` | 200 | the hero lifts stones / dynamite (weapon var 0x1C / 0x18) and throws it at a thug | 0 / 0 |
+| `t27_lives_3p` | 300 | three heroes at the start (the digit 1, factory settings), hero 2 dies: 0 after its respawn | 0 / 0 |
+| `t27_lives_2p` | 300 | two heroes with the 2 player layout (G.$4CF = 1 poked): hero 1 dies, its block is redrawn by 0x16358 with 0 | 0 / 0 |
+
+What the original records (MAME, the natural whole runs): an enemy's hit goes to the ring of the player in the enemy's own +$02 (0x16B36). A thrown
+enemy (state 0x0202) passes its credit to the enemy it hits, a weapon or blast of a hero (pool E) carries the hero's; an enemy's own attack on another
+enemy clears the victim's credit (+$02 = FF), so no record is made: an enemy that only enemies hit never shows in a HUD block. 0x16B18 (a hero was hit)
+records only when the attacker's +$82 is 0 (a hero; pools A / B / E hold their pool tag there): in natural play only a hero's hit on another hero.
+
 **The open items of the whole runs (2026-10-21, worktree `wt/sonnet-ep8open`).** Four rules that stood for a port difference are gone (`allow/m10_runs.txt`): N, A2, A of `ep8_3p` and the open debris note of `ep8_3p`.
 * N (first scroll2 / scroll3 columns of the new game's level one record late, lagsync): the port counts the clear 0xAE0 of the game start out over the next frames (`front.clear_stage`) and a lagsync load did not end it, so it cleared the columns the lag record (6 vertical blanks) had drawn. A load in a game clock run ends it (`trace_load_tasks`).
 * A2 (step tail of `ep8_mustapha` / `ep8_mess` after the game over): the step loader started the system task at its loop at every record, so the game task of the new game was never created (`game_pending` stuck) and the fade out of 0x87BA (the system task's own loop, sleep 0x95A return 0x881C, caller 0x9D174), the sleep 0xA76 (return 0x9D17A) and the clear 0xAE0 did not run. The loader reads the two returns on the task stack of slot 0 (stack pointer at 0xFF005A) and restores the system task (`flow_sys_restore_start`), the fade task (G.$44B steps left) and `game_pending` (G.$4CC set, slot 2 empty). Equal for every record; `ep8_mess` keeps two K records (the skip wait: 64981, 67151).
