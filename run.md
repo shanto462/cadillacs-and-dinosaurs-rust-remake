@@ -12,8 +12,19 @@ The game starts from power on: the boot screens, then the attract mode. Put in a
 
 Keys (player 1 on the keyboard):
 
-- Move: arrow keys, or W A S D.
+- Move: arrow keys.
 - Attack: J or Z. Jump: K or X.
+- Special moves, one key each (player 1). Each key presses the original game's own buttons for the move, with the right timing, so the game plays it exactly as if you pressed them by hand:
+
+| Key | Move | What the key presses for you |
+| --- | --- | --- |
+| A | command move ("sure kill": Jack's flip kick, Mustapha's somersault, Hannah's rolling elbow, Mess's flying lariat) | down, up, then up + attack |
+| S | dive kick (jump + left / right + attack at the top of the jump) | jump, then at the top attack + the direction |
+| D | jump attack | jump, then attack held |
+| F | special ("mega crush", costs a little HP when it hits) | attack + jump together |
+| G | dash attack | the direction twice (a run), then attack |
+
+  The dive kick and the dash attack go the way of the arrow you hold, or the way you last moved. While a move key plays (up to 24 frames), the other player 1 keys wait. The command move works when the hero is standing or walking (not in the air). Checked with all four heroes (the attack ids 0x70 to 0x76, 0x0E, 0x0C, 0x12, 0x5A of D2a).
 - Start: 1, 2, 3 (Enter also starts player 1). Coin: 5, 6, 7 (for slots 1, 2, 3).
 - SERVICE: 9 (adds a credit for every player).
 - Players 2 and 3 use gamepads: the first three pads drive players 1 to 3. D-pad or left stick moves, South (A / Cross) attacks, East (B / Circle) jumps, Start starts, Select / Back is a coin.

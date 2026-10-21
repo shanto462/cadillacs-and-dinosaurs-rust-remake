@@ -6,8 +6,10 @@
 //! * Coins (G.$20): bit0..2 coin slot 1..3.
 //!
 //! Keyboard (player 1 only; Ctrl and Alt are not used, they clash with system shortcuts):
-//! * Move: arrows or W A S D.
+//! * Move: arrows.
 //! * Attack: J or Z. Jump: K or X.
+//! * Special move keys (`Moves`): A command move, S dive kick, D jump attack, F special (mega crush), G dash attack. Each key plays the
+//!   original's own input sequence for the move (D2a sections 4, 6, 7 and 8), so the game logic sees only the buttons a player would press.
 //! * Start 1/2/3: keys 1/2/3 (Enter also starts player 1). Coin 1/2/3: keys 5/6/7. SERVICE: key 9 (MAME's key for it too).
 //! * F1: hit box overlay. With the debug keys on (`--debug-keys`, `--test`) F1 opens the test menu instead (`menu.rs`).
 //!
@@ -119,8 +121,66 @@ impl Script {
     }
 }
 
+/// The special moves that one key can play (player 1, keyboard).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Move {
+    /// D2a s8, the "sure kill" (0x6AC8 checks it in the walk state): tap down alone, tap up alone within 10 frames, then attack while
+    /// holding up within 10 frames.
+    Command,
+    /// D2a s4.1, the dive: a neutral jump (a forward jump does not reach the split height), then attack and the direction at the top of
+    /// the jump. Measured (M: d2a_basic jattack_*): attack first pressed 20 frames after the jump starts the dive for all four heroes.
+    Dive,
+    /// D2a s4.1, the low jump attack: attack held while the jump is 16 px or higher (M: held from +3 .. +16 gives the low attack).
+    JumpAttack,
+    /// D2a s6, the special (0x63AA / 0x63E6): attack and jump together.
+    Special,
+    /// D2a s3 and s7: a run (the second press of the direction at most 12 frames after the first), then attack while running.
+    Dash,
+}
+
+impl Move {
+    /// The player 1 buttons of each frame of the move, from its first frame. `dir` is RIGHT or LEFT (the way to go).
+    pub fn frames(self, dir: u8) -> Vec<u8> {
+        let mut v = Vec::new();
+        let mut add = |n: usize, bits: u8| v.extend(std::iter::repeat_n(bits, n));
+        match self {
+            Move::Command => {
+                add(2, DOWN);
+                add(2, UP);
+                add(3, UP | ATTACK);
+            }
+            Move::Dive => {
+                add(2, JUMP);
+                add(18, 0);
+                add(4, dir | ATTACK);
+            }
+            Move::JumpAttack => {
+                add(2, JUMP);
+                add(2, 0);
+                add(14, ATTACK);
+            }
+            Move::Special => add(2, ATTACK | JUMP),
+            Move::Dash => {
+                add(2, dir);
+                add(2, 0);
+                add(6, dir);
+                add(3, dir | ATTACK);
+            }
+        }
+        v
+    }
+}
+
+/// The keys of the special moves.
+const MOVE_KEYS: [(KeyCode, Move); 5] =
+    [(KeyCode::A, Move::Command), (KeyCode::S, Move::Dive), (KeyCode::D, Move::JumpAttack), (KeyCode::F, Move::Special), (KeyCode::G, Move::Dash)];
+
 pub struct Inputs {
     gilrs: Option<Gilrs>,
+    /// The frames left of a special move key: while it runs they replace player 1's keyboard buttons.
+    moves: std::collections::VecDeque<u8>,
+    /// The last horizontal direction player 1 held (the way a dive or a dash goes when no arrow is held).
+    last_dir: u8,
 }
 
 fn keys(list: &[(KeyCode, u8)]) -> u8 {
@@ -130,31 +190,29 @@ fn keys(list: &[(KeyCode, u8)]) -> u8 {
 impl Inputs {
     pub fn new() -> Inputs {
         // No gamepad support is not an error: keyboard still works.
-        Inputs { gilrs: Gilrs::new().ok() }
+        Inputs { gilrs: Gilrs::new().ok(), moves: Default::default(), last_dir: RIGHT }
+    }
+
+    /// Player 1's keyboard buttons of this frame, with the special move keys: a move key starts its sequence (when none runs), and while
+    /// a sequence runs it replaces the keyboard buttons of player 1.
+    fn player1_keys(&mut self, live: u8) -> u8 {
+        if live & (LEFT | RIGHT) == RIGHT || live & (LEFT | RIGHT) == LEFT {
+            self.last_dir = live & (LEFT | RIGHT);
+        }
+        if self.moves.is_empty() {
+            if let Some(&(_, m)) = MOVE_KEYS.iter().find(|(k, _)| is_key_pressed(*k)) {
+                self.moves.extend(m.frames(self.last_dir));
+            }
+        }
+        self.moves.pop_front().unwrap_or(live)
     }
 
     /// Reads keyboard and gamepads for this frame.
     pub fn poll(&mut self) -> Frame {
         use KeyCode::*;
+        let live = keys(&[(Right, RIGHT), (Left, LEFT), (Down, DOWN), (Up, UP), (J, ATTACK), (Z, ATTACK), (K, JUMP), (X, JUMP)]);
         let mut f = Frame {
-            players: [
-                keys(&[
-                    (Right, RIGHT),
-                    (Left, LEFT),
-                    (Down, DOWN),
-                    (Up, UP),
-                    (D, RIGHT),
-                    (A, LEFT),
-                    (S, DOWN),
-                    (W, UP),
-                    (J, ATTACK),
-                    (Z, ATTACK),
-                    (K, JUMP),
-                    (X, JUMP),
-                ]),
-                0,
-                0,
-            ],
+            players: [self.player1_keys(live), 0, 0],
             system: keys(&[(Key1, 1), (Enter, 1), (Key2, 2), (Key3, 4), (Key9, SERVICE)]),
             coins: keys(&[(Key5, 1), (Key6, 2), (Key7, 4)]),
         };
@@ -231,5 +289,25 @@ mod tests {
         assert_eq!(s.at(22).system, 0);
         assert_eq!(s.at(12).players[0], JUMP);
         assert_eq!(s.at(11).players, [0, 0, 0]);
+    }
+
+    /// The move keys keep the windows of D2a: the command move's taps and attack within 10 frames, the dive's first attack at +20,
+    /// the jump attack's held attack from +4, the special's two buttons together, the dash's second press within 12 frames.
+    #[test]
+    fn move_sequences_fit_the_original_windows() {
+        let first = |v: &[u8], bit: u8| v.iter().position(|b| b & bit != 0).unwrap();
+        let c = Move::Command.frames(RIGHT);
+        assert!(first(&c, UP) - first(&c, DOWN) <= 10 && first(&c, ATTACK) - first(&c, UP) <= 10);
+        assert!(c.iter().all(|&b| b & (LEFT | RIGHT) == 0), "the taps are alone");
+        assert_eq!(c[first(&c, ATTACK)] & UP, UP, "attack while up is held");
+        let d = Move::Dive.frames(LEFT);
+        assert_eq!((first(&d, JUMP), first(&d, ATTACK), first(&d, LEFT)), (0, 20, 20), "a neutral jump, then attack and the direction at +20");
+        let j = Move::JumpAttack.frames(RIGHT);
+        assert_eq!(first(&j, ATTACK), 4);
+        assert!(j.iter().all(|&b| b & (LEFT | RIGHT) == 0));
+        assert_eq!(Move::Special.frames(RIGHT)[0], ATTACK | JUMP);
+        let s = Move::Dash.frames(RIGHT);
+        let second = s.iter().enumerate().skip(1).find(|&(i, &b)| b & RIGHT != 0 && s[i - 1] & RIGHT == 0).unwrap().0;
+        assert!(second <= 12 && first(&s, ATTACK) > second);
     }
 }
