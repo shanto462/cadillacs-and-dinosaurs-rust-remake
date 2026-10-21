@@ -17,7 +17,7 @@ pub mod stage;
 pub mod terrain;
 pub mod text;
 
-use dino_assets::{AssetPack, TILES8_COUNT, TILES32_FIRST};
+use dino_assets::{AssetPack, TILES8_COUNT, TILES32_COUNT};
 use rom::Rom;
 use std::path::Path;
 
@@ -45,7 +45,7 @@ pub fn extract_with(rom_path: &Path, extra: &ExtraFrames) -> Result<AssetPack, S
     let (obj_palette_bank, obj_palette_sets) = sprites::obj_palettes(&rom);
     Ok(AssetPack {
         tiles16: gfx::decode_tiles16(&rom.gfx),
-        tiles32: gfx::decode_tiles32(&rom.gfx, TILES32_FIRST, 1024),
+        tiles32: gfx::decode_tiles32(&rom.gfx, 0, TILES32_COUNT),
         tiles8: gfx::decode_tiles8(&rom.gfx, TILES8_COUNT),
         stages: stage::extract(&rom),
         sprites: sprites::extract(&rom, extra),

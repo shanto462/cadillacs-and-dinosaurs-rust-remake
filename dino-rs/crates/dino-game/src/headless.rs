@@ -97,6 +97,9 @@ impl<'a> Cpu<'a> {
                 Atlas::T32 => (&self.assets.tiles32, 32),
             };
             let area = (size * size) as usize;
+            if pens.len() < area {
+                continue; // an empty atlas (a test's default assets)
+            }
             // The GPU atlas wraps at its texture edges for an out of range code.
             let tile = d.tile as usize % (pens.len() / area);
             let pens = &pens[tile * area..][..area];

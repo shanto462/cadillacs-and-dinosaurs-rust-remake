@@ -266,10 +266,17 @@ outside its layer's range is not drawn (transparent). Ranges in 64-byte units (`
 | scroll1 | 0x0000-0x0FFF | 0x000-0xFFF | font + elevator codes 0x20-0xFF1 [O]; range end [I] |
 | sprites | 0x1000-0xDFFF | 0x0800-0x6FFF | [I] |
 | scroll2 | 0x8000-0xDFFF | 0x4000-0x6FFF | all map codes are 0x5800-0x6F7F or 0 [O]; clear tile 0x5800 is all pen 15 [O] |
-| scroll3 | 0xE000-0xFFFF | 0x1C00-0x1FFF | all map codes are 0x1C00-0x1FE7 or 0 [O]; clear tile 0x1C00 all pen 15 [O] |
+| scroll3 | 0xE000-0xFFFF | 0x1C00-0x1FFF | all map codes are 0x1C00-0x1FE7 or 0 [O]; clear tile 0x1C00 all pen 15 [O]; **but see below** |
 
 Code 0 in scroll2/scroll3 data must be treated as "not drawn": tile 0 of the ROM is a font glyph and would
 show garbage (checked) [O].
+
+Correction for scroll3 (2026-10-21, M10-06 pictures) [O]: MAME draws scroll3 cells of every code 0x0000-0x1FFF (code & 0x3FFF; the
+ROM holds 0x2000 tiles of 512 bytes): a cell 0 (attr 0xFFFF, palette 31, flipped) shows tile 0 of the ROM, pens 0 and 5, where scroll2 is
+transparent (attract recording, video frames 12900 and 12910), and the stale cells of the last clear of the movie show too (13380). The
+renderer draws every scroll3 code below 0x2000 (`dino_assets::TILES32_COUNT`); those three pictures are exact with it, no other of the
+picture checks changes. So the scroll3 row of the table above (and maybe the [I] ranges of the other layers) is not the CD63B of MAME.
+Scroll2 and scroll1 keep the ranges above: drawing every code there changes none of the checked pictures (no visible cell has such a code).
 
 ---------------------------------------------------------------------------------------------------
 

@@ -123,46 +123,47 @@ global.display_y2 2743
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 4. Picture differences. Not rules of this file (diff.py compares records, and every record outside the demos is equal there); they
-#    are the frames where MAME's picture and the port's picture differ although the records are equal, listed with their causes.
-#    How they were found: 416 video frames of the loop (list: the two probe batches `re/out/probe/m115_loop` and `m115_loop2`, a
-#    `snaps` line, MAME headless) against the port's `--screenshot out.png --frames N` with N = frame - 1 and the poke file above,
-#    `re/harness/probe/shotdiff.py MAME_DIR PORT_DIR --clock f` (exit 1: the frames below). 369 frames are pixel exact: the boot, the
-#    title (every start of it after the first), the four profile cards (first and later runs, every card start), the ranking (every
-#    start after the first), every cut of the five story slides, and the opening movie, three runs of each in both loops.
-#    A picture is made from the tilemaps of the record, the palette of the record before, the scroll registers of the record two
-#    before and the sprite list built two records before (`present.rs`, `camera.rs`, `vram.rs`: the model that fits every normal frame).
-#    The original latches the palette and the video registers in the interrupt; where the CPU is still busy with a pass at that moment
-#    the picture is a frame ahead of or behind the model. All of these frames belong to the FIRST run of a routine after power on (the
-#    first boot, the first profile cards, the first ranking), which the records show running one frame ahead of the later runs; nothing
-#    else in the loop differs:
-#      video frames 322 and 2746 (records 320 and 2744, the first frame of the first title and of the title after the first ranking):
-#        MAME already shows the title's palette (the new colours), the port the palette of the record before
-#      935, 1280 and 1281 (records 933, 1278, 1279, the first run of the profile cards, two passes of the task in one frame): the
-#        sprites of the card (portrait and small hero) and one fade step appear a frame earlier in MAME
-#      2323, 2324 and 2325 (records 2321 to 2323, the start of the first ranking): the video registers did not change in the records 2319
-#        to 2321 in MAME (cpsa scroll3 Y stays 0x93E, the call needs about four frames of CPU time; the registers keep their value
-#        until record 2322), so MAME shows the old palette in 2323 and the scroll3 map shifted by 64 pixels in 2324 (no sky); the
-#        port, which latches every frame, shows the new colours. Tilemaps, palettes, shadows, sprite list: equal in every record
-#      2745 (record 2743, the last frame of the first ranking): the scroll registers are one frame different, a speckled desert
-#    Other differences, all known and not M1 code mistakes:
-#      12900 and 12910 (the shakes of the dinosaur in the movie; M1-11 found 12970, 12980, 13030 and 13040 too: the three shakes, 6
-#        of 106 pictures): `screen_shake` 0x222D6 is a stub until M3-10, the request is made but the scroll2 Y offset is not
-#        applied. Listed, not ported
-#      13380 (record 13378, the last clear of the movie): MAME's picture still shows stale scroll3 cells outside the window that the
-#        renderer hides (tile codes outside 0x1C00..0x1FFF), see D5-errata M1-10 and M1-11
-#      3346 to 4670, 9925 to 11200, 17000 to 17600, 23060 to 24200 (the demos): level content that was not complete at M1-15.
-#    M10-06 (2026-10-21), the same 416 MAME pictures against the headless renderer (`dino-game --headless --screenshots N --shot-dir DIR`,
-#    N = frame - 1, no poke file; `re/harness/m10_loop_check.sh`): 385 frames are pixel exact, the demos included (63 pictures of the
-#    four demos, 58 exact: the five below are their first and last frames). The 31 that differ, while every traced record (tilemaps,
-#    palettes, scroll shadows, sprite list) is equal:
-#      the first runs above: 322, 935, 1280, 1281, 2323, 2324, 2325, 2745; and 13380 (the stale scroll3 cells)
-#      the starts of a screen, one frame each, in every loop: the ranking (6454, 8891, 11246, 15428, 19559, 21996, 24351, 28533:
-#        the lower half shows the desert ground where MAME shows the mountains), the title after a ranking (2746, 15850, 28955: the
-#        top 48 lines black where MAME shows the grey), the story slides (4672: the picture 30 lines lower), the title to demo cut
-#        (3347, 3348, 3354, 9925: the logo is gone a frame early)
-#      the jungle of the opening movie (12700, 12800, 12850, 12900, 12910, 26000): the layers stand a few pixels apart
-#    MAME's scroll registers (the `cpsa` region of the recording) are the shadows of two records before in all of these records
-#    (scroll2 X = G.$744 - 0x40, Y = 0x300 - G.$748; scroll3 X = G.$7E4 - 0x40), which is the port's model, so the cause is in the
-#    picture model of the headless renderer at these frames (latch of the layer control, the tile fetch or the row scroll), not in the
-#    game state. Open for the presentation owner (`present.rs`, `headless.rs`); M1-15 measured these screens exact with the windowed
-#    renderer before the headless one existed.
+#    are the frames where MAME's picture and the port's picture differ, listed with their causes.
+#    How they are found: 416 video frames of the loop (the two probe batches `re/out/probe/m115_loop` and `m115_loop2`, a `snaps` line,
+#    MAME headless) against the headless renderer (`dino-game --headless --screenshots N --shot-dir DIR`, N = frame - 1, no poke file),
+#    `re/harness/probe/shotdiff.py MAME_DIR PORT_DIR --clock f`: `re/harness/m10_loop_check.sh`. Result (2026-10-21, after the picture
+#    model below): 403 of 416 frames are pixel exact (385 before), every frame of the second batch included.
+#    The picture model (`present.rs`, `camera.rs` `Camera::shown_scroll` / `shown_layers`, `draw.rs` `SpriteList::latch`, `vram.rs`
+#    `PaletteRam::latch`) follows the vblank IRQ 0x542, which runs after each record. The picture of record r shows:
+#      the tilemaps and the CPS-B priority masks of r (written in the frame);
+#      the palette of r - 1 (0x81C writes the palette base, the CPS-B copies the palette then);
+#      the layer control G.$28 (0x80A), the video control G.$26 (0x826, the row scroll bit) and the scroll3 base G.$2E (0x57A) of r - 1;
+#      the scroll X registers and the scroll3 Y: the shadows of r - 2 (0x6C0: each register takes the IRQ's copy G.$85C / $864 / $86C /
+#      $870, then the copy takes the shadow);
+#      the scroll1 and scroll2 Y: the copies G.$860 / $868 of r - 1 (the shake routine 0x22356 / 0x22364 writes these copies in the frame,
+#      so they are not always the shadows of r - 2);
+#      the sprite list built in r - 2 (0x554 points the OBJ base at the buffer built last, the video copies it at the next vblank).
+#    MAME's CPS-A / CPS-B registers in attract3.mame.trc fit this in every record from 41 on, except where an IRQ of the first loop did not
+#    run (below). The model before took the scroll1 and scroll2 Y one record too late (G.$868 of r - 2, since G.$868 became a port field)
+#    and the layer registers one record too early: that was the cause of 17 of the 22 "starts of a screen" listed before (the first frame
+#    of each ranking, of the title after the later rankings, of the story slides, the jungle of the movie: screens where the camera Y or
+#    the layer control changed; the other five are first runs or demo setup records, below). Scroll3 shows every tile code 0 .. 0x1FFF: a cell 0 or a stale cell shows the graphics ROM read as 32x32
+#    tiles where scroll2 is transparent (`dino_assets::TILES32_COUNT`); this made 12900, 12910 (the dinosaur's shakes, one or two pixels of
+#    scroll3 cell 0) and 13380 (the stale scroll3 cells of the last clear of the movie) exact.
+#    What is left (13 frames):
+#      the first run of a screen after power on, where the vblank IRQ of a frame did not run or ran late (inside the next pass): the video
+#      registers, the OBJ base and the palette copy keep their old values or take the values of the middle of the next pass. MAME's
+#      registers show it: no IRQ after the records 315 to 318, 919, 1244, 1605, 1966, 2318 to 2320, 2742, 3343 to 3350, a late one after
+#      931, 1277, 1638, 1999, 2321 and 2743. The port has no model of the CPU time (plan decision); the same screens of the second loop
+#      and later are exact.
+#        322 (record 320, the first title): MAME already shows the title's palette
+#        935, 1280, 1281 (records 933, 1278, 1279, the first profile cards, two passes of the task in one frame): the sprites of the
+#          card (portrait and small hero) and one fade step a frame earlier in MAME
+#        2323, 2324, 2325 (records 2321 to 2323, the start of the first ranking): the registers and the palette copy kept (the old
+#          colours in 2323; cpsa scroll3 Y stays 0x93E, the map is shifted in 2324)
+#        2745, 2746 (records 2743, 2744, the last frame of the first ranking and the first title after it): the scroll registers one
+#          frame different (a speckled desert), then the title's layer control 0x1396 and its palette already
+#        3347, 3348 (records 3345, 3346, the setup of the first demo): the OBJ base stays 0x9040, whose buffer still holds the title
+#          logo, so MAME shows the logo two frames longer
+#      a state difference of a demo setup record (`allow/m10.txt` section 1; the records differ, not the picture model):
+#        3354 (record 3352 = A + 9 of the first demo): G.$868 is 0 in MAME in A + 8 (rule 1e), so MAME's scroll2 Y is 0 and the port's
+#          0x40; the map and HUD cells of A + 9 (rule 1d)
+#        9925 (record 9923 = A + 9 of the Episode 3 demo): the HUD cells of scroll1 come one record later in the port (rule 1d)
+#    The 60 pictures inside the four demos (records A .. A + 1326) are exact except 3347, 3348, 3354 and 9925. The other picture checks
+#    keep their results with this model (the six demos at their frame 300: 6 of 6; the 39 `flow_links` / `flow_panels` segments of `shot_check.sh`: 127 of 131 pictures; `m224_tv-hp100`,
+#    `m308_row300`, `m213_clock`: all 9; the boot pictures of `re/out/probe/recipes/fe-boot`: 7 of 7).
