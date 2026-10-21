@@ -22,18 +22,8 @@
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # ep2_jack (42001 records): the stage clear tally ends in the lag records 41849 / 41850, the story panel of Episode 3 starts inside them (cause S)
-ep2_jack.*: global.frame 41851-41915          # S
-ep2_jack.*: global.game_frame 41851-41915     # S
 ep2_jack.*: global.cam_x 41851-41915          # S
-ep2_jack.*: global.cam3_x 41851-41915         # S
-ep2_jack.*: global.cam3_y 41851-41915         # S
 ep2_jack.*: global.map_ptr 41851-41915        # S
-ep2_jack.*: global.obst_slot 41851-41915      # S
-ep2_jack.*: scroll1 41851-41915               # S
-ep2_jack.*: scroll2 41851-41915               # S
-ep2_jack.*: scroll3 41851-41915               # S
-ep2_jack.*: palette 41851-41915               # S
-ep2_jack.*: sounds 41851-41915                # S
 
 # ep2_3p (42001 records): the tally ends in the lag record 28970 (the panel of Episode 3 starts inside it, cause S)
 ep2_3p.*: global.frame 28971-28990            # S
@@ -43,11 +33,7 @@ ep2_3p.*: sounds 28971-28990                  # S
 
 # ep3_jack (10501 records): K in the record 9476 (the stage clear walk: 5 game frames in MAME, 3 in the port); the story panel of Episode 4 starts in the lag records 9484 .. 9488
 ep3_jack.*: * 9476-9476	# K
-ep3_jack.*: global.frame 9485-9515	# S
-ep3_jack.*: global.game_frame 9485-9515	# S
-ep3_jack.*: global.obst_slot 9485-9515	# S
-ep3_jack.*: scroll3 9485-9515	# S
-ep3_jack.*: sounds 9485-9515	# S
+ep3_jack.*: scroll3 9486-9486	# S: the entry block (8 cells of scroll3) that MAME draws in the frame after the lag record 9484; the loader restores the wait (M10 story loader)
 
 # ep3_hannah (10501 records): no difference in step and lagsync mode, nothing to allow
 
@@ -55,18 +41,6 @@ ep3_jack.*: sounds 9485-9515	# S
 ep3_mess.*: * 9909-9909	# K
 
 # ep3_mustapha (10501 records): the stage clear tally ends in the lag record 7469 and the story panel of Episode 4 starts inside it
-ep3_mustapha.*: global.frame 7470-7496	# S
-ep3_mustapha.*: global.game_frame 7470-7496	# S
-ep3_mustapha.*: global.cam_x 7470-7496	# S
-ep3_mustapha.*: global.cam3_x 7470-7496	# S
-ep3_mustapha.*: global.cam3_y 7470-7496	# S
-ep3_mustapha.*: global.map_ptr 7470-7496	# S
-ep3_mustapha.*: global.obst_slot 7470-7496	# S
-ep3_mustapha.*: scroll1 7470-7496	# S
-ep3_mustapha.*: scroll2 7470-7496	# S
-ep3_mustapha.*: scroll3 7470-7496	# S
-ep3_mustapha.*: palette 7470-7496	# S
-ep3_mustapha.*: sounds 7470-7496	# S
 
 # ep3_3p (10501 records): the tally ends in the lag record 8183 (story panel, S; its typewriter P: pool B class 26 in the slot 23, the free list G.$65F6 / G.$6600); K in the record 8318 (the skip of the scripted entrance of the level)
 ep3_3p.*: global.frame 8184-8214	# S
