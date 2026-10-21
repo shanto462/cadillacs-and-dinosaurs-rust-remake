@@ -514,8 +514,13 @@ mod tests {
             }
         }
         assert!(bot.done(), "the bot did not reach the ending and the attract loop");
+        let mut written = std::collections::HashSet::new();
         for (name, frames, loud, over, peak, first) in &parts {
             eprintln!("{name}: {frames} frames, {loud} audible ({:.0} %), {over} above 0.9, peak {peak:.3}", 100.0 * *loud as f64 / *frames as f64);
+            // A name can come back (after the ending the game is in Episode 8 for a few frames): the first, full part keeps its file.
+            if !written.insert(name.clone()) {
+                continue;
+            }
             if let Some(dir) = std::env::var_os("DINO_WAV_OUT") {
                 std::fs::create_dir_all(&dir).expect("the output directory exists");
                 write_wav(&Path::new(&dir).join(format!("{name}.wav")), first);
