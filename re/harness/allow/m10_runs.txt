@@ -1,5 +1,5 @@
-# Approved known differences of the whole run checks of Episodes 2 and 3 (M10-08, M10-09): re/harness/m10_check.sh (step, lagsync and run mode of the natural recordings
-# ep2_jack, ep2_3p, ep3_jack, ep3_hannah, ep3_mess, ep3_mustapha, ep3_3p).
+# Known differences of the whole run checks (M10): re/harness/m10_check.sh (step, lagsync and run mode of the natural recordings
+# ep2_jack, ep2_3p, ep3_jack, ep3_hannah, ep3_mess, ep3_mustapha, ep3_3p, ep4_jack).
 # Lines "NAME.MODE: key range  # reason" apply to one recording and one mode (MODE step, lagsync, run or *); m10_check.sh cuts them out to a plain allow file for diff.py.
 # A key is a field pattern as in the other allow files; the range is a record range.
 #
@@ -92,3 +92,57 @@ ep3_3p.*: scroll2 8236-8246	# P
 ep3_3p.*: scroll3 8236-8246	# P
 ep3_3p.*: sounds 8236-8246	# P
 ep3_3p.*: palette 8236-8246	# P
+
+# ep4_jack (28001 records, M10-10): no gameplay difference in step or lagsync.
+# Run mode is equal through record 2756. Its first difference is the MAME lag
+# record 2757; its tail is not allowed here, as for the Episode 2 and 3 runs.
+# K at 27497 and 27532: 0x9E38C runs 5 game frames in MAME versus the port's
+# fixed 3. Both records have scripted control and attack held. The two missing
+# updates account for every counter, the B59 palette phase and the tally flash.
+# Lagsync excludes these catch-up records and restores their MAME state.
+ep4_jack.step: global.splash_timer 27497-27497 # K
+ep4_jack.step: global.frame 27497-27497 # K
+ep4_jack.step: global.game_frame 27497-27497 # K
+ep4_jack.step: global.timer508 27497-27497 # K
+ep4_jack.step: global.blink_phase 27497-27497 # K
+ep4_jack.step: global.blink_timer 27497-27497 # K
+ep4_jack.step: item.timer 27497-27497 # K
+ep4_jack.step: effect.owner58 27497-27497 # K
+ep4_jack.step: player.facing_age 27497-27497 # K
+ep4_jack.step: player.sc_timer 27497-27497 # K
+ep4_jack.step: prop.boss_group_ptr 27497-27497 # K
+ep4_jack.step: scroll1 27497-27497 # K
+ep4_jack.step: global.splash_timer 27532-27532 # K
+ep4_jack.step: global.frame 27532-27532 # K
+ep4_jack.step: global.game_frame 27532-27532 # K
+ep4_jack.step: global.timer508 27532-27532 # K
+ep4_jack.step: global.blink_phase 27532-27532 # K
+ep4_jack.step: global.blink_timer 27532-27532 # K
+ep4_jack.step: item.timer 27532-27532 # K
+ep4_jack.step: effect.owner58 27532-27532 # K
+ep4_jack.step: player.facing_age 27532-27532 # K
+ep4_jack.step: player.sc_timer 27532-27532 # K
+ep4_jack.step: prop.wave_ptr 27532-27532 # K
+ep4_jack.step: prop.boss_group_ptr 27532-27532 # K
+ep4_jack.step: scroll1 27532-27532 # K
+ep4_jack.step: palette 27532-27532 # K
+# S: Episode 5's panel starts inside lag record 27578. Loading its state cannot
+# restore the sleeping story routine, so 0xDBB2 replays sound 0x16 at 27579.
+ep4_jack.step: sounds 27579-27579 # S
+ep4_jack.lagsync: sounds 27579-27579 # S
+# S: lag record 27608 enters the picture loop 0xDC54 and sleeps at 0xDC6C.
+# Its saved return is 0xDC72. The loader does not restore Story::sub, so the next
+# picture repeats instead of alternating. Later lag loads keep the Rust phase
+# instead of taking the saved return of 0xDC72 / 0xDC90; step is wrong each frame.
+ep4_jack.step: scroll2 27609-27613 # S
+ep4_jack.step: scroll2 27616-27621 # S
+ep4_jack.lagsync: scroll2 27609-27609 # S
+ep4_jack.lagsync: scroll2 27611-27611 # S
+ep4_jack.lagsync: scroll2 27613-27613 # S
+ep4_jack.lagsync: scroll2 27616-27616 # S
+ep4_jack.lagsync: scroll2 27618-27618 # S
+ep4_jack.lagsync: scroll2 27620-27620 # S
+# Sound arguments are reported separately by diff.py, outside its equality
+# summary: 50 frames of 2514 paired requests differ in lagsync, first at 178.
+# Codes 0x18, 0x39..0x3B, 0x3E, 0x62, 0x63 and 0x66 carry stale register or
+# caller/pan differences. M10-22 owns these; no sound-argument rule is added.
