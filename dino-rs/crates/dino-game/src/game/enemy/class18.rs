@@ -1296,7 +1296,7 @@ impl Game {
             let i = self.enemy_index(h);
             let facing = self.enemies.slots[i].b.facing;
             self.enemies.slots[i].b.facing = e.b.facing;
-            self.fx_spawn_spark_at(h, e.b.xi().wrapping_sub(0x50), e.b.yi().wrapping_add(0x40), e.b.zi(), 0);
+            self.fx_spawn_spark_facing(e.b.facing, e.b.xi().wrapping_sub(0x50), e.b.yi().wrapping_add(0x40), e.b.zi(), 0);
             self.enemies.slots[i].b.facing = facing;
             self.snd_request(0x3B, 0x18, 0);
         }

@@ -324,18 +324,16 @@ impl Game {
         }
     }
 
-    /// 0x39A7A: compute leap velocity for 44 frames flight time.
+    /// 0x39A7A: compute leap velocity for 44 frames flight time. The divisor is |current - dest| as a signed word (0x39A7A `tst.w` / `neg.w`),
+    /// but the direction is the borrow of `sub.w` (0x399EC / 0x39A18 `bcs`): unsigned, so a destination across 0x8000 from the body (a negative
+    /// destination Z against a small Z) flies the other way than the sign of the difference says (MAME ep7_jack 54193, vz 0xA4).
     pub(super) fn enemy_c6_leap_speed(&self, current: i16, dest: i16) -> i16 {
         let diff = (current as u16).wrapping_sub(dest as u16);
-        let abs_d = if (diff as i16) < 0 {
-            (dest as u16).wrapping_sub(current as u16)
-        } else {
-            diff
-        };
+        let abs_d = if (diff as i16) < 0 { diff.wrapping_neg() } else { diff };
         let mut d0 = abs_d / 44;
         let mut d1 = abs_d % 44;
 
-        if (diff as i16) >= 0 {
+        if (current as u16) >= (dest as u16) {
             d0 = (-(d0 as i16)) as u16;
             d1 = (-(d1 as i16)) as u16;
         }

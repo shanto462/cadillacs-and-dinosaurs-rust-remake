@@ -239,6 +239,20 @@ pub fn fx_start(b: &mut Body, fx: &EffectData, id: u16) {
     fx_load(b, fx, first);
 }
 
+/// 0x120E on a pool C object (the object loader, not 0x15E4): as `fx_start`, plus the box word +$48 / +$49 and, unless +$25 bit 0 is set, the
+/// four bytes +$4C..+$4F of the composition (0x1262, table 0x11D220). The slot keeps them when it is freed: a later object of the slot reads
+/// them as its wading clip counts (0x143C8) or shadow type (MAME ep8_jack 22069, a debris piece after a muzzle flash).
+pub fn fx_start_obj(b: &mut Body, fx: &EffectData, id: u16) {
+    let first = fx.anim(b.anim_table, id);
+    fx_load(b, fx, first);
+    let f = fx.frame(first);
+    b.body_box = f.body_box;
+    b.attack_box = f.attack_box;
+    if b.draw_flags & 1 == 0 {
+        b.extra = f.extra;
+    }
+}
+
 /// 0x15F4: tick. Returns true (carry) when the record was the last one and the link was taken.
 pub fn fx_tick(b: &mut Body, fx: &EffectData) -> bool {
     b.timer = b.timer.wrapping_sub(1);
@@ -881,6 +895,12 @@ impl Game {
     /// 0x92422: spark `spark` at (x, y, z) with the facing of object `caller`.
     pub fn fx_spawn_spark_at(&mut self, caller: Handle, x: i16, y: i16, z: i16, spark: u16) -> bool {
         let facing = self.body(caller).facing;
+        self.fx_spawn_spark_slot(x, y, z, facing, 0, spark)
+    }
+
+    /// 0x92422 for a caller whose update is in progress (an enemy taken out of its slot): the facing (`+$24` of a6) is passed, as the slot
+    /// itself holds no object while it runs (MAME ep8_3p 39821: Fessenden's fire spark faced the wrong way).
+    pub fn fx_spawn_spark_facing(&mut self, facing: u8, x: i16, y: i16, z: i16, spark: u16) -> bool {
         self.fx_spawn_spark_slot(x, y, z, facing, 0, spark)
     }
 

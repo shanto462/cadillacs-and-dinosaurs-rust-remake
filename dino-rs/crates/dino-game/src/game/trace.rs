@@ -617,6 +617,15 @@ impl Prop {
     pub fn trace_visit(&mut self, f: &mut F, stage: u8) {
         self.b.trace_header(f, false);
         self.m.trace_load_all(f, 0xC0);
+        if f.loading() {
+            // +$4C..+$4F (the shadow type +$4E, the wading clip counts) are set by the frame load (0x120E). A prop made inside a MAME catch-up
+            // record (ep8_mess 13038, the manhole grate B35) is loaded already past its frame load; only loaded, as for pool C
+            for k in 0..4 {
+                let mut v = self.b.extra[k];
+                f.u8(0x4C + k as u32, "extra", &mut v);
+                self.b.extra[k] = v;
+            }
+        }
         if f.loading() && self.b.live == 0 {
             // A free slot keeps the stale bytes of its last object, which the original's RAM shows too (or zero after a pool reset): +$40..+$9A would
             // otherwise stay at the values of an older object of the port until a class that traces them takes the slot.
@@ -980,6 +989,16 @@ impl Effect {
         self.b.trace_header(f, true);
         f.u32(0x40, "anim_table", &mut self.b.anim_table);
         f.u8(0x51, "airborne", &mut self.b.airborne); // M7-06: 0x12DAC's flag (the debris pieces bounce on it); a step run did not load it
+        if f.loading() {
+            // +$4C..+$4F: the wading clip counts (0x143C8 `sub.b $4C(a0,d0.w),d6`) and the shadow type. 0x160A loads no extra bytes, so a pool C
+            // object keeps the stale bytes of the slot's last user (the free 0x4964 clears 0x28 bytes); only loaded, as the hurt list (ep8_jack
+            // 18412: a debris piece in water drew one cell in MAME and none in the port)
+            for k in 0..4 {
+                let mut v = self.b.extra[k];
+                f.u8(0x4C + k as u32, "extra", &mut v);
+                self.b.extra[k] = v;
+            }
+        }
         f.u16(0x58, "owner58", &mut self.owner58);
         f.u16(0x5A, "owner_class", &mut self.owner_class);
         f.u16(0x5C, "w5c", &mut self.w5c);
@@ -1560,9 +1579,11 @@ impl Game {
         f.u16(b + 0x52, "up52", &mut s.up52);
         f.u16(b + 0x54, "down54", &mut s.down54);
         let ev_stage = self.assets.stages.stages.get(self.w.stage as usize).map(|x| x.camera_events_addr).unwrap_or(0);
-        let ev_base = if s.event_base != 0 { s.event_base } else { ev_stage }; // the list of the last event load (0x2099A)
         // stage 2: +$56 points into the controller's own list or (the demo, 0x2099A) into the stage's list of the table 0x21B2A
         let std = self.assets.stages.stages.get(self.w.stage as usize).map_or((0, 0), |x| (x.std_events_addr, x.std_events.len()));
+        // the list of the last event load (0x2099A), when it is one of this stage's lists: after a stage change that the port did not run itself
+        // (the step loader), the base of the stage before would turn the pointer into an index of the wrong list (ep6_jack 67111)
+        let ev_base = if s.event_base != 0 && (s.event_base == ev_stage || s.event_base == std.0) { s.event_base } else { ev_stage };
         let mut p = ev_base.wrapping_add(16u32.wrapping_mul(s.next_event as u32));
         f.u32(b + 0x56, "next_event", &mut p);
         if f.loading() {
