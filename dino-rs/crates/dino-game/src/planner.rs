@@ -326,7 +326,7 @@ fn value(s: &Snap, g: &Game) -> i64 {
 
 /// The state of the policy: the X of the last progress and the frames without it, for the sweep up and down at a wall or a ledge.
 #[derive(Clone, Copy, Default)]
-struct Policy {
+pub struct Policy {
     best_x: i16,
     still: u16,
     t: u16,
@@ -336,12 +336,12 @@ struct Policy {
 }
 
 impl Policy {
-    fn new(g: &Game, me: usize, team: bool) -> Policy {
+    pub fn new(g: &Game, me: usize, team: bool) -> Policy {
         Policy { best_x: g.players[me].b.xi(), still: 0, t: 0, me, team }
     }
 
     /// The input of the next frame.
-    fn input(&mut self, g: &Game) -> u8 {
+    pub fn input(&mut self, g: &Game) -> u8 {
         self.t = self.t.wrapping_add(1);
         let p = &g.players[self.me];
         let (px, pz) = (p.b.xi() as i32, p.b.zi() as i32);

@@ -635,7 +635,7 @@ mod tests {
     fn the_hit_sound_mode_byte_follows_the_a6_the_caller_left() {
         let mut a = AssetPack::default();
         a.sprites.hitboxes = dino_assets::HitBoxBank { base: 0x100000, words: vec![0; 0x20].into_iter().chain([0x0100]).collect() };
-        a.enemy.t = dino_assets::enemy::ByteTables { blobs: vec![(0x2BB4E, vec![7; 0x30]), (0xA66A, vec![0; 0x30])], program: (0..=0xFFu8).cycle().take(0x40).collect() };
+        a.enemy.t = dino_assets::enemy::ByteTables { blobs: vec![(0x2BB4E, vec![7; 0x30]), (0xA66A, vec![0; 0x30])], program: (0..=0xFFu8).cycle().take(0x40).collect(), ..Default::default() };
         a.text = TextData { blobs: vec![(0x96AA, vec![0, 0x39, 0x39])] };
         let mut g = Game::new(Box::leak(Box::new(a)));
         let h = Game::player_handle(1);

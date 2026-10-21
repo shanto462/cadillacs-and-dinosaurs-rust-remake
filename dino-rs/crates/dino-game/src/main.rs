@@ -505,6 +505,7 @@ fn run_headless(mut args: Args, config: game::flow::Config) {
     let mut menu = menu::Menu::new(args.chars[0], args.chars.len() as u8, args.test);
     // `DINO_REALTIME=1`: the run keeps the pace of the window (59.64 Hz), to measure what an ally's planner costs the frame (`ally.rs`)
     let realtime = std::env::var("DINO_REALTIME").is_ok_and(|v| v == "1");
+    args.allies.set_realtime(realtime);
     let mut next_frame_time = std::time::Instant::now();
     let mut late = (0u32, std::time::Duration::ZERO);
     for tick in 0..args.frames {
@@ -553,6 +554,7 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
 
     let mut viewer = args.viewer.then(|| viewer::Viewer::new(assets, args.view));
     let mut inputs = input::Inputs::new();
+    args.allies.set_realtime(true); // an ally never holds the window back (`ally.rs`)
     let mut hero_watch = HeroWatch::default();
     let mut game = start_game(assets, &mut args, config.clone());
     // the start's requests (queued before the first tick) reach the sound side once, before the loop (audio.rs `feed_queued`)

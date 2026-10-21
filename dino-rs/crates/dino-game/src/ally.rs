@@ -30,13 +30,18 @@
 //! A decision is a few hundred simulated plans, far more than a video frame has time for. The decision for the next macro is therefore
 //! made in the background while the current macro is played: at the start of a macro the game is copied, the copy plays the macro (with
 //! the input player 1 holds now), and the planner decides on the state at its end; the macro is ready when the next one has to start
-//! (`Ally::play`). The result does not depend on the speed of the machine or the number of threads (the thread is always waited for at the
-//! end of the macro), so a run is the same every time. `DINO_ALLY_H`, `DINO_ALLY_D`, `DINO_ALLY_B` and `DINO_ALLY_THREADS` change the
-//! planner settings (the defaults are smaller than those of the bot of player 1: `Ally::params`).
+//! (`Ally::play`). A headless run and the tests wait for the thread at the end of the macro, so the result does not depend on the speed
+//! of the machine or the number of threads: a run is the same every time. A window run (`Allies::set_realtime`, also `DINO_REALTIME=1`)
+//! never waits: when the decision is not ready at the start of the next macro, the ally plays the default `Policy` frame by frame
+//! (`Timing::fallback_frames`) and takes the decision as soon as it is ready; and it scales the search to the time it takes: a plan over
+//! `BUDGET_NS` (50 ms of the 134 ms of a macro) lowers the search level (`level_params`: a shorter horizon, fewer steps, a narrower beam,
+//! down to the first move of 24 frames), 20 plans under a quarter of the budget raise it again. `DINO_ALLY_H`, `DINO_ALLY_D`,
+//! `DINO_ALLY_B` and `DINO_ALLY_THREADS` change the settings of level 0 (the defaults are smaller than those of the bot of player 1:
+//! `Ally::params`).
 
 use crate::game::Game;
 use crate::input::{Frame, ATTACK, COIN3, RIGHT, START3};
-use crate::planner::{self, Macro, Params, Planner, K};
+use crate::planner::{self, Macro, Params, Planner, Policy, K};
 use std::thread::JoinHandle;
 
 /// Hero id to the cursor position of the select screen (both ways: the table is its own inverse).
@@ -49,6 +54,9 @@ const COIN_GAP: u32 = 28;
 /// Frames of a start pulse and the frames to the next one.
 const START_HIGH: u32 = 3;
 const START_GAP: u32 = 10;
+/// The search levels (`level_params`) and the time a plan may take in a window before the level goes down (a macro lasts 134 ms).
+const LEVELS: u8 = 4;
+const BUDGET_NS: u128 = 50_000_000;
 /// Ticks an ally waits in the select screen for a named hero that another cursor stands on.
 const SELECT_WAIT: u32 = 150;
 /// Frames without control after which the plan in the background is dropped (a hit or a scene is short, a long lock is a new situation).
@@ -77,6 +85,9 @@ pub struct Timing {
     pub wait_max: u128,
     pub clone_sum: u128,
     pub clone_max: u128,
+    /// Frames the ally played the default policy because its decision was not ready (window runs), and the changes of the search level.
+    pub fallback_frames: u64,
+    pub level_changes: u64,
 }
 
 pub struct Ally {
@@ -99,6 +110,13 @@ pub struct Ally {
     planner: Option<Planner>,
     pending: Option<Job>,
     cur: Option<(Macro, usize)>,
+    /// The planner settings of level 0, the level now, the fast plans in a row, whether this is a window run (see `play` and `scale`), and
+    /// the default policy that plays while a decision is not ready.
+    base: Params,
+    level: u8,
+    fast: u32,
+    realtime: bool,
+    fallback: Option<Policy>,
     away: u32,
     joined_at: Option<u32>,
     pub timing: Timing,
@@ -124,6 +142,11 @@ impl Ally {
             planner: Some(planner),
             pending: None,
             cur: None,
+            base: params,
+            level: 0,
+            fast: 0,
+            realtime: false,
+            fallback: None,
             away: 0,
             joined_at: None,
             timing: Timing::default(),
@@ -151,15 +174,21 @@ impl Ally {
         self.pick = None;
         self.waited = 0;
         self.cur = None;
+        self.fallback = None;
         self.drop_plan();
         self.joined_at = None;
     }
 
-    /// Drops the plan in the background (waits for the thread; the planner comes back).
+    /// Drops the plan in the background. A window run lets the thread end by itself (the next planner is a new one, nothing waits);
+    /// a headless run waits for it (the planner comes back, the same state every run).
     fn drop_plan(&mut self) {
         if let Some(job) = self.pending.take() {
-            let (planner, _, _) = job.join().expect("the ally planner failed");
-            self.planner = Some(planner);
+            if self.realtime {
+                self.planner = None;
+            } else {
+                let (planner, _, _) = job.join().expect("the ally planner failed");
+                self.planner = Some(planner);
+            }
         }
     }
 
@@ -294,12 +323,21 @@ impl Ally {
             self.away += 1;
             if self.away > AWAY_MAX {
                 self.cur = None;
+                self.fallback = None;
                 self.drop_plan();
             }
             return 0;
         }
         self.away = 0;
         if self.cur.is_none_or(|(_, k)| k >= K) {
+            // the decision of the macro before is due; in a window an unfinished one is not waited for
+            if self.realtime && self.pending.as_ref().is_some_and(|j| !j.is_finished()) {
+                self.timing.fallback_frames += 1;
+                self.cur = None;
+                let g_pol = self.fallback.get_or_insert_with(|| Policy::new(g, me, true));
+                return g_pol.input(g);
+            }
+            self.fallback = None;
             let t = std::time::Instant::now();
             let (planner, m) = match self.pending.take() {
                 Some(job) => {
@@ -310,13 +348,15 @@ impl Ally {
                     self.timing.plan_max = self.timing.plan_max.max(ns);
                     self.timing.wait_sum += wait;
                     self.timing.wait_max = self.timing.wait_max.max(wait);
+                    self.scale(ns);
                     (planner, m)
                 }
-                None => (self.planner.take().expect("the ally planner is away"), Macro::idle()),
+                None => (self.planner.take().unwrap_or_else(|| self.new_planner()), Macro::idle()),
             };
             self.cur = Some((m, 0));
             let mut planner = planner;
             planner.others = [p1, 0, 0];
+            planner.params = level_params(&self.base, self.level);
             let t = std::time::Instant::now();
             let copy = g.clone();
             let ns = t.elapsed().as_nanos();
@@ -336,6 +376,46 @@ impl Ally {
         self.cur = Some((m, k + 1));
         m.input(k)
     }
+
+    /// A fresh planner for this slot (after a dropped plan).
+    fn new_planner(&self) -> Planner {
+        let mut planner = Planner::new(level_params(&self.base, self.level));
+        planner.me = self.slot;
+        planner.team = true;
+        planner
+    }
+
+    /// In a window the search is scaled to the time it takes: a plan that ran over its budget lowers the level (a shorter horizon, a
+    /// narrower beam, fewer steps), a run of fast plans raises it again. Headless runs keep level 0 (the same result on every machine).
+    fn scale(&mut self, ns: u128) {
+        if !self.realtime {
+            return;
+        }
+        if ns > BUDGET_NS {
+            self.fast = 0;
+            if self.level < LEVELS - 1 {
+                self.level += 1;
+                self.timing.level_changes += 1;
+            }
+        } else if ns * 4 < BUDGET_NS {
+            self.fast += 1;
+            if self.fast >= 20 && self.level > 0 {
+                self.fast = 0;
+                self.level -= 1;
+                self.timing.level_changes += 1;
+            }
+        } else {
+            self.fast = 0;
+        }
+    }
+}
+
+/// The planner settings of a level of the search (0: the settings of the ally; each level after it is cheaper: a shorter horizon, fewer
+/// steps and a narrower beam).
+fn level_params(base: &Params, level: u8) -> Params {
+    const STEPS: [(usize, usize, usize); LEVELS as usize] = [(usize::MAX, usize::MAX, usize::MAX), (48, 2, 2), (32, 2, 1), (24, 1, 1)];
+    let (h, d, b) = STEPS[level as usize];
+    Params { horizon: base.horizon.min(h), depth: base.depth.min(d), beam: base.beam.min(b), ..*base }
 }
 
 /// A pulse of `high` frames every `gap` frames (`at`: the frame the last one began). Returns the line level of this frame.
@@ -357,6 +437,7 @@ pub struct Allies {
     /// The `--ally-chars` heroes (by the order of the allies of the command line, kept for the ones added later), the continue limit.
     chars: Vec<u8>,
     continues: Option<u32>,
+    realtime: bool,
 }
 
 impl Allies {
@@ -367,7 +448,17 @@ impl Allies {
 
     pub fn with_params(slots: &[usize], chars: &[u8], continues: Option<u32>, params: Params) -> Allies {
         let list = slots.iter().enumerate().map(|(k, &s)| Ally::new(s, chars.get(k).copied(), continues, params)).collect();
-        Allies { list, chars: chars.to_vec(), continues }
+        Allies { list, chars: chars.to_vec(), continues, realtime: false }
+    }
+
+    /// A window run (or a run that keeps the pace of one, `DINO_REALTIME=1`): an ally never waits for a decision that is not ready (it plays
+    /// the default policy until it is) and scales its search to the time it takes (`Ally::play`, `Ally::scale`). Without it (headless, tests) an
+    /// ally waits for every decision and the run is the same on every machine.
+    pub fn set_realtime(&mut self, on: bool) {
+        self.realtime = on;
+        for a in &mut self.list {
+            a.realtime = on;
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -386,7 +477,9 @@ impl Allies {
             eprintln!("ally: player {} is yours again", slot + 1);
         } else {
             let hero = self.chars.get(self.list.len()).copied();
-            self.list.push(Ally::new(slot, hero, self.continues, Ally::params()));
+            let mut a = Ally::new(slot, hero, self.continues, Ally::params());
+            a.realtime = self.realtime;
+            self.list.push(a);
             eprintln!("ally: the computer plays player {}", slot + 1);
         }
     }
@@ -427,6 +520,9 @@ impl Allies {
             let t = a.timing;
             if t.decisions == 0 {
                 continue;
+            }
+            if t.fallback_frames != 0 || t.level_changes != 0 {
+                eprintln!("ally: player {}: {} frames on the default policy (decision not ready), {} changes of the search level, level {} at the end", a.slot + 1, t.fallback_frames, t.level_changes, a.level);
             }
             let ms = |ns: u128| ns as f64 / 1e6;
             eprintln!(
@@ -723,5 +819,53 @@ mod tests {
         let mut r = Run::new(a, config, "700-705:1S, 1100-1105:1A", Allies::with_params(&[1, 2], &[1, 2], None, small()));
         r.until(3000, |g| playing(g, 1) && playing(g, 2)).expect("both join");
         assert!(r.g.flow.front.sys.slots.iter().all(|c| c.credits == 0 && c.coins == 0));
+    }
+
+    /// A window run never waits for a decision: an ally whose search is far too slow plays the default policy meanwhile, and the
+    /// game goes on at once; a headless run waits (the same result every time).
+    #[test]
+    fn a_window_run_does_not_wait_for_a_slow_decision() {
+        let Some(a) = rom() else { return eprintln!("test skipped: dino.zip is absent") };
+        // a search of seconds per decision, on one thread
+        let slow = Params { horizon: 1500, depth: 3, beam: 6, threads: 1, ..Params::from_env(0) };
+        let mut r = Run::new(a, Default::default(), P1_WALKS, Allies::with_params(&[1], &[1], None, slow));
+        r.allies.set_realtime(true);
+        r.until(6000, |g| playing(g, 1) && planner::controllable(g, 1)).expect("the ally joins and the level runs");
+        let t = std::time::Instant::now();
+        r.run(240);
+        let took = t.elapsed();
+        let ally = &r.allies.list[0];
+        assert!(ally.timing.fallback_frames > 100, "the ally did not play the default policy: {:?}", ally.timing);
+        assert!(took < std::time::Duration::from_secs(3), "240 ticks took {took:?}: the game waited for the plan");
+        assert!(r.g.players[1].b.live != 0);
+    }
+
+    /// The search level goes down after a plan over its budget and up after a run of fast ones; a headless run never changes it.
+    #[test]
+    fn the_search_scales_to_the_time_it_takes() {
+        let mut a = Ally::new(1, None, None, small());
+        a.scale(BUDGET_NS * 2);
+        assert_eq!(a.level, 0, "not in a headless run");
+        a.realtime = true;
+        a.scale(BUDGET_NS * 2);
+        a.scale(BUDGET_NS * 2);
+        assert_eq!(a.level, 2);
+        for _ in 0..19 {
+            a.scale(1);
+        }
+        assert_eq!(a.level, 2);
+        a.scale(1);
+        assert_eq!(a.level, 1);
+        for _ in 0..10 {
+            a.scale(BUDGET_NS * 2);
+        }
+        assert_eq!(a.level, LEVELS - 1);
+        // every level is cheaper than the one before
+        let base = Ally::params();
+        let cost = |l: u8| {
+            let p = level_params(&base, l);
+            p.horizon * p.depth * p.beam
+        };
+        assert!((1..LEVELS).all(|l| cost(l) < cost(l - 1)), "{:?}", (0..LEVELS).map(cost).collect::<Vec<_>>());
     }
 }
