@@ -25,6 +25,8 @@ Keys (player 1 on the keyboard):
 | G | dash attack | the direction twice (a run), then attack |
 
   The dive kick and the dash attack go the way of the arrow you hold, or the way you last moved. While a move key plays (up to 24 frames), the other player 1 keys wait. The command move works when the hero is standing or walking (not in the air). Checked with all four heroes (the attack ids 0x70 to 0x76, 0x0E, 0x0C, 0x12, 0x5A of D2a).
+- Combo toggle: Q turns it on or off (a yellow "COMBO" shows at the bottom left while it is on). While it is on, the third attack press of a chain (three presses, each within 40 frames of the one before) plays the command move (the A key) in place of the third hit. The move waits until the hero can walk again (a few frames after the second hit), and the third press itself is not passed on. Example: turn it on with Q, then press J three times quickly: jab, jab, then the flip kick (Jack).
+- Pause: P pauses and continues the game (a "PAUSED" text shows, the sound stops). It works in the game window (not in the asset viewer, and not while the test menu is open).
 - Start: 1, 2, 3 (Enter also starts player 1). Coin: 5, 6, 7 (for slots 1, 2, 3).
 - SERVICE: 9 (adds a credit for every player).
 - Fullscreen: F11 or Alt+Enter (Option+Enter on Mac) toggles fullscreen. Window scaling uses integer zoom to preserve the arcade 384x224 aspect ratio with crisp pixels and black borders.

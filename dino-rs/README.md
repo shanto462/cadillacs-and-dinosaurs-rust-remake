@@ -67,6 +67,8 @@ The game boots from power-on, showing the Capcom and QSound logos, followed by t
 | Service Coin | 9 (adds one credit for every player) |
 | Fullscreen | F11, or Alt+Enter (Option+Enter on macOS) |
 | Hitbox Overlay | F1 (toggles hitbox display during normal play) |
+| Pause | P (pauses and continues; "PAUSED" shows and the sound stops) |
+| Combo toggle | Q ("COMBO" shows at the bottom left while it is on) |
 
 ### Special Move Keys (Player 1)
 
@@ -81,6 +83,8 @@ The keyboard provides dedicated single-key shortcuts for special techniques. Eac
 | G | Dash attack | Jack slides; the other heroes lunge through the air. Goes in the direction you hold, or your last moved direction. | Direction tapped twice to run, then Attack |
 
 While a special move sequence is playing (up to 24 frames), other Player 1 inputs pause until the move finishes.
+
+With the combo toggle (Q) on, the third attack press of a chain (three presses, each within 40 frames of the one before) plays the command move (A) instead of the third hit. The move waits until the hero can walk again, a few frames after the second hit.
 
 ### Gamepads (Players 1, 2, and 3)
 
