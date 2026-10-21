@@ -195,6 +195,17 @@ pub struct Flow {
     pub game_clock: bool,
     /// The last `flow_frame` used up a lag frame (no task ran in it).
     pub lag_tick: bool,
+    /// The last tick is not recorded alone in a game clock recording: the original's task was still busy at that vertical blank (the clear 0xAE0 of the
+    /// game over exit crosses some of them), so the next tick is part of the same record (`harness::run` ticks on while it is set).
+    pub join_next: bool,
+    /// After the game over exit has ended (`in_game` 0): the ticks of the attract start that still go into one record of a game clock recording (the record
+    /// after the exit is a lag record of 4 vertical blanks: the pools are cleared, the ranking draws and its first actors are spawned in it, the video clock
+    /// reference k-1p has them 3 and 5 frames after the exit). 5 at the exit tick, counted down by `flow_frame`.
+    pub attract_join: u8,
+    /// The ticks since a game started from the attract (the start press at the tick 0, G.$4CC = 1): in a game clock recording the ticks 16, 17 and 18 are one
+    /// record (mode 0), the ticks 19 to 22 the next (mode 4), the video clock reference has mode 0 at 18, mode 4 at 22 and sub 2 at 24 (ep8_mustapha 68906
+    /// and 68907, lag 2 and 3). 0 = no start in progress.
+    pub start_tick: u8,
     /// The skip wait task 0x9E38C was active in the last tick (`skip.rs`): the tick ran extra rounds of the tasks.
     pub skip_tick: bool,
     /// The phase of 0xAC4E that the character select is in after its fade out (`select.rs`, `flow_stage_start_staged`); 0 = not in it.
@@ -305,6 +316,16 @@ impl Game {
     pub fn flow_frame(&mut self) {
         self.flow_coin_isr(); // the interrupt: 0x9D4BE reads the coin inputs before the tasks
         self.flow.lag_tick = false;
+        self.flow.join_next = false;
+        if self.flow.attract_join > 0 {
+            self.flow.attract_join -= 1;
+            self.flow.join_next = self.flow.attract_join >= 1;
+        }
+        if self.flow.start_tick > 0 {
+            let n = self.flow.start_tick;
+            self.flow.start_tick = if n >= 22 { 0 } else { n + 1 };
+            self.flow.join_next |= matches!(n, 16 | 17 | 19 | 20 | 21);
+        }
         self.flow_round_start();
         if self.flow.lag > 0 {
             self.flow.lag_tick = true;
@@ -637,6 +658,7 @@ impl Game {
         self.effects = super::Pool::new(super::POOL_C); // 0x4CA4
         self.draw_special_init(); // 0x4CCC: the free stack only, the slots keep their bytes
         self.spawn_area_reset_objects(); // pools A, B; pool E loop; G.$4F1.. cleared
+        self.trace_pools_cleared(&[super::POOL_A, super::POOL_B, super::POOL_C]); // harness only: the frame pointers of the cleared pools are 0
         self.rank_area_start(); // 0x18048
         self.hook_aae2(); // 0x1031A, 0x12BE4, 0xFBE8
     }
@@ -819,6 +841,13 @@ impl Game {
             if self.flow.mode == 0x18 && self.flow.cont.exit_wait == 2 {
                 self.sound(0xFF00); // 0xAC2C (a5d2), after the clear
             }
+            // 0xAC06 .. 0xAC42 is one pass of the game task (the clear 0xAE0, the sound, the attract task, then the task ends at 0x910): the ticks of mode 0x18 do
+            // not count G.$0 / G.$4DA (MAME m328_end-jack: G.$0 stays 0x1890 from the record of mode 0x18 on). The clears 0xAE0 / 0xA76 of the continue mode sleep inside
+            // the pass too: the ticks of its wait do not count either, but the pass of 0xAC06 after the first clear does (the next tick: mode 0x14 with the wait at 1).
+            // In a game clock recording the last two ticks before that pass are in its record (the task is late at those vertical blanks: m523_ep1_2p_full 30612 ..
+            // 30614: the records of T0, T1 and T2 + T3 + T4).
+            self.flow.resume = !(self.flow.cont.exit_wait == 1 && self.flow.mode == 0x14);
+            self.flow.join_next = self.flow.mode == 0x14 && matches!(self.flow.cont.exit_wait, 2 | 1);
             return;
         }
         if self.flow.mode == 0x14 {
@@ -828,7 +857,12 @@ impl Game {
             self.flow.mode = 0x18;
             self.flow.front.game_over_flag = 1;
             self.flow_clear_screen();
-            self.flow.cont.exit_wait = 4; // clear 0xAE0 crosses two vblanks.
+            // the clear 0xAE0 overruns the frame (one lag frame: no task runs; a game clock record joins the pass, the lag frame and the next
+            // pass, MAME m328_end-jack 5540 and m523_ep1_2p_full 30614); the sound comes in the pass after it, the exit two frames later: four
+            // video frames after this one
+            self.flow_lag(1);
+            self.flow.cont.exit_wait = 3;
+            self.flow.resume = true; // the same pass goes on (0xAC26)
             return;
         }
         self.flow.cont.exit_wait = 0;
@@ -839,6 +873,7 @@ impl Game {
         self.flow.in_game = 0;
         self.flow.game_pending = false;
         self.flow.front.sys.press_up = 0;
+        self.flow.attract_join = 5;
         self.flow_attract_start();
         if self.flow.mode == 0x18 {
             // The new task slept two frames while the game task was clearing.

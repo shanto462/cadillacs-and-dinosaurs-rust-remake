@@ -326,6 +326,24 @@ pub struct Story {
     pub exit_step: u8,
 }
 
+impl Story {
+    /// The wait loop part (its counter is G.-$719A, restored by the loader).
+    pub(crate) const WAIT_PART: u8 = part::WAIT;
+
+    /// The part a loaded snapshot is in (cause S, M10): the original sleeps with `jsr 0xA76` inside the routine, so the game task stack
+    /// holds the sleep helper's return 0xA98 at +$3C and the return into the routine at +$40. These return addresses name the part.
+    pub(crate) fn part_at_sleep_return(ret: u32) -> Option<u8> {
+        Some(match ret {
+            0xDFD2 => part::WAIT,        // 0xDFCC, the wait loop (story_wait)
+            0xDA12 => part::SCROLL,      // 0xDA0C, Episode 3 scroll loop (story_scroll)
+            0xDC72 | 0xDC90 => part::PICTURES, // 0xDC6C / 0xDC8A, the two picture phases of 0xDC54
+            0xDCFE => part::CLEAR2,      // 0xDCF8, the sleep before 0xB6C (story_clear2)
+            0xE148 | 0xE1A0 => part::PALETTES, // 0xE142 / 0xE19A, the palette play (0xE0E4)
+            _ => return None,
+        })
+    }
+}
+
 impl Game {
     /// 0xD898: the story panel of the game mode 8, called by the game task. The routine sleeps inside itself (the game task goes on in it
     /// through `Flow::wait` and `Flow::resume`).
@@ -856,5 +874,20 @@ mod tests {
         assert_eq!((g.flow.intro.src, g.flow.intro.dst), (0x90A000, 0x908000 + ((d0 << 4) & 0x1F80) as u32));
         assert_eq!((g.flow.intro.sub, g.flow.b4e2, g.fade.mask), (2, 0, 2));
         assert_eq!(g.pal.words[PaletteRam::SCROLL1], 0xF123, "the scroll1 palettes are loaded again with the full brightness");
+    }
+}
+
+#[cfg(test)]
+mod story_return_tests {
+    use super::{part, Story};
+
+    #[test]
+    fn the_sleep_returns_name_the_parts() {
+        assert_eq!(Story::part_at_sleep_return(0xDFD2), Some(Story::WAIT_PART));
+        assert_eq!(Story::part_at_sleep_return(0xDA12), Some(part::SCROLL));
+        assert_eq!(Story::part_at_sleep_return(0xDC90), Some(part::PICTURES));
+        assert_eq!(Story::part_at_sleep_return(0xDCFE), Some(part::CLEAR2));
+        assert_eq!(Story::part_at_sleep_return(0xE1A0), Some(part::PALETTES));
+        assert_eq!(Story::part_at_sleep_return(0xA98), None);
     }
 }

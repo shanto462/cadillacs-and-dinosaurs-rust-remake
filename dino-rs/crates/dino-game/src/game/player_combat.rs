@@ -200,6 +200,7 @@ impl Game {
                 }
                 let (ab, vb) = (&self.players[ai].b, &self.players[vi].b);
                 let Some((ha, hb)) = collide::boxes_hit(s, ab, ab.attack_box, vb, vb.body_box) else { continue };
+                let a6 = self.snd_a6_128f8(ab, vb, vb.body_box, &hb); // 0x10706: the box test leaves a6 on the box record
                 let g = self.player_g4f3();
                 if g >= 3 {
                     continue;
@@ -236,9 +237,9 @@ impl Game {
                 vp.b.hitstop = rec.hit_stop;
                 self.players[ai].b.hitstop = rec.hit_stop;
                 if rec.sound != 0 {
-                    // 0x107D8: the same stale a6 as in the hero hit pass 0x10A94: +$24 reads 0 (mode 3).
-                    let (ax, vf) = (self.players[ai].b.xi(), 0u8);
-                    self.snd_hit(rec.sound, ax, vf); // 0x962A
+                    // 0x107D8: a6 is still the box record of the box test 0x128F8 (0x10706).
+                    let (ax, a6_24) = (self.players[ai].b.xi(), self.snd_a6_byte(a6));
+                    self.snd_hit(rec.sound, ax, a6_24); // 0x962A
                 }
                 self.players[vi].b.b9a = rec.b7;
                 self.spawn_hit_spark(a, v, ha, hb, rec.spark);
@@ -411,10 +412,10 @@ impl Game {
             self.enemies.slots[ei].m.sb(super::enemy::off::WAIT, 0);
         }
         if rec.sound != 0 {
-            // 0x10A94: a6 is not set by the pass (0x10546 keeps the a6 of the caller; only the guard path 0x10A12 loads it): the byte +$24 it reads is 0
-            // in every recording (Episode 2 to 3 solo and 3 players), so the mode of the sound is 3.
-            let (ax, vf) = (self.players[i].b.xi(), 0u8);
-            self.snd_hit(rec.sound, ax, vf); // 0x962A
+            // 0x10A94: a6 is the last table the damage routine 0x2B904 pointed it at (`lea $2BB4E(pc),a6`, 0x2BA10), whatever the box test
+            // or the guard path (0x10A12) left before.
+            let (ax, a6_24) = (self.players[i].b.xi(), self.snd_a6_byte(0x2BB4E));
+            self.snd_hit(rec.sound, ax, a6_24); // 0x962A
         }
         self.player_add_score(i, rec.score);
         self.spawn_hit_spark(me, e, ha, hb, rec.spark);
@@ -515,9 +516,12 @@ impl Game {
     pub fn player_hit_by_enemy(&mut self, p: usize, e: Handle) {
         let me = Game::player_handle(p);
         let s = &self.assets.sprites;
-        let boxes = {
+        let (boxes, a6) = {
             let (eb, pb) = (self.body(e), &self.players[p].b);
-            collide::boxes_hit(s, eb, eb.attack_box, pb, pb.body_box)
+            let boxes = collide::boxes_hit(s, eb, eb.attack_box, pb, pb.body_box);
+            // 0x11668 / 0x11D80: the box test leaves a6 on the box record (the sound of 0x11720 / 0x11E38 / 0x1183E reads +$24 of it)
+            let a6 = boxes.map_or(0, |(_, hb)| self.snd_a6_128f8(eb, pb, pb.body_box, &hb));
+            (boxes, a6)
         };
         let eatk = self.body(e).atk;
         let rec = self.assets.player.enemy_attacks.get(eatk as usize).copied().unwrap_or_default();
@@ -542,8 +546,9 @@ impl Game {
             pl.b75 = 0xFF;
             self.body_mut(e).hitstop = rec.hit_stop;
             if rec.sound != 0 {
-                let (ax, vf) = (self.body(e).xi(), self.body(e).facing);
-                self.snd_hit(rec.sound, ax, vf); // 0x962A
+                // 0x1183E: a6 is the box record (no damage routine on this path)
+                let (ax, a6_24) = (self.body(e).xi(), self.snd_a6_byte(a6));
+                self.snd_hit(rec.sound, ax, a6_24); // 0x962A
             }
             self.players[p].b.b9a = rec.spark;
             if let Some((ha, hb)) = boxes {
@@ -583,8 +588,10 @@ impl Game {
         pl.b.b9a = rec.b7;
         self.body_mut(e).hitstop = rec.hit_stop;
         if rec.sound != 0 {
-            let (ax, vf) = (self.body(e).xi(), self.body(e).facing);
-            self.snd_hit(rec.sound, ax, vf); // 0x962A
+            // 0x11720 / 0x11E38: the damage routine 0x6422 saved a6 (the box record) as a word and restored it with `movea.w` (0x64EE):
+            // the sign extended low word, a byte of the low program for the heroes' box tables.
+            let (ax, a6_24) = (self.body(e).xi(), self.snd_a6_byte(Game::snd_a6_word(a6)));
+            self.snd_hit(rec.sound, ax, a6_24); // 0x962A
         }
         if let Some((ha, hb)) = boxes {
             self.spawn_hit_spark(e, me, ha, hb, rec.spark);

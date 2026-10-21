@@ -40,7 +40,7 @@ const TABLES: &[(u32, u32, &str)] = &[
     (0x4FA30, 0xC0, "Hopper direction steps (0x4F374)"),
     (0x4F3DA, 0xE, "Hopper frame X offsets (0x4F3B4)"),
     // M5-01 monster services: dispatch, reaction mapping and colour flashes.
-    (0x11CC4, 0x20, "monster hit reaction mapping"),
+    (0x11CC4, 0x28, "monster hit reaction mapping (+ the bytes up to 0x11CEB: the hit sound 0x962A reads 0x11CE8 as +$24 of a6, 0x11BEC)"),
     (0x11CE4, 8, "monster guard dispatch"),
     (0x4F4C8, 0x14, "Hopper colour flash delays"),
     (0x4F4DC, 8, "Hopper colour pairs by stage"),

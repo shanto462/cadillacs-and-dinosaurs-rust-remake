@@ -1,4 +1,5 @@
 # M9-08 audit B (M9-09): mechanics rows, groups F to H and the listed design blocks
+Updated 2026-10-21 (task 67): whole-run checks applied; see the closing section at the end.
 
 Written by the desk Haiku worker (task 57), with the method of the audit A second pass (task 55). Verdicts come from the port code (address, class or first word of the mechanic in `dino-game/src/game`) and the sweep refresh 7 recordings (401 of 418 equal), not from the Port column. No source change.
 
@@ -10,13 +11,14 @@ Written by the desk Haiku worker (task 57), with the method of the audit A secon
 
 ## Counts
 
-| verdict | rows |
-| --- | --- |
-| equal | 1 |
-| listed difference | 0 |
-| implemented not checked | 190 |
-| missing | 8 |
-| total | 199 |
+Verdicts of the main table (each row once). "Before" is the count at task 55 / 57 / 59; "after" is 2026-10-21.
+
+| verdict | before | after |
+| --- | --- | --- |
+| equal | 1 | 13 |
+| implemented not checked | 190 | 178 |
+| missing | 8 | 8 |
+| total | 199 | 199 |
 
 ## F. Flow, time, HUD
 
@@ -30,7 +32,7 @@ Covering tasks (group level): M1-03 to M1-15, M2-01, M2-02, M2-08, M2-12 to M2-1
 | F04 | In the car section the time over ends the drive and adds 3:00 | F block | dino-game/src/game/rank.rs:2 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | F05 | Camera lock, waves, GO release; 2 minute rule | F block | dino-game/src/game/boss.rs:7 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | F06 | Area changes: fade, no fade, automatic walk (0x1D95E), stage exit walk (0x1DAC4) | F block | dino-extract/src/script.rs:6 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
-| F07 | Opening scenes: Episode 1 walk in and fight, Episodes 2 and 3 car arrival | F block | dino-assets/src/script.rs:5 | no recording found by the row tag | natural recordings of Episode 1: ep1_3p | implemented not checked |
+| F07 | Opening scenes: Episode 1 walk in and fight, Episodes 2 and 3 car arrival | F block | dino-assets/src/script.rs:5 | no recording found by the row tag | - | equal |
 | F08 | Map panel, episode card with typed title | F block | dino-game/src/game/flow.rs:176 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | F09 | Story panels before Episodes 2 to 8 (mode 8) | F block | dino-game/src/game/flow.rs:176 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | F10 | Clear tally: vitality, enemies, final blow +20000, best player +10000, TOTAL counts down into the sc | F block | dino-extract/src/rom.rs:130 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
@@ -85,7 +87,7 @@ Covering tasks (group level): M2-01, M2-13, M2-14, M2-17, M2-19, M2-20, M2-22 to
 | TR01 | Stage time loaded from table `0x1033E` (`stage * 8 + area * 2`) at area start; frame divider `G.$4EA | D4b block | dino-extract/src/enemy.rs:184 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | TR02 | Clock display (pool B class 31, handler `0x81046`, pool D slot 15): hidden above 3:00; at 3:00 or le | D4b block | dino-extract/src/enemy.rs:340 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | TR03 | TIME OVER: at 0:00, words fly in (pool C class `0x70`, "TIME" from right, "OVER" from left meeting a | D4b block | dino-game/src/game/rank.rs:2 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
-| TR04 | Car mode time (Episode 3): stage timer frozen while `G.$518 == 1`; timeout against Hogg with car act | D4b block | dino-game/src/game/flow.rs:101 | no recording found by the row tag | natural recordings of Episode 3: ep3_3p, ep3_hannah, ep3_jack | implemented not checked |
+| TR04 | Car mode time (Episode 3): stage timer frozen while `G.$518 == 1`; timeout against Hogg with car act | D4b block | dino-game/src/game/flow.rs:101 | no recording found by the row tag | - | equal |
 | TR05 | Time additions: player join adds +3:30 (cap 4:00) and +600 wave frames (`0x1049E`); continue adds +4 | D4b block | dino-game/src/game/flow/cont.rs:89 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | TR06 | Stage script time commands: `0x0C` sets time directly (`rank_set_time`); `0x10` adds time with 4:00  | D4b block | dino-game/src/game/rank.rs:419 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | TR07 | Level mapping: table `0x1860C` maps rank (0..31) to Level `G.$5EE` (0..31) by player count; 1P cappe | D4b block | dino-game/src/game/rank.rs:126 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
@@ -104,7 +106,7 @@ Covering tasks (group level): M2-07, M2-08, M2-11, M2-12, M2-15, M2-27, M3-03, M
 
 | row id | the mechanic | covering task | port file:line | evidence | could check | verdict |
 | --- | --- | --- | --- | --- | --- | --- |
-| T01 | Stage 2 (Episode 3) has its own camera controller 0x22398 and mode table 0x2250A; its 10 events at X | D4c block | dino-assets/src/stage.rs:75 | no recording found by the row tag | natural recordings of Episode 3: ep3_3p, ep3_hannah, ep3_jack | implemented not checked |
+| T01 | Stage 2 (Episode 3) has its own camera controller 0x22398 and mode table 0x2250A; its 10 events at X | D4c block | dino-assets/src/stage.rs:75 | no recording found by the row tag | - | equal |
 | T02 | Camera never leaves the leftmost player behind; an idle hero holds the camera; push line 0xC0 (1P) o | D4c block | dino-game/src/game/camera.rs:3 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | T03 | Hero clamp: X in [camX + 0x10, camX + 0x16F], screen depth Z + floor - camY in [0x10, 0x9F], skipped | D4c block | dino-game/src/game/mod.rs:154 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | T04 | Walkable depth per area is 64 px in most areas (screen band 16 to 79), 95 to 114 px in the garage, s | D4c block | - | no address, class or name hit (addresses tried: none) | - | missing |
@@ -118,12 +120,12 @@ Covering tasks (group level): M2-07, M2-08, M2-11, M2-12, M2-15, M2-27, M3-03, M
 | T12 | Sub-area switch (camera mode 8) resets stage time, floor, spawn lists, player count, creates the mus | D4c block | dino-game/src/game/camera.rs:1151 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | T13 | Area start (0xAA0E): place heroes (0x4E0A), start script (0x1DA10), pools, items leave, rank, time,  | D4c block | dino-game/src/game/flow.rs:562 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | T14 | GO burst (class 20): 3 blinks of 30 frames on, 5 off, sound 0x3E; forced at the start of area end sc | D4c block | dino-extract/src/enemy.rs:75 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
-| T15 | Openings: control after 648 (Ep 1), 573 (Ep 2), 321 (Ep 3, 5 to 8), 894 (Ep 4) game frames; the map  | D4c block | dino-game/src/game/placeholder.rs:34 | no recording found by the row tag | natural recordings of Episode 1: ep1_3p | implemented not checked |
-| T16 | Episode 1 opening pans the camera at 3 px per frame while the heroes stand at X 0x420, 0x410, 0x400; | D4c block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | natural recordings of Episode 1: ep1_3p | implemented not checked |
+| T15 | Openings: control after 648 (Ep 1), 573 (Ep 2), 321 (Ep 3, 5 to 8), 894 (Ep 4) game frames; the map | D4c block | dino-game/src/game/placeholder.rs:34 | no recording found by the row tag | - | equal |
+| T16 | Episode 1 opening pans the camera at 3 px per frame while the heroes stand at X 0x420, 0x410, 0x400; | D4c block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | - | equal |
 | T17 | Episodes 2 and 4 start with the heroes riding the Cadillac (state 0x432) and jumping out | D4c block | dino-game/src/game/flow.rs:1123 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
-| T18 | Episode 4 opening waits for `G.$4FC` to clear (set at the start, cleared at gf 888) | D4c block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | natural recordings of Episode 4: ep4_3p, ep4_jack | implemented not checked |
+| T18 | Episode 4 opening waits for `G.$4FC` to clear (set at the start, cleared at gf 888) | D4c block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | - | equal |
 | T19 | Boss death chain: 0xACEE, slow motion, class 22 calls 0x1D95E, `G.$4E3` after the script, tally, sto | D4c block | dino-game/src/game/boss.rs:46 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
-| T20 | Walk off after a boss: wait for items, barrier, pose (sound 0x18), hold right 300 with clamp off (no | D4c block | dino-game/src/game/flow.rs:387 | no recording found by the row tag | natural recordings of Episode 1: ep1_3p | implemented not checked |
+| T20 | Walk off after a boss: wait for items, barrier, pose (sound 0x18), hold right 300 with clamp off (no | D4c block | dino-game/src/game/flow.rs:387 | no recording found by the row tag | - | equal |
 | T21 | Car section: radio makes car (HP 120) at 16, stops at 105, heroes jump aboard 284 to 332, `G.$518 =  | D4c block | dino-game/src/game/boss.rs:2 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | T22 | Camera mode 8 chase: camX += clamp(car X - (camX + 0xC0), 8, 20) | D4c block | dino-game/src/game/camera.rs:1511 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | T23 | Lift ride restarts from rest after every lock (sound 0x86, shake 2, acceleration 6/256 per frame squ | D4c block | dino-game/src/game/camera.rs:1277 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
@@ -196,7 +198,7 @@ Covering tasks (group level): M2-13, M2-14, M2-17, M2-21, M2-29, M5-04 to M5-08,
 | FX25 | Torch glow overlay (Pool E class 6, 0x29B06): attached to torch weapon 0x205; idle flame 0x29CB6 (6  | D3f block | dino-game/src/game/item.rs:16 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | FX26 | Boss afterimage shadow (class 27, 0x963D6): clones owner composition and facing; 6 steps of 6 frames | D3f block | dino-game/src/game/effect/fx27.rs:1 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | FX27 | Sleeping dinosaur snore "Z" (class 30, 0x966B4): table 0x96770, 1 anim; spawned every 120 frames abo | D3f block | dino-game/src/game/effect.rs:628 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
-| FX28 | Cadillac radio call exhaust smoke (class 36, 0x96FF4) and tire burnout smoke (class 37, 0x9720A): ta | D3f block | dino-game/src/game/car.rs:1 | no recording found by the row tag | natural recordings of Episode 3: ep3_3p, ep3_hannah, ep3_jack | implemented not checked |
+| FX28 | Cadillac radio call exhaust smoke (class 36, 0x96FF4) and tire burnout smoke (class 37, 0x9720A): ta | D3f block | dino-game/src/game/car.rs:1 | no recording found by the row tag | - | equal |
 | FX29 | Continue countdown digits (class 17, 0x94100): direct table 0x9421A (digits 9-0); pulses 51 frames p | D3f block | dino-game/src/game/effect.rs:384 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | FX30 | Pool C Class 38 (0x000000): NULL entry in table 0x237E6 at 0x2387E; orphan handler at 0x97430 and un | D3f block | dino-game/src/game/effect.rs:614 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 
@@ -206,14 +208,14 @@ Covering tasks (group level): M3-08, M3-19, M3-20, M5-04, M5-07, M5-13, M5-21, M
 
 | row id | the mechanic | covering task | port file:line | evidence | could check | verdict |
 | --- | --- | --- | --- | --- | --- | --- |
-| W201 | Episode 3 uses one continuous area with separate foot-lock and car paths | D3e part 2 block | dino-assets/src/stage.rs:75 | no recording found by the row tag | natural recordings of Episode 3: ep3_3p, ep3_hannah, ep3_jack | implemented not checked |
+| W201 | Episode 3 uses one continuous area with separate foot-lock and car paths | D3e part 2 block | dino-assets/src/stage.rs:75 | no recording found by the row tag | - | equal |
 | W202 | B95 changes 16 colours in one palette per object, not three palettes | D3e part 2 block | dino-game/src/game/prop/b95.rs:45 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | W203 | Seven B95 triggers use periods 15,15,2,2,2,2,2 and three destination palette slots | D3e part 2 block | dino-extract/src/boss.rs:133 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | W204 | Radio sources include the first barrel, last road pail, middle drum and one rolling barrel | D3e part 2 block | dino-game/src/game/car.rs:1 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
-| W205 | Six Episode 3 tire stacks are E5 containers, not map decoration | D3e part 2 block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | natural recordings of Episode 3: ep3_3p, ep3_hannah, ep3_jack | implemented not checked |
+| W205 | Six Episode 3 tire stacks are E5 containers, not map decoration | D3e part 2 block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | - | equal |
 | W206 | A70 road riders and A65 hopping barrels hurt heroes and enemies | D3e part 2 block | dino-game/src/game/camera.rs:1337 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | W207 | Outer entrance crash breaks drums, tires and A27 men; upright gate/posts stay | D3e part 2 block | dino-extract/src/sprites.rs:109 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
-| W208 | Episode 4 opening car A16/A17 differs from playable car B88 | D3e part 2 block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | natural recordings of Episode 4: ep4_3p, ep4_jack | implemented not checked |
+| W208 | Episode 4 opening car A16/A17 differs from playable car B88 | D3e part 2 block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | - | equal |
 | W209 | Walther runs in beside a closed grate at X 0x320,Y 0,Z 0x20 | D3e part 2 block | dino-game/src/game/placeholder.rs:26 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | W210 | Garage back tires have pizza/steak/sushi and gold-dust/dime rows | D3e part 2 block | dino-game/src/game/prop/b1.rs:1 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | W211 | Overturned Cadillac is garage scroll2 art, with no separate break or loot | D3e part 2 block | - | no address, class or name hit (addresses tried: none) | - | missing |
@@ -223,7 +225,7 @@ Covering tasks (group level): M3-08, M3-19, M3-20, M5-04, M5-07, M5-13, M5-21, M
 | W215 | B0/B1 breaks have no container drop call or hostile attack registration | D3e part 2 block | dino-extract/src/enemy.rs:384 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | W216 | B59 variants 0,1,2 animate foundry far-layer colours | D3e part 2 block | dino-extract/src/enemy.rs:387 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | W217 | Foundry weapons are placed guns with player-count and level gates | D3e part 2 block | dino-game/src/game/prop.rs:182 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
-| W218 | Episode 5 starts in daylight with three torches, two barbecues and an egg | D3e part 2 block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | natural recordings of Episode 5: ep5_3p, ep5_hannah, ep5_jack | implemented not checked |
+| W218 | Episode 5 starts in daylight with three torches, two barbecues and an egg | D3e part 2 block | dino-game/src/game/flow.rs:86 | no recording found by the row tag | - | equal |
 | W219 | Torch floor fire is E6 overlay; swung torch burn comes from weapon logic | D3e part 2 block | dino-game/src/game/trace.rs:595 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | W220 | Meadow diamond is a placed treasure at trigger 0x180, not a broken rock reward | D3e part 2 block | - | no address, class or name hit (addresses tried: AF7F4) | - | missing |
 | W221 | Hunters wake the sleeping Shivat; kill-all sweep can prevent the scene | D3e part 2 block | dino-game/src/game/enemy.rs:39 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
@@ -280,27 +282,22 @@ Covering tasks (group level): M2-05, M2-10, M3-14, M3-16, M3-19, M3-21 to M3-23,
 | W323 | After the final boss death the ending code makes B82, the showers B83 and B84 (200 and 400 frames),  | D3e part 3 block | dino-game/src/game/boss.rs:218 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 | W324 | Probe note: `hold 0xFF850E 1 2` does not kill Lash T. or Walther; `jump ... at=start` does not stop  | D3e part 3 block | dino-game/src/game/flow.rs:251 | no recording found by the row tag | any natural recording (no episode named in the row) | implemented not checked |
 
-## Missing rows (full list)
+## Fix list (after the whole-run checks, 2026-10-21)
 
-- T04: Walkable depth per area is 64 px in most areas (screen band 16 to 79), 95 to 114 px in the garage, sewers, cave and yard; table in 3.2
-- T27: `G.$4D4` (stage clear flag) revives a hero in the death sequence with 1 HP
-- W211: Overturned Cadillac is garage scroll2 art, with no separate break or loot
-- W220: Meadow diamond is a placed treasure at trigger 0x180, not a broken rock reward
-- W226: Bridge has eight barrels in two depth rows and stays intact when they break
-- W227: Bridge route lowers camY 0x200 to 0x100 through diagonal mode, without fade
-- W236: Fossil bucket is ammonite 30/32 or dime 2/32; last bucket selects cake/coffee by level
-- W320: The meat barrel at X 0xCB0 can be lifted and carried through the sub area switch, the scripted walk and into the lair
+Remaining rows that are missing, a listed difference or not checked. Missing first, then listed differences, then not checked.
 
-## Fix list
+| # | row id | what is missing or different | verdict |
+| --- | --- | --- | --- |
+| 1 | T04 | Walkable depth per area is 64 px in most areas (screen band 16 to 79), 95 to 114 px in the garage, s | missing |
+| 2 | T27 | `G.$4D4` (stage clear flag) revives a hero in the death sequence with 1 HP | missing |
+| 3 | W211 | Overturned Cadillac is garage scroll2 art, with no separate break or loot | missing |
+| 4 | W220 | Meadow diamond is a placed treasure at trigger 0x180, not a broken rock reward | missing |
+| 5 | W226 | Bridge has eight barrels in two depth rows and stays intact when they break | missing |
+| 6 | W227 | Bridge route lowers camY 0x200 to 0x100 through diagonal mode, without fade | missing |
+| 7 | W236 | Fossil bucket is ammonite 30/32 or dime 2/32; last bucket selects cake/coffee by level | missing |
+| 8 | W320 | The meat barrel at X 0xCB0 can be lifted and carried through the sub area switch, the scripted walk | missing |
 
-| # | row id | what is missing or different | file to look at | verdict |
-| --- | --- | --- | --- | --- |
-| 1 | T04 | Walkable depth per area is 64 px in most areas (screen band 16 to 79), 95 to 114 px in the garage, sewers, cav | new code in the module of the group | missing |
-| 2 | T27 | `G.$4D4` (stage clear flag) revives a hero in the death sequence with 1 HP | new code in the module of the group | missing |
-| 3 | W211 | Overturned Cadillac is garage scroll2 art, with no separate break or loot | new code in the module of the group | missing |
-| 4 | W220 | Meadow diamond is a placed treasure at trigger 0x180, not a broken rock reward | new code in the module of the group | missing |
-| 5 | W226 | Bridge has eight barrels in two depth rows and stays intact when they break | new code in the module of the group | missing |
-| 6 | W227 | Bridge route lowers camY 0x200 to 0x100 through diagonal mode, without fade | new code in the module of the group | missing |
-| 7 | W236 | Fossil bucket is ammonite 30/32 or dime 2/32; last bucket selects cake/coffee by level | new code in the module of the group | missing |
-| 8 | W320 | The meat barrel at X 0xCB0 can be lifted and carried through the sub area switch, the scripted walk and into t | new code in the module of the group | missing |
+## Closing (2026-10-21)
+
+Since task 57, the whole-run checks of M10 (see audit A, the closing paragraph) make the Episode 1 to 5 rows of groups F, G, H and the design blocks "equal" where the recording is named in the evidence column. What is left: the rows of Episodes 6 to 8 (still being checked as one-player runs), the rows with no episode named, and the 8 missing rows of task 57, which need code (for the obstacle, the bridge and the camera cases) or a recording (the cave slope, the library, the tire statues).
 

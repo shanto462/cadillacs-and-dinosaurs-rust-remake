@@ -7,7 +7,7 @@
 //!         [--headless | --windowed] [--fullscreen] [--mute] [--load-state FILE] [--trace FILE --frames N]
 //!         [--step-from MAME.trc] [--follow-rng MAME.trc] [--lagsync MAME.trc]
 //!         [--poke FRAME:ADDR:SIZE:VALUE]... [--poke-file FILE]... [--poke-clock power|game]
-//!         [--episode 1..8 | --stage 0..7] [--area 0..3] [--camx X] [--autoplay] [--debug-keys] [--list-placeholders]
+//!         [--episode 1..8 | --stage 0..7] [--area 0..3] [--camx X] [--autoplay] [--debug-keys]
 //!         [--jump NAME] [--list-jumps] [--test]`
 //! Without `--stage`, `--episode` and `--chars` the game starts from power on (the boot screens and the attract
 //! mode); `--stage N` / `--episode N` / `--chars` start directly in a stage (development). `--area` and `--camx` (hex or
@@ -280,10 +280,6 @@ fn usage() -> String {
 fn main() {
     if std::env::args().any(|a| a == "--help" || a == "-h") {
         println!("{}", usage());
-        return;
-    }
-    if std::env::args().any(|a| a == "--list-placeholders") {
-        print!("{}", game::placeholder::list_text());
         return;
     }
     if std::env::args().any(|a| a == "--list-jumps") {

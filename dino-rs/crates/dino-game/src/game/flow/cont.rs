@@ -287,6 +287,7 @@ impl Game {
         self.draw_list.clear();
         self.sprites.splash_timer = 1;
         self.effects = Pool::new(POOL_C);
+        self.trace_pools_cleared(&[POOL_C]); // harness only: the frame pointers of the cleared pool are 0
     }
 
     /// 0xEB60 / 0xF41E / 0xF4BA / 0xF512: tick, input skip and red flash.
@@ -494,6 +495,7 @@ impl Game {
                         self.flow.cont.exit_wait = 4; // 0xAE0 clear and 0xA76.
                     }
                 }
+                self.flow.resume = true; // the sleeps 0xA82 / 0xA7E and the clear run inside the pass: no count of G.$0000 / G.$4DA until the pass of 0xAC06
                 return;
             }
             _ => return,
@@ -694,6 +696,17 @@ impl Game {
         for i in 0..3 {
             if self.flow.join[i].state == 8 {
                 self.flow_continue_draw_hud(i);
+            }
+        }
+        // 0xEF6E: in the vertical scene (the lift of Episode 7, G.$4DC) the layer control of the lift and the cage on scroll1 again (0x205C6
+        // twice, as the area setup 0x20790), and when the cage walls are broken (G.$7B6) a new pool B 54 (0x4860, class word 0xD8) that puts
+        // the broken corners back (MAME ep7_jack 23330).
+        if self.w.vertical_scene != 0 {
+            self.w.layer_ctrl = 0x06D6;
+            self.lift_background(0, 0x100, 1);
+            self.lift_background(0x100, 0x100, 2);
+            if self.spawn.g.cage_smashed != 0 {
+                let _ = self.prop_spawn(54, 0); // the variant is the cleared word of the slot
             }
         }
         self.flow_continue_reset_effects();

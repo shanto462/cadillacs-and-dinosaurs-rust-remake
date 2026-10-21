@@ -80,7 +80,7 @@ impl Game {
         e.vy68 = 0x40000;
         e.b.anim_table = SPARK_ANIMS;
         e.b.draw_flags = 0x10;
-        fx_start(&mut e.b, fx, 0); // jsr 0x120E, animation 0
+        fx_start_obj(&mut e.b, fx, 0); // jsr 0x120E, animation 0
         // 0x96C98: the life is the sequence byte + 0x1E. The original keeps it in the high byte of the word +$62 (off_x) and the
         // speed long vx64 at +$64 in the words +$64 (off_y) and +$66 (w66): the stale bytes of a freed spark stay in those words.
         e.off_y = (e.vx64 >> 16) as i16;

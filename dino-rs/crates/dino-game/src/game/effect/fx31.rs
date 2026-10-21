@@ -2,7 +2,7 @@
 //! (`fx33.rs`, 0x967C4 `fx_spawn_muzzle`), one per record of the spark's table, at the spark's position plus the record's
 //! offsets. Its picture is the animation of +$26 (high byte: 0 handgun starburst, 1 rifle cone, 2 shotgun flare, 3 Uzi burst),
 //! its velocity is the word pair of the table 0x96986 (selector: +$27, the low byte of +$26) at the index of its direction (+$22 * 4).
-//! The picture is loaded with the effect loader (0x15E4, the same records as 0x120E) and ticked with 0x15F4.
+//! The picture is loaded with the object loader 0x120E (the boxes and the extra bytes +$4C..+$4F too, `fx_start_obj`) and ticked with 0x15F4.
 
 use super::*;
 
@@ -36,7 +36,7 @@ impl Game {
                 e.b.anim_table = MUZZLE_ANIMS;
                 e.b.draw_flags = 0x10;
                 let anim = e.b.var26 >> 8; // move.b $26(a6), d0 (the high byte)
-                fx_start(&mut e.b, fx, anim); // jsr 0x120E
+                fx_start_obj(&mut e.b, fx, anim); // jsr 0x120E
                 let sel = u32::from(e.b.var26 & 0xFF); // move.b $27(a6), d0
                 let set = assets.enemy.t.u32(MUZZLE_VELOCITY, sel);
                 let k = u32::from(e.b.dir) * 4; // move.b $22(a6), d0 ; lsl.w #2

@@ -7,6 +7,9 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 LIST=${*:-"ep2_jack:42001 ep2_3p:42001 ep3_jack:10501 ep3_hannah:10501 ep3_mess:10501 ep3_mustapha:10501 ep3_3p:10501"}
 MODES=${MODES:-"step lagsync run"}
 export PORT_OUT=${PORT_OUT:-$ROOT/re/out/port}
+# The natural whole run recordings use record.lua's game clock (a record per finished game frame, the lag vblanks left out): the port joins the ticks of its own
+# lags into one record (`DINO_GAME_CLOCK`, harness.rs). Without it the ending, the game over exit and the continue start are one record out (M10-19, M10-20).
+export DINO_GAME_CLOCK=${DINO_GAME_CLOCK:-1}
 PY="$ROOT/re/.venv/bin/python -I"
 mkdir -p "$ROOT/re/out/m10"
 for item in $LIST; do

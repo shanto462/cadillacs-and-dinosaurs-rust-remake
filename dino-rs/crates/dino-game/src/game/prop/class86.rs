@@ -62,7 +62,7 @@ impl Game {
             e.b.set_zi(p.b.zi());
             e.b.var26 = var;
             e.b.dir = p.b.dir;
-            e.m.sl(f::OWNER, me as u32);
+            e.m.sl(f::OWNER, me as i16 as i32 as u32); // the register holds the car's handle sign-extended: 0xFFFFxxxx (MAME m328_end-jack 5543, the ranking car)
         }
         self.snd_request(0x80, 0x72000, 0x0400_0000); // 0xA49E: move.w #$80,d0; d1 = 0x72000, d2 = 0x4000000
     }

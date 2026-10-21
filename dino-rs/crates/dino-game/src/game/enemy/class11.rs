@@ -97,9 +97,10 @@ impl Game {
                     self.enemy_c11_puff(e); // 0x3DA48
                 }
                 if t == 0x4A {
-                    // 0x3DA96: pool B class 72 (the flock of birds), variant 0x600, the sound 0x61
+                    // 0x3DA96: pool B class 72 (the flock of birds), variant 0x600, the sound 0x61 (0x3DAB6: `moveq #$10,d1 ; moveq #0,d2`, the
+                    // pan in the middle)
                     self.prop_flock_spawn();
-                    self.sound(0x61);
+                    self.sound_ex(0x61, 0x10, 0);
                 }
                 self.enemy_step(&mut e.b); // 0x3DAC2: jsr 0x121E
                 self.enemy_draw_check(&mut e.b, h); // jmp 0x49CA

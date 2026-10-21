@@ -710,7 +710,7 @@ pub fn run(
         // them in the one game frame that overran, `0xA63C`; M4-16: the fade and the area music of an area change are in the joined ticks)
         let (mut joined_sounds, mut joined_reqs) = (Vec::new(), Vec::new());
         while game.flow.game_clock
-            && (game.flow.lag > 0 || game.flow.lag_tick || game.flow.ending.cont.is_some() || (game.skip_join_more() && joined < 64))
+            && (game.flow.lag > 0 || game.flow.lag_tick || game.flow.join_next || game.flow.ending.cont.is_some() || (game.skip_join_more() && joined < 64))
         {
             joined_sounds.append(&mut game.w.sounds);
             joined_reqs.append(&mut game.w.snd_reqs);

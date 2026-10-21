@@ -332,7 +332,8 @@ impl Body {
 
     /// +$30..+$3F: split body (only when +$25 bit 0 is set).
     pub fn trace_split(&mut self, f: &mut F) {
-        if f.all() || self.draw_flags & 1 != 0 {
+        // A load restores the layer even while it is off: the stale frame and bytes of a stopped layer are the start values of the next walk (0x5CA6 reads +$34)
+        if f.all() || f.loading() || self.draw_flags & 1 != 0 {
             f.frame(0x30, "frame2", &mut self.frame2, &mut self.frame2_loads, false, false, self.live != 0);
             f.u16(0x34, "w34", &mut self.w34);
             f.u16(0x36, "w36", &mut self.w36);
@@ -632,9 +633,11 @@ impl Prop {
     pub fn trace_visit(&mut self, f: &mut F, stage: u8) {
         self.b.trace_header(f, false);
         self.m.trace_load_all(f, 0xC0);
-        if f.loading() && self.b.live == 0 {
-            // A free slot keeps the stale bytes of its last object, which the original's RAM shows too (or zero after a pool reset): +$40..+$9A would
-            // otherwise stay at the values of an older object of the port until a class that traces them takes the slot.
+        if f.loading() {
+            // +$40..+$9A of every prop, live or free: a slot keeps the stale bytes of its last object, which the original's RAM shows too (or zero after a pool
+            // reset, 0x4C76), and the draw code reads some of them for every object (+$4C..+$4F the wading clip counts and the shadow type of the frame,
+            // +$53 the wading byte). Otherwise they would stay at the values of an older object of the port until a class that traces them takes the slot
+            // (a lagsync resync after an area change: the box table of a steam pipe stayed in the slot of a water band, ep8_mustapha 19429).
             self.b.trace_rest(f);
         }
         if f.all() || self.b.k20 == 50 * 4 {
@@ -990,7 +993,7 @@ pub(crate) fn wave_ptr_of(w: &dino_assets::enemy::Wave, g: usize, r: usize, mode
 
 /// The original's +$A0 for (group, record, sub-state): the group's thresholds while waiting
 /// (sub 0), the current record while spawning (sub 2), the end word at the end (sub 4).
-fn wave_ptr(w: &dino_assets::enemy::Wave, g: usize, r: usize, sub: u8) -> u32 {
+pub(crate) fn wave_ptr(w: &dino_assets::enemy::Wave, g: usize, r: usize, sub: u8) -> u32 {
     let gs = wave_groups(w);
     let base = gs[g.min(gs.len() - 1)];
     match sub {
@@ -1018,11 +1021,20 @@ impl Effect {
         self.b.trace_header(f, true);
         f.u32(0x40, "anim_table", &mut self.b.anim_table);
         f.u8(0x51, "airborne", &mut self.b.airborne); // M7-06: 0x12DAC's flag (the debris pieces bounce on it); a step run did not load it
+        f.u8(0x53, "wading", &mut self.b.wading); // the clip test of the draw code 0x142C2 reads it for every object, a free slot keeps the old byte
+        for (k, name) in ["extra0", "extra1", "extra2", "extra3"].into_iter().enumerate() {
+            f.u8(0x4C + k as u32, name, &mut self.b.extra[k]); // the wading clip counts and the shadow type of the frame (0x1236 / 0x160A), read by the draw code
+        }
         f.u16(0x58, "owner58", &mut self.owner58);
         f.u16(0x5A, "owner_class", &mut self.owner_class);
         f.u16(0x5C, "w5c", &mut self.w5c);
         f.u8(0x5E, "b5e", &mut self.b5e);
         f.u8(0x5F, "b5f", &mut self.b5f);
+        if self.b.k20 == 0x80 {
+            // a cloud of the ranking screen (pool C class 32, 0x96A7E): its speed is the long +$60 (16.16, the table 0x96B34), `speed60`
+            f.i32(0x60, "cloud_speed", &mut self.speed60);
+            return;
+        }
         f.u16(0x60, "owner60", &mut self.owner60);
         if self.b.k20 == 0x84 {
             // a bullet spark (class 33): the life byte and the two speed longs
@@ -1191,6 +1203,14 @@ impl Player {
 // ------------------------------------------------------------------------------------------
 
 /// Pool table for the diff tool: (kind, base handle, stride, count).
+/// The field names of the three name entry blocks (G.-$711C + 0x20 * player), by offset: +0 secs, +2 idle, +4 rank, +5 count, +6 name, +$A fps, +$C cur,
+/// +$D prev, +$E rep, +$F glyph, +$10 shown, +$14 blink, +$16 lock, +$17 done, +$18 finish, +$19 flashes.
+const NAME_BLOCK_FIELDS: [[&str; 16]; 3] = [
+    ["ne0_secs", "ne0_idle", "ne0_rank", "ne0_count", "ne0_name", "ne0_fps", "ne0_cur", "ne0_prev", "ne0_rep", "ne0_glyph", "ne0_shown", "ne0_blink", "ne0_lock", "ne0_done", "ne0_finish", "ne0_flashes"],
+    ["ne1_secs", "ne1_idle", "ne1_rank", "ne1_count", "ne1_name", "ne1_fps", "ne1_cur", "ne1_prev", "ne1_rep", "ne1_glyph", "ne1_shown", "ne1_blink", "ne1_lock", "ne1_done", "ne1_finish", "ne1_flashes"],
+    ["ne2_secs", "ne2_idle", "ne2_rank", "ne2_count", "ne2_name", "ne2_fps", "ne2_cur", "ne2_prev", "ne2_rep", "ne2_glyph", "ne2_shown", "ne2_blink", "ne2_lock", "ne2_done", "ne2_finish", "ne2_flashes"],
+];
+
 pub const POOLS: [(&str, (u16, u16, usize)); 6] = [
     ("player", PLAYERS),
     ("enemy", POOL_A),
@@ -1598,31 +1618,33 @@ impl Game {
         f.u16(b + 0x52, "up52", &mut s.up52);
         f.u16(b + 0x54, "down54", &mut s.down54);
         let ev_stage = self.assets.stages.stages.get(self.w.stage as usize).map(|x| x.camera_events_addr).unwrap_or(0);
-        let ev_base = if s.event_base != 0 { s.event_base } else { ev_stage }; // the list of the last event load (0x2099A)
         // stage 2: +$56 points into the controller's own list or (the demo, 0x2099A) into the stage's list of the table 0x21B2A
         let std = self.assets.stages.stages.get(self.w.stage as usize).map_or((0, 0), |x| (x.std_events_addr, x.std_events.len()));
-        let mut p = ev_base.wrapping_add(16u32.wrapping_mul(s.next_event as u32));
+        let ev_base = if s.event_base != 0 { s.event_base } else { ev_stage }; // the list of the last event load (0x2099A)
+        // No event has been loaded yet (the controller struct is cleared by the game start 0xA836): the pointer is null, not the start of the list.
+        let mut p = if s.event_base == 0 && s.next_event == 0 { 0 } else { ev_base.wrapping_add(16u32.wrapping_mul(s.next_event as u32)) };
         f.u32(b + 0x56, "next_event", &mut p);
         if f.loading() {
             s.std_list = false;
+            let ev_len = self.assets.stages.stages.get(self.w.stage as usize).map_or(0, |x| x.camera_events.len());
             match list_index(p, std.0, 16).filter(|&k| k < std.1) {
+                _ if p == 0 => (s.event_base, s.next_event) = (0, 0),
                 Some(k) => {
                     s.std_list = true;
                     s.event_base = std.0;
                     s.next_event = k;
                 }
-                // 0x2099A / 0x209C0: a stage change can leave the old list base in
-                // the loader. Adjacent lists share the 16-byte grid, so that base
-                // also accepts pointers into the new list, at the wrong index.
-                None if list_index(p, ev_stage, 16).is_some_and(|k| {
-                    self.assets.stages.stages.get(self.w.stage as usize).is_some_and(|st| k < st.camera_events.len())
-                }) => {
+                // A pointer into the list of this stage is an index of that list, whatever list the port loaded its last event from: after a stage change
+                // that the port did not run itself (the step loader) its old base would turn the pointer into an index of the wrong list (ep5_hannah 59492,
+                // ep6_jack 67111). The pointer of the story panel after a stage clear is still in the list of the stage before (the port counts the stage up
+                // earlier than the original), which is the base the port keeps.
+                None if list_index(p, ev_stage, 16).is_some_and(|k| k <= ev_len) => {
                     s.event_base = ev_stage;
-                    s.next_event = ((p - ev_stage) / 16) as usize;
+                    s.next_event = list_index(p, ev_stage, 16).unwrap_or(0);
                 }
                 None => match list_index(p, ev_base, 16) {
                     Some(k) => {
-                        s.event_base = ev_base;
+                        s.event_base = if list_index(p, ev_stage, 16) == Some(k) { ev_stage } else { ev_base };
                         s.next_event = k;
                     }
                     None => {
@@ -1765,6 +1787,40 @@ impl Game {
         f.u8(0x0507, "b507", &mut fl.b507);
         f.u8(0x05E4, "b5e4", &mut fl.b5e4);
         f.u16(n(0x6FFA), "ending_timer", &mut fl.ending.timer);
+        // The name entry (`flow/name_entry.rs`): the three blocks of 0x20 bytes at G.-$711C, the shared rank blink counter G.$7017, the same frame flag G.$7013
+        // and the frame stamp G.$701A. A lag record in the middle of an entry moves them by two frames (m523_ep1_3pjhm_full 31126).
+        for (i, names) in NAME_BLOCK_FIELDS.iter().enumerate() {
+            let b = &mut fl.name.blocks[i];
+            let base = n(0x711C) + 0x20 * i as u32;
+            f.u16(base, names[0], &mut b.secs);
+            f.u16(base + 2, names[1], &mut b.idle);
+            f.u8(base + 4, names[2], &mut b.rank);
+            f.u8(base + 5, names[3], &mut b.count);
+            let mut name = u32::from_be_bytes(b.name);
+            f.u32(base + 6, names[4], &mut name);
+            b.name = name.to_be_bytes();
+            f.u16(base + 0xA, names[5], &mut b.fps);
+            f.u8(base + 0xC, names[6], &mut b.cur);
+            f.u8(base + 0xD, names[7], &mut b.prev);
+            f.u8(base + 0xE, names[8], &mut b.rep);
+            f.u8(base + 0xF, names[9], &mut b.glyph);
+            let mut shown = u32::from_be_bytes(b.shown);
+            f.u32(base + 0x10, names[10], &mut shown);
+            b.shown = shown.to_be_bytes();
+            f.u16(base + 0x14, names[11], &mut b.blink);
+            f.u8(base + 0x16, names[12], &mut b.lock);
+            f.u8(base + 0x17, names[13], &mut b.done);
+            f.u8(base + 0x18, names[14], &mut b.finish);
+            f.u8(base + 0x19, names[15], &mut b.flashes);
+        }
+        f.u8(0x7017, "name_blink", &mut fl.name.blink);
+        f.u16(0x701A, "name_seen_frame", &mut fl.name.seen_frame);
+        f.flag(0x7013, "name_same_frame", &mut fl.name.same_frame);
+        if f.loading() && fl.mode == 0x1C && fl.sub != 0 {
+            // The second part of the sub 0 of the ending (0xA69F2 from the pools on, `ending.phase`) has run in the state that is loaded: a lag record of
+            // the recording holds the first part, the rest and the pass of sub 2 (ep8_hannah 66838); the port's own pending rest must not run again.
+            fl.ending.phase = 0;
+        }
         f.u8(0x04DA, "game_frame", &mut fl.frame);
         f.u8(0x04E2, "b4e2", &mut fl.b4e2);
         f.u8(0x04E3, "b4e3", &mut fl.b4e3);
@@ -1917,27 +1973,16 @@ impl Game {
         self.w.stage = l.read(g(0x04D9), 1) as u8;
         self.cam.s2.area = l.read(g(0x073C + 0x4A), 1) as u8;
         self.trace_visit(&mut l);
-        // 0x7EC48: a typewriter can be created entirely inside a MAME lag
-        // record. Restore its text state as well as its pool B slot, otherwise
-        // prop_class26 frees the slot because flow.typers has no peer for it.
-        self.flow.typers.retain(|t| t.slot.is_none());
-        for (i, p) in self.props.slots.iter().enumerate() {
-            if p.b.live == 0 || p.b.k20 != 0x68 { continue; }
-            let base = self.props.handle(i) as usize;
-            let w = |off| u16::from_be_bytes(ram[base + off..base + off + 2].try_into().unwrap());
-            let l = |off| u32::from_be_bytes(ram[base + off..base + off + 4].try_into().unwrap());
-            let cursor = l(0x80);
-            let text = if p.b.mode <= 2 && p.b.sub <= 2 {
-                self.assets.frontend.text.slice_from(if p.b.sub == 0 { cursor } else { l(0x88) })
-            } else { &[] };
-            self.flow.typers.push(super::flow::text::Typer::from_pool_b_snapshot(
-                text, i, (p.b.mode, p.b.sub), cursor, (w(0x84), w(0x86), w(0x8C)),
-            ));
-        }
+        // (0x7EC48: the typewriters of the snapshot are taken over by `trace_load_typers` below.)
         self.trace_unmapped = l.unmapped;
         let mut warn = l.errors;
         self.trace_load_tasks(ram, &mut warn);
+        self.trace_load_typers();
         self.trace_load_gfx(gfx);
+        // The sprite buffer the screen shows (0x69B4 picks it, as `trace.py` `mame_sprite_list`): all zero after the clear 0xAE0, which no build has refilled
+        // yet (the game start of ep8_mustapha 68906 .. 68908: the select setup builds no list before its second part).
+        let buf = if u16::from_be_bytes([ram[0xE9B4], ram[0xE9B5]]) != 0 { 0x4000 } else { 0 };
+        self.sprites.blank = gfx.get(buf..buf + 0x800).is_some_and(|b| b.iter().all(|x| *x == 0));
         // Index/count conversions cannot encode null pointers before the corresponding
         // subsystem has initialized. Remember only these nulls, never live ROM pointers.
         let mut canonical = Collect::default();
@@ -1973,6 +2018,26 @@ impl Game {
         self.trace_unmapped = l.unmapped;
     }
 
+    /// The typewriter objects of the level (pool B class 26, 0x7EC48) keep their text pointer, write address and counters in the object's bytes: +$80 write address (the text
+    /// pointer while the object is new), +$84 frames to the next item, +$86 frames per item, +$88 read pointer, +$8C skip flag. The port keeps them in `flow.typers`.
+    fn trace_load_typers(&mut self) {
+        self.flow.typers.retain(|t| t.slot.is_none());
+        for i in 0..self.props.slots.len() {
+            let p = &self.props.slots[i];
+            if p.b.live == 0 || p.b.k20 != 0x68 {
+                continue;
+            }
+            let (state, sub) = (p.b.mode, p.b.sub);
+            let text = &self.assets.frontend.text;
+            let t = if sub == 0 {
+                super::flow::text::Typer::restore(state, sub, text.slice_from(p.m.l(0x80)), 0, 0, p.m.w(0x86), false, i)
+            } else {
+                super::flow::text::Typer::restore(state, sub, text.slice_from(p.m.l(0x88)), p.m.l(0x80), p.m.w(0x84), p.m.w(0x86), p.m.b(0x8C) != 0, i)
+            };
+            self.flow.typers.push(t);
+        }
+    }
+
     /// Abstract state the port keeps instead of the task table (0xFF0052, 16 bytes per slot:
     /// +0 state, +1 sleep counter).
     fn trace_load_tasks(&mut self, ram: &[u8], warn: &mut Vec<String>) {
@@ -1980,16 +2045,54 @@ impl Game {
         // Slot 2 (0x20): the game task sleeps G.$4D6 & 15 frames between runs.
         let (st, cnt) = task(2);
         self.flow.cont.return_pending = self.flow.mode == 0x10 && self.flow.sub == 6 && self.flow.sub2 == 0 && st == 8;
-        self.flow.wait = if st == 1 { cnt } else { 0 };
+        // A task that is busy (state 4, 8 or 0xC: a lag record of a game clock recording) has no sleep counter to read: the port keeps its own wait and resume of
+        // the pass it joined into the record (the select setup of a game start, ep8_mustapha 68907: the second part comes two ticks after the first).
+        let busy = matches!(st, 4 | 8 | 0xC);
+        if !busy {
+            self.flow.wait = if st == 1 { cnt } else { 0 };
+        }
         // A sleep whose return address (task stack +$3C, the sleep helper 0xA98) is not the loop's own sleep belongs to a mode routine
         // that slept inside itself: its next run goes on without the frame counters (`flow.resume`, not in the snapshot). The stack
         // pointer of the task is the long at +$08 of its entry (0xFF0052 + 16 * slot).
         let stack = u32::from_be_bytes(ram[0x7A..0x7E].try_into().unwrap()) as usize;
         let sp = stack & 0xFFFF;
-        self.flow.resume = st == 1
-            && stack >> 16 == 0xFF
-            && sp + 0x44 <= ram.len()
-            && u32::from_be_bytes(ram[sp + 0x3C..sp + 0x40].try_into().unwrap()) == 0xA98;
+        if !busy {
+            self.flow.resume = st == 1
+                && stack >> 16 == 0xFF
+                && sp + 0x44 <= ram.len()
+                && u32::from_be_bytes(ram[sp + 0x3C..sp + 0x40].try_into().unwrap()) == 0xA98;
+        }
+        // The select setup 0xAD5E sleeps twice in a row (`jsr 0xA76` at 0xAD70 and 0xAD76): the counter of the task is 1 in both, the caller tells the first from the
+        // second, which leaves one more frame before the second part (ep8_mustapha 68907 .. 68909: sub 2 comes two records after the first with sub 0).
+        if st == 1 && self.flow.mode == 4 && self.flow.sub == 0 && stack >> 16 == 0xFF && sp + 0x44 <= ram.len()
+            && u32::from_be_bytes(ram[sp + 0x3C..sp + 0x40].try_into().unwrap()) == 0xA98
+            && u32::from_be_bytes(ram[sp + 0x40..sp + 0x44].try_into().unwrap()) == 0xAD76
+        {
+            self.flow.wait = cnt.wrapping_add(1);
+        }
+        // The mode 0x18 while the game task is still alive (G.$4CC): the task is inside 0xAC26 (its clear 0xAE0 sleeps in the pass), also in a lag record of a game
+        // clock recording, where the task is not asleep (state 4, 8 or 0xC): the next run goes on without the counting.
+        if self.flow.mode == 0x18 && self.flow.in_game != 0 {
+            self.flow.resume = true;
+            // The pass of 0xAC06 is done in a record that holds it (a lag record of a game clock recording): the rest of 0xAC26, the sleep of its clear, is
+            // 2 vertical blanks away in a recording of a real run (the continue game over of m523_ep1_2p_full 30614 .. 30616, the ending of ep8_mustapha
+            // 68866 .. 68868; the video clock probes show 4 frames: the clear takes less time there), the port's wait counts 4 ticks.
+            if self.flow.cont.exit_wait > 2 {
+                self.flow.cont.exit_wait = 2;
+            }
+        }
+        // The story panel (mode 8, cause S): the part is the sleep's return on the task stack (`Story::part_at_sleep_return`); the
+        // wait loop's counter is G.-$719A (the word at 0x0E66, the frames left). The other parts keep their default counter (not in RAM yet).
+        if self.flow.mode == 8 && self.flow.resume && self.flow.select_exit == 0 {
+            let ret = u32::from_be_bytes(ram[sp + 0x40..sp + 0x44].try_into().unwrap());
+            if let Some(p) = super::flow::cards::Story::part_at_sleep_return(ret) {
+                self.flow.story.part = p;
+                self.sprites.wipe(); // the entry's clear (0xAE0, `flow_attract_clear`) ran before the sleep in the original: no sprites until the next draw
+                if p == super::flow::cards::Story::WAIT_PART {
+                    self.flow.story.counter = u16::from_be_bytes(ram[0x0E66..0x0E68].try_into().unwrap());
+                }
+            }
+        }
         // Slot 3 (0x30): stage intro or stage clear task. Both keep their state in the struct G.$735E (loaded with the globals). The
         // intro task (0xB9BE) is the one while the level runs and the stage is not cleared (game mode 0xC, G.$4D1 = 0); it is taken
         // over with the sleep counter of the snapshot. The clear task (0xB97E) is not (the tally is M2-28).
@@ -2090,7 +2193,11 @@ impl Game {
         for (slot, scene) in [(0, &mut self.flow.front.sys_task), (1, &mut self.flow.join_task)] {
             let (st, cnt) = task(slot);
             *scene = super::flow::scene::Scene::default();
-            if self.flow.in_game != 0 && st != 0 {
+            // The system task (slot 0) lives in the attract mode too: a coin or a start press is seen by it (ep8_mustapha 68890: the start from the ranking
+            // screen after a game over); the join task (slot 1) is the attract task there, whose script position is not in RAM.
+            // In the modes 0x14 and 0x18 the task of the slot 1 is the attract task that the game over has created (0xAC26), not the join task.
+            let attract_slot = slot == 1 && matches!(self.flow.mode, 0x14 | 0x18);
+            if (self.flow.in_game != 0 || slot == 0) && st != 0 && !attract_slot {
                 *scene = super::flow::scene::Scene::start(0);
                 if st == 1 && cnt != 0 {
                     scene.sleep(cnt as u16);
@@ -2156,6 +2263,21 @@ impl Game {
                 let b = self.body(h);
                 let (f28, f30, l28, l30) = (b.frame, b.frame2, b.frame_loads, b.frame2_loads);
                 // shown as 0 until the object loads a new frame (the load counts of now, see `Unmapped`)
+                self.trace_unmapped.insert(obj(h) + 0x28, (f28, 0, l28));
+                self.trace_unmapped.insert(obj(h) + 0x30, (f30, 0, l30));
+            }
+        }
+    }
+
+    /// Trace side of a pool init that clears every slot (0x4C48 pool A, 0x4C76 pool B, 0x4CA4 pool C: the area start 0xAA0E, the continue 0xEF30 for pool C):
+    /// as `trace_ram_cleared`, for the given pools. A later object of such a slot shows the null pointer until it loads a frame, as the original's RAM
+    /// does (a lagsync run after a continue or an area change: ep8_mess 38583, a spark in a slot the continue had cleared).
+    pub fn trace_pools_cleared(&mut self, pools: &[(crate::game::Handle, u16, usize)]) {
+        for &(base, stride, n) in pools {
+            for i in 0..n {
+                let h = base + stride * i as u16;
+                let b = self.body(h);
+                let (f28, f30, l28, l30) = (b.frame, b.frame2, b.frame_loads, b.frame2_loads);
                 self.trace_unmapped.insert(obj(h) + 0x28, (f28, 0, l28));
                 self.trace_unmapped.insert(obj(h) + 0x30, (f30, 0, l30));
             }

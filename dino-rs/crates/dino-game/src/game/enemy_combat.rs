@@ -4,7 +4,6 @@
 use super::body::Body;
 use super::enemy::{Enemy, off::*};
 use super::{Game, Handle, Slot, collide, slot_of};
-use dino_assets::HitBox;
 
 /// Hit reaction tables.
 mod th {
@@ -80,10 +79,10 @@ impl Game {
         }
         if rec.sound != 0 {
             // 0x10F7C jsr 0x962A: the pan from a2 (the attack object), the mode from +$24 of a6, which is the partner after
-            // 0x10F6E and otherwise a register left from before the pass (the attack object's facing stands in, as at the other sites)
+            // 0x10F6E and otherwise the box record of the box test (0x10E5E)
             let ax = self.body(a).xi();
-            let facing = if paired { self.body(ab.partner).facing } else { self.body(a).facing };
-            self.snd_hit(rec.sound, ax, facing);
+            let a6 = if paired { Game::snd_a6_obj(ab.partner) } else { self.snd_a6_128f8(&ab, &db, db.body_box, &hb) };
+            self.snd_hit(rec.sound, ax, self.snd_a6_byte(a6));
         }
         self.spawn_hit_spark(a, d, ha, hb, rec.spark); // 0x12720
         self.player_power_factor(i); // 0x11738, the only RNG call in this pass
@@ -128,10 +127,12 @@ impl Game {
         if hero && self.enemies.slots[di].m.b(B87) != 0 && ab.kind != 6
             && !matches!(self.player_action(a), 0x12 | 0x13)
             && self.enemy_monster_guard(a, di) {
-            // 0x11CB6 -> 0x96CE: alternate the block sound.
+            // 0x11CB6 -> 0x96CE: alternate the block sound; d1 = the pan byte of a6's X (the monster: `movea.l a3,a6` before the guard
+            // call, 0x11B7E), d2 = 0.
             let old = self.w.snd_toggle & 2 != 0;
             self.w.snd_toggle ^= 2;
-            self.sound(if old { 0x65 } else { 0xE4 });
+            let pan = self.snd_pan_x(self.body(d).xi()) as u32;
+            self.sound_ex(if old { 0x65 } else { 0xE4 }, pan, 0);
             self.spawn_hit_spark(a, d, ha, hb, 2);
             return;
         }
@@ -168,8 +169,12 @@ impl Game {
             let p = ab.partner;
             if p != 0 { self.body_mut(p).hitstop = rec.hit_stop; }
         }
-        // 0x11C0A: a6 holds the table address 0x11CC4 here (0x11BEC), so 0x962A reads the byte 0x11CE8 as the facing: 0.
-        if rec.sound != 0 { self.snd_hit(rec.sound, self.body(a).xi(), 0); }
+        // 0x11C0A / 0x11544: a6 holds the table address 0x11CC4 here (0x11BEC, 0x11524), so 0x962A reads the byte 0x11CE8; 0x11488: the
+        // same (0x1144C), or the partner +$70 when the attack object's +$A0 is 0x202 or 0x203 (0x1147A).
+        if rec.sound != 0 {
+            let a6 = if !hero && !nonlethal && matches!(self.player_move_word(a), 0x202 | 0x203) { Game::snd_a6_obj(ab.partner) } else { 0x11CC4 };
+            self.snd_hit(rec.sound, self.body(a).xi(), self.snd_a6_byte(a6));
+        }
         self.enemy_hit_score(ab.who, rec.score);
         self.spawn_hit_spark(a, d, ha, hb, rec.spark);
         if hero && counter {
@@ -314,94 +319,17 @@ impl Game {
                 e.b.step = 0;
                 e.b.hitstop = rec.hit_stop; // the monster's hit-stop is unchanged
                 e.b.b9a = rec.b7;
-                // 0x11F60: jsr 0x962A. a6 is not set by pass 0x11E56 (left pointing into collision
-                // boxes in ROM by 0x128F8): 0x128F8 leaves a6 = ($44(a3) + 12*d1) advanced by the
-                // six (a6)+ reads at 0x1293C / 0x12944 / 0x12966 / 0x12968 / 0x1298E / 0x12996
-                // (or the multi-box variants at 0x129A8 / 0x12A5C / 0x12B0E). 0x962A tests +$24(a6)
-                // for mode 3 vs mode 4.
+                // 0x11F60: jsr 0x962A. a6 is not set by pass 0x11E56: it is the box record that 0x128F8 stepped to
+                // (`snd_a6_128f8`), and 0x962A tests its +$24 for mode 3 vs mode 4.
                 if rec.sound != 0 {
-                    let a6 = self.a6_at_128f8_hit(&ab, &db, db.body_box, &hb);
-                    let a6_byte = self.rom_u8(a6.wrapping_add(0x24));
-                    self.snd_hit(rec.sound, self.body(a).xi(), a6_byte);
+                    let a6 = self.snd_a6_128f8(&ab, &db, db.body_box, &hb);
+                    self.snd_hit(rec.sound, self.body(a).xi(), self.snd_a6_byte(a6));
                 }
                 self.spawn_hit_spark(a, d, ha, hb, rec.spark);
                 self.body_mut(d).facing = ab.facing ^ 1;
                 self.enemy_monster_part_hit(di);
             }
         }
-    }
-
-    /// 0x128F8: computes the address a6 holds when 0x128F8 returns with hit (carry set).
-    /// - 0x12916 (neither has multi_box):
-    ///   a6 = table + 12 * ib + 12 (6 words read with (a6)+ at 0x1293C, 0x12944, 0x12966, 0x12968, 0x1298E, 0x12996)
-    /// - 0x129A8 (attacker single, defender multi):
-    ///   a6 = subtable + 2 + 12 * match_index (a6 advanced by (a6)+ for count at 0x129C4, then 12 per miss)
-    /// - 0x12A5C (attacker multi, defender single):
-    ///   a6 = table + 12 * ib (no post-increments of a6)
-    /// - 0x12B0E (both multi):
-    ///   a6 = subtable + 2 (restored from stack at 0x12BBC)
-    fn a6_at_128f8_hit(&self, ab: &Body, db: &Body, ib: u8, hb: &HitBox) -> u32 {
-        let table = db.box_table & 0xFF_FFFF;
-        match (ab.multi_box, db.multi_box) {
-            (false, false) => {
-                // 0x12916: a6 = table + 12 * d1 + 12
-                table.wrapping_add(12 * ib as u32).wrapping_add(12)
-            }
-            (false, true) => {
-                // 0x129A8: a6 = subtable + 2 + 12 * match_index
-                let sub_offset = self.rom_i16(table.wrapping_add(2 * ib as u32)) as i32 as u32;
-                let subtable = table.wrapping_add(sub_offset);
-                let boxes = self.assets.sprites.hitboxes.multi(table, ib);
-                let match_index = boxes.iter().position(|b| b == hb).unwrap_or(0) as u32;
-                subtable.wrapping_add(2).wrapping_add(12 * match_index)
-            }
-            (true, false) => {
-                // 0x12A5C: a6 = table + 12 * d1
-                table.wrapping_add(12 * ib as u32)
-            }
-            (true, true) => {
-                // 0x12B0E: a6 = subtable + 2
-                let sub_offset = self.rom_i16(table.wrapping_add(2 * ib as u32)) as i32 as u32;
-                let subtable = table.wrapping_add(sub_offset);
-                subtable.wrapping_add(2)
-            }
-        }
-    }
-
-    /// Read a single byte from ROM assets (sprites hitbox region, or fallback blobs).
-    fn rom_u8(&self, addr: u32) -> u8 {
-        let addr = addr & 0xFF_FFFF;
-        let bank = &self.assets.sprites.hitboxes;
-        if addr >= bank.base {
-            let offset = (addr - bank.base) as usize;
-            let word_idx = offset / 2;
-            if let Some(&w) = bank.words.get(word_idx) {
-                let w = w as u16;
-                return if offset % 2 == 0 {
-                    (w >> 8) as u8
-                } else {
-                    (w & 0xFF) as u8
-                };
-            }
-        }
-        for (start, data) in &self.assets.enemy.t.blobs {
-            if addr >= *start && ((addr - start) as usize) < data.len() {
-                return data[(addr - start) as usize];
-            }
-        }
-        for (start, data) in &self.assets.text.blobs {
-            if addr >= *start && ((addr - start) as usize) < data.len() {
-                return data[(addr - start) as usize];
-            }
-        }
-        0
-    }
-
-    /// Big-endian 16-bit word from ROM assets.
-    fn rom_i16(&self, addr: u32) -> i16 {
-        let b0 = self.rom_u8(addr);
-        let b1 = self.rom_u8(addr.wrapping_add(1));
-        i16::from_be_bytes([b0, b1])
     }
 
     /// 0x1128E: a hit on a multipart Tyrog piece makes each matching sibling unhittable.
@@ -467,8 +395,9 @@ impl Game {
         }
         self.players[i].b.hitstop = r.hit_stop;
         if r.sound != 0 {
-            let (ax, vf) = (self.body(a2).xi(), self.body(a2).facing);
-            self.snd_hit(r.sound, ax, vf); // 0x962A
+            // 0x11A6E: a6 is the box record of the box test (0x11A06)
+            let (ax, a6) = (self.body(a2).xi(), self.snd_a6_128f8(&ab, &ib, ib.body_box, &hb));
+            self.snd_hit(r.sound, ax, self.snd_a6_byte(a6)); // 0x962A
         }
         self.player_add_score(i, r.score); // 0xFFC8
         self.items.slots[j].b.b9a = r.b7;
@@ -526,8 +455,9 @@ impl Game {
         v.b9a = rec.spark;
         self.body_mut(a2).hitstop = rec.hit_stop;
         if rec.sound != 0 {
-            let (ax, vf) = (self.body(a2).xi(), self.body(a2).facing);
-            self.snd_hit(rec.sound, ax, vf); // 0x962A
+            // 0x1193E: a6 is the box record of the box test (0x118D2)
+            let (ax, a6) = (self.body(a2).xi(), self.snd_a6_128f8(&ab, &db, db.body_box, &hb));
+            self.snd_hit(rec.sound, ax, self.snd_a6_byte(a6)); // 0x962A
         }
         self.spawn_hit_spark(a2, a3, ha, hb, 0); // 0x12720 (before the victim turns, 0x11950)
         self.body_mut(a3).facing = (ab.vx < 0) as u8;
@@ -589,7 +519,9 @@ impl Game {
         let ch = if (ab.who as i8) >= 0 { ab.id as usize & 3 } else { 0 };
         let id = ab.atk;
         if id == 0x6E || id == 0x6C {
-            return self.enemy_hit_nonlethal(a, d, ch, id);
+            // 0x11200: a6 is the enemy after the guard call (`movea.l a3,a6`, 0x11066), else the box record of the box test (0x1101C)
+            let a6 = if guard { Game::snd_a6_obj(d) } else { self.snd_a6_128f8(&ab, &db, db.body_box, &hb) };
+            return self.enemy_hit_nonlethal(a, d, ch, id, a6);
         }
         let r = self.assets.sprites.player_attacks[ch][(id / 2) as usize];
         let mut dmg = r.damage as u8 as u32;
@@ -615,8 +547,11 @@ impl Game {
             }
         }
         if r.sound != 0 {
-            let (ax, vf) = (self.body(a).xi(), self.body(a).facing);
-            self.snd_hit(r.sound, ax, vf); // 0x962A
+            // 0x11132: a6 is the partner +$70 when +$A0 is 0x202 or 0x203 (0x11124), else the last table of the damage routine 0x2BA2A
+            // (`lea $2BC4E(pc),a6`, 0x2BB08)
+            let a6 = if w == 0x202 || w == 0x203 { Game::snd_a6_obj(self.body(a).partner) } else { 0x2BC4E };
+            let ax = self.body(a).xi();
+            self.snd_hit(r.sound, ax, self.snd_a6_byte(a6)); // 0x962A
         }
         if (ab.who as i8) >= 0 {
             self.enemy_hit_score(ab.who, r.score);
@@ -637,7 +572,7 @@ impl Game {
     }
 
     /// 0x111C6: attack ids 0x6E / 0x6C (player specials): signed damage, HP floor 1.
-    fn enemy_hit_nonlethal(&mut self, a: Handle, d: Handle, ch: usize, id: u8) {
+    fn enemy_hit_nonlethal(&mut self, a: Handle, d: Handle, ch: usize, id: u8, a6: u32) {
         let Some(Slot::Enemy(ei)) = slot_of(d) else { return };
         let r = self.assets.sprites.player_attacks[ch][(id / 2) as usize];
         let ab = self.body(a).clone();
@@ -650,8 +585,8 @@ impl Game {
         e.b.step = 0;
         e.b.hitstop = r.hit_stop;
         if r.sound != 0 {
-            let (ax, vf) = (self.body(a).xi(), self.body(a).facing);
-            self.snd_hit(r.sound, ax, vf); // 0x962A
+            let (ax, a6_24) = (self.body(a).xi(), self.snd_a6_byte(a6));
+            self.snd_hit(r.sound, ax, a6_24); // 0x962A
         }
         if (ab.who as i8) >= 0 {
             self.enemy_hit_score(ab.who, r.score);
@@ -685,11 +620,15 @@ impl Game {
         }
     }
 
-    /// Player +$C8 action class of a player attacker.
+    /// `$C8(a2)` of an attacker (0x11042 / 0x1104C, 0x109E8, 0x11B5E): a player's action class. A pool E slot is 0xC0 bytes long, so
+    /// for an item the byte is +$08 of the next slot (the high byte of its X; the last item slot reads pool C slot 0).
     fn player_action(&self, a: Handle) -> u8 {
         match slot_of(a) {
             Some(Slot::Player(i)) => self.players[i].action,
-            Some(Slot::Item(i)) => self.items.slots[i].m.b(0xC8),
+            Some(Slot::Item(_)) => {
+                let next = a.wrapping_add(0xC0);
+                if slot_of(next).is_some() { (self.body(next).xi() as u16 >> 8) as u8 } else { 0 }
+            }
             _ => 0,
         }
     }
@@ -1866,7 +1805,7 @@ mod tests {
 #[cfg(test)]
 mod monster_tests {
     use super::*;
-    use dino_assets::{AssetPack, AttackRecord, HitBoxBank};
+    use dino_assets::{AssetPack, AttackRecord, HitBox, HitBoxBank};
 
     fn game() -> Game {
         // Synthetic tables deliberately use different values from the game data.
@@ -1952,20 +1891,20 @@ mod monster_tests {
         let hb = HitBox::default();
 
         // 1. Single vs single (0x12916): a6 = table + 12 * ib + 12
-        assert_eq!(g.a6_at_128f8_hit(&ab, &db, 1, &hb), 0x100000 + 12 * 1 + 12);
-        assert_eq!(g.a6_at_128f8_hit(&ab, &db, 5, &hb), 0x100000 + 12 * 5 + 12);
+        assert_eq!(g.snd_a6_128f8(&ab, &db, 1, &hb), 0x100000 + 12 * 1 + 12);
+        assert_eq!(g.snd_a6_128f8(&ab, &db, 5, &hb), 0x100000 + 12 * 5 + 12);
 
         // 2. Multi vs single (0x12A5C): a6 = table + 12 * ib
         let mut ab_multi = ab.clone();
         ab_multi.multi_box = true;
-        assert_eq!(g.a6_at_128f8_hit(&ab_multi, &db, 2, &hb), 0x100000 + 12 * 2);
+        assert_eq!(g.snd_a6_128f8(&ab_multi, &db, 2, &hb), 0x100000 + 12 * 2);
 
-        // 3. rom_u8 reads from hitboxes bank or blobs
-        assert_eq!(g.rom_u8(0x100000), 0x12);
-        assert_eq!(g.rom_u8(0x100001), 0x34);
-        assert_eq!(g.rom_u8(0x100002), 0x56);
-        assert_eq!(g.rom_u8(0x100003), 0x78);
-        assert_eq!(g.rom_i16(0x100000), 0x1234);
+        // 3. snd_rom_u8 reads from hitboxes bank or blobs
+        assert_eq!(g.snd_rom_u8(0x100000), 0x12);
+        assert_eq!(g.snd_rom_u8(0x100001), 0x34);
+        assert_eq!(g.snd_rom_u8(0x100002), 0x56);
+        assert_eq!(g.snd_rom_u8(0x100003), 0x78);
+        assert_eq!(g.snd_rom_i16(0x100000), 0x1234);
     }
 
     #[test]
@@ -2258,6 +2197,20 @@ mod attack_object_hero_tests {
         g.combat.push(0x671A, a);
         g.combat.push(0x6718, d);
         (g, a, d)
+    }
+
+    /// `$C8(a2)` of an item attacker (the guard tests 0x11042 / 0x1104C) is past its 0xC0 byte slot: the high byte of the next slot's X
+    /// (+$08); for the last item slot pool C slot 0's (M10-22: an item at X 0x13xx skipped the guard, so the hit sound kept the box record).
+    #[test]
+    fn an_item_attackers_action_byte_is_the_next_slots_x() {
+        let (mut g, a, d) = pair();
+        let next = a.wrapping_add(0xC0);
+        g.body_mut(next).set_xi_keep(0x1312);
+        assert_eq!(g.player_action(a), 0x13);
+        assert_eq!(g.player_action(d), g.players[1].action, "a hero: its own action class");
+        let last = g.items.handle(23);
+        g.effects.slots[0].b.set_xi_keep(0x1240);
+        assert_eq!(g.player_action(last), 0x12, "the last item slot reads pool C slot 0");
     }
 
     #[test]

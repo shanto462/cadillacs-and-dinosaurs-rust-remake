@@ -26,7 +26,7 @@ mod off {
 
 impl Game {
     /// 0x7BEDC: a boss makes its reinforcement controller (class 22, `+$AA` = the boss). `None` when pool B is full
-    /// (carry set, nothing made). The boss inits call it (`placeholder.rs` for Vice).
+    /// (carry set, nothing made). The boss inits call it.
     pub fn boss_spawn_controller(&mut self, boss: Handle) -> Option<Handle> {
         let h = self.spawn_prop(22, 0, None)?;
         if let Some(Slot::Prop(i)) = slot_of(h) {
@@ -41,8 +41,7 @@ impl Game {
     /// an explosion a frame early, M5-22.)
     #[cfg(test)]
     fn boss_is_stage_boss(b: &super::body::Body) -> bool {
-        (b.k20 == 18 * 4 && b.var26 >> 8 == 0)
-            || super::placeholder::spec_of(b.k20 / 4).is_some_and(|s| super::placeholder::boss_of(s, b.var26))
+        b.k20 == 18 * 4 && b.var26 >> 8 == 0
     }
 
     /// The hit code of a boss variant 0 (Butcher's 0x38CC6 is the model: 0x3262A, then 0x32740 and 0xACEE). The hit pass
@@ -62,7 +61,7 @@ impl Game {
         self.enemies.slots[ei] = e;
     }
 
-    /// `boss_hit_entry` on an object the caller holds (an update in progress, see `placeholder.rs`).
+    /// `boss_hit_entry` on an object the caller holds (an update in progress).
     pub(super) fn boss_hit(&mut self, e: &mut Enemy, h: Handle) {
         let hp = e.b.hp;
         self.boss_credit(e);
@@ -72,9 +71,7 @@ impl Game {
         }
         self.boss_clamp_camera(&mut e.b); // 0x32740
         if e.b.hp_prev != 0 {
-            if self.boss_ends_fight(e, h) {
-                self.flow_boss_defeated(h); // 0xACEE
-            }
+            self.flow_boss_defeated(h); // 0xACEE
             e.b.hp_prev = 0; // clr.w $6E
             if e.b.k20 == 18 * 4 { self.hook_a5ea(); } // 0x43884
         }
@@ -128,8 +125,23 @@ impl Game {
                 self.boss_threshold(p);
             }
             4 => self.boss_ctrl_end(p),
-            _ => self.prop_free(p, i),
+            _ => {
+                self.boss_ctrl_stale_pointers(p);
+                self.prop_free(p, i)
+            }
         }
+    }
+
+    /// The free 0x4938 clears only +$00 .. +$27 and +$63: the controller's pointers +$A0 (the timed record) and +$A4 (the threshold group) stay in the
+    /// slot as longs, which the next object of the slot may overwrite only later (ep8_hannah 66415: the dialogue prop starts with them in +$A0 .. +$A3). The
+    /// port keeps list indexes there; the same conversion as `Prop::trace_visit` writes the pointers back when the slot is freed.
+    fn boss_ctrl_stale_pointers(&mut self, p: &mut Prop) {
+        let Some(l) = self.assets.boss.stages.get(self.w.stage as usize) else { return };
+        let t = l.timed_addr + 16 * p.m.w(off::TIMED) as u32;
+        let (g, r) = (p.m.w(off::GROUP) as usize, p.m.w(off::REC) as usize);
+        let group = if p.m.b(off::DONE) != 0 { super::trace::wave_ptr(&l.groups, g, 0, 0) + 6 } else { super::trace::wave_ptr(&l.groups, g, r, p.b.sub) };
+        p.m.sl(off::TIMED, t);
+        p.m.sl(off::GROUP, group);
     }
 
     /// 0x7BF0A: the lists of the stage (G.$4D9), timers cleared.
@@ -394,7 +406,7 @@ mod tests {
         e.b.hp = hp;
         e.b.hp_prev = 44;
         e.b.who = 1;
-        e.b.k20 = 18 * 4; // a placeholder boss: class 18 variant 0 (Vice)
+        e.b.k20 = 18 * 4; // a stage boss: class 18 variant 0 (Vice)
         i
     }
     /// A game with the user's ROM (`../../../dino.zip`, the defeat reads the text table of the music fade). None when the

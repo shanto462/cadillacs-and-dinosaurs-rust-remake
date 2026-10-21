@@ -29,12 +29,12 @@ impl Game {
             0 => {
                 b.mode += 2;
                 b.visible = 1;
-                fx_load(b, fx, fx.frame_at(SPLASH)); // jsr 0x1236
+                fx_load_sprite_frame(b, fx, fx.frame_at(SPLASH)); // jsr 0x1236: the extra bytes too
             }
             2 => {}
             _ => return self.fx_free(i), // 0x94304
         }
-        if fx_tick(&mut self.effects.slots[i].b, fx) {
+        if fx_tick_sprite_frame(&mut self.effects.slots[i].b, fx) { // jsr 0x121E
             self.effects.slots[i].b.mode += 2;
         } else {
             self.draw_list_add_if_visible(h);

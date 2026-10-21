@@ -415,6 +415,7 @@ impl Game {
         let Some((ha, hb)) = self.prop_box_hit(&ab, pb) else {
             return;
         };
+        let a6 = self.snd_a6_128f8(&ab, pb, pb.body_box, &hb); // 0x10D4A: the box test leaves a6 on the box record
         // 0x10D78: the record of the player's attack, 8 bytes at 0xA26FC[character] + +$58 * 4.
         let ch = (ab.k20 / 4) as usize & 3;
         let r = self.assets.sprites.player_attacks[ch].get((ab.atk / 2) as usize).copied().unwrap_or_default();
@@ -433,8 +434,8 @@ impl Game {
         }
         self.players[i].b.hitstop = r.hit_stop;
         if r.sound != 0 {
-            let (ax, vf) = (self.body(a2).xi(), self.body(a2).facing);
-            self.snd_hit(r.sound, ax, vf); // 0x962A
+            let (ax, a6_24) = (self.body(a2).xi(), self.snd_a6_byte(a6));
+            self.snd_hit(r.sound, ax, a6_24); // 0x10DB0 -> 0x962A
         }
         self.player_add_score(i, r.score); // 0xFFC8
         self.spawn_hit_spark(a2, a3, ha, hb, r.spark); // 0x12720 (bra)
