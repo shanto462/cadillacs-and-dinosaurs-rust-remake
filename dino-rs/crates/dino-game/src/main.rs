@@ -494,6 +494,10 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
     let mut inputs = input::Inputs::new();
     let mut hero_watch = HeroWatch::default();
     let mut game = start_game(assets, &mut args, config.clone());
+    // the start's requests (queued before the first tick) reach the sound side once, before the loop (audio.rs `feed_queued`)
+    if let Some(a) = &mut audio {
+        a.feed_queued(&mut game);
+    }
     // The test menu (`menu.rs`): open at start with `--test`, F1 opens and closes it with the debug keys on. No menu in viewer runs.
     let mut menu = menu::Menu::new(args.chars[0], args.chars.len() as u8, args.test);
     let mut tick_no = 0u32;
@@ -544,6 +548,9 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
                         let (next, goto) = enter_target(assets, &config, j.episode - 1, j.area, j.camx, &menu.chars());
                         game = next;
                         args.goto = goto;
+                        if let Some(a) = &mut audio {
+                            a.feed_queued(&mut game); // the new start's music at once (the first tick would clear it)
+                        }
                         menu.open = false;
                     }
                     menu::Enter::God => args.debug.toggle_god(&game),
@@ -557,9 +564,9 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
         }
         let paused = (menu.open && menu_ok) || user_paused;
         if menu.open && menu_ok {
-            // the game stands still; the sound keeps running at the frame rate (no game tick, no requests)
+            // the game stands still; the sound keeps running at the frame rate (no game tick, no new requests)
             if let Some(a) = &mut audio {
-                a.frame(&mut game);
+                a.idle_frame();
             }
         }
 

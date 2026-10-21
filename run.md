@@ -62,6 +62,8 @@ The menu is a dark box over the game. The game is paused while it is open.
 
 The menu lines: the jump points grouped by episode, then `Options` with `Hero: Jack`, `Players: 1` and `God mode: off`.
 
+After a jump (the menu or `--jump`), the music of the new start plays at once; the menu pause keeps the sound running without starting new requests.
+
 Debug keys (with `--debug-keys` or `--test`):
 
     F1 menu  F2 kill all  F3 skip wave  F4 time 5:00  F5 god  F6 next area

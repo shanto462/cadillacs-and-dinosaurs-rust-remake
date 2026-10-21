@@ -68,6 +68,26 @@ impl<'a> Feed<'a> {
         self.driver.command(code, d1, d2);
     }
 
+    /// The requests already queued in the game (a start's, queued before its first tick): all are fed to the driver, one
+    /// frame of the sound side runs, then the game's list is cleared (the game logic never reads it; it is an output queue).
+    /// Returns the codes fed, oldest first. A jump start needs this, because the first tick clears the list.
+    pub fn feed_queued(&mut self, game: &mut Game, out: &mut Vec<f32>) -> Vec<u16> {
+        let reqs = game.snd_feed_requests();
+        for r in &reqs {
+            self.request(r.code, r.d1, r.d2);
+        }
+        game.snd_take_requests();
+        out.clear();
+        self.run_frame(out);
+        reqs.iter().map(|r| r.code).collect()
+    }
+
+    /// One frame of the sound side with no new requests (the test menu's pause): the driver sends what it still holds.
+    pub fn idle_frame(&mut self, out: &mut Vec<f32>) {
+        out.clear();
+        self.run_frame(out);
+    }
+
     /// One video frame: the vblank flush (one queued request reaches the Z80), then the ticks of this frame. The writes
     /// of each tick reach the mixer before the samples of that tick are rendered. Appends the samples to `out`.
     pub fn run_frame(&mut self, out: &mut Vec<f32>) {
@@ -286,6 +306,19 @@ impl<'a> Audio<'a> {
     /// Call once per video frame, after `game.tick()`. Reads the game's requests and never changes the game.
     pub fn frame(&mut self, game: &mut Game) {
         feed_frame(&mut self.feed, game, &mut self.samples);
+        self.out.push(&self.samples);
+    }
+
+    /// The start's requests of a new game (queued before its first tick): call once after the game starts, a menu jump
+    /// included. See `Feed::feed_queued`.
+    pub fn feed_queued(&mut self, game: &mut Game) {
+        self.feed.feed_queued(game, &mut self.samples);
+        self.out.push(&self.samples);
+    }
+
+    /// The test menu's pause: one frame of the sound side with no requests (the game does not tick there).
+    pub fn idle_frame(&mut self) {
+        self.feed.idle_frame(&mut self.samples);
         self.out.push(&self.samples);
     }
 
@@ -532,5 +565,61 @@ mod tests {
                 assert!(*loud * 2 > *frames, "{name}: sound in only {loud} of {frames} frames");
             }
         }
+    }
+
+    /// Every jump point (`jumps.rs`) starts with its music: the start's requests reach the sound side at once (`feed_queued`),
+    /// a music code (0x01 .. 0x26) is fed in the first 120 frames and the mix is audible there (peak above 1e-3).
+    #[test]
+    fn every_jump_point_starts_its_music_at_once() {
+        let Some(assets) = rom() else {
+            eprintln!("skipped: no dino.zip");
+            return;
+        };
+        let config = Config::default();
+        for j in crate::jumps::JUMPS {
+            let (mut game, _) = crate::enter_target(assets, &config, j.episode - 1, j.area, j.camx, &[0]);
+            let mut feed = Feed::new(&assets.sound, config.qsound);
+            let mut samples = Vec::new();
+            let mut codes: Vec<u16> = feed.feed_queued(&mut game, &mut samples);
+            let mut peak = samples.iter().fold(0.0f32, |p, &x| p.max(x.abs()));
+            for _ in 0..120 {
+                game.tick();
+                codes.extend(game.snd_feed_requests().iter().map(|r| r.code));
+                feed_frame(&mut feed, &mut game, &mut samples);
+                peak = samples.iter().fold(peak, |p, &x| p.max(x.abs()));
+            }
+            let music: Vec<u16> = codes.iter().copied().filter(|c| (0x01..=0x26).contains(c)).collect();
+            eprintln!("{}: music codes fed {:x?}, peak {peak:.3}", j.name, music);
+            assert!(!music.is_empty(), "{}: no music code fed (codes {codes:x?})", j.name);
+            assert!(peak > 1e-3, "{}: silent in the first 120 frames (peak {peak})", j.name);
+        }
+    }
+
+    /// The test menu's pause feeds no new requests: after a tick that queued some, idle frames are the same as the idle frames
+    /// of a game that did not tick.
+    #[test]
+    fn menu_pause_feeds_no_new_requests() {
+        let Some(assets) = rom() else {
+            eprintln!("skipped: no dino.zip");
+            return;
+        };
+        let config = Config::default();
+        let j = &crate::jumps::JUMPS[0];
+        let idle_after = |ticks: u32| -> Vec<f32> {
+            let (mut game, _) = crate::enter_target(assets, &config, j.episode - 1, j.area, j.camx, &[0]);
+            let mut feed = Feed::new(&assets.sound, config.qsound);
+            let mut samples = Vec::new();
+            feed.feed_queued(&mut game, &mut samples);
+            for _ in 0..ticks {
+                game.tick(); // queues this tick's requests; the pause must not feed them
+            }
+            let mut out = Vec::new();
+            for _ in 0..3 {
+                feed.idle_frame(&mut out);
+                samples.extend_from_slice(&out);
+            }
+            samples
+        };
+        assert_eq!(idle_after(1), idle_after(0), "the idle frames fed requests of a tick");
     }
 }
