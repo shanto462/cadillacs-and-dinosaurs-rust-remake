@@ -332,22 +332,16 @@ ep8_mess.step: sound.39.d1 51795-51795	# R6
 # over recordings m523_ep1_2p_full / m523_ep1_3pjhm_full, and the probe recordings m1020_* (join, continue, game over, name entry in Episodes 1, 3 and 7). m10_check.sh sets
 # DINO_GAME_CLOCK=1: all of them are game clock recordings (a record per finished game frame), so the port joins the ticks of its own lags into one record.
 # Results: lagsync is equal for every record of ep5_* (3), ep8_hannah, m523_* (2), m1020_* (14) and m1019_* (8); run is equal up to the first MAME lag record of each recording.
-#  X  Step mode, the exit of the game over (0xAC06 / 0xAC26): the port counts its wait for the end of the clear (`Flow::cont.exit_wait`) itself; the step loader does not carry it, so
-#     the sprite buffer is wiped 1 record late (3 records, sprites only). In lagsync the loader sets the wait of a loaded game over (2 vertical blanks away).
+#  X  (gone, Task 25) Step mode, the exit of the game over (0xAC06 / 0xAC26): the port counts its wait for the end of the clear (`Flow::cont.exit_wait`) itself, and the
+#     sprite buffer was wiped 1 record late (3 records, sprites only). A loaded snapshot whose shown sprite buffer is blank (the clear 0xAE0) now drops the port's built list
+#     too (harness.rs `load_regions`, Task 23), so the step run shows the wipe in MAME's record; the 8 rules of this section are gone (the m21c_* rules below are not checked
+#     here: their traces were not in the worktree).
 #  A2 (gone) Step mode, the game over to the new game (ep8_mustapha, ep8_mess): the start from the attract, the fade out in the system task (0x87BA from 0x9D16E), the sleep
 #     0xA76 after it, the select setup and the level start. The step loader now takes the position of the system task from the sleep returns on its stack (0x881C / 0x9D174 and
 #     0xA98 / 0x9D17A, `trace_load_tasks`), and the game task not yet created (G.$4CC set, slot 2 empty): `game_pending`, the fade, the wait for the clear 0xAE0.
 #  N  (gone) The first columns of scroll2 and scroll3 of the new game's Episode 1 level start were drawn 1 record late in lagsync mode: the port's clear 0xAE0 of the game start
 #     was still being counted out (`front.clear_stage`) and cleared the columns that the lag record (6 vertical blanks) had drawn; a game clock load now ends it.
 # ep5_hannah 57870 and ep5_mess 45375 (step) are the K records of the section above (codex, M10-11): no rule of this section.
-m523_ep1_2p_full.step: sprites 30613-30616	# X
-m523_ep1_3pjhm_full.step: sprites 33745-33748	# X
-m1020_e1a1_gameover.step: sprites 1973-1976	# X
-m1020_e1a1_gameover_name.step: sprites 2429-2432	# X
-m1020_e3a0_gameover.step: sprites 2031-2034	# X
-m1020_e3a0_gameover_name.step: sprites 2429-2432	# X
-m1020_e7a0_gameover.step: sprites 2031-2034	# X
-m1020_e7a0_gameover_name.step: sprites 2429-2432	# X
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # M10-21 settings variants. Report: re/harness/m10-21-report.md. Power traces use mode boot here.
