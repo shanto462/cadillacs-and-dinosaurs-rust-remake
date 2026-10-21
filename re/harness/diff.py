@@ -102,29 +102,51 @@ class Allow:
         self.cells = []
         # `rect scroll1 COL0 COL1 ROW0 ROW1`: the cells of scroll1 in these columns and rows (cell index = column * 32 + row) are not compared
         self.rects = []
+        # `--used`: the line numbers (1-based) of the rules that allowed a difference; a difference counts for the first rule that matches it
+        self.used = set()
         if not path:
             return
         with open(path) as f:
-            for line in f:
+            for no, line in enumerate(f, 1):
                 line = line.split("#")[0].strip()
                 if not line:
                     continue
                 parts = line.split()
                 if parts[0] == "rect" and len(parts) == 6:
-                    self.rects.append((parts[1], *[int(x, 0) for x in parts[2:]]))
+                    self.rects.append((parts[1], *[int(x, 0) for x in parts[2:]], no))
                     continue
                 if parts[0] == "cell" and len(parts) == 4:
-                    self.cells.append((parts[1], int(parts[2], 16), int(parts[3], 16)))
+                    self.cells.append((parts[1], int(parts[2], 16), int(parts[3], 16), no))
                     continue
                 lo, hi = -1, 1 << 30
                 if len(parts) > 1:
                     a, _, b = parts[1].partition("-")
                     lo = int(a)
                     hi = int(b) if b else lo
-                self.rules.append((parts[0], lo, hi))
+                self.rules.append((parts[0], lo, hi, no))
 
     def ok(self, key, frame):
-        return any(fnmatch.fnmatchcase(key, p) and lo <= frame <= hi for p, lo, hi in self.rules)
+        for p, lo, hi, no in self.rules:
+            if fnmatch.fnmatchcase(key, p) and lo <= frame <= hi:
+                self.used.add(no)
+                return True
+        return False
+
+    def rect_of(self, name, c):
+        """The first `rect` rule that covers cell `c` of layer `name` (marked used), or None."""
+        for n, c0, c1, r0, r1, no in self.rects:
+            if n == name and c0 <= c // 32 <= c1 and r0 <= c % 32 <= r1:
+                self.used.add(no)
+                return no
+        return None
+
+    def cell_of(self, name, mv, pv):
+        """The first `cell` rule for this pair of values in layer `name` (marked used), or None."""
+        for n, a, b, no in self.cells:
+            if n == name and a == mv and b == pv:
+                self.used.add(no)
+                return no
+        return None
 
 
 LAYERS = [("scroll1", 0x8000), ("scroll2", 0xC000), ("scroll3", 0x10000)]
@@ -173,6 +195,7 @@ def main():
     ap.add_argument("--lag-jumps", action="store_true", help="step mode: leave out the catch-up records too (an unflagged record whose G.$0 jumps by 2 to 0x100, after a lag record); lagsync always does")
     ap.add_argument("--frame-list", action="store_true", help="print every differing frame with its number of differing items (M6-17)")
     ap.add_argument("--at", type=int, action="append", default=[], help="list every difference at this frame (repeatable)")
+    ap.add_argument("--used", help="write the line numbers of the allow rules that allowed a difference to this file (`unused_rules.py`)")
     ap.add_argument("--rom-image", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "out", "dino_68k.bin"),
                     help="68000 program image, only used to print handler addresses (optional)")
     args = ap.parse_args()
@@ -325,7 +348,7 @@ def main():
             if len(d) and allow.rects:
                 cells_d = np.unique(d // 4)
                 keep = [4 * int(c) + k for c in cells_d
-                        if not any(n == name and c0 <= c // 32 <= c1 and r0 <= c % 32 <= r1 for n, c0, c1, r0, r1 in allow.rects)
+                        if allow.rect_of(name, int(c)) is None
                         for k in range(4)]
                 d = np.array(keep, dtype=d.dtype)
             if len(d) and allow.cells:
@@ -337,7 +360,7 @@ def main():
                 for c in cells_d:
                     mv = (int(mw[4 * c]) << 24) | (int(mw[4 * c + 1]) << 16) | (int(mw[4 * c + 2]) << 8) | int(mw[4 * c + 3])
                     pv = (int(pw[4 * c]) << 24) | (int(pw[4 * c + 1]) << 16) | (int(pw[4 * c + 2]) << 8) | int(pw[4 * c + 3])
-                    if not any(n == name and a == mv and b == pv for n, a, b in allow.cells):
+                    if allow.cell_of(name, mv, pv) is None:
                         keep.extend(range(4 * int(c), 4 * int(c) + 4))
                 d = np.array(keep, dtype=d.dtype)
             if len(d):
@@ -596,6 +619,9 @@ def main():
     print(f"\nSUMMARY: {len(per_field)} fields and {len(vids)} video/sound items differ; first difference at frame {first_frame}")
     print(f"  object fields of ported classes: {n_port} (class, field) pairs; of unported classes: {n_unp}; globals: {n_glob}")
     print("  ported-class and global differences need a cause each; unported-class differences are tasks (the class is not ported)")
+    if args.used:
+        with open(args.used, "w") as fu:
+            fu.write("".join(f"{no}\n" for no in sorted(allow.used)))
     return 0 if first_frame is None else 1
 
 

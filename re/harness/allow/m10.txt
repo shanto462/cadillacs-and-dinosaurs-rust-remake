@@ -54,12 +54,8 @@ global.item_ptr              16448-16458
 global.item_ptr              23019-23029
 global.item_ptr              29553-29563
 global.item_ptr              36124-36134
-global.item_count            3343-3353
 global.item_count            9914-9924
-global.item_count            16448-16458
-global.item_count            23019-23029
 global.item_count            29553-29563
-global.item_count            36124-36134
 global.obst_ptr              3343-3353
 global.obst_ptr              9914-9924
 global.obst_ptr              16448-16458
@@ -72,24 +68,11 @@ global.obst_prev_ptr         16448-16458
 global.obst_prev_ptr         23019-23029
 global.obst_prev_ptr         29553-29563
 global.obst_prev_ptr         36124-36134
-global.obst_prev_count       3343-3353
-global.obst_prev_count       9914-9924
-global.obst_prev_count       16448-16458
-global.obst_prev_count       23019-23029
 global.obst_prev_count       29553-29563
-global.obst_prev_count       36124-36134
-global.obst_slot             3343-3353
 global.obst_slot             9914-9924
 global.obst_slot             16448-16458
-global.obst_slot             23019-23029
 global.obst_slot             29553-29563
-global.obst_slot             36124-36134
 global.next_event            3343-3353
-global.next_event            9914-9924
-global.next_event            16448-16458
-global.next_event            23019-23029
-global.next_event            29553-29563
-global.next_event            36124-36134
 global.spawn_list1           3343-3353
 global.spawn_list1           9914-9924
 global.spawn_list1           16448-16458
@@ -126,13 +109,11 @@ global.attack_serial         16448-16458
 global.attack_serial         23019-23029
 global.attack_serial         29553-29563
 global.attack_serial         36124-36134
-global.shake_sign            3343-3353
 global.shake_sign            9914-9924
 global.shake_sign            16448-16458
 global.shake_sign            23019-23029
 global.shake_sign            29553-29563
 global.shake_sign            36124-36134
-global.shake_timer           3343-3353
 global.shake_timer           9914-9924
 global.shake_timer           16448-16458
 global.shake_timer           23019-23029
@@ -144,47 +125,32 @@ global.hud_*                 16448-16458
 global.hud_*                 23019-23029
 global.hud_*                 29553-29563
 global.hud_*                 36124-36134
-global.hudcur_*              3343-3353
 global.hudcur_*              9914-9924
 global.hudcur_*              16448-16458
 global.hudcur_*              23019-23029
 global.hudcur_*              29553-29563
 global.hudcur_*              36124-36134
-effect.off_x                                 # the leftover speed words of the ranking's clouds (class 0x20, m1.txt rule) until the sweeps, A .. A + 1
-effect.owner60
 
 # 1b. The stage setup 0xA9BE (A + 7): the clock words, the floor base and the car switch G.$77A0 are written one frame later in the
 #     original (the frame ends inside 0xA9BE / 0xAA0E in the runs after the first).
-global.time_min              3350            # 0xA9BE: the port writes them in A + 7, the original in A + 8
 global.time_min              9921
 global.time_min              16455
 global.time_min              23026
 global.time_min              29560
 global.time_min              36131
-global.time_sec              3350
-global.time_sec              9921
-global.time_sec              16455
 global.time_sec              23026
-global.time_sec              29560
 global.time_sec              36131
-global.time_div              3350
 global.time_div              9921
 global.time_div              16455
 global.time_div              23026
 global.time_div              29560
 global.time_div              36131
-global.floor_base            3350
 global.floor_base            9921
 global.floor_base            16455
 global.floor_base            23026
 global.floor_base            29560
 global.floor_base            36131
-global.car_on                3350
-global.car_on                9921
 global.car_on                16455
-global.car_on                23026
-global.car_on                29560
-global.car_on                36131
 
 # 1c. The three hero objects. A + 5: the frame ends inside the third player init 0x4D76 (its who, lives, serial and power come in
 #     A + 6). A + 5 .. A + 9: the setup calls 0x18C88 for each present hero (the box table, the speed table 0x5036, +$78 = 10, the idle
@@ -207,52 +173,25 @@ player.*                     36124-36133
 #     the port's has (G.$670 spawn_init, the 22 hidden scroll3 cells of 0x23090 and the sprite list come one record later).
 scroll1                      3352            # the frame boundary inside the map / the HUD draw (A + 9)
 scroll1                      9923
-scroll1                      16457
-scroll1                      23028
-scroll1                      29562
 scroll1                      36133
-scroll2                      3352
-scroll2                      9923
 scroll2                      16457
 scroll2                      23028
 scroll2                      29562
-scroll2                      36133
-global.aggression            3352
-global.aggression            9923
 global.aggression            16457
 global.aggression            23028
 global.aggression            29562
-global.aggression            36133
-global.level                 3352
-global.level                 9923
 global.level                 16457
 global.level                 23028
 global.level                 29562
-global.level                 36133
-global.rank_freeze           3352
-global.rank_freeze           9923
 global.rank_freeze           16457
 global.rank_freeze           23028
 global.rank_freeze           29562
-global.rank_freeze           36133
 scroll3                      3352-3353       # Episode 3: its first pass ends in A + 11; first runs: see 1e
 scroll3                      9923-9924
-scroll3                      16457-16458
-scroll3                      23028-23029
-scroll3                      29562-29563
-scroll3                      36133-36134
 sprites                      3352-3353
 sprites                      9923-9924
-sprites                      16457-16458
-sprites                      23028-23029
-sprites                      29562-29563
-sprites                      36133-36134
 global.spawn_init            3352-3353
 global.spawn_init            9923-9924
-global.spawn_init            16457-16458
-global.spawn_init            23028-23029
-global.spawn_init            29562-29563
-global.spawn_init            36133-36134
 
 # 1e. The first demo after power on runs its setup one frame ahead in the middle (`demo.rs`): the event, the map header and the camera
 #     are in A + 7 there; the display shadow G.$868 is not copied by the vblank (0x71C) while the setup is busy, so it stays 0 in A + 8.
@@ -263,7 +202,6 @@ global.display_y2            3351-3352          # the first run: G.$868 lags the
 sounds                       3352                # flow_m112-row5: the area music of 0x162AE / 0xA55A one record early
 global.players_minus_one     3352                # flow_m112-row0: the first pass is cut between the second and the third hero
 global.blink_*               3352
-global.spawn_init            3352
 global.cam2_sub              3352
 global.max_x60               3352
 global.max_y62               3352

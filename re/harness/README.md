@@ -1863,7 +1863,17 @@ Allow keys: `sounds` (the record) and `sound.CODE`, `sound.CODE.d1`, `sound.CODE
 ```sh
 re/harness/m10_sound_check.sh        # M10-22: the 30 natural whole runs in step mode (PORT_OUT, default re/out/m10snd), rules: allow/m10_runs.txt (R1 .. R6)
 re/harness/m10_loop_check.sh         # M10-06: the two attract loops from power on: states (allow/m1.txt + allow/m10.txt), heard sounds, pictures
+re/.venv/bin/python -I re/harness/unused_rules.py            # Task 26: the rules of allow/m10_runs.txt that no difference uses (after m10_all.sh)
+re/.venv/bin/python -I re/harness/unused_rules.py --demo     # the same for allow/m10.txt (after m10_demo_check.sh and the two first runs)
 ```
+
+Unused rules (Task 26). `diff.py --used FILE` writes the line numbers of the allow rules that allowed a difference (a difference counts for
+the first rule that matches it, as `Allow.ok`). `unused_rules.py` cuts the rules of `allow/m10_runs.txt` per recording and mode as
+`m10_check.sh` does, runs `diff.py --used` on the port traces of the last run (PORT_OUT, default re/out/port) and lists the rules that no
+difference used; a `*` rule needs the run mode traces too (`MODES=run m10_check.sh NAME:FRAMES`), else it is "not checked". The `.boot`
+rules and the `sound.*` keys (snd_stream.py) are left out. `--demo` checks `allow/m10.txt` in the six demo windows of the loop and the
+window 3343 of `flow_m112-row5` / `-row0` (the port traces: see the script header). `--remove` deletes the unused lines (mark a cause
+"(gone)" by hand when all its rules are gone).
 
 Result (2026-10-21): no sound-only difference in the 30 runs (1,645 hit sounds had the other pan mode before the fix of the a6 that 0x962A
 reads, D5-errata M10-22); what is left is in records whose state differs too (Episodes 4 to 8 and the three player runs: the camera events of

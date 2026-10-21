@@ -252,7 +252,7 @@ ep7_jack.step: * 34860-34860	# K
 # Episode 8 (M10-14, M10-18, desktop opus). Causes of this section (besides K and S above):
 #  C  The record after a catch-up record (G.$0 moved by 2 in the record before, not flagged): the loader starts from the end of a record in which MAME ran two game frames,
 #     so what the screen shows (the sprite list two builds late) is one build apart for one record (the continue return flash, ep8_jack 26332 / 34312), or a task that
-#     sleeps inside itself is restarted one frame apart (the B82 / B81 of the ending, ep8_jack 65753).
+#     sleeps inside itself is restarted one frame apart (the B82 / B81 of the ending, ep8_jack 65753: unused since Task 26, removed with ep8_mess 60049).
 #  E  The ending (mode 0x1C): its routine sleeps inside itself (`flow.ending.cont`, not in RAM) and MAME often runs two game frames in one record (G.$0 + 2 every other record),
 #     so a step or lagsync load in the middle of it starts the port's ending at another point (the master B82 a state ahead, the staff roll text one record apart). The ending
 #     itself is checked in run mode from its own snapshots (m328_end-*: equal to MAME up to the attract loop after it, allow/m3e.txt).
@@ -268,16 +268,12 @@ ep8_jack.*: * 26332-26332	# C
 ep8_jack.step: * 33713-33713	# K
 ep8_jack.*: * 34312-34312	# C
 ep8_jack.*: * 64790-64790	# C
-ep8_jack.step: * 65753-65753	# C
-#  L  One record of the lagsync free run with state that a resync does not restore (README: "free runs drift in state ... stale bytes of free slots"), equal in step
+#  L  (gone, Task 26: both rules unused) One record of the lagsync free run with state that a resync does not restore (README: "free runs drift in state ... stale bytes of free slots"), equal in step
 #     mode and again in the next record: ep8_mess 38583 (the frame word of a pool C slot that MAME freed in that record), 58662 (the pointers of a boss controller
 #     that is made in that record).
 # ep8_mess (70000 records, 1 player, Episode 8, the ending, the game over and the attract loop after it)
 ep8_mess.*: * 18732-18732	# C
-ep8_mess.lagsync: * 38583-38583	# L
-ep8_mess.lagsync: * 58662-58662	# L
 ep8_mess.*: * 59086-59086	# C
-ep8_mess.step: * 60049-60049	# C
 ep8_mess.step: * 64981-64981	# K: the level start's scripted entrance of the new game (MAME 6 game frames in the record, the port 3)
 ep8_mess.step: * 67151-67151	# K: the skip wait (MAME 4 game frames, the port 3); the next record is the lag record 67152
 # ep8_mess: the lagsync rules E (60049-64160) and A (64626-69999) are gone: since M10-19 / M10-20 the loader restores the ending and the attract task and the game clock join
