@@ -350,35 +350,6 @@ impl Game {
         false
     }
 
-    /// Placeholder adapter for 0x52DA2 / 0x52EBE and 0x55822 / 0x38D44.
-    /// Preserves M3-29's short Morgan rebirth and persistent dying bodies.
-    /// Real class replacements call the individual hooks with their own timelines.
-    pub(in crate::game) fn boss_placeholder_dying(
-        &mut self,
-        e: &mut Enemy,
-        h: Handle,
-        boss: crate::game::placeholder::Boss,
-    ) {
-        if e.b.sub == 0 {
-            if boss.score {
-                self.boss_score_hook(e);
-            }
-            e.m.sw(T80, 30); // M3 placeholder blink, not a ROM timeline delay
-            e.b.sub = e.b.sub.wrapping_add(2);
-            if boss.rebirth.is_none() {
-                self.hook_a5ea();
-            }
-        }
-        if let Some(to) = boss.rebirth {
-            let t = e.m.w(T80);
-            if t == 0 {
-                self.enemy_ph_rebirth(e, h, to);
-            } else {
-                e.m.sw(T80, t.wrapping_sub(1));
-            }
-        }
-    }
-
     /// 0x63754: final-form end marker. The hidden body remains allocated so
     /// G.$4E0 and the ending script can keep reading +$A6.
     pub fn boss_ending_body_hook(&mut self, e: &mut Enemy) {

@@ -308,6 +308,9 @@ ep6_3p.*: scroll3 42639-42650	# S
 ep6_3p.*: palette 42639-42650	# S
 ep6_3p.*: sounds 42639-42650	# S
 
-# ep6_3p 27280 to 27284 (the slow motion of the boss death, the game runs every third video frame; the records 27282 is a lag record): OPEN, not explained. The head sprite of a lobbed projectile
-# (item class 8, 0x29EC4; sprite 572F) is drawn 1 pixel right and 5 pixels higher than in MAME and its trail has one element less; no object field differs. Draw only, 4 records.
-ep6_3p.*: sprites 27280-27284	# OPEN
+# ep6_3p 27280 to 27284 (the slow motion of the boss death: the game frame runs every third video frame and the sprite list is built once per game frame; the records 27279 and 27282 are
+# lag records): cause L. The sprite list shown in the two video frames after a lag record is the one the original built in the game frames of that lag record. In step and lagsync mode
+# the port ran one tick for the lag record and was loaded with MAME's state afterwards, but the sprite list it shows until the next game frame is the one that tick built, one game
+# frame behind: the head sprite of the lobbed projectile (item class 8, 0x29EC4; sprite 572F) is 1 pixel left and 5 pixels higher and its trail one animation element behind. No object
+# field differs (the objects are loaded), and in the next game frame (27285) the list is equal again. Harness only, not a game difference (task 14, M9-11).
+ep6_3p.*: sprites 27280-27284	# L
