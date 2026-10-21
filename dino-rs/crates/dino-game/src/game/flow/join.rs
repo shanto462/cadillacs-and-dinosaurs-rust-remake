@@ -289,7 +289,8 @@ impl Game {
             let at = t.u32(0x7E2C, 4 * i as u32);
             // 0x7DF0 uses LSL, so the first big digit is always zero.
             self.text_big(t.slice_from(0x7E34), Some(at), true);
-            self.text_big(t.slice_from(0x7E34 + 6 * (n & 15) as u32), Some(at + 0x100), true);
+            // 0x7E02 / 0x7E1A: 0xCD2 restores a1, so the second digit overwrites the first.
+            self.text_big(t.slice_from(0x7E34 + 6 * (n & 15) as u32), Some(at), true);
         }
     }
 

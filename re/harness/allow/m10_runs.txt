@@ -411,3 +411,405 @@ m1020_e3a0_gameover.step: sprites 2031-2034	# X
 m1020_e3a0_gameover_name.step: sprites 2429-2432	# X
 m1020_e7a0_gameover.step: sprites 2031-2034	# X
 m1020_e7a0_gameover_name.step: sprites 2429-2432	# X
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# M10-21 settings variants. Report: re/harness/m10-21-report.md. Power traces use mode boot here.
+# Q21: CPU-time cuts of the original, not setting differences. The port does not model CPU cycles:
+# 0x980B0 / 0x98B86 can end part way through a palette or title block (319, 680); the title logo task 0x6A20A
+# can run its first update inside that cut (682, common chutes), leaving its splash divider one phase ahead until the clear.
+# 0xA870 -> 0xAD46 starts its game frame across the vblank (788 or 888); 0xAC4E / 0xAA0E crosses two vblanks
+# (1128-1129 or 1228-1229), so the level tilemaps and sprite wipe finish on different samples. Named fields and exact ranges only.
+# U21: 0x81E6 calls 0x81FE, then writes the coin-ratio digit at a1+4 even when 0x81FE returned early because G.$4D5
+# hides prompts. a1 is then a register left by earlier code, not the prompt origin. One hidden-cell write in step/lagsync;
+# lagsync keeps it through record 21; the unsynchronised power run keeps the cell until a later HUD redraw. Coin counts, credit counts and deductions agree.
+# The two-player countdown (0x7E02 / 0x7E1A) and select prompt (0x8274) fixes are verified without allow rules.
+# flow_m21b_diff0
+flow_m21b_diff0.boot: palette 680-680	# Q21
+flow_m21b_diff0.boot: global.frame 788-788	# Q21
+flow_m21b_diff0.boot: global.game_frame 788-788	# Q21
+flow_m21b_diff0.boot: global.splash_timer 789-790	# Q21
+flow_m21b_diff0.boot: global.splash_timer 1128-1129	# Q21
+flow_m21b_diff0.boot: global.game_sub2 789-790	# Q21
+flow_m21b_diff0.boot: sprites 789-792	# Q21
+flow_m21b_diff0.boot: sprites 1128-1129	# Q21
+flow_m21b_diff0.boot: global.splash_phase 1128-1129	# Q21
+flow_m21b_diff0.boot: global.spawn_init 1128-1129	# Q21
+flow_m21b_diff0.boot: global.cam3_state 1128-1129	# Q21
+flow_m21b_diff0.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21b_diff0.boot: scroll2 1128-1129	# Q21
+flow_m21b_diff0.boot: scroll3 1128-1129	# Q21
+# flow_m21b_diff7
+flow_m21b_diff7.boot: palette 680-680	# Q21
+flow_m21b_diff7.boot: global.frame 788-788	# Q21
+flow_m21b_diff7.boot: global.game_frame 788-788	# Q21
+flow_m21b_diff7.boot: global.splash_timer 789-790	# Q21
+flow_m21b_diff7.boot: global.splash_timer 1128-1129	# Q21
+flow_m21b_diff7.boot: global.game_sub2 789-790	# Q21
+flow_m21b_diff7.boot: sprites 789-792	# Q21
+flow_m21b_diff7.boot: sprites 1128-1129	# Q21
+flow_m21b_diff7.boot: global.splash_phase 1128-1129	# Q21
+flow_m21b_diff7.boot: global.spawn_init 1128-1129	# Q21
+flow_m21b_diff7.boot: global.cam3_state 1128-1129	# Q21
+flow_m21b_diff7.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21b_diff7.boot: scroll2 1128-1129	# Q21
+flow_m21b_diff7.boot: scroll3 1128-1129	# Q21
+# flow_m21b_timer0
+flow_m21b_timer0.boot: palette 680-680	# Q21
+flow_m21b_timer0.boot: global.frame 788-788	# Q21
+flow_m21b_timer0.boot: global.game_frame 788-788	# Q21
+flow_m21b_timer0.boot: global.splash_timer 789-790	# Q21
+flow_m21b_timer0.boot: global.splash_timer 1128-1129	# Q21
+flow_m21b_timer0.boot: global.game_sub2 789-790	# Q21
+flow_m21b_timer0.boot: sprites 789-792	# Q21
+flow_m21b_timer0.boot: sprites 1128-1129	# Q21
+flow_m21b_timer0.boot: global.splash_phase 1128-1129	# Q21
+flow_m21b_timer0.boot: global.spawn_init 1128-1129	# Q21
+flow_m21b_timer0.boot: global.cam3_state 1128-1129	# Q21
+flow_m21b_timer0.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21b_timer0.boot: scroll2 1128-1129	# Q21
+flow_m21b_timer0.boot: scroll3 1128-1129	# Q21
+# flow_m21b_timer3
+flow_m21b_timer3.boot: palette 680-680	# Q21
+flow_m21b_timer3.boot: global.frame 788-788	# Q21
+flow_m21b_timer3.boot: global.game_frame 788-788	# Q21
+flow_m21b_timer3.boot: global.splash_timer 789-790	# Q21
+flow_m21b_timer3.boot: global.splash_timer 1128-1129	# Q21
+flow_m21b_timer3.boot: global.game_sub2 789-790	# Q21
+flow_m21b_timer3.boot: sprites 789-792	# Q21
+flow_m21b_timer3.boot: sprites 1128-1129	# Q21
+flow_m21b_timer3.boot: global.splash_phase 1128-1129	# Q21
+flow_m21b_timer3.boot: global.spawn_init 1128-1129	# Q21
+flow_m21b_timer3.boot: global.cam3_state 1128-1129	# Q21
+flow_m21b_timer3.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21b_timer3.boot: scroll2 1128-1129	# Q21
+flow_m21b_timer3.boot: scroll3 1128-1129	# Q21
+# flow_m21b_bonus1
+flow_m21b_bonus1.boot: palette 680-680	# Q21
+flow_m21b_bonus1.boot: global.frame 788-788	# Q21
+flow_m21b_bonus1.boot: global.game_frame 788-788	# Q21
+flow_m21b_bonus1.boot: global.splash_timer 789-790	# Q21
+flow_m21b_bonus1.boot: global.splash_timer 1128-1129	# Q21
+flow_m21b_bonus1.boot: global.game_sub2 789-790	# Q21
+flow_m21b_bonus1.boot: sprites 789-792	# Q21
+flow_m21b_bonus1.boot: sprites 1128-1129	# Q21
+flow_m21b_bonus1.boot: global.splash_phase 1128-1129	# Q21
+flow_m21b_bonus1.boot: global.spawn_init 1128-1129	# Q21
+flow_m21b_bonus1.boot: global.cam3_state 1128-1129	# Q21
+flow_m21b_bonus1.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21b_bonus1.boot: scroll2 1128-1129	# Q21
+flow_m21b_bonus1.boot: scroll3 1128-1129	# Q21
+# flow_m21b_bonus3
+flow_m21b_bonus3.boot: palette 680-680	# Q21
+flow_m21b_bonus3.boot: global.frame 788-788	# Q21
+flow_m21b_bonus3.boot: global.game_frame 788-788	# Q21
+flow_m21b_bonus3.boot: global.splash_timer 789-790	# Q21
+flow_m21b_bonus3.boot: global.splash_timer 1128-1129	# Q21
+flow_m21b_bonus3.boot: global.game_sub2 789-790	# Q21
+flow_m21b_bonus3.boot: sprites 789-792	# Q21
+flow_m21b_bonus3.boot: sprites 1128-1129	# Q21
+flow_m21b_bonus3.boot: global.splash_phase 1128-1129	# Q21
+flow_m21b_bonus3.boot: global.spawn_init 1128-1129	# Q21
+flow_m21b_bonus3.boot: global.cam3_state 1128-1129	# Q21
+flow_m21b_bonus3.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21b_bonus3.boot: scroll2 1128-1129	# Q21
+flow_m21b_bonus3.boot: scroll3 1128-1129	# Q21
+# flow_m21b_lives3
+flow_m21b_lives3.boot: palette 680-680	# Q21
+flow_m21b_lives3.boot: global.frame 788-788	# Q21
+flow_m21b_lives3.boot: global.game_frame 788-788	# Q21
+flow_m21b_lives3.boot: global.splash_timer 789-790	# Q21
+flow_m21b_lives3.boot: global.splash_timer 1128-1129	# Q21
+flow_m21b_lives3.boot: global.game_sub2 789-790	# Q21
+flow_m21b_lives3.boot: sprites 789-792	# Q21
+flow_m21b_lives3.boot: sprites 1128-1129	# Q21
+flow_m21b_lives3.boot: global.splash_phase 1128-1129	# Q21
+flow_m21b_lives3.boot: global.spawn_init 1128-1129	# Q21
+flow_m21b_lives3.boot: global.cam3_state 1128-1129	# Q21
+flow_m21b_lives3.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21b_lives3.boot: scroll2 1128-1129	# Q21
+flow_m21b_lives3.boot: scroll3 1128-1129	# Q21
+# flow_m21e_factory
+flow_m21e_factory.boot: palette 680-680	# Q21
+flow_m21e_factory.boot: global.frame 788-788	# Q21
+flow_m21e_factory.boot: global.game_frame 788-788	# Q21
+flow_m21e_factory.boot: global.splash_timer 789-790	# Q21
+flow_m21e_factory.boot: global.splash_timer 1128-1129	# Q21
+flow_m21e_factory.boot: global.game_sub2 789-790	# Q21
+flow_m21e_factory.boot: sprites 789-792	# Q21
+flow_m21e_factory.boot: sprites 1128-1129	# Q21
+flow_m21e_factory.boot: global.splash_phase 1128-1129	# Q21
+flow_m21e_factory.boot: global.spawn_init 1128-1129	# Q21
+flow_m21e_factory.boot: global.cam3_state 1128-1129	# Q21
+flow_m21e_factory.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21e_factory.boot: scroll2 1128-1129	# Q21
+flow_m21e_factory.boot: scroll3 1128-1129	# Q21
+# flow_m21e_lives0
+flow_m21e_lives0.boot: palette 680-680	# Q21
+flow_m21e_lives0.boot: global.frame 788-788	# Q21
+flow_m21e_lives0.boot: global.game_frame 788-788	# Q21
+flow_m21e_lives0.boot: global.splash_timer 789-790	# Q21
+flow_m21e_lives0.boot: global.splash_timer 1128-1129	# Q21
+flow_m21e_lives0.boot: global.game_sub2 789-790	# Q21
+flow_m21e_lives0.boot: sprites 789-792	# Q21
+flow_m21e_lives0.boot: sprites 1128-1129	# Q21
+flow_m21e_lives0.boot: global.splash_phase 1128-1129	# Q21
+flow_m21e_lives0.boot: global.spawn_init 1128-1129	# Q21
+flow_m21e_lives0.boot: global.cam3_state 1128-1129	# Q21
+flow_m21e_lives0.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21e_lives0.boot: scroll2 1128-1129	# Q21
+flow_m21e_lives0.boot: scroll3 1128-1129	# Q21
+# flow_m21e_cont_off
+flow_m21e_cont_off.boot: palette 680-680	# Q21
+flow_m21e_cont_off.boot: global.frame 788-788	# Q21
+flow_m21e_cont_off.boot: global.game_frame 788-788	# Q21
+flow_m21e_cont_off.boot: global.splash_timer 789-790	# Q21
+flow_m21e_cont_off.boot: global.splash_timer 1128-1129	# Q21
+flow_m21e_cont_off.boot: global.game_sub2 789-790	# Q21
+flow_m21e_cont_off.boot: sprites 789-792	# Q21
+flow_m21e_cont_off.boot: sprites 1128-1129	# Q21
+flow_m21e_cont_off.boot: global.splash_phase 1128-1129	# Q21
+flow_m21e_cont_off.boot: global.spawn_init 1128-1129	# Q21
+flow_m21e_cont_off.boot: global.cam3_state 1128-1129	# Q21
+flow_m21e_cont_off.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21e_cont_off.boot: scroll2 1128-1129	# Q21
+flow_m21e_cont_off.boot: scroll3 1128-1129	# Q21
+# flow_m21e_coin1
+flow_m21e_coin1.boot: palette 680-680	# Q21
+flow_m21e_coin1.boot: global.frame 788-788	# Q21
+flow_m21e_coin1.boot: global.game_frame 788-788	# Q21
+flow_m21e_coin1.boot: global.splash_timer 789-790	# Q21
+flow_m21e_coin1.boot: global.splash_timer 1128-1129	# Q21
+flow_m21e_coin1.boot: global.game_sub2 789-790	# Q21
+flow_m21e_coin1.boot: sprites 789-792	# Q21
+flow_m21e_coin1.boot: sprites 1128-1129	# Q21
+flow_m21e_coin1.boot: global.splash_phase 1128-1129	# Q21
+flow_m21e_coin1.boot: global.spawn_init 1128-1129	# Q21
+flow_m21e_coin1.boot: global.cam3_state 1128-1129	# Q21
+flow_m21e_coin1.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21e_coin1.boot: scroll2 1128-1129	# Q21
+flow_m21e_coin1.boot: scroll3 1128-1129	# Q21
+# flow_m21e_coin5
+flow_m21e_coin5.boot: palette 680-680	# Q21
+flow_m21e_coin5.boot: global.frame 788-788	# Q21
+flow_m21e_coin5.boot: global.game_frame 788-788	# Q21
+flow_m21e_coin5.boot: global.splash_timer 789-790	# Q21
+flow_m21e_coin5.boot: global.splash_timer 1128-1129	# Q21
+flow_m21e_coin5.boot: global.game_sub2 789-790	# Q21
+flow_m21e_coin5.boot: sprites 789-792	# Q21
+flow_m21e_coin5.boot: sprites 1128-1129	# Q21
+flow_m21e_coin5.boot: global.splash_phase 1128-1129	# Q21
+flow_m21e_coin5.boot: global.spawn_init 1128-1129	# Q21
+flow_m21e_coin5.boot: global.cam3_state 1128-1129	# Q21
+flow_m21e_coin5.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21e_coin5.boot: scroll2 1128-1129	# Q21
+flow_m21e_coin5.boot: scroll3 1128-1129	# Q21
+flow_m21e_coin5.boot: scroll1 1191-1334	# U21
+flow_m21e_coin5.boot: scroll1 1447-1476	# U21
+flow_m21e_coin5.boot: scroll1 1575-1598	# U21
+flow_m21e_coin5.boot: scroll1 1703-1720	# U21
+# flow_m21e_coin8
+flow_m21e_coin8.boot: palette 680-680	# Q21
+flow_m21e_coin8.boot: global.frame 788-788	# Q21
+flow_m21e_coin8.boot: global.game_frame 788-788	# Q21
+flow_m21e_coin8.boot: global.splash_timer 789-790	# Q21
+flow_m21e_coin8.boot: global.splash_timer 1128-1129	# Q21
+flow_m21e_coin8.boot: global.game_sub2 789-790	# Q21
+flow_m21e_coin8.boot: sprites 789-792	# Q21
+flow_m21e_coin8.boot: sprites 1128-1129	# Q21
+flow_m21e_coin8.boot: global.splash_phase 1128-1129	# Q21
+flow_m21e_coin8.boot: global.spawn_init 1128-1129	# Q21
+flow_m21e_coin8.boot: global.cam3_state 1128-1129	# Q21
+flow_m21e_coin8.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21e_coin8.boot: scroll2 1128-1129	# Q21
+flow_m21e_coin8.boot: scroll3 1128-1129	# Q21
+# flow_m21e_chute1
+flow_m21e_chute1.boot: scroll2 319-319	# Q21
+flow_m21e_chute1.boot: scroll2 1128-1129	# Q21
+flow_m21e_chute1.boot: palette 680-680	# Q21
+flow_m21e_chute1.boot: global.splash_timer 682-788	# Q21
+flow_m21e_chute1.boot: global.splash_timer 1128-1129	# Q21
+flow_m21e_chute1.boot: global.splash_phase 682-682	# Q21
+flow_m21e_chute1.boot: global.splash_phase 692-692	# Q21
+flow_m21e_chute1.boot: global.splash_phase 702-702	# Q21
+flow_m21e_chute1.boot: global.splash_phase 712-712	# Q21
+flow_m21e_chute1.boot: global.splash_phase 722-722	# Q21
+flow_m21e_chute1.boot: global.splash_phase 732-732	# Q21
+flow_m21e_chute1.boot: global.splash_phase 742-742	# Q21
+flow_m21e_chute1.boot: global.splash_phase 752-752	# Q21
+flow_m21e_chute1.boot: global.splash_phase 762-762	# Q21
+flow_m21e_chute1.boot: global.splash_phase 1128-1129	# Q21
+flow_m21e_chute1.boot: enemy.visible 682-682	# Q21
+flow_m21e_chute1.boot: enemy.mode 682-682	# Q21
+flow_m21e_chute1.boot: enemy.x 682-682	# Q21
+flow_m21e_chute1.boot: enemy.y 682-682	# Q21
+flow_m21e_chute1.boot: enemy.z 682-682	# Q21
+flow_m21e_chute1.boot: enemy.draw_flags 682-682	# Q21
+flow_m21e_chute1.boot: enemy.timer 682-682	# Q21
+flow_m21e_chute1.boot: enemy.anim_table 682-682	# Q21
+flow_m21e_chute1.boot: enemy.box_table 682-682	# Q21
+flow_m21e_chute1.boot: enemy.atk 682-682	# Q21
+flow_m21e_chute1.boot: enemy.serial 682-682	# Q21
+flow_m21e_chute1.boot: enemy.b63 682-682	# Q21
+flow_m21e_chute1.boot: enemy.attacking 682-682	# Q21
+flow_m21e_chute1.boot: enemy.wa2 682-682	# Q21
+flow_m21e_chute1.boot: global.attack_serial 682-682	# Q21
+flow_m21e_chute1.boot: sprites 682-682	# Q21
+flow_m21e_chute1.boot: sprites 789-792	# Q21
+flow_m21e_chute1.boot: sprites 1128-1129	# Q21
+flow_m21e_chute1.boot: global.frame 788-788	# Q21
+flow_m21e_chute1.boot: global.game_frame 788-788	# Q21
+flow_m21e_chute1.boot: global.game_sub2 789-790	# Q21
+flow_m21e_chute1.boot: global.spawn_init 1128-1129	# Q21
+flow_m21e_chute1.boot: global.cam3_state 1128-1129	# Q21
+flow_m21e_chute1.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21e_chute1.boot: scroll3 1128-1129	# Q21
+# flow_m21e_chute2
+flow_m21e_chute2.boot: scroll2 319-319	# Q21
+flow_m21e_chute2.boot: scroll2 1128-1129	# Q21
+flow_m21e_chute2.boot: palette 680-680	# Q21
+flow_m21e_chute2.boot: global.splash_timer 682-788	# Q21
+flow_m21e_chute2.boot: global.splash_timer 1128-1129	# Q21
+flow_m21e_chute2.boot: global.splash_phase 682-682	# Q21
+flow_m21e_chute2.boot: global.splash_phase 692-692	# Q21
+flow_m21e_chute2.boot: global.splash_phase 702-702	# Q21
+flow_m21e_chute2.boot: global.splash_phase 712-712	# Q21
+flow_m21e_chute2.boot: global.splash_phase 722-722	# Q21
+flow_m21e_chute2.boot: global.splash_phase 732-732	# Q21
+flow_m21e_chute2.boot: global.splash_phase 742-742	# Q21
+flow_m21e_chute2.boot: global.splash_phase 752-752	# Q21
+flow_m21e_chute2.boot: global.splash_phase 762-762	# Q21
+flow_m21e_chute2.boot: global.splash_phase 1128-1129	# Q21
+flow_m21e_chute2.boot: enemy.visible 682-682	# Q21
+flow_m21e_chute2.boot: enemy.mode 682-682	# Q21
+flow_m21e_chute2.boot: enemy.x 682-682	# Q21
+flow_m21e_chute2.boot: enemy.y 682-682	# Q21
+flow_m21e_chute2.boot: enemy.z 682-682	# Q21
+flow_m21e_chute2.boot: enemy.draw_flags 682-682	# Q21
+flow_m21e_chute2.boot: enemy.timer 682-682	# Q21
+flow_m21e_chute2.boot: enemy.anim_table 682-682	# Q21
+flow_m21e_chute2.boot: enemy.box_table 682-682	# Q21
+flow_m21e_chute2.boot: enemy.atk 682-682	# Q21
+flow_m21e_chute2.boot: enemy.serial 682-682	# Q21
+flow_m21e_chute2.boot: enemy.b63 682-682	# Q21
+flow_m21e_chute2.boot: enemy.attacking 682-682	# Q21
+flow_m21e_chute2.boot: enemy.wa2 682-682	# Q21
+flow_m21e_chute2.boot: global.attack_serial 682-682	# Q21
+flow_m21e_chute2.boot: sprites 682-682	# Q21
+flow_m21e_chute2.boot: sprites 789-792	# Q21
+flow_m21e_chute2.boot: sprites 1128-1129	# Q21
+flow_m21e_chute2.boot: global.frame 788-788	# Q21
+flow_m21e_chute2.boot: global.game_frame 788-788	# Q21
+flow_m21e_chute2.boot: global.game_sub2 789-790	# Q21
+flow_m21e_chute2.boot: global.spawn_init 1128-1129	# Q21
+flow_m21e_chute2.boot: global.cam3_state 1128-1129	# Q21
+flow_m21e_chute2.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21e_chute2.boot: scroll3 1128-1129	# Q21
+# flow_m21e_free
+flow_m21e_free.boot: scroll2 319-319	# Q21
+flow_m21e_free.boot: scroll2 1128-1129	# Q21
+flow_m21e_free.boot: global.frame 788-788	# Q21
+flow_m21e_free.boot: global.game_frame 788-788	# Q21
+flow_m21e_free.boot: global.splash_timer 789-790	# Q21
+flow_m21e_free.boot: global.splash_timer 1128-1129	# Q21
+flow_m21e_free.boot: global.game_sub2 789-790	# Q21
+flow_m21e_free.boot: sprites 789-792	# Q21
+flow_m21e_free.boot: sprites 1128-1129	# Q21
+flow_m21e_free.boot: global.splash_phase 1128-1129	# Q21
+flow_m21e_free.boot: global.spawn_init 1128-1129	# Q21
+flow_m21e_free.boot: global.cam3_state 1128-1129	# Q21
+flow_m21e_free.boot: global.cam3_shift5f 1128-1129	# Q21
+flow_m21e_free.boot: scroll3 1128-1129	# Q21
+# flow_m21e_coin2
+flow_m21e_coin2.boot: palette 680-680	# Q21
+flow_m21e_coin2.boot: global.frame 888-888	# Q21
+flow_m21e_coin2.boot: global.game_frame 888-888	# Q21
+flow_m21e_coin2.boot: global.splash_timer 889-890	# Q21
+flow_m21e_coin2.boot: global.splash_timer 1228-1229	# Q21
+flow_m21e_coin2.boot: global.game_sub2 889-890	# Q21
+flow_m21e_coin2.boot: sprites 889-892	# Q21
+flow_m21e_coin2.boot: sprites 1228-1229	# Q21
+flow_m21e_coin2.boot: global.splash_phase 1228-1229	# Q21
+flow_m21e_coin2.boot: global.spawn_init 1228-1229	# Q21
+flow_m21e_coin2.boot: global.cam3_state 1228-1229	# Q21
+flow_m21e_coin2.boot: global.cam3_shift5f 1228-1229	# Q21
+flow_m21e_coin2.boot: scroll2 1228-1229	# Q21
+flow_m21e_coin2.boot: scroll3 1228-1229	# Q21
+# flow_m21e_coin3
+flow_m21e_coin3.boot: palette 680-680	# Q21
+flow_m21e_coin3.boot: global.frame 888-888	# Q21
+flow_m21e_coin3.boot: global.game_frame 888-888	# Q21
+flow_m21e_coin3.boot: global.splash_timer 889-890	# Q21
+flow_m21e_coin3.boot: global.splash_timer 1228-1229	# Q21
+flow_m21e_coin3.boot: global.game_sub2 889-890	# Q21
+flow_m21e_coin3.boot: sprites 889-892	# Q21
+flow_m21e_coin3.boot: sprites 1228-1229	# Q21
+flow_m21e_coin3.boot: global.splash_phase 1228-1229	# Q21
+flow_m21e_coin3.boot: global.spawn_init 1228-1229	# Q21
+flow_m21e_coin3.boot: global.cam3_state 1228-1229	# Q21
+flow_m21e_coin3.boot: global.cam3_shift5f 1228-1229	# Q21
+flow_m21e_coin3.boot: scroll2 1228-1229	# Q21
+flow_m21e_coin3.boot: scroll3 1228-1229	# Q21
+# flow_m21e_coin4
+flow_m21e_coin4.boot: palette 680-680	# Q21
+flow_m21e_coin4.boot: global.frame 888-888	# Q21
+flow_m21e_coin4.boot: global.game_frame 888-888	# Q21
+flow_m21e_coin4.boot: global.splash_timer 889-890	# Q21
+flow_m21e_coin4.boot: global.splash_timer 1228-1229	# Q21
+flow_m21e_coin4.boot: global.game_sub2 889-890	# Q21
+flow_m21e_coin4.boot: sprites 889-892	# Q21
+flow_m21e_coin4.boot: sprites 1228-1229	# Q21
+flow_m21e_coin4.boot: global.splash_phase 1228-1229	# Q21
+flow_m21e_coin4.boot: global.spawn_init 1228-1229	# Q21
+flow_m21e_coin4.boot: global.cam3_state 1228-1229	# Q21
+flow_m21e_coin4.boot: global.cam3_shift5f 1228-1229	# Q21
+flow_m21e_coin4.boot: scroll2 1228-1229	# Q21
+flow_m21e_coin4.boot: scroll3 1228-1229	# Q21
+# flow_m21e_coin6
+flow_m21e_coin6.boot: palette 680-680	# Q21
+flow_m21e_coin6.boot: global.frame 888-888	# Q21
+flow_m21e_coin6.boot: global.game_frame 888-888	# Q21
+flow_m21e_coin6.boot: global.splash_timer 889-890	# Q21
+flow_m21e_coin6.boot: global.splash_timer 1228-1229	# Q21
+flow_m21e_coin6.boot: global.game_sub2 889-890	# Q21
+flow_m21e_coin6.boot: sprites 889-892	# Q21
+flow_m21e_coin6.boot: sprites 1228-1229	# Q21
+flow_m21e_coin6.boot: global.splash_phase 1228-1229	# Q21
+flow_m21e_coin6.boot: global.spawn_init 1228-1229	# Q21
+flow_m21e_coin6.boot: global.cam3_state 1228-1229	# Q21
+flow_m21e_coin6.boot: global.cam3_shift5f 1228-1229	# Q21
+flow_m21e_coin6.boot: scroll2 1228-1229	# Q21
+flow_m21e_coin6.boot: scroll3 1228-1229	# Q21
+flow_m21e_coin6.boot: scroll1 1291-1434	# U21
+flow_m21e_coin6.boot: scroll1 1547-1576	# U21
+flow_m21e_coin6.boot: scroll1 1675-1698	# U21
+# flow_m21e_coin7
+flow_m21e_coin7.boot: palette 680-680	# Q21
+flow_m21e_coin7.boot: global.frame 888-888	# Q21
+flow_m21e_coin7.boot: global.game_frame 888-888	# Q21
+flow_m21e_coin7.boot: global.splash_timer 889-890	# Q21
+flow_m21e_coin7.boot: global.splash_timer 1228-1229	# Q21
+flow_m21e_coin7.boot: global.game_sub2 889-890	# Q21
+flow_m21e_coin7.boot: sprites 889-892	# Q21
+flow_m21e_coin7.boot: sprites 1228-1229	# Q21
+flow_m21e_coin7.boot: global.splash_phase 1228-1229	# Q21
+flow_m21e_coin7.boot: global.spawn_init 1228-1229	# Q21
+flow_m21e_coin7.boot: global.cam3_state 1228-1229	# Q21
+flow_m21e_coin7.boot: global.cam3_shift5f 1228-1229	# Q21
+flow_m21e_coin7.boot: scroll2 1228-1229	# Q21
+flow_m21e_coin7.boot: scroll3 1228-1229	# Q21
+flow_m21e_coin7.boot: scroll1 1291-1434	# U21
+flow_m21e_coin7.boot: scroll1 1547-1576	# U21
+flow_m21e_coin7.boot: scroll1 1675-1698	# U21
+m21e_coin6.step: scroll1 4-4	# U21
+m21f_coin7.step: scroll1 4-4	# U21
+
+# EEPROM-seeded control slices (m21c_*): same X / A2 / N loader limits as the M10-19 / M10-20 cases above.
+# X: sprite-buffer wipe across the game-over lag; A2: step loader cannot rebuild the attract-to-select task waits.
+# N: the new game starts inside a lag record; the tilemap strip is absent after the resync and persists until redrawn.
+m21c_cont_off.step: sprites 1953-1956	# X
+m21c_lives0.step: sprites 2649-2652	# X
+m21c_lives0.step: * 2800-5098	# A2
+m21c_lives0.lagsync: scroll2 3155-5098	# N
+m21c_lives0.lagsync: scroll3 3156-5098	# N
+m21e_coin6.lagsync: scroll1 4-21	# U21: cell remains until the next HUD redraw
+m21f_coin7.lagsync: scroll1 4-21	# U21: cell remains until the next HUD redraw

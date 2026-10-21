@@ -889,17 +889,22 @@ impl Game {
     }
 
     /// The scroll1 address of the prompt of player `i` in the select (G.$4D5 set, mode 4): the 3 player layout 0x824E, the 2 player layout
-    /// 0x80FC. `None` outside the select: the prompts of the level HUD are M2-05.
+    /// 0x829A. `None` outside the select: the prompts of the level HUD are M2-05.
     fn select_join_prompt_at(&self, i: usize) -> Option<u32> {
         if self.spawn.g.b4d5 == 0 || self.flow.mode != 4 {
             return None;
         }
-        Some(if self.flow.b4cf == 0 { [0x90A0E8, 0x90A8E8, 0x90B0E8][i] } else { [0x90A0E0, 0x90ACE0, 0][i] })
+        Some(self.assets.frontend.text.u32(if self.flow.b4cf == 0 { 0x824E } else { 0x829A }, 4 * i as u32))
     }
 
     /// 0x80A2 .. 0x81FE: print the glyph word string at the ROM address `string` as the prompt of player `i` (0xC9A).
     fn select_join_prompt(&mut self, i: usize, string: u32) {
-        if let Some(a1) = self.select_join_prompt_at(i) {
+        if let Some(mut a1) = self.select_join_prompt_at(i) {
+            // 0x8072 / 0x80C4 / 0x8126 use 0x80FC; generic prompts
+            // (0x8274) use 0x829A, two rows below on the two-player cabinet.
+            if self.flow.b4cf != 0 && matches!(string, 0x843A | 0x84D6 | 0x852E) {
+                a1 = self.assets.frontend.text.u32(0x80FC, 4 * i as u32);
+            }
             let s = self.assets.frontend.text.slice_from(string);
             self.text_words(s, a1);
         }
