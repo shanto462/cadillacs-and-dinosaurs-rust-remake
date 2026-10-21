@@ -231,7 +231,7 @@ impl Game {
     }
 
     /// 0x8BE0C: the init of the three objects: not counted, `+$63` = 0xFF, on screen, no shadow (`+$25` = 0x10), the table 0x8C8D6, X = camera X
-    /// - 0xA0, height 5, depth 0x30. A wheel: `+$80` = 1, `+$A0` = 2, animation 2, mode 2. The car: G.$51A, animation 0, vx 0x500, empty seats, the
+    /// minus 0xA0, height 5, depth 0x30. A wheel: `+$80` = 1, `+$A0` = 2, animation 2, mode 2. The car: G.$51A, animation 0, vx 0x500, empty seats, the
     /// box table 0x100000, HP 120 and the bar 100, the heroes' `+$119`, `+$FA` cleared and their pads held (`+$11A` = 1), the teammate (0x8C784),
     /// the seat drawers 0x96FD4 (three, two in the 2 player layout G.$4CF).
     fn prop_car_init(&mut self, p: &mut Prop, h: Handle) {

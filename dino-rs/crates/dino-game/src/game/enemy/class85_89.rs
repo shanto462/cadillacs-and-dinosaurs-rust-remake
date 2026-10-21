@@ -5,6 +5,7 @@
 //! * 87 (0x63BC4, table 0x648AA): the second limb; it only follows the grab pose (`+$A3` 8, animation 1).
 //! * 88 / 89 (0x63E30, table 0x646A4, `+$5C` 0 left / -1 right): the heads; the body's `+$A4` / `+$A5` 2 the bite 0x5E (repeated while it hits,
 //!   up to `+$AE` times), 4 the fire (a class 95 ball at the frames with `+$2C`, its variant by the distance), 6 the sway.
+//!
 //! The arm, limb and heads take their place and animation from the body's frame byte `+$2D` (rows of 6 bytes: X, Y, Z offsets and the
 //! animation, 0x642DE / 0x64328), copy its live and visible bytes, hit id, HP and palette every frame (0x638CE), are on the hurtable list and a
 //! hit on one is a hit on the body (0x62F12). D3d 6.3, BT16, BT18. Owner: enemy port.

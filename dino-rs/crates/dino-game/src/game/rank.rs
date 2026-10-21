@@ -133,11 +133,7 @@ impl Game {
                 }
             }
             1 => {
-                if r < 4 {
-                    r = 4;
-                } else if r > 0x1C {
-                    r = 0x1C;
-                }
+                r = r.clamp(4, 0x1C);
             }
             _ => {
                 if r < 8 {

@@ -286,6 +286,7 @@ impl Game {
     /// - the box record after 0x6422, which saves a6 with `move.w a6,-(a7)` and restores it with `movea.w (a7)+,a6` (0x6434 / 0x64EE): the
     ///   low word sign extended, so a byte of the low program (below 0x8000) or of RAM (`snd_a6_word`);
     /// - an object (0xFF0000 + its handle: the partner +$70, or the object of the routine): its +$24, the facing.
+    ///
     /// RAM that is not an object start is not kept by the port (0).
     pub(crate) fn snd_a6_byte(&self, a6: u32) -> u8 {
         let a = a6.wrapping_add(0x24) & 0xFF_FFFF;

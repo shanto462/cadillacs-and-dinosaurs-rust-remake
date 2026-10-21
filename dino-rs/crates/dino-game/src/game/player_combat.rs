@@ -344,9 +344,9 @@ impl Game {
                 continue;
             }
             let pb = &self.players[i].b;
-            match collide::boxes_hit(s, pb, pb.attack_box, eb, eb.body_box) {
-                Some((ha, hb)) => self.player_hits_enemy(i, e, ha, hb),
-                None => {} // 0x1128E multi-part boss link (enemy +$63 == 4). TODO(enemy port)
+            // None: 0x1128E multi-part boss link (enemy +$63 == 4). TODO(enemy port)
+            if let Some((ha, hb)) = collide::boxes_hit(s, pb, pb.attack_box, eb, eb.body_box) {
+                self.player_hits_enemy(i, e, ha, hb);
             }
         }
     }

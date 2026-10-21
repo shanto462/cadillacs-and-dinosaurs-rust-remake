@@ -205,12 +205,14 @@ impl Game {
         let quarter = (e.b.hp_bar as i16) >> 2;
         let mut left = e.b.hp as i16;
         let mut d2: u16 = 0;
-        while quarter > 0 {
-            left = left.wrapping_sub(quarter);
-            if left < 0 {
-                break;
+        if quarter > 0 {
+            loop {
+                left = left.wrapping_sub(quarter);
+                if left < 0 {
+                    break;
+                }
+                d2 += 1;
             }
-            d2 += 1;
         }
         let d0 = (self.rand() & 0xF) as u32;
         let t = &self.assets.enemy.t;

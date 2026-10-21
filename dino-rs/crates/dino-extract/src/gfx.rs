@@ -19,7 +19,7 @@ fn plane_pixel(group: &[u8], x: usize) -> u8 {
 pub fn decode_tiles16(raw: &[u8]) -> Vec<u8> {
     let count = raw.len() / 128;
     let mut out = vec![0u8; count * 256];
-    for (src, dst) in raw.as_chunks::<128>().0.iter().zip(out.chunks_exact_mut(256)) {
+    for (src, dst) in raw.as_chunks::<128>().0.iter().zip(out.as_chunks_mut::<256>().0.iter_mut()) {
         for y in 0..16 {
             for x in 0..16 {
                 dst[y * 16 + x] = plane_pixel(&src[y * 8 + (x / 8) * 4..][..4], x);

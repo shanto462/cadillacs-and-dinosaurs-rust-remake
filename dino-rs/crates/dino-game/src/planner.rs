@@ -741,11 +741,11 @@ impl Smart {
             let p = &g.players[0];
             let (hp, lives) = (p.b.hp as i64, p.lives as i64);
             let ep = (g.w.stage as usize).min(7);
-            if self.last.is_some() {
+            if let Some(last) = self.last {
                 if hp < self.last_hp && p.b.live != 0 {
                     self.stats.hp_lost[ep] += (self.last_hp - hp) as u32;
                 }
-                if lives < self.last_lives && g.w.stage == self.last.unwrap().0 {
+                if lives < self.last_lives && g.w.stage == last.0 {
                     self.stats.lives_lost += 1;
                     eprintln!("smart: frame {tick} lost a life (lives left {lives}) episode {} area {}", g.w.stage + 1, g.cam.s2.area);
                 }

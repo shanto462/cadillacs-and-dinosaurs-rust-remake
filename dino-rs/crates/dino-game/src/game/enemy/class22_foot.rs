@@ -357,9 +357,7 @@ impl Game {
 
     /// 0x48048: the picture by the height: act 2 and 0xE the flat foot (0), up to Y 0x30 the same, up to 0x60 the raised foot (1), above the high one (2); then 0x120E.
     fn c22_picture(&mut self, e: &mut Enemy) {
-        let id = if e.b.act == 2 || e.b.act == 0xE {
-            0
-        } else if e.b.yi() <= 0x30 {
+        let id = if e.b.act == 2 || e.b.act == 0xE || e.b.yi() <= 0x30 {
             0
         } else if e.b.yi() <= 0x60 {
             1

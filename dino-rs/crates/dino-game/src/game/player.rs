@@ -541,10 +541,10 @@ impl Game {
         let snap = self.w.input;
         // 0x9A146 demo input record / playback (when G.$4CC == 0): not ported.
         self.snd_update_voice_banks(); // 0xA502
-        for i in 0..3 {
+        for (i, &input) in snap.iter().enumerate() {
             let p = &self.players[i];
             if p.b.live != 0 && p.b.kind != 0xE {
-                self.player_frame(i, snap[i]);
+                self.player_frame(i, input);
             }
         }
     }
@@ -552,7 +552,7 @@ impl Game {
     /// 0x188DA: players currently held by an enemy run after the enemies.
     pub fn held_players_update(&mut self) {
         let snap = self.w.input;
-        for i in 0..3 {
+        for (i, &input) in snap.iter().enumerate() {
             let p = &self.players[i];
             if p.b.live != 0 && p.b.kind == 0xE {
                 // P1 only: 1/32 chance of a ROM checksum test (0x104F6); skipped, but rand()
@@ -560,7 +560,7 @@ impl Game {
                 if i == 0 {
                     let _ = self.rand();
                 }
-                self.player_frame(i, snap[i]);
+                self.player_frame(i, input);
             }
         }
     }
