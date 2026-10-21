@@ -1,19 +1,19 @@
-FINAL LIST OF KNOWN DIFFERENCES BETWEEN THE PORT AND MAME (M10-26, task 17, 2026-10-21)
+FINAL LIST OF KNOWN DIFFERENCES BETWEEN THE PORT AND MAME (M10-26, task 17; updated by task 75, 2026-10-21)
 ================================================================================================
 
 Plain text, no ROM data. This is a list for people, not a rule file for diff.py. The rules that diff.py reads are still in re/harness/allow/*.txt (m1, m10, m10_runs, m2,
 m228, m3, m313, m3e, m4, m5, m6, m7, m8); this file says why each kind of difference exists. How to read it: every cause has a number (C1, C2 ...), a short description,
 the original address when a source names one, the recordings and record ranges, and a line "Player sees:" (picture, sound, play, or "trace field only").
+A cause or row marked GONE has no difference on the newest build any more; the mark names the task or merge that removed it.
 
 Where the facts come from: the allow files above, the sweep tables of Desktop Haiku (re/out/desk/dhaiku/sweep.md: 418 recordings, refresh 10: 406 equal in step mode;
 sweep_new.md: 318 recordings, 313 equal; the files results.jsonl and results_new.jsonl named in the task are not on disk: re/out/sweep is gone, the tables in the two .md files
-and the report of task 69 were used), plan/game/design/D5-errata.md, the reports of the Desktop workers, and a re-run on 2026-10-21 (integ c409444) of the 16 recordings of
-sweep.md and sweep_new.md that still had a first difference, in step and lagsync mode (re/harness/m10_check.sh, section 9).
+and the report of task 69 were used), plan/game/design/D5-errata.md, the reports of the Desktop workers (re/out/desk/*/report.md), and the checks of 2026-10-21 (Task 75): section 9.
 
 Where things stand:
- - Whole runs (re/harness/m10_check.sh): the natural recordings of Episodes 1 to 8, 1 to 3 players, the ending, game over and the attract loop after it: step and lagsync mode are
-   equal to MAME in every record except the records listed in sections 1 to 4. STATUS.md: 96 of 96 whole-run checks (48 recordings, two modes). Run mode (a free run from the
-   snapshot) is equal up to the first MAME lag record of each recording, then it drifts: cause C1.
+ - Whole runs (re/harness/m10_all.sh): the natural recordings of Episodes 1 to 8, 1 to 3 players, the ending, game over and the attract loop after it: step and lagsync mode are
+   equal to MAME in every record except the records listed in sections 1 to 4. m10_all.sh: 134 of 134 mode runs equal with the rules (Desktop Opus task 26). Run mode (a free run
+   from the snapshot) is equal up to the first MAME lag record of each recording, then it drifts: cause C1.
  - re/harness/regress.sh: 52 of 52 scenarios with 0 differences.
  - The attract loop from power on (attract3, 29475 records): equal in every record from 25 on under the rules of allow/m1.txt sections 1 and 2 and allow/m10.txt; 403 of 416
    pictures are pixel exact (section 5).
@@ -39,12 +39,13 @@ C2  The skip wait: a fixed 3 rounds a tick (cause K in allow/m10_runs.txt).  [fl
     the CPU time allows (2.2 to 5 measured); the port runs 3. In the one record where the count differs, every counter of every object differs by the missing rounds (objects, timers,
     scripted flags); lagsync resyncs there and is equal afterwards.
     Covers (step mode, one record each): ep1_3p 6144, 6177, 6193; ep3_jack 9476; ep3_mess 9909; ep3_3p 8318; ep4_jack 27497, 27532; ep5_jack 40143, 40150, 40161; ep5_hannah 57870;
-    ep5_mess 45375; ep6_jack 65578-65579, 65602, 65770-65779 (the catch-up records of the scripted walk-out); ep7_jack 34860; ep8_jack 33713.
+    ep5_mess 45375; ep6_jack 65578-65579, 65602, 65770-65779 (the catch-up records of the scripted walk-out); ep7_jack 34860; ep8_jack 33713; ep8_mess 64981, 67151; ep8_3p 62386, 62433.
     Player sees: yes, only while holding attack or jump to hurry a scripted scene: the scene runs a little slower or faster than in the arcade. Nothing else.
 
 C3  Port features that the arcade does not have, and arcade features that the port leaves out.  [README: "What Is Not Included"; run.md]
     Port only: the move keys A S D F G (they press the original buttons with the original timing), the combo toggle Q (the third punch of a chain plays the command move), P (pause),
-    F1 (hit boxes), fullscreen, the keyboard and gamepad mapping, the settings file dino.cfg in place of the operator menu, the debug flags (--jump, --test, --debug-keys, --autoplay).
+    F1 (hit boxes), fullscreen, the keyboard and gamepad mapping, the settings file dino.cfg in place of the operator menu, the debug flags (--jump, --test, --debug-keys, --autoplay),
+    the computer allies (--ally, F7 / F8).
     Left out: the operator test menu and the EEPROM edits (N01 of the audit: "partly present": the settings file and the difficulty bits), other region sets (only the World set
     "dino"), the arcade debug mode (the debug dip switches and the routines behind G.$4AA: the ground marker 0x939B6 and others are never reached in play), the arcade slowdown (C1).
     Player sees: yes, in how the game is controlled and set up. The game rules are the arcade's.
@@ -62,21 +63,27 @@ C5  The story panel after the stage clear (mode 8, 0xD898) starts in MAME lag re
     The panel routine runs 3 or more game frames inside one video frame at its start. `Story::part`, `Flow::wait` and `Flow::resume` are not in RAM and the task stack of the panel
     is not read, so the port starts the panel from its first part in the record after the load: the frame counters G.$0 / G.$4DA are one more, the panel camera (G.$744, G.$7E4,
     G.$7E8) and the scroll layers start again, the sound 0x15 comes a frame early, G.$77E (map_ptr) is derived from the new stage number (the original keeps the old map until the
-    stage start). The panel itself runs in a free run from the stage clear and is checked by the link recordings of M2-28 (allow/m228.txt). A Haiku sub-agent is writing a loader.
+    stage start). The panel itself runs in a free run from the stage clear and is checked by the link recordings of M2-28 (allow/m228.txt). The rules S of allow/m10_runs.txt cover it.
     Covers: ep2_jack 41851-41915; ep2_3p 28971-28990; ep3_jack 9485-9515; ep3_mustapha 7470-7496; ep3_3p 8184-8214; ep4_jack 27579-27620; ep4_3p 27308-27312 and 27389-27395;
     ep6_3p 42639-42650; ep7_3p 38467-38476; m517_ep1_jack 2369-2400, m517_ep1_mustapha 23505-23520, m517_ep1_hannah 15393-15420, m517_ep1_3p 6144-6200.
     The same cause with the map card of the next episode (the sound 0x16 queued twice): the M10-22 sound rule S in allow/m10_runs.txt.
+    The typewriter of the same panel (cause P in allow/m10_runs.txt, ep3_3p 8236-8246): the typewriter object of pool B class 26 and the free list heads G.$65F6 / G.$6600
+    differ in those records. Only the rule's fields are named; the rule file does not say more.
     Player sees: no. The first one to three frames of the panel differ in the trace; the panel plays as in the arcade.
 
-C6  The scroll3 cell group at a boss kill followed by the story portrait.  [Desktop Haiku task 69 and the haiku note in re/out/cli/pending_fixes.md: analysis, not fixed]
-    First difference in step and lagsync mode: scroll3 8 to 15 cells (MAME code 0x1DE0 / 0x1DC0 / 0x1DD3 / 0x1DE8, the port blank), and the sound 0x3E / 0x0E d1 / d2 (section 4).
+C6  The scroll3 cell group at a boss kill followed by the story portrait.  [Desktop Haiku task 69 and the haiku note in re/out/cli/pending_fixes.md; Desktop Opus task 24]
+    GONE (Desktop Opus task 24, 2026-10-21, harness.rs load_regions): when a MAME lag record is loaded, the port's staged entry clear (`flow.front.clear_stage`) is dropped, because
+    the lag record already holds the whole clear. m800_bta9_ty_full_c and the five other rows of this group are 0 / 0 in step and lagsync mode. The analysis below is kept as history.
+    First difference in step and lagsync mode (before task 24): scroll3 8 to 15 cells (MAME code 0x1DE0 / 0x1DC0 / 0x1DD3 / 0x1DE8, the port blank), and the sound 0x3E / 0x0E d1 / d2 (section 4).
     Haiku's analysis: the port's story portrait of the Episode 4 panel (flow/cards.rs story_ep4, the write 0x84746 with a6 = G.$6990 - 4 * G.$4EF) runs one frame earlier than MAME's
-    story start, which lies in a lag record. Same family as C5. Not proven by a fix.
-    Covers: m600_bs_e1_h4_foot 5267, m600_bs_h1_h4_foot 5267, m600_bs_h1_h1_foot 5311, m600_bs_v2_v9_alt 5006, m700_bt_a5_m5_morgue_kill 7056, m800_bta9_ty_full_c 7990
+    story start, which lies in a lag record. Same family as C5.
+    Covers (before task 24): m600_bs_e1_h4_foot 5267, m600_bs_h1_h4_foot 5267, m600_bs_h1_h1_foot 5311, m600_bs_v2_v9_alt 5006, m700_bt_a5_m5_morgue_kill 7056, m800_bta9_ty_full_c 7990
     (one record each, one frame later than the old G.$6A32 obst_slot difference of the same place, which is gone).
     Player sees: no, or one frame of the portrait cells.
 
 C7  The tally and the stage change in a lag record (records after the clear).  [allow/m7.txt cause 4; allow/m8.txt; D5-errata M3-29]
+    Rule status (Task 75, 2026-10-21): no rule line in the allow files names this cause (the cause 4 notes of allow/m7.txt add none), and these recordings are not in m10_all.sh.
+    It stays here as a known difference that the step and lagsync checks show.
     The blocking next-stage setup (the area and stage start) is one MAME record that the game marks as a lag record. The splash timer G.-$7126 / G.-$7124 and the objects of the
     clear (the tally panel pool B 25, the flash pool C 0x58) differ by one frame there; the port's spawn_list pointers are rebuilt from the stage index (trace.rs).
     Covers: m800_a31_ee_f84_kill and m800_bta17_f84_kill 13262 (step and lagsync); m800_bta6_sl_kill 905 (the record after the
@@ -90,27 +97,32 @@ C7  The tally and the stage change in a lag record (records after the clear).  [
 
 C8  Catch-up records (cause C in allow/m10_runs.txt).  The record after a record in which MAME ran two game frames (G.$0 + 2, not flagged as lag): what the screen shows (the
     sprite list built two builds earlier) is one build apart for one record, or a task that sleeps inside itself is restarted one frame apart.
-    Covers: ep8_jack 26332, 34312, 64790, 65753; ep8_mess 18732, 59086, 60049; ep7_3p 37839-37853; ep8_3p 49269, 50232.   Player sees: no.
+    Covers: ep8_jack 26332, 34312, 64790; ep8_mess 18732, 59086; ep7_3p 37839-37853. Gone: ep8_jack 65753 (task 26, unused), ep8_mess 60049 (task 26, unused),
+    ep8_3p 49269 and 50232 (the M10-19 / M10-20 merge).   Player sees: no.
 
 C9  The stale free slot after a resync (cause L).  One record of a lagsync free run with state that a resync does not restore: the frame word of a pool C slot that MAME freed in that
-    record, the pointers of a boss controller made in that record; equal in step mode.   Covers: ep8_mess 38583, 58662; m517_ep1_jack 2352, m517_ep1_mustapha 3328,
-    m517_ep1_hannah 1696, m517_ep1_3p 2544, m517_ep1_mess 2752.
+    record, the pointers of a boss controller made in that record; equal in step mode.   Covers: ep8_mess 38583, 58662: GONE (task 26, both rules unused).
+    m517_ep1_jack 2352, m517_ep1_mustapha 3328, m517_ep1_hannah 1696, m517_ep1_3p 2544, m517_ep1_mess 2752 (rules L of allow/m10_runs.txt, run mode and lagsync).
     Also ep6_3p 27280-27284 (cause L, explained in task 14): in the slow motion of the boss death the game frame runs every third video frame and the sprite list is built once per game
     frame; the two records after a lag record show the list the port built before it was loaded: the head sprite of a lobbed projectile (item class 8, 0x29EC4; sprite 572F) is 1 pixel
     left and 5 higher and its trail one animation element behind. No object field differs; equal in the next game frame (27285).   Player sees: no.
 
 C10 The game over exit and the game start after it (causes X, A, A2, N).  [flow/cont.rs exit_wait; the attract task 0x97C20 is not in RAM]
-    X  (step mode): the port counts the wait for the end of the clear 0xAE0 of the game over exit (0xAC06 / 0xAC26) itself; the step loader does not carry it, so the sprite buffer is
-       wiped one record late (3 records, sprites only). Lagsync sets the wait and is equal. Covers: m523_ep1_2p_full 30613-30616 and m523_ep1_2p 30613, m523_ep1_3pjhm_full
-       33745-33748 and m523_ep1_3pjhm 33745 (MAME's list is the all-zero blank list, the port's has 36 or 41 entries), m1020_e1a1_gameover 1973-1976, m1020_e1a1_gameover_name
-       2429-2432, m1020_e3a0_gameover 2031-2034, m1020_e3a0_gameover_name 2429-2432, m1020_e7a0_gameover 2031-2034, m1020_e7a0_gameover_name 2429-2432, m21c_cont_off 1953-1956,
-       m21c_lives0 2649-2652.
-    A  After the ending's game over: the attract task's clears 0xAE0 are task waits in the port; a game clock recording joins them into lag records, so the first records of the
-       attract loop differ. Covers: ep8_3p 55194-69999.
-    A2 (step mode) the fade of the start from the attract, the select setup, the level start of the new game and the attract task keep their place in task variables that the step
-       loader cannot rebuild. Covers: ep8_mess 64711-70001, ep8_mustapha 68891-70001, m21c_lives0 2800-5098. Lagsync is equal over the same records except N.
-    N  The first columns of scroll2 and scroll3 of the new game's Episode 1 level start are drawn one record late (the area start is in a 6 vertical blank lag record).
-       Covers: ep8_mess 64978-64979, ep8_mustapha 69075-69079, m21c_lives0 3155-5098 (a few cells).
+    STATUS on 2026-10-21 (Task 75): gone for the whole runs. X of the game over exit (m523_ep1_2p, m523_ep1_3pjhm, m1020_*): Desktop Opus task 23 (harness.rs load_regions drops the
+    port's built sprite list when the loaded snapshot shows the clear 0xAE0) and Desktop Opus task 25 (the rules were removed). A, A2 and N (ep8_3p, ep8_mess, ep8_mustapha): the
+    Episode 8 open items (commit 41048767, Desktop Sonnet, merged in fdfcf52c): the game clock load ends the start clear, the step loader restores the game start sleeps, and the attract
+    task's clears are joined. The two m21c X rules (m21c_cont_off 1953-1956, m21c_lives0 2649-2652) were removed from allow/m10_runs.txt on Task 75: they fall on lag records that
+    the default step check does not compare (task 73). The rules m21c_lives0 A2 2800-5098 and N 3155-5098 stay in allow/m10_runs.txt; Task 75 did not re-check them.
+    The text below describes the causes as they were. Only the m21c_lives0 rules are left.
+    X  (step mode, gone): the port counts the wait for the end of the clear 0xAE0 of the game over exit (0xAC06 / 0xAC26) itself; the step loader did not carry it, so the sprite
+       buffer was wiped one record late (3 records, sprites only). Covered: m523_ep1_2p_full 30613-30616 and m523_ep1_2p 30613, m523_ep1_3pjhm_full 33745-33748 and m523_ep1_3pjhm 33745,
+       m1020_e1a1_gameover 1973-1976, m1020_e1a1_gameover_name 2429-2432, m1020_e3a0_gameover 2031-2034, m1020_e3a0_gameover_name 2429-2432, m1020_e7a0_gameover 2031-2034,
+       m1020_e7a0_gameover_name 2429-2432, m21c_cont_off 1953-1956 and m21c_lives0 2649-2652 (the last two: rules removed on Task 75).
+    A  (gone) After the ending's game over: the attract task's clears 0xAE0 were task waits in the port; a game clock recording joins them into lag records. Was: ep8_3p 55194-69999.
+    A2 (step mode, gone for the Episode 8 runs) the fade of the start from the attract, the select setup, the level start of the new game and the attract task keep their place in task
+       variables that the step loader could not rebuild. Was: ep8_mess 64711-70001, ep8_mustapha 68891-70001. Still a rule: m21c_lives0 2800-5098 (A2 in allow/m10_runs.txt).
+    N  (gone for the Episode 8 runs) The first columns of scroll2 and scroll3 of the new game's Episode 1 level start were drawn one record late (the area start is in a 6 vertical blank
+       lag record). Was: ep8_mess 64978-64979, ep8_mustapha 69075-69079. Still a rule: m21c_lives0 3155-5098 (a few cells, N in allow/m10_runs.txt).
     Player sees: no (one frame of a few map columns, N).
 
 C11 The settings variants of M10-21 (Q21, U21).  [re/harness/m10-21-report.md; 0x980B0, 0x98B86, 0x6A20A, 0xA870 -> 0xAD46, 0xAC4E, 0xAA0E; 0x81E6 -> 0x81FE]
@@ -120,6 +132,8 @@ C11 The settings variants of M10-21 (Q21, U21).  [re/harness/m10-21-report.md; 0
     Player sees: no. All 20 settings recordings are equal in step mode (task 69).
 
 C23 The Episode 8 story panel loaded in the middle of its palette play (found in task 18; the cause of the old row N2).  [0xDF60 .. 0xDF6A, 0xE0E4 .. 0xE150, the entry clear 0xAE0]
+    GONE: the two loader gaps are closed by the patch of Desktop Sonnet task 18, applied in trace.rs (Episode 8 open items, commit 41048767, merged in fdfcf52c). m800_bta6_sl_kill lagsync has no difference in
+    the panel any more. The description below is kept as history.
     m800_bta6_sl_kill, lagsync mode, records 5564 to 5867 (the panel of Episode 8 after the Slisaurs; the lag record 5563 holds its entry): two loader gaps. (a) The palette play
     0xE0E4 (five steps of the two scroll3 palettes 0x914EC0 / 0x914EE0, called 0x3D times by the loop 0xDF62 / 0xDF66) sleeps at 0xE142; the sleep's return 0xE148 is known to the loader
     (`Story::part_at_sleep_return`), but the step and the call count are not restored. They are in the task's saved registers: d2 (the steps left of the call) at +$08 and the
@@ -127,13 +141,11 @@ C23 The Episode 8 story panel loaded in the middle of its palette play (found in
     27 palette words (bank 3, palette 22: MAME 0xF887, port 0xF233) in 304 records. (b) The port's own entry clear (`flow_attract_clear`: scroll2 in the next frame, scroll3 in the
     one after) is still pending when the snapshot is loaded; it wiped the 21 cells that the panel drew after its own clear (0x913864, 7 x 3 cells; scroll3 303 records). The sound
     0x11 d1 / d2 (MAME 8 / 0, port 0 / 0) of that record is the R4 register leftover (section 4).
-    The fix is two small changes in `trace.rs`, in the story branch of `trace_load_tasks` (not mine to edit: the file belongs to the Sonnet sub-agent); the patch is
-    re/out/desk/dsonnet/t18_story_palette_patch.diff: for the return 0xE148 set `flow.story.step` and `flow.story.counter` from d2 and d1 (step = 5 - d2 and counter = d1 + 1, or step 0 and
-    counter = d1 when d2 is 0), and set `flow.front.clear_stage = 0` and `clear3_cut = 0` for every story part. With the patch m800_bta6_sl_kill lagsync has no difference in the panel (5564 to
-    5867), and 20 whole-run checks (step and lagsync of ep2_jack, ep2_3p, ep3_jack, ep3_mustapha, ep3_3p, ep4_3p, ep6_3p, ep7_3p, ep7_jack, m517_ep1_jack) stay equal with their rules; ep2_3p,
-    ep3_mustapha and ep4_3p, and the lagsync runs of ep3_jack, ep3_3p, ep7_jack and m517_ep1_jack, need no cause S rule at all any more.
+    The fix was two small changes in `trace.rs`, in the story branch of `trace_load_tasks` (the patch is re/out/desk/dsonnet/t18_story_palette_patch.diff): for the return 0xE148 set
+    `flow.story.step` and `flow.story.counter` from d2 and d1, and set `flow.front.clear_stage = 0` and `clear3_cut = 0` for every story part. The lagsync runs of ep3_jack, ep3_3p,
+    ep7_jack and m517_ep1_jack need no cause S rule at all any more.
     Player sees: no (a free run does not load a snapshot; this is a harness gap).
-    What is left in the same recording after the panel: records 5869 to 5883, scroll2 1004 cells and scroll3 85 cells at the level start of Episode 8 after the panel (the lag records 5868 and
+    What was left in the same recording after the panel: records 5869 to 5883, scroll2 1004 cells and scroll3 85 cells at the level start of Episode 8 after the panel (the lag records 5868 and
     5884 to 5886): the first screens of the map are drawn across the video frame boundaries of the area start in the original (the blocking code of the area start, cause C1; the same
     first level frames as the cuts of allow/m228.txt). Player sees: no.
 
@@ -161,9 +173,12 @@ C13 The hit sound mode (bits 16 to 23 of d1 of 0x39 / 0x3A / 0x3B / 0x5E / 0x5F 
     mode 3 for the hero hit of an enemy, a hero or a monster (player_combat.rs, enemy_combat.rs). Where a6 holds a leftover object in the original, MAME has mode 4 (c14c_mustapha,
     m600_bs_v3_v6_dmg; Desktop Haiku task 61 counted 1598 frames with a mode 3 against 4 difference in 24 natural recordings). Only the direction of the pan sweep differs (3 or 4), the code, the frame and the pan equal.
     Needs the a6 of every routine that runs before the passes. Player sees: a pan sweep direction on some hit sounds (stereo only). Not found audible in play.
+    Rule status (Task 75, 2026-10-21): no rule line in the allow files names this cause (the R6 rules are another cause), and the recordings are not in m10_all.sh.
 
-C14 Sound code differences at single records.  m600_bs_v2_v9_alt 5005: step mode no longer sends the extra Vice summon request 0x13 (the old row BS05); what is left there is the
-    scroll3 cells (C6) and 0x0E d1 / d2 (C12 R4). m800_bta6_sl_kill lagsync 5564: the sound 0x11 with d1 / d2 MAME 8 / 0 against 0 / 0 (R4; the palette and the scroll3 cells of that record are C23). The sound requests of the attract loop are equal in code, d1 and d2 for the 37 requests that the flush sends (allow/m10.txt).
+C14 Sound code differences at single records.  m600_bs_v2_v9_alt 5005: GONE. Step mode no longer sends the extra Vice summon request 0x13 (the old row BS05), and the scroll3 cells
+    of that record are gone too (C6, task 24); the sound 0x0E d1 / d2 there is covered by the R4 rule (C12). m800_bta6_sl_kill lagsync 5564: the sound 0x11 with d1 / d2 MAME 8 / 0
+    against 0 / 0 (R4; the palette and the scroll3 cells of that record are gone with C23). The sound requests of the attract loop are equal in code, d1 and d2 for the 37 requests
+    that the flush sends (allow/m10.txt).
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 5. THE ATTRACT LOOP FROM POWER ON  (allow/m1.txt, allow/m10.txt, allow/m2.txt, D5-errata M10-06)
@@ -225,40 +240,52 @@ C22 Sound requests of the attract demos in a free run (allow/m4.txt, last rules,
     kind. Player sees: no.
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
-8. NO CAUSE NAMED YET
+8. OPEN ITEMS WITHOUT A CAUSE (none open on 2026-10-21, Task 75)
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-N1  ep8_3p records 48588 to 48776, sprites only: the port shows a debris piece of Fessenden's quake (pool C class 40, 0x97674) that MAME does not show; every field of the objects is
-    equal.  [re/out/desk/opus/report.md, task 20: "NOT listed (open)"]   Player sees: yes, one extra debris sprite for about 190 frames in the Fessenden fight with three heroes.
-N3  The scroll3 cell group of C6 is explained by an analysis, not by a fix; if the story portrait is not the cause, the six recordings of C6 belong here.
+N1  GONE: not reproducible on the newest build. The ep8_3p records 48588 to 48776 are equal in every field in step and lagsync since the effect bytes +$4C..+$4F were ported
+    (M10-19 / M10-20 merge; the note in allow/m10_runs.txt, ep8_3p). Was: the port showed a debris piece of Fessenden's quake (pool C class 40, 0x97674) that MAME did not show.
+    [re/out/desk/opus/report.md, task 20]   Player sees (before): yes, one extra debris sprite for about 190 frames in the Fessenden fight with three heroes.
+N2  GONE: the story panel loader cause of the Episode 8 panel, now C23 (the patch of task 18 is applied in trace.rs, commit 41048767, merged in fdfcf52c).
+N3  GONE: the scroll3 cell group of C6 is equal in step and lagsync since the task 24 fix (harness.rs load_regions).
 N4  Scene jump points: none any more. The boss points of the test menu and of `--jump` (Vice T., Butcher, the car, Slice, Morgan, the lift, the Slisaurs, Fessenden; the Butcher and
     Slice points never brought the boss, and Hogg and Tyrog were never listed) were removed on 2026-10-21 because the user does not need scene jumps. `dino-rs/crates/dino-game/src/jumps.rs`
     and run.md section 3 list the same 22 episode and area start points (ep1 .. ep8a3, camera X 0). Not a game difference.   Player sees: no.
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
-9. THE RE-RUN OF 2026-10-21 (integ c409444, re/harness/m10_check.sh, step and lagsync, no rules)
+9. THE CHECKS OF 2026-10-21 (Task 75; the numbers come from the reports of the Desktop workers)
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Recording                          step: first difference                      lagsync                                          cause
-m600_bs_b2_b4_face_replay          4844 sprites (blank list)                   5270 splash_timer, 42 fields                     C7
-m600_bs_e1_h4_foot                 5267 scroll3 8 cells, sound 0x3E d2          same                                             C6, C12
-m600_bs_h1_h1_foot                 5311 scroll3 8 cells                        same                                             C6
-m600_bs_h1_h1_foot_replay          equal                                       equal                                            (was 3995: fixed)
-m600_bs_h1_h4_foot                 5267 scroll3 8 cells, sound 0x3E d2         same                                             C6, C12
-m600_bs_v2_v9_alt                  5006 scroll3 12 cells, sound 0x0E           same                                             C6, C12
-m700_bs_s2_s4_face_replay          3831 sprites (blank list)                   4257 splash_timer, 67 fields                     C7
-m700_bt_a5_m5_morgue_kill          7056 scroll3 10 cells, sound 0x0E           same                                             C6, C12
-m800_a14_n_e7a1_full               1 player +$F9 invuln (56 fields)            1 (355 fields)                                   C20
-m800_a31_ee_f84_kill               13262 splash_timer (56 fields)              13262 (69 fields)                                C7
-m800_bta17_f84_kill                13262 splash_timer (56 fields)              13262 (69 fields)                                C7
-m800_bta6_sl_kill                  905 splash_timer, G.$0 (39 fields)          5564 palette 27 words, sound 0x11 (5564-5867)    C7 (step), C23 (lagsync); then 5869-5883 C1
-m800_bta7_k8_start                 equal (it ran again after task 66)          equal                                            -
-m800_bta9_ty_full_c                7990 scroll3 15 cells                       same                                             C6
-m523_ep1_2p                        30613 sprites (blank list)                  equal                                            C10 X
-m523_ep1_3pjhm                     33745 sprites (blank list)                  equal                                            C10 X
-The other 406 of the 418 recordings are equal in step mode (refresh 10, task 69: 406 equal, 12 differ: the twelve rows above that differ; m600_bs_h1_h1_foot_replay and
-m800_bta7_k8_start are equal now). Of the 318 new recordings 313 are equal; the four that differ are m523_ep1_2p, m523_ep1_2p_full, m523_ep1_3pjhm and m523_ep1_3pjhm_full (the
-C10 X records of allow/m10_runs.txt); one, flow_m1003-loop, has no input script and is checked by m10_loop_check.sh; the 20 settings recordings are equal.
+ - re/harness/m10_all.sh, step and lagsync, with the rules of allow/m10_runs.txt and allow/m10.txt: 134 of 134 mode runs equal (Desktop Opus task 26, which also removed the unused rules).
+ - The M10-21 settings recordings (the t73 copies of the codex worktree, newest build): 107 of 107 recording and mode comparisons pass with the listed causes (Desktop Haiku task 73).
+ - re/harness/regress.sh: 52 of 52 scenarios with 0 differences.
+ - The six demo windows (re/harness/m10_demo_check.sh): 6 of 6 equal.
+ - The re-run without rules (integ c409444, step and lagsync, the 16 recordings that had a first difference in sweep.md and sweep_new.md), and what became of each one:
+
+Recording                          first difference without rules (c409444)     now
+m600_bs_b2_b4_face_replay          step 4844 sprites (blank list)                C7 (no rule line)
+                                   lagsync 5270 splash_timer, 42 fields
+m600_bs_e1_h4_foot                 step 5267 scroll3 8 cells, sound 0x3E d2     gone (task 24, C6); the 0x3E d2 is R1
+m600_bs_h1_h1_foot                 5311 scroll3 8 cells                         gone (task 24, C6)
+m600_bs_h1_h1_foot_replay          equal (was 3995: fixed)                      equal
+m600_bs_h1_h4_foot                 5267 scroll3 8 cells, sound 0x3E d2          gone (task 24, C6); the 0x3E d2 is R1
+m600_bs_v2_v9_alt                  5006 scroll3 12 cells, sound 0x0E            gone (task 24, C6; the Vice request gone, C14); 0x0E d1 / d2 is R4
+m700_bs_s2_s4_face_replay          step 3831 sprites (blank list)                C7 (no rule line)
+                                   lagsync 4257 splash_timer, 67 fields
+m700_bt_a5_m5_morgue_kill          7056 scroll3 10 cells, sound 0x0E            gone (task 24, C6); 0x0E d1 / d2 is R4
+m800_a14_n_e7a1_full               1 player +$F9 invuln (56 fields)             C20 (no rule line, probe only)
+m800_a31_ee_f84_kill               13262 splash_timer (56 fields)               C7 (no rule line)
+m800_bta17_f84_kill                13262 splash_timer (56 fields)               C7 (no rule line)
+m800_bta6_sl_kill                  step 905 splash_timer, G.$0 (39 fields)      step: C7 (no rule line)
+                                   lagsync 5564 palette 27 words, sound 0x11    lagsync: gone (C23, task 18 patch); sound 0x11 d1 / d2 is R4
+m800_bta7_k8_start                 equal (it ran again after task 66)           equal
+m800_bta9_ty_full_c                7990 scroll3 15 cells                        gone (task 24, C6)
+m523_ep1_2p                        30613 sprites (blank list)                   gone (task 23 fix; task 25 removed the X rule)
+m523_ep1_3pjhm                     33745 sprites (blank list)                   gone (task 23 fix; task 25 removed the X rule)
+
+The other 406 of the 418 recordings of sweep.md are equal in step mode (refresh 10, task 69: 406 equal, 12 differ: the rows above that differ). Of the 318 recordings of
+sweep_new.md, 313 were equal; the four m523 ones (m523_ep1_2p, m523_ep1_2p_full, m523_ep1_3pjhm, m523_ep1_3pjhm_full) are equal now. One, flow_m1003-loop, has no input script and is
+checked by m10_loop_check.sh; the 20 settings recordings are equal.
 The old rows of the sweep that are gone since: G.$6A32 obst_slot (5 recordings), cam3_x at m600_bs_h1_h1_foot_replay 3995, the Vice summon request 0x13 at m600_bs_v2_v9_alt 5005,
 the Episode 2 poacher at ep2_jack 36998-37012, the pool B 46 break (ported), the fence, Zeke, the typewriter objects of the openings, the placeholder classes.
 
@@ -266,7 +293,8 @@ the Episode 2 poacher at ep2_jack 36998-37012, the pool B 46 break (ported), the
 10. WHAT IS CHECKED AND EQUAL (so that the list above is not read as "everything else is unknown")
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
- - the natural whole runs (ep1 to ep8, 1 player of every hero, 3 players; 24 recordings in the free-run measure, 48 whole-run checks with the flow recordings) and the ending, the game over and the attract loop after it: step and lagsync equal outside sections 1 to 3.
+ - the natural whole runs (ep1 to ep8, 1 player of every hero, 3 players; 24 recordings in the free-run measure, 48 whole-run checks with the flow recordings; m10_all.sh now 134 mode runs)
+   and the ending, the game over and the attract loop after it: step and lagsync equal outside sections 1 to 3.
  - 52 of 52 regress.sh scenarios; 55 hero move scenarios (allow/m5.txt, A1 to A14, four heroes, step and run mode); the 581 Episode 1 verify scenarios (M5-19 to M5-21); the 14 boss
    and class scenario families of M6 to M8; the m914_* recordings (containers, rolling barrels, the Episode 5 diamond) and m915_* (boss HP by player count at level 0: Morgan 256 /
    448, Morgue 512 / 576 / 704, equal to the table; the design note that said 768 was wrong); the tag team move (m901_*); the 2 and 3 player settings variants.
