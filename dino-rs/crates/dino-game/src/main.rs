@@ -8,7 +8,8 @@
 //!         [--step-from MAME.trc] [--follow-rng MAME.trc] [--lagsync MAME.trc]
 //!         [--poke FRAME:ADDR:SIZE:VALUE]... [--poke-file FILE]... [--poke-clock power|game]
 //!         [--episode 1..8 | --stage 0..7] [--area 0..3] [--camx X] [--autoplay] [--debug-keys]
-//!         [--jump NAME] [--list-jumps] [--test]`
+//!         [--jump NAME] [--list-jumps] [--test]
+//!         [--ally 2|3|2,3] [--ally-chars H,H] [--ally-continues N]`
 //! Without `--stage`, `--episode` and `--chars` the game starts from power on (the boot screens and the attract
 //! mode); `--stage N` / `--episode N` / `--chars` start directly in a stage (development). `--area` and `--camx` (hex or
 //! decimal) start that area with the camera at X. `--autoplay` is the bot of `autoplay.rs`: from power on through the eight episodes
@@ -23,6 +24,11 @@
 //! `--test` is a windowed run with the debug keys on and the test menu open (`menu.rs`); `--test --headless --screenshots F --shot-dir DIR`
 //! draws the menu in the picture. With the debug keys on, F1 opens and closes the menu at any time (without them F1 shows the hit boxes).
 //! The menu: Up / Down choose, Enter jumps, Left / Right change the hero and the players, Esc or F1 closes it; the game is paused while it is open.
+//! `--ally 2`, `--ally 3` or `--ally 2,3`: the computer plays those players next to the human player 1 (the smart bot of `planner.rs`; `ally.rs`).
+//! It puts in its own coin and pushes its start button when player 1 has started (in the select screen or later in the level), picks its hero,
+//! and continues by itself after a death. `--ally-chars 1,2` are the heroes in the same order (0 Jack, 1 Mustapha, 2 Hannah, 3 Mess; default: the
+//! first heroes player 1 did not pick), `--ally-continues N` the continues each may use (default: no limit). An ally slot ignores its keys and pad.
+//! In a window F7 hands player 2 to the computer or takes it back, F8 the same for player 3. Works headless too (`--headless --ally 2 --input ...`).
 //! `--poke` / `--poke-file` write RAM values into the running game at a frame (the lines of MAME's
 //! `DINO_POKES`: `frame hexaddr size value`, power frames unless `--poke-clock game`; see
 //! `harness.rs`, `PokeSet`). An address the port has no field for is an error.
@@ -30,6 +36,7 @@
 //! for `--load-state` (start from a MAME snapshot) and `--trace` (headless run for the diff). `--keep-dip` (with `--trace`): a loaded
 //! snapshot keeps the settings of `--config` (G.$777A..C of the port) instead of the bytes of the snapshot.
 
+mod ally;
 mod audio;
 mod autoplay;
 mod planner;
@@ -92,6 +99,8 @@ struct Args {
     goto: Option<(u8, u16)>,
     chars: Vec<u8>,
     autoplay: Option<autoplay::Bot>,
+    /// `--ally`: the players the computer plays (`ally.rs`).
+    allies: ally::Allies,
     /// `--autoplay smart`: the planning bot of `planner.rs`.
     smart: Option<planner::Smart>,
     debug: debug::Debug,
@@ -186,6 +195,7 @@ fn args() -> Args {
         camx: camx.unwrap_or(0) as u16,
         goto: area.filter(|&a| a > 0).map(|a| (a, camx.unwrap_or(0) as u16)),
         autoplay: (a.iter().any(|x| x == "--autoplay") && !smart).then(autoplay::Bot::default),
+        allies: allies(&a),
         smart: smart.then(|| {
             let chars: Vec<u8> = value("--chars").map(|v| v.split(',').filter_map(|c| c.parse().ok()).collect()).unwrap_or(vec![0]);
             planner::Smart::new(&chars, value("--smart-continues").and_then(|v| v.parse().ok()).unwrap_or(3))
@@ -210,6 +220,33 @@ fn args() -> Args {
         mute: a.iter().any(|x| x == "--mute"),
         fullscreen: a.iter().any(|x| x == "--fullscreen"),
     }
+}
+
+/// `--ally 2|3|2,3`, `--ally-chars H,H`, `--ally-continues N` (see `ally.rs`).
+fn allies(a: &[String]) -> ally::Allies {
+    let value = |flag: &str| a.iter().position(|x| x == flag).and_then(|i| a.get(i + 1)).cloned();
+    let slots: Vec<usize> = value("--ally")
+        .map(|v| {
+            v.split(',')
+                .map(|p| match p.trim() {
+                    "2" => 1,
+                    "3" => 2,
+                    other => fail(&format!("--ally takes 2, 3 or 2,3 (the players the computer plays), not `{other}`")),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    if slots.len() == 2 && slots[0] == slots[1] {
+        fail("--ally lists a player twice");
+    }
+    let chars: Vec<u8> = value("--ally-chars")
+        .map(|v| v.split(',').map(|c| c.trim().parse::<u8>().ok().filter(|c| *c < 4).unwrap_or_else(|| fail("--ally-chars takes heroes 0 to 3 (0 Jack, 1 Mustapha, 2 Hannah, 3 Mess)"))).collect())
+        .unwrap_or_default();
+    if slots.is_empty() && !chars.is_empty() {
+        fail("--ally-chars needs --ally");
+    }
+    let continues = value("--ally-continues").map(|v| v.parse::<u32>().unwrap_or_else(|_| fail("--ally-continues takes a number")));
+    ally::Allies::new(&slots, &chars, continues)
 }
 
 fn fail(message: &str) -> ! {
@@ -292,6 +329,9 @@ fn main() {
     }
     let args = args();
     let config = load_config(args.config.as_deref());
+    if args.trace.is_some() && !args.allies.is_empty() {
+        fail("--ally cannot be combined with --trace (a trace run is a replay of recorded input: the harness plays no allies)");
+    }
     if let Some(trace) = &args.trace {
         // Headless harness run: no window.
         let frames = if std::env::args().any(|a| a == "--frames") { args.frames } else { 600 };
@@ -437,6 +477,7 @@ fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Fr
         f.system |= s.system;
         f.coins |= s.coins;
     }
+    args.allies.apply(game, &mut f); // the ally slots: last, they are the ally's alone
     game.w.input = f.players;
     game.w.system = f.system | 0x08; // 0x738 quirk, see harness.rs
     game.w.coins = f.coins;
@@ -462,9 +503,25 @@ fn run_headless(mut args: Args, config: game::flow::Config) {
     let mut cpu = headless::Cpu::new(assets);
     // `--test`: the menu is open, so the game does not run (headless runs have no keys, the picture shows the menu over the start)
     let mut menu = menu::Menu::new(args.chars[0], args.chars.len() as u8, args.test);
+    // `DINO_REALTIME=1`: the run keeps the pace of the window (59.64 Hz), to measure what an ally's planner costs the frame (`ally.rs`)
+    let realtime = std::env::var("DINO_REALTIME").is_ok_and(|v| v == "1");
+    let mut next_frame_time = std::time::Instant::now();
+    let mut late = (0u32, std::time::Duration::ZERO);
     for tick in 0..args.frames {
+        if realtime {
+            next_frame_time += FRAME_DURATION;
+        }
         if !menu.open {
             tick_game(&mut game, &mut args, tick, input::Frame::default(), &mut None);
+        }
+        if realtime {
+            let now = std::time::Instant::now();
+            if now < next_frame_time {
+                std::thread::sleep(next_frame_time - now);
+            } else {
+                late.0 += 1;
+                late.1 = late.1.max(now - next_frame_time);
+            }
         }
         if (args.autoplay.as_ref().is_some_and(|b| b.done()) || args.smart.as_ref().is_some_and(|b| b.done())) && args.shots.is_empty() && !args.frames_given {
             break;
@@ -481,6 +538,10 @@ fn run_headless(mut args: Args, config: game::flow::Config) {
     }
     if let Some(bot) = &mut args.smart {
         bot.summary(args.frames.saturating_sub(1));
+    }
+    args.allies.summary();
+    if realtime {
+        eprintln!("realtime: {} of {} frames took longer than {:.3} ms, the longest {:.2} ms over", late.0, args.frames, FRAME_DURATION.as_secs_f64() * 1e3, late.1.as_secs_f64() * 1e3);
     }
 }
 
@@ -561,6 +622,15 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
         // P: pause and go on (a feature of the port, the arcade has no pause). The picture stays, the sound stops.
         if viewer.is_none() && !(menu.open && menu_ok) && is_key_pressed(KeyCode::P) {
             user_paused = !user_paused;
+        }
+        // F7 and F8: the computer plays player 2 or player 3 (an ally, `ally.rs`) or hands the slot back to the human
+        if viewer.is_none() && !(menu.open && menu_ok) {
+            if is_key_pressed(KeyCode::F7) {
+                args.allies.toggle(1);
+            }
+            if is_key_pressed(KeyCode::F8) {
+                args.allies.toggle(2);
+            }
         }
         let paused = (menu.open && menu_ok) || user_paused;
         if menu.open && menu_ok {

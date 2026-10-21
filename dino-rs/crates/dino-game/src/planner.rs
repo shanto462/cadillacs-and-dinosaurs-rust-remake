@@ -103,7 +103,7 @@ const STAGE_STEP: i64 = 100_000;
 // Macro actions
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum Act {
+pub enum Act {
     Idle,
     Attack,
     Combo,
@@ -115,7 +115,7 @@ enum Act {
 
 /// K frames of input: a direction byte and what the buttons do.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct Macro {
+pub struct Macro {
     dir: u8,
     act: Act,
 }
@@ -123,8 +123,13 @@ struct Macro {
 const DIRS: [u8; 9] = [0, RIGHT, LEFT, UP, DOWN, RIGHT | UP, RIGHT | DOWN, LEFT | UP, LEFT | DOWN];
 
 impl Macro {
+    /// K frames of nothing.
+    pub fn idle() -> Macro {
+        Macro { dir: 0, act: Act::Idle }
+    }
+
     /// The input byte of frame `i` (0 to K - 1) of the macro.
-    fn input(self, i: usize) -> u8 {
+    pub fn input(self, i: usize) -> u8 {
         let d = self.dir;
         match self.act {
             Act::Idle => d,
@@ -145,9 +150,12 @@ impl Macro {
     }
 }
 
-/// One frame of the game with the input of player 1 (what `tick_game` of main.rs does).
-fn step(g: &mut Game, f: u8) {
-    g.w.input = [f, 0, 0];
+/// One frame of the game with the input `f` of player `me` (index 0 to 2) and `others` for the other players (what `tick_game` of main.rs
+/// does; the bot of player 1 passes no input for the others, an ally holds the input player 1 has now, see `ally.rs`).
+pub fn step(g: &mut Game, me: usize, f: u8, others: [u8; 3]) {
+    let mut input = others;
+    input[me] = f;
+    g.w.input = input;
     g.w.system = 0x08;
     g.w.coins = 0;
     g.tick();
@@ -163,8 +171,8 @@ fn hostile(e: &crate::game::enemy::Enemy) -> bool {
 }
 
 /// The distance to the nearest enemy that can be hit.
-fn nearest(g: &Game) -> Option<i64> {
-    let p = &g.players[0].b;
+fn nearest(g: &Game, me: usize) -> Option<i64> {
+    let p = &g.players[me].b;
     g.enemies.slots.iter().filter(|e| hostile(e)).map(|e| (e.b.xi() as i64 - p.xi() as i64).abs() + 3 * (e.b.zi() as i64 - p.zi() as i64).abs()).min()
 }
 
@@ -179,23 +187,54 @@ fn bcd(v: u32) -> i64 {
 }
 
 /// The hero can be controlled: the game runs the level, no scripted scene, the hero is alive and not locked.
-fn controllable(g: &Game) -> bool {
-    g.flow.in_game != 0 && g.flow.mode == 0xC && g.w.scripted == 0 && g.players[0].b.live != 0 && g.players[0].b.hp != 0 && g.players[0].input_lock == 0
+pub fn controllable(g: &Game, me: usize) -> bool {
+    g.flow.in_game != 0 && g.flow.mode == 0xC && g.w.scripted == 0 && g.players[me].b.live != 0 && g.players[me].b.hp != 0 && g.players[me].input_lock == 0
 }
 
 /// A number that grows when the hero goes right, through the areas and the episodes.
-fn progress(g: &Game) -> i64 {
-    let x = (g.players[0].b.xi() as i64).clamp(-512, 0x3FFF);
+fn progress(g: &Game, me: usize) -> i64 {
+    let x = (g.players[me].b.xi() as i64).clamp(-512, 0x3FFF);
     g.w.stage as i64 * STAGE_STEP + g.cam.s2.area as i64 * AREA_STEP + x
+}
+
+/// How far from player 1 an ally walks without it counting as lost ground (pixels).
+pub const FOLLOW: i64 = 72;
+/// Player 1 needs the food when its HP is under this and not above the ally's (the rule of `Snap::of`).
+pub const NEEDY_HP: i64 = 40;
+/// Points an ally loses for every HP it takes from the food player 1 needs.
+const FOOD_BLOCK: i64 = 200;
+
+/// The team play of an ally (a bot of player 2 or 3 next to the human player 1, `ally.rs`), see `Snap::of` and `value`.
+#[derive(Clone, Copy, Debug)]
+pub struct Team {
+    /// Player 1's hero is in the game (alive): the ally stays near it. Without it the ally leads (the plain bot).
+    pub follow: bool,
+    /// Player 1 needs the food: the ally does not take it (it loses points for every HP it gains).
+    pub no_food: bool,
+}
+
+/// The distance the ally is away from player 1 beyond `FOLLOW` (0 inside it).
+fn gap(g: &Game, me: usize) -> i64 {
+    ((g.players[me].b.xi() as i64 - g.players[0].b.xi() as i64).abs() - FOLLOW).max(0)
+}
+
+/// Player 1 is in the game and alive.
+fn p1_alive(g: &Game, me: usize) -> bool {
+    me != 0 && g.players[0].b.live != 0 && g.players[0].b.hp != 0
 }
 
 /// The state a plan is scored against.
 #[derive(Clone)]
 struct Snap {
+    me: usize,
+    team: Option<Team>,
+    gap: i64,
     hp: i64,
     lives: i64,
     score: i64,
     progress: i64,
+    /// The x that is in `progress`.
+    x: i64,
     armed: bool,
     enemy_hp: Vec<u16>,
     stage: u8,
@@ -205,17 +244,27 @@ struct Snap {
 }
 
 impl Snap {
-    fn of(g: &Game, prm: Params) -> Snap {
-        let p = &g.players[0];
+    /// `team`: the player is an ally (`ally.rs`); then the score keeps it near player 1 (the x of the walk counts for nothing) and,
+    /// when player 1's HP is low (under `NEEDY_HP` and not above the ally's) it takes no food.
+    fn of(g: &Game, prm: Params, me: usize, team: bool) -> Snap {
+        let p = &g.players[me];
+        let team = team.then(|| {
+            let follow = p1_alive(g, me);
+            Team { follow, no_food: follow && (g.players[0].b.hp as i64) < NEEDY_HP && g.players[0].b.hp <= p.b.hp }
+        });
         Snap {
+            me,
+            team,
+            gap: gap(g, me),
             hp: p.b.hp as i64,
             lives: p.lives as i64,
             score: bcd(p.score),
-            progress: progress(g),
+            progress: progress(g, me),
+            x: (p.b.xi() as i64).clamp(-512, 0x3FFF),
             armed: p.item != 0,
             enemy_hp: g.enemies.slots.iter().map(|e| if hostile(e) { e.b.hp } else { 0 }).collect(),
             stage: g.w.stage,
-            near: nearest(g),
+            near: nearest(g, me),
             prm,
         }
     }
@@ -224,10 +273,15 @@ impl Snap {
 /// The score of an end state (higher is better).
 fn value(s: &Snap, g: &Game) -> i64 {
     let prm = &s.prm;
-    let p = &g.players[0];
+    let me = s.me;
+    let p = &g.players[me];
     let hp = p.b.hp as i64;
     let mut v = 0;
-    v += (hp_worth(prm, hp) - hp_worth(prm, s.hp)) / 100;
+    if hp > s.hp && s.team.is_some_and(|t| t.no_food) {
+        v -= (hp - s.hp) * FOOD_BLOCK;
+    } else {
+        v += (hp_worth(prm, hp) - hp_worth(prm, s.hp)) / 100;
+    }
     if p.lives as i64 != s.lives && g.w.stage == s.stage || p.b.live == 0 || p.b.hp == 0 {
         v -= prm.life;
     }
@@ -244,8 +298,16 @@ fn value(s: &Snap, g: &Game) -> i64 {
         }
     }
     v += damage * prm.damage + kills * prm.kill;
-    v += (progress(g) - s.progress) * prm.progress;
-    if let (Some(d0), Some(d1)) = (s.near, nearest(g)) {
+    match s.team {
+        // an ally follows player 1: the area and the episode count, the x of the walk does not; staying near player 1 does
+        Some(Team { follow: true, .. }) => {
+            let x = |g: &Game| (g.players[me].b.xi() as i64).clamp(-512, 0x3FFF);
+            let steps = progress(g, me) - x(g) - (s.progress - s.x);
+            v += steps * prm.progress + (s.gap - gap(g, me)).clamp(-300, 300) * (prm.progress / 2).max(1);
+        }
+        _ => v += (progress(g, me) - s.progress) * prm.progress,
+    }
+    if let (Some(d0), Some(d1)) = (s.near, nearest(g, me)) {
         v += (d0 - d1).clamp(-400, 400) * prm.near;
     }
     v += (bcd(p.score) - s.score) * prm.score;
@@ -268,17 +330,20 @@ struct Policy {
     best_x: i16,
     still: u16,
     t: u16,
+    /// The player the policy plays (index 0 to 2), and whether it is an ally (with nothing to hit it walks to player 1, not to the right).
+    me: usize,
+    team: bool,
 }
 
 impl Policy {
-    fn new(g: &Game) -> Policy {
-        Policy { best_x: g.players[0].b.xi(), still: 0, t: 0 }
+    fn new(g: &Game, me: usize, team: bool) -> Policy {
+        Policy { best_x: g.players[me].b.xi(), still: 0, t: 0, me, team }
     }
 
     /// The input of the next frame.
     fn input(&mut self, g: &Game) -> u8 {
         self.t = self.t.wrapping_add(1);
-        let p = &g.players[0];
+        let p = &g.players[self.me];
         let (px, pz) = (p.b.xi() as i32, p.b.zi() as i32);
         if p.b.xi() > self.best_x {
             self.best_x = p.b.xi();
@@ -313,6 +378,18 @@ impl Policy {
                 }
                 f
             }
+            _ if self.team && p1_alive(g, self.me) => {
+                // an ally with nothing to hit: back to player 1 (inside `FOLLOW` pixels it stands)
+                let (dx, dz) = (g.players[0].b.xi() as i32 - px, g.players[0].b.zi() as i32 - pz);
+                let mut f = 0;
+                if dx.abs() as i64 > FOLLOW / 2 {
+                    f |= if dx > 0 { RIGHT } else { LEFT };
+                }
+                if dz.abs() > 24 {
+                    f |= if dz > 0 { UP } else { DOWN };
+                }
+                f
+            }
             _ => {
                 // nothing to hit: go right; at a wall sweep the depth up and down
                 if self.still > 12 {
@@ -343,14 +420,14 @@ struct Done {
 }
 
 /// Plays `n` frames of the policy on `g`.
-fn rollout(g: &mut Game, n: usize) {
-    let mut pol = Policy::new(g);
+fn rollout(g: &mut Game, n: usize, me: usize, team: bool, others: [u8; 3]) {
+    let mut pol = Policy::new(g, me, team);
     for _ in 0..n {
-        if g.players[0].b.live == 0 || g.players[0].b.hp == 0 {
+        if g.players[me].b.live == 0 || g.players[me].b.hp == 0 {
             break;
         }
         let f = pol.input(g);
-        step(g, f);
+        step(g, me, f, others);
     }
 }
 
@@ -406,6 +483,10 @@ fn candidates(g: &Game, wide: bool) -> Vec<Macro> {
 /// The planner: the real game goes in, the macro to play comes out.
 pub struct Planner {
     pub params: Params,
+    /// The player it plays (0 to 2), whether it is an ally (`Team`), and the input the other players hold in the simulations.
+    pub me: usize,
+    pub team: bool,
+    pub others: [u8; 3],
     /// The best plan of the last decision (its tail is a candidate of the next one).
     plan: Vec<Macro>,
     /// Simulated frames (for the report).
@@ -415,12 +496,12 @@ pub struct Planner {
 
 impl Planner {
     pub fn new(params: Params) -> Planner {
-        Planner { params, plan: Vec::new(), sim_frames: 0, decisions: 0 }
+        Planner { params, me: 0, team: false, others: [0; 3], plan: Vec::new(), sim_frames: 0, decisions: 0 }
     }
 
     /// An enemy near enough that the attack actions matter.
-    fn near_enemy(g: &Game) -> bool {
-        let p = &g.players[0];
+    fn near_enemy(g: &Game, me: usize) -> bool {
+        let p = &g.players[me];
         let (px, pz) = (p.b.xi() as i32, p.b.zi() as i32);
         g.enemies.slots.iter().any(|e| hostile(e) && (e.b.xi() as i32 - px).abs() < 150 && (e.b.zi() as i32 - pz).abs() < 60)
     }
@@ -428,8 +509,9 @@ impl Planner {
     pub fn decide(&mut self, g: &Game) -> Macro {
         self.decisions += 1;
         let prm = self.params;
-        let snap = Snap::of(g, prm);
-        let wide = Self::near_enemy(g);
+        let (me, team, others) = (self.me, self.team, self.others);
+        let snap = Snap::of(g, prm, me, team);
+        let wide = Self::near_enemy(g, me);
         let mut root_cands = candidates(g, wide);
         if let Some(&m) = self.plan.get(1)
             && !root_cands.contains(&m) {
@@ -446,16 +528,16 @@ impl Planner {
                 let parent = &level[pi];
                 let mut c = parent.g.clone();
                 for i in 0..K {
-                    step(&mut c, m.input(i));
+                    step(&mut c, me, m.input(i), others);
                 }
                 let mut path = parent.path.clone();
                 path.push(m);
                 if last {
-                    rollout(&mut c, rest);
+                    rollout(&mut c, rest, me, team, others);
                     Done { val: value(&snap, &c), path, g: None }
                 } else {
                     let mut r = c.clone();
-                    rollout(&mut r, rest);
+                    rollout(&mut r, rest, me, team, others);
                     Done { val: value(&snap, &r), path, g: Some(c) }
                 }
             });
@@ -623,7 +705,7 @@ impl Smart {
             return f;
         }
         self.in_state8 = 0;
-        if !controllable(g) {
+        if !controllable(g, 0) {
             self.cur = None;
             // a scene: attack skips the waits of a scripted scene
             f.players[0] = ATTACK;
@@ -636,7 +718,7 @@ impl Smart {
             self.best_tick = tick;
         }
         // a fight is not a stall (an enemy that can be hit, or a boss)
-        if g.enemies.slots.iter().any(hostile) || g.cam.s2.lock78 != 0 && Planner::near_enemy(g) {
+        if g.enemies.slots.iter().any(hostile) || g.cam.s2.lock78 != 0 && Planner::near_enemy(g, 0) {
             self.best_tick = tick;
         }
         if let Some(b) = self.unstick(g, tick) {
@@ -735,7 +817,7 @@ impl Smart {
             let all: Vec<String> = g.enemies.slots.iter().filter(|e| e.b.live != 0).map(|e| format!("{}@{},{}:m{:x}h{}f{:x}", e.b.k20 / 4, e.b.xi() as i32 - p.b.xi() as i32, e.b.zi() as i32 - p.b.zi() as i32, e.b.mode, e.b.hp, e.m.b(0x7D))).collect();
             let props: Vec<String> = g.props.slots.iter().filter(|e| e.b.live != 0).map(|e| format!("{}@{},{}:m{:x}h{}", e.b.k20 / 4, e.b.xi() as i32 - p.b.xi() as i32, e.b.zi() as i32 - p.b.zi() as i32, e.b.mode, e.b.hp)).collect();
             eprintln!("smart: diag all {tick}: boss {:x} live enemies {:?} props {:?}", g.hud.boss, all, props);
-            eprintln!("smart: diag {tick}: scripted {:x} lock_in {:x} ctl {} mode {:x} hp {} x {} z {} y {} state {:x} cam {} lock {} | item {:x} | enemies {:?}", g.w.scripted, p.input_lock, controllable(g), g.flow.mode, p.b.hp, p.b.xi(), p.b.zi(), p.b.yi(), p.b.state(), g.cam.s2.cam_x, g.cam.s2.lock78, p.item, en);
+            eprintln!("smart: diag {tick}: scripted {:x} lock_in {:x} ctl {} mode {:x} hp {} x {} z {} y {} state {:x} cam {} lock {} | item {:x} | enemies {:?}", g.w.scripted, p.input_lock, controllable(g, 0), g.flow.mode, p.b.hp, p.b.xi(), p.b.zi(), p.b.yi(), p.b.state(), g.cam.s2.cam_x, g.cam.s2.lock78, p.item, en);
         }
         if g.flow.in_game != 0 {
             let p = &g.players[0];
@@ -871,13 +953,13 @@ mod tests {
         let Some(a) = rom() else { return eprintln!("test skipped: dino.zip is absent") };
         let mut g = stage(a, 0);
         for t in 0..400 {
-            step(&mut g, if t < 300 { ATTACK } else { RIGHT | (t as u8 & ATTACK) });
+            step(&mut g, 0, if t < 300 { ATTACK } else { RIGHT | (t as u8 & ATTACK) }, [0; 3]);
         }
         let mut c = g.clone();
         for t in 0..300 {
             let f = if t % 40 < 20 { RIGHT } else { ATTACK | LEFT };
-            step(&mut g, f);
-            step(&mut c, f);
+            step(&mut g, 0, f, [0; 3]);
+            step(&mut c, 0, f, [0; 3]);
             assert_eq!((g.w.rng, g.players[0].b.xi(), g.players[0].b.hp, g.cam.s2.cam_x), (c.w.rng, c.players[0].b.xi(), c.players[0].b.hp, c.cam.s2.cam_x), "frame {t}");
         }
     }
@@ -940,7 +1022,7 @@ mod tests {
         let Some(a) = rom() else { return eprintln!("test skipped: dino.zip is absent") };
         let g0 = stage(a, 0);
         let prm = small(1, 0);
-        let snap = Snap::of(&g0, prm);
+        let snap = Snap::of(&g0, prm, 0, false);
         let base = value(&snap, &g0);
         let mut hurt = g0.clone();
         hurt.players[0].b.hp -= 20;
@@ -951,6 +1033,41 @@ mod tests {
         let mut dead = g0.clone();
         dead.players[0].b.hp = 0;
         assert!(value(&snap, &dead) < value(&snap, &hurt));
+    }
+
+    /// An ally (`Team`) stays near player 1 and leaves the food to player 1 when its HP is low.
+    #[test]
+    fn the_ally_score_follows_player_1_and_leaves_it_the_food() {
+        let Some(a) = rom() else { return eprintln!("test skipped: dino.zip is absent") };
+        let mut g0 = Game::new(a);
+        g0.flow_apply_config(crate::game::flow::Config::default());
+        g0.start_stage_at(0, 0, 0, &[0, 1]);
+        g0.players[1].b.hp = 50;
+        let prm = small(1, 0);
+        // far ahead of player 1 is worth nothing to an ally, but progress to the plain bot
+        let mut ahead = g0.clone();
+        ahead.players[1].b.set_xi(g0.players[1].b.xi() + 200);
+        let (team, lone) = (Snap::of(&g0, prm, 1, true), Snap::of(&g0, prm, 1, false));
+        assert!(value(&team, &ahead) < value(&team, &g0), "an ally far from player 1 loses points");
+        assert!(value(&lone, &ahead) > value(&lone, &g0), "the plain bot gains for the walk");
+        // a step back to player 1 gains
+        let mut far = g0.clone();
+        far.players[1].b.set_xi(g0.players[0].b.xi() + 300);
+        let (far_snap, mut back) = (Snap::of(&far, prm, 1, true), far.clone());
+        back.players[1].b.set_xi(far.players[1].b.xi() - 100);
+        assert!(value(&far_snap, &back) > value(&far_snap, &far));
+        // food (HP gained): worth points when player 1 is fine, costs points when player 1 needs it
+        let mut fed = g0.clone();
+        fed.players[1].b.hp = 80;
+        g0.players[0].b.hp = 90;
+        let fine = Snap::of(&g0, prm, 1, true);
+        assert!(!fine.team.unwrap().no_food && value(&fine, &fed) > value(&fine, &g0));
+        g0.players[0].b.hp = 20;
+        let needy = Snap::of(&g0, prm, 1, true);
+        assert!(needy.team.unwrap().no_food && value(&needy, &fed) < value(&needy, &g0));
+        // the ally with the lower HP of the two may take it
+        g0.players[1].b.hp = 10;
+        assert!(!Snap::of(&g0, prm, 1, true).team.unwrap().no_food);
     }
 
     /// Episode 1 with Jack, no continue: the bot clears it (the camera is in Episode 2 and no life was lost). Slow: about 10 s with all cores.
@@ -981,18 +1098,18 @@ mod tests {
         let Some(a) = rom() else { return };
         let mut g = stage(a, 0);
         let mut n = 0;
-        while !controllable(&g) && n < 3000 {
-            step(&mut g, ATTACK);
+        while !controllable(&g, 0) && n < 3000 {
+            step(&mut g, 0, ATTACK, [0; 3]);
             n += 1;
         }
         for _ in 0..30 {
-            step(&mut g, 0);
+            step(&mut g, 0, 0, [0; 3]);
         }
         eprintln!("controllable after {n} frames, x {} z {}", g.players[0].b.xi(), g.players[0].b.zi());
         for (name, d) in [("UP", UP), ("DOWN", DOWN), ("RIGHT", RIGHT), ("LEFT", LEFT)] {
             let (x0, z0) = (g.players[0].b.xi(), g.players[0].b.zi());
             for _ in 0..20 {
-                step(&mut g, d);
+                step(&mut g, 0, d, [0; 3]);
             }
             eprintln!("{name}: dx {} dz {}  facing {}", g.players[0].b.xi() - x0, g.players[0].b.zi() - z0, g.players[0].b.facing);
         }

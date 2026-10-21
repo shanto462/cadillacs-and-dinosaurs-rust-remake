@@ -43,8 +43,30 @@ Options:
 - `--windowed`: open a window even when `--screenshots` is given (those runs are headless by default). Example: `--screenshots 60 --shot-dir DIR --windowed`
 - `--screenshot FILE --frames N`: save one picture of frame N as FILE and stop. Headless unless `--windowed`. Example: `--headless --screenshot DIR/one.png --frames 300`
 - `--input "SCRIPT"` or `--input-file FILE`: a scripted key run instead of the keyboard. The script is parts of `FRAMES:KEYS` split by commas or new lines (`#` starts a comment; a frame range is `120-200` or one frame `120`). In the keys, `1`, `2`, `3` choose the player, then `R` `L` `D` `U` (right, left, down, up), `A` attack, `J` jump, `S` start, `C` coin. Example: `--headless --frames 300 --input "1-120:R,121-200:RA"` (walk right, then right with attack).
+- `--ally 2|3|2,3`, `--ally-chars H,H`, `--ally-continues N`: the computer plays player 2 and / or player 3 next to you (player 1). See "Playing with allies" below. Example: `cargo run --release -p dino-game -- --rom ../dino.zip --ally 2 --ally-chars 2`
 - `--stage` and `--viewer` / `--view`: see section 3 and section 5.
 - `--help` (or `-h`) prints every option (the text is the top of `main.rs`).
+
+### Playing with allies (`--ally`)
+
+You play player 1 (keyboard or pad 1); the computer plays player 2 and / or player 3 as teammates. Each ally is the smart bot of `planner.rs` (section 4) for its own player, pressing only buttons of its own slot, like a player at the cabinet: the game logic is not changed, so a run without `--ally` is the same as before.
+
+    cargo run --release -p dino-game -- --rom ../dino.zip --ally 2                       # player 2 is the computer
+    cargo run --release -p dino-game -- --rom ../dino.zip --ally 2 --ally-chars 2        # ... and plays Hannah
+    cargo run --release -p dino-game -- --rom ../dino.zip --ally 2,3 --ally-chars 1,2    # players 2 and 3: Mustapha and Hannah
+    cargo run --release -p dino-game -- --rom ../dino.zip --ally 3 --ally-continues 2    # player 3, at most 2 continues
+    cargo run --release -p dino-game -- --rom ../dino.zip --episode 3 --chars 0 --ally 2 # a direct start: player 2 joins in the level
+
+- `--ally 2`, `--ally 3` or `--ally 2,3`: the players the computer plays. Without it nothing changes. It cannot be combined with `--trace` (a trace run replays recorded input).
+- `--ally-chars 1,2`: the heroes of the allies in the same order (0 Jack, 1 Mustapha, 2 Hannah, 3 Mess). Without it an ally takes the first hero (in the order Jack, Mustapha, Hannah, Mess) that no other player has. An ally with a named hero joins the select screen at once; one without joins after you have picked, so its cursor never stands on a hero you may want. If another cursor stands on the named hero, the ally keeps stepping over the held places for about 2.5 seconds (two allies that want each other's heroes swap this way); if the hero is picked or does not get free, it takes the first free hero.
+- `--ally-continues N`: how many times each ally continues after its death (a coin and start while the countdown runs). Default: no limit. With 0 a dead ally stays dead.
+- An ally slot ignores its keys and its gamepad (also in the `--input` script); player 1 is not touched.
+- In a window: F7 hands player 2 to the computer or takes it back, F8 the same for player 3. Taken over in the level, the ally joins like a player who walks up: coin, start, hero strip.
+- Joining is done only with inputs. Nothing happens before you have started a game (in the attract mode the ally waits). Then, in the select screen or in the level, it puts a coin into its own coin slot and pushes its own start button (1 credit; 2 with the coin mode "2 coins start"; none in free play). In the factory settings (chute mode 0) every player has his own credits, so your credits are not touched. With the common credit pool (chute mode 1 or 2) the ally notes the credits that are in the pool and starts only when its coin has added what a start costs on top of them: your spare credit stays.
+- It plays like the bot of player 1 (a beam search on copies of the game), with two rules for a team: it stays near you (within 72 pixels it is content; the walk to the right counts for nothing, the area and episode steps do count), and it does not take food you need (when your HP is under 40 and not above its own HP, every HP it would gain costs it points; a hero with less HP than you may eat).
+- Speed: the plan for the next 8 frames is made in the background while the current 8 frames are played (on a copy of the game with your current input held), so the frame time does not grow; the result does not depend on the machine (the bot waits for the plan at the end of the 8 frames). The default settings of an ally are smaller than those of the bot of player 1: horizon 64, depth 2, beam 3, up to 4 threads. Environment variables: `DINO_ALLY_H`, `DINO_ALLY_D`, `DINO_ALLY_B`, `DINO_ALLY_THREADS` (a slower machine: try `DINO_ALLY_H=48 DINO_ALLY_B=2 DINO_ALLY_THREADS=2`).
+- Measure it: `DINO_REALTIME=1` makes a headless run keep the pace of the window (59.64 Hz); the end of the run prints the time of the plans, how long the game waited for a plan, and how many frames were late. Example (player 1 scripted, both allies): `DINO_REALTIME=1 cargo run --release -p dino-game -- --rom ../dino.zip --headless --frames 6000 --ally 2,3 --input-file ../re/harness/scripts/ally_p1_walk.txt`
+- Headless tests of the ally: `cargo test -p dino-game ally` (the ally joins in the select screen and in the level, picks its hero, hurts enemies, `--ally 2,3`, continues, the common pool, free play, the same game without `--ally`).
 
 ## 2. Test menu and debug keys
 

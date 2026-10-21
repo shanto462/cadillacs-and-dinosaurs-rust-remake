@@ -80,6 +80,7 @@ The game boots from power-on, showing the Capcom and QSound logos, followed by t
 | Hitbox Overlay | F1 (toggles hitbox display during normal play) |
 | Pause | P (pauses and continues; "PAUSED" shows and the sound stops) |
 | Combo toggle | Q ("COMBO" shows at the bottom left while it is on) |
+| Computer ally | F7 gives Player 2 to the computer (or takes it back), F8 the same for Player 3 (see "Playing With Allies") |
 
 ### Special Move Keys (Player 1)
 
@@ -109,6 +110,21 @@ Connected USB or Bluetooth gamepads automatically map to Players 1, 2, and 3 in 
 | Start button | Start |
 | Select / Back button | Insert Coin |
 | Guide / Mode button | Service Coin |
+
+### Playing With Allies
+
+You play Player 1 and the computer plays Player 2 and / or Player 3 as teammates (it uses only the buttons of its own slot, like a player):
+
+    cargo run --release -p dino-game -- --rom ../dino.zip --ally 2
+    cargo run --release -p dino-game -- --rom ../dino.zip --ally 2 --ally-chars 2
+    cargo run --release -p dino-game -- --rom ../dino.zip --ally 2,3 --ally-chars 1,2
+
+- `--ally 2`, `--ally 3` or `--ally 2,3`: the players the computer plays.
+- `--ally-chars 1,2`: their heroes in the same order (0 Jack, 1 Mustapha, 2 Hannah, 3 Mess). Without it an ally takes the first hero you did not pick.
+- `--ally-continues N`: how many times an ally continues after it dies (default: no limit).
+- When you have started a game, an ally puts a coin into its own slot and presses its own start (in the hero select screen or later in the level), picks its hero, and continues by itself after a death. It does not spend your credits (each player has his own credits in the factory settings; with a common credit pool it adds its own coin on top of what is there).
+- An ally slot ignores its keys and gamepad. In the window F7 and F8 give Player 2 or Player 3 to the computer or take the slot back.
+- The ally stays near you and leaves the food to you when your health is low.
 
 ## Configuration Settings (`dino.cfg`)
 
@@ -164,6 +180,7 @@ The file uses `key = value` lines. Empty lines and comments starting with `#` ar
 - `--mute`: Run without opening an audio device (silent, same as `sound = off` in `dino.cfg`).
 - `--config <path>`: Load settings from an explicit configuration file.
 - `--print-config`: Print factory configuration to standard output and exit.
+- `--ally 2|3|2,3`, `--ally-chars H,H`, `--ally-continues N`: the computer plays Player 2 and / or Player 3 (see "Playing With Allies").
 
 ## What Is Not Included
 
