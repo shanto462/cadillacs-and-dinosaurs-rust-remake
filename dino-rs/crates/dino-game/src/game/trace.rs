@@ -1934,6 +1934,18 @@ impl Game {
             && stack >> 16 == 0xFF
             && sp + 0x44 <= ram.len()
             && u32::from_be_bytes(ram[sp + 0x3C..sp + 0x40].try_into().unwrap()) == 0xA98;
+        // The story panel (mode 8, cause S): the part is the sleep's return on the task stack (`Story::part_at_sleep_return`); the
+        // wait loop's counter is G.-$719A (the word at 0x0E66, the frames left). The other parts keep their default counter (not in RAM yet).
+        if self.flow.mode == 8 && self.flow.resume && self.flow.select_exit == 0 {
+            let ret = u32::from_be_bytes(ram[sp + 0x40..sp + 0x44].try_into().unwrap());
+            if let Some(p) = super::flow::cards::Story::part_at_sleep_return(ret) {
+                self.flow.story.part = p;
+                self.sprites.wipe(); // the entry's clear (0xAE0, `flow_attract_clear`) ran before the sleep in the original: no sprites until the next draw
+                if p == super::flow::cards::Story::WAIT_PART {
+                    self.flow.story.counter = u16::from_be_bytes(ram[0x0E66..0x0E68].try_into().unwrap());
+                }
+            }
+        }
         // Slot 3 (0x30): stage intro or stage clear task. Both keep their state in the struct G.$735E (loaded with the globals). The
         // intro task (0xB9BE) is the one while the level runs and the stage is not cleared (game mode 0xC, G.$4D1 = 0); it is taken
         // over with the sleep counter of the snapshot. The clear task (0xB97E) is not (the tally is M2-28).
