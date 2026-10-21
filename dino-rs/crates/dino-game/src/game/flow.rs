@@ -819,6 +819,9 @@ impl Game {
             if self.flow.mode == 0x18 && self.flow.cont.exit_wait == 2 {
                 self.sound(0xFF00); // 0xAC2C (a5d2), after the clear
             }
+            // 0xAC06 .. 0xAC42 is one pass of the game task (the clear 0xAE0, the sound, the attract task, then the task ends at 0x910): the
+            // ticks of mode 0x18 do not count G.$0 / G.$4DA (MAME m328_end-jack: G.$0 stays 0x1890 from the record of mode 0x18 on)
+            self.flow.resume = self.flow.mode == 0x18;
             return;
         }
         if self.flow.mode == 0x14 {
@@ -828,7 +831,11 @@ impl Game {
             self.flow.mode = 0x18;
             self.flow.front.game_over_flag = 1;
             self.flow_clear_screen();
-            self.flow.cont.exit_wait = 4; // clear 0xAE0 crosses two vblanks.
+            // the clear 0xAE0 overruns the frame (one lag frame: no task runs; a game clock record joins the pass, the lag frame and the next
+            // pass, MAME m328_end-jack 5540); the sound comes in the pass after it, the exit two frames later: four video frames after this one
+            self.flow_lag(1);
+            self.flow.cont.exit_wait = 3;
+            self.flow.resume = true; // the same pass goes on (0xAC26)
             return;
         }
         self.flow.cont.exit_wait = 0;

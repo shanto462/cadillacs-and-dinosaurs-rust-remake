@@ -288,3 +288,63 @@ ep6_3p.*: sounds 42639-42650	# S
 # frame behind: the head sprite of the lobbed projectile (item class 8, 0x29EC4; sprite 572F) is 1 pixel left and 5 pixels higher and its trail one animation element behind. No object
 # field differs (the objects are loaded), and in the next game frame (27285) the list is equal again. Harness only, not a game difference (task 14, M9-11).
 ep6_3p.*: sprites 27280-27284	# L
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ep6_jack (70000 records, M10-12, desktop opus): lagsync has no difference. Step mode: only catch-up records of the skip wait (cause K) in the scripted walk-out after the
+# Tyrog clear and the Episode 7 opening (G.$0 moves by 5 in one record); `diff.py --lag-jumps` leaves them out and is then equal for the whole recording.
+# Run mode is equal up to the first MAME lag record 5912.
+ep6_jack.step: * 65578-65579	# K
+ep6_jack.step: * 65602-65602	# K
+ep6_jack.step: * 65770-65771	# K
+ep6_jack.step: * 65778-65779	# K
+
+# ep7_jack (60000 records, M10-13, desktop opus): lagsync has no difference. Step mode: one catch-up record of the skip wait (cause K) in the scripted walk at the end of the
+# library (Episode 7 area 2, G.$0 moves by 0x19 and 5 in the records 34859 / 34860); `diff.py --lag-jumps` is equal for the whole recording. Run mode: equal up to the first MAME
+# lag record 2267.
+ep7_jack.step: * 34860-34860	# K
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Episode 8 (M10-14, M10-18, desktop opus). Causes of this section (besides K and S above):
+#  C  The record after a catch-up record (G.$0 moved by 2 in the record before, not flagged): the loader starts from the end of a record in which MAME ran two game frames,
+#     so what the screen shows (the sprite list two builds late) is one build apart for one record (the continue return flash, ep8_jack 26332 / 34312), or a task that
+#     sleeps inside itself is restarted one frame apart (the B82 / B81 of the ending, ep8_jack 65753).
+#  E  The ending (mode 0x1C): its routine sleeps inside itself (`flow.ending.cont`, not in RAM) and MAME often runs two game frames in one record (G.$0 + 2 every other record),
+#     so a step or lagsync load in the middle of it starts the port's ending at another point (the master B82 a state ahead, the staff roll text one record apart). The ending
+#     itself is checked in run mode from its own snapshots (m328_end-*: equal to MAME up to the attract loop after it, allow/m3e.txt).
+#  A  After the ending's game over: the attract task (0x97C20) is not in RAM and its clears 0xAE0 are task waits in the port (equal in power clock, M10-03 .. M10-05); a game
+#     clock recording joins them into lag records, so the first records of the attract loop differ.
+# Run mode of every recording here is equal up to its first MAME lag record (ep8_jack 4131, ep8_mess 2662, ep8_3p 1971, ep7_3p 2303).
+ep8_jack.*: * 26332-26332	# C
+ep8_jack.step: * 33713-33713	# K
+ep8_jack.*: * 34312-34312	# C
+ep8_jack.*: * 64790-64790	# C
+ep8_jack.step: * 65753-65753	# C
+ep8_jack.lagsync: * 65753-69999	# E
+#  L  One record of the lagsync free run with state that a resync does not restore (README: "free runs drift in state ... stale bytes of free slots"), equal in step
+#     mode and again in the next record: ep8_mess 38583 (the frame word of a pool C slot that MAME freed in that record), 58662 (the pointers of a boss controller
+#     that is made in that record).
+# ep8_mess (70000 records, 1 player, Episode 8, the ending, the game over and the attract loop after it)
+ep8_mess.*: * 18732-18732	# C
+ep8_mess.lagsync: * 38583-38583	# L
+ep8_mess.lagsync: * 58662-58662	# L
+ep8_mess.*: * 59086-59086	# C
+ep8_mess.step: * 60049-60049	# C
+ep8_mess.lagsync: * 60049-64160	# E
+ep8_mess.*: * 64626-69999	# A
+# ep7_3p (60000 records, 3 players, M10-18): no field differs in step or lagsync mode. The video items: the slow motion after the last Slisaur (speed 4) holds a record
+# in which MAME ran two game frames (37838: G.$0 + 2), so the next records without a game frame show the other sprite build (cause C); the story panel of Episode 8
+# starts inside the lag records of the stage change (cause S).
+ep7_3p.*: sprites 37839-37853	# C
+ep7_3p.*: scroll1 38467-38476	# S
+ep7_3p.*: scroll3 38467-38476	# S
+ep7_3p.*: palette 38467-38476	# S
+ep7_3p.*: sprites 38467-38476	# S
+ep7_3p.*: sounds 38467-38476	# S
+# ep8_3p (70000 records, 3 players, M10-18): Fessenden form 2 with three heroes, the ending, the game over and the attract loop after it.
+# NOT listed (open, see the report of Task 20): records 48588 .. 48776, sprites only: the port shows a debris piece of Fessenden's quake (pool C 40, 0x97674) that MAME
+# does not show; every field of the objects is equal.
+ep8_3p.*: * 49269-49269	# C
+ep8_3p.step: * 50232-50232	# C
+ep8_3p.lagsync: * 50232-55193	# E
+ep8_3p.step: * 54883-55193	# E
+ep8_3p.*: * 55194-69999	# A

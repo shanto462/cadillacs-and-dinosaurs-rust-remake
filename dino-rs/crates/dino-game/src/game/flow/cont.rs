@@ -696,6 +696,17 @@ impl Game {
                 self.flow_continue_draw_hud(i);
             }
         }
+        // 0xEF6E: in the vertical scene (the lift of Episode 7, G.$4DC) the layer control of the lift and the cage on scroll1 again (0x205C6
+        // twice, as the area setup 0x20790), and when the cage walls are broken (G.$7B6) a new pool B 54 (0x4860, class word 0xD8) that puts
+        // the broken corners back (MAME ep7_jack 23330).
+        if self.w.vertical_scene != 0 {
+            self.w.layer_ctrl = 0x06D6;
+            self.lift_background(0, 0x100, 1);
+            self.lift_background(0x100, 0x100, 2);
+            if self.spawn.g.cage_smashed != 0 {
+                let _ = self.prop_spawn(54, 0); // the variant is the cleared word of the slot
+            }
+        }
         self.flow_continue_reset_effects();
     }
     /// 0x92C9A / 0x92CC4 / 0x92D5E: class 6 variant 0, the return flash.

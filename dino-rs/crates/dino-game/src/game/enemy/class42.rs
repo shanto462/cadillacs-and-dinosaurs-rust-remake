@@ -155,7 +155,7 @@ impl Game {
             e.b.facing = 0;
             // 0x92422 reads the caller's facing through its handle: the body is copied into the slot for the call.
             self.enemies.slots[i].b = e.b.clone();
-            self.fx_spawn_spark_at(h, e.b.xi(), e.b.yi(), e.b.zi(), 4);
+            self.fx_spawn_spark_facing(e.b.facing, e.b.xi(), e.b.yi(), e.b.zi(), 4);
             if (e.b.var26 as i16) < 4 {
                 self.snd_request(0x66, 0x0004_1820, 0x0200_0000);
             } else {

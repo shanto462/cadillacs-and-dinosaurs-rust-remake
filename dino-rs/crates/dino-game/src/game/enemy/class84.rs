@@ -1176,7 +1176,10 @@ impl Game {
                         return self.c84_release(e, h);
                     }
                     self.enemy_begin_attack(&mut e.b, 0x64);
-                    self.enemy_hit_held_player(e, h); // 0x125C0
+                    // 0x62876: 0x125C0 does not set A2 and this update does not either: the damage scale (0x6422 `+$84`) and the pan read what
+                    // the census left in A2 (`enemy_census_a2`; MAME ep8_3p 44910: A2 = the spawn list 2 cursor 0xB1AC2, Mess lost 10, not 11)
+                    let (w84, ax) = self.enemy_census_a2();
+                    self.enemy_hit_held_player_scale(e, h, w84, ax);
                     let t = e.m.w(TARGET);
                     let Some(Slot::Player(p)) = slot_of(t) else { return self.c84_release(e, h) };
                     if self.players[p].action != 0x40 {
@@ -1219,7 +1222,8 @@ impl Game {
                 if e.b.param_a == 2 {
                     e.b.param_a = 1;
                     self.enemy_begin_attack(&mut e.b, 0x65);
-                    self.enemy_hit_held_player(e, h); // 0x125C0
+                    let (w84, ax) = self.enemy_census_a2(); // 0x62938: 0x125C0 with the A2 of the census, as above
+                    self.enemy_hit_held_player_scale(e, h, w84, ax);
                 }
             }
         }

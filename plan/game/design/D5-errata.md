@@ -830,3 +830,25 @@ Natural recordings `ep1_3p`, `ep2_3p`, `ep3_3p`, `ep4_3p`, `ep5_3p`, `ep6_3p` (2
 `SPECS` in `game/placeholder.rs` was empty since M8 (every class of `stage_scripts.txt` has its own port), so the file (405 lines: the registry, the labelled boxes `draw_boxes`, the walker / hazard / boss stand-ins, `enemy_ph_*`, `boss_ends_fight`) and its users are removed: the flag `--list-placeholders` (`main.rs`), the box drawing call in `present.rs`, the `*` marker of the bot's census (`autoplay.rs`), `boss_placeholder_dying` (`boss_common.rs`), the registry test in `boss.rs` (a boss hit now always ends the fight at HP 0: the Slisaur group rule is in its own class, `boss_ends_fight` returned true for every real class) and the registry branch of `enemy_class_unported` (`enemy.rs`: an unknown class word is freed with a message). `enemy_vice_intro_active` is test only now. The autoplay test (power on to the ending) passes without the registry code.
 
 Recordings for the audit rows that needed one (batch `re/harness/pokes/m914_audit.txt`, `_audit3.txt`; `probe_record.sh`, headless, one process each): IT08 `m914_lift_*` (a tire stack and an armor statue are not lifted at 7 or 24 px, with the stick towards them: Jack jabs; a barrel 24 px beside him is lifted, a barrel right on him is not), W13 `m914_roll_e8a2_jack` (the Episode 8 cave, 2683 object frames of rolling barrels, class 65) and `m914_roll_e7a2d_jack` (the Episode 7 library: the wave that locks the camera at X 0x1D0 is killed by `killall`, then 1535 frames of rolling barrels), W220 `m914_diamond_e5_jack` (the placed treasure, item class 9 variant 2, appears at X 0x204 when the camera reaches 0x180 in frame 249 and Jack takes it for 2000 points). All of them equal MAME in step, lagsync and run mode (0 differences, no rule).
+
+## Whole runs of Episodes 6 to 8 and the ending (M10-12, M10-13, M10-14, M10-18, Task 20, 2026-10-21)
+- Bludge's leap (class 6, 0x399E4 / 0x39A14 and the attack leap 0x39D70 / 0x39D9C): the divisor is |position - destination| as a signed word, but
+  the direction is the borrow of `sub.w` (`bcs`), unsigned. A destination across 0x8000 from the body (a negative destination Z against a small Z)
+  flies the other way than the sign of the difference says (MAME ep7_jack 54193: vz +0xA4).
+- The continue return in the lift of Episode 7 (0xEF6E): in the vertical scene (G.$4DC) it sets the layer control 0x6D6, draws the cage on scroll1
+  again (0x205C6 twice) and, when the cage walls are broken (G.$7B6), makes a new pool B 54 that puts the broken corners back (MAME ep7_jack 23330).
+- 0x120E (the object loader) on a pool C object also writes the box word +$48 and, unless +$25 bit 0, the bytes +$4C..+$4F of the composition
+  (table 0x11D220); 0x15E4 / 0x160A do not. The free 0x4964 keeps them, so the next object of the slot reads them: a debris piece (class 21) in
+  water clips its cells by them (0x143C8). The muzzle flash (31), the bullet spark (33) and the car puff (41) start with 0x120E (MAME ep8_jack
+  22069: a piece in the slot of a muzzle flash).
+- 0x92422 (a spark with the caller's facing) reads `+$24` of a6. An enemy that is being updated is not in its slot in the port, so the facing is
+  passed (`fx_spawn_spark_facing`: Fessenden's fire 0x64210, classes 18 and 42). MAME ep8_3p 39821.
+- The game over after the ending (0xAC06 / 0xAC26) is one pass of the game task: kill the tasks, mode 0x18, the clear 0xAE0 (it overruns the
+  frame: one lag frame), the sound 0xFF00, the attract task (0x97C20) and the end of the game task (0x910). G.$0 / G.$4DA do not count any more
+  from the record of mode 0x18; the exit (G.$4CC = 0) is four video frames after it (MAME m328_end-jack: mode 0x18 at 5540, G.$4CC 0 at 5542 in
+  game clock records). The port had counted G.$0 in the four waiting ticks and had no lag frame for the clear, so a game clock recording was two
+  records late.
+- Known limits of the step / lagsync loaders found here (not game logic): a camera event list base of the stage before (fixed: the loader takes
+  only the lists of the current stage, ep6_jack 67111); the extra bytes +$4C..+$4F of props and effects (now loaded); the ending's continuation
+  (`flow.ending.cont`, the ending routine sleeps inside itself) and the attract task after a game over are not in RAM, so step mode cannot follow
+  the records after a catch-up record in the ending or the first records of the attract loop (allow/m10_runs.txt causes C, E, A).
