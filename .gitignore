@@ -5,6 +5,8 @@
 re/rom/
 re/out/*
 !re/out/assets/
+# The Rust port's probe and harness outputs (same rule as re/out/)
+dino-rs/re/out/*
 re/ghidra/proj/
 re/ghidra/*.elf
 re/ghidra/decomp*

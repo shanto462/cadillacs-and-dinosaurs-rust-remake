@@ -30,15 +30,21 @@ Keys (player 1 on the keyboard):
 - Start: 1, 2, 3 (Enter also starts player 1). Coin: 5, 6, 7 (for slots 1, 2, 3).
 - SERVICE: 9 (adds a credit for every player).
 - Fullscreen: F11 or Alt+Enter (Option+Enter on Mac) toggles fullscreen. Window scaling uses integer zoom to preserve the arcade 384x224 aspect ratio with crisp pixels and black borders.
-- Players 2 and 3 use gamepads: the first three pads drive players 1 to 3. D-pad or left stick moves, South (A / Cross) attacks, East (B / Circle) jumps, Start starts, Select / Back is a coin.
+- Players 2 and 3 use gamepads: the first three pads drive players 1 to 3. D-pad or left stick moves, South (A / Cross) attacks, East (B / Circle) jumps, Start starts, Select / Back is a coin, the Mode / Guide button is SERVICE (like key 9). Pad 1 and the keyboard both drive player 1.
 
 Options:
 
-- `--fullscreen`: start in fullscreen mode.
-- `--frames N`: exit automatically after N frames (works in windowed and headless runs).
-- `--mute`: no sound (for windowed runs).
-- `--config FILE`: read the settings from this file. Without it, `dino.cfg` next to the ROM is read if it exists.
-- `--print-config`: print the factory settings file (a starting point for `dino.cfg`).
+- `--fullscreen`: start in fullscreen mode. Example: `cargo run --release -p dino-game -- --rom ../dino.zip --fullscreen`
+- `--frames N`: exit automatically after N frames (works in windowed and headless runs). Example: `--frames 600` (10 seconds at 60 frames per second).
+- `--mute`: no sound (for windowed runs). Example: `cargo run --release -p dino-game -- --rom ../dino.zip --mute`
+- `--config FILE`: read the settings from this file. Without it, the file named in `$DINO_CONFIG` is read if that is set, else `dino.cfg` next to the ROM if it exists. Example: `--config ../my-settings.cfg`
+- `--print-config`: print the factory settings file (a starting point for `dino.cfg`). Example: `cargo run -p dino-game -- --print-config > dino.cfg`
+- `--headless`: no window. It runs `--frames N` frames (2 when no `--frames` is given) and prints nothing unless a flag asks for output (section 4). Example: `cargo run --release -p dino-game -- --rom ../dino.zip --headless --frames 600`
+- `--windowed`: open a window even when `--screenshots` is given (those runs are headless by default). Example: `--screenshots 60 --shot-dir DIR --windowed`
+- `--screenshot FILE --frames N`: save one picture of frame N as FILE and stop. Headless unless `--windowed`. Example: `--headless --screenshot DIR/one.png --frames 300`
+- `--input "SCRIPT"` or `--input-file FILE`: a scripted key run instead of the keyboard. The script is parts of `FRAMES:KEYS` split by commas or new lines (`#` starts a comment; a frame range is `120-200` or one frame `120`). In the keys, `1`, `2`, `3` choose the player, then `R` `L` `D` `U` (right, left, down, up), `A` attack, `J` jump, `S` start, `C` coin. Example: `--headless --frames 300 --input "1-120:R,121-200:RA"` (walk right, then right with attack).
+- `--stage` and `--viewer` / `--view`: see section 3 and section 5.
+- `--help` (or `-h`) prints every option (the text is the top of `main.rs`).
 
 ## 2. Test menu and debug keys
 
@@ -75,7 +81,8 @@ A jump starts the game at a named place: an episode start or an area start.
 
 - `--list-jumps` prints every point (name, title, episode, area, camera X) and exits.
 - `--jump NAME` starts at that point. It takes `--chars` (the heroes, for example `--chars 0,2` for Jack and Hannah). An unknown name prints the list and exits with an error.
-- You can also start with the flags that a jump stands for: `--episode E --area A --camx X --chars 0`. `--episode 1..8`, `--area 0..3` and `--camx` (hex with 0x, or decimal) start that area with the camera at X. `--jump` cannot be combined with these flags.
+- You can also start with the flags that a jump stands for: `--episode E --area A --camx X --chars 0`. `--episode 1..8`, `--area 0..3` and `--camx` (hex with 0x, or decimal) start that area with the camera at X. `--jump` cannot be combined with these flags, and `--episode` cannot be combined with `--stage`. `--area` above 0 is refused in Episode 3 (its camera has one area): use `--camx` there. Example: `cargo run --release -p dino-game -- --rom ../dino.zip --episode 3 --chars 1` (Episode 3 with Mustapha; add `--camx 0x0000` for an explicit camera).
+- `--stage N` (0 to 7) is the same episode start by index (0 is Episode 1, 2 is Episode 3). Example: `--stage 3 --chars 0,2` (Episode 4 with Jack and Hannah).
 
 Jump points (the boss scene points were removed on 2026-10-21; start at the episode or the area and walk on):
 
@@ -137,6 +144,29 @@ A bot that plays like a player, with a planner (`planner.rs`). It presses only i
 
 `--help` prints all the options.
 
+## 5. Harness flags (compare with MAME)
+
+These write a port trace for the diff with MAME (`re/harness/README.md`). A trace is a headless run: give `--trace OUT`, and `--frames N` (600 by default). Keep traces under `re/out/`, which is git-ignored.
+
+- `--trace OUT --frames N`: write the port trace. Example: `cargo run --release -p dino-game -- --rom ../dino.zip --episode 1 --trace ../re/out/port.trc --frames 3000`
+- `--step-from MAME.trc`: a step run. Before each frame the port starts from MAME's state after the frame before, so a difference comes from that frame alone. Example: `--trace OUT --step-from MAME.trc`
+- `--follow-rng MAME.trc`: the port takes MAME's random number state before each frame (for the classes the port does not repeat). Example: `--trace OUT --follow-rng MAME.trc`
+- `--lagsync MAME.trc`: a free run that reloads MAME's state after each lag record, so the drift is cut only there. Example: `--trace OUT --lagsync MAME.trc`
+- `--load-state FILE`: start from a MAME snapshot (written by `re/harness/record.lua`) instead of `--stage` / `--chars`. Example: `--trace OUT --load-state SNAP.state --frames 600`
+- `--keep-dip` (with `--trace`): a loaded snapshot keeps the settings of `--config` instead of its own bytes. Example: `--trace OUT --load-state SNAP.state --config ../my-settings.cfg --keep-dip`
+- `--poke FRAME:ADDR:SIZE:VALUE` (repeatable): write a RAM value at a frame. ADDR is a hex work RAM address (FF0000 to FFFFFF) or `G.$xxxx` (an offset from FF8000); an address the port does not model is an error. Example: `--headless --frames 400 --poke 300:G.$14:1:0x01` (`G.$14` is modeled)
+- `--poke-file FILE` (repeatable): the same writes as MAME's `DINO_POKES` lines (`frame hexaddr size value`). Example: `--trace OUT --poke-file ../re/out/probe/NAME.pokes.txt`
+- `--poke-clock power|game`: what the frame numbers of `--poke` and `--poke-file` count. `power` (the default) is the video frame from power on; `game` is the game's own frame, the clock of the input script. Example: `--poke-clock game --poke 300:G.$14:1:0x01`
+
+## 6. Asset viewer (`--viewer`, `--view`)
+
+A window that plays one animation of a hero, with its frame data. It needs a window (it cannot be combined with `--headless`).
+
+- `--viewer`: starts at character 0, set 1, animation 0. Example: `cargo run --release -p dino-game -- --rom ../dino.zip --viewer`
+- `--view CHAR,SET,ANIM`: starts at that character (0 Jack, 1 Mustapha, 2 Hannah, 3 Mess), set and animation. Example: `--view 2,0,3`
+
+Keys in the viewer: Tab changes the character (the four heroes, in a loop), Left / Right change the set (6 sets), Up / Down change the animation (Down stops at 0), F flips the facing, B shows or hides the boxes, Space pauses, and `.` (period) steps one frame while paused. The label at the top left shows the character, set, animation, the ROM address of the frame and its data.
+
 ## Debug and test paths
 
 Every path below is off in a plain `cargo run -p dino-game -- --rom ../dino.zip` (windowed, from power on). Only the F1 hit box overlay is reachable without a flag, and it is a player option (section 2).
@@ -152,6 +182,6 @@ Every path below is off in a plain `cargo run -p dino-game -- --rom ../dino.zip`
 - Scripted input `--input`, `--input-file` (`input.rs`): need the flag.
 - Asset viewer `--viewer` or `--view char,set,anim` (`viewer.rs`): need the flag; its F key is read only there.
 - Screenshots `--screenshot`, `--screenshots`, `--shot-dir`: need the flag; they make a headless run when no window is asked.
-- Info exits `--help`, `--list-jumps`, `--print-config`: print and exit.
+- Info exits `--help` (or `-h`), `--list-jumps`, `--print-config`: print and exit. Example: `cargo run -p dino-game -- --list-jumps`
 - Test-only: `DINO_WAV_OUT` (audio listening files, `audio.rs`) and the `#[ignore]` review runs (`game/flow/mame_check.rs`, `planner.rs`): only under `cargo test`.
 - Messages a player can see on the terminal in a plain run: none on a normal start. `audio: ...` appears only when no audio device opens (the game runs silent). `error: ...` appears only on a failure (for example a missing `dino.zip`). `pool A class N not ported (freed)` appears only if a class is not ported (none is left).
