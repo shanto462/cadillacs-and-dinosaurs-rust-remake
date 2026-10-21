@@ -18,7 +18,7 @@
 //! option `dino.cfg` next to the ROM is read, see `game/flow/config.rs`), `--print-config` prints the factory settings file.
 //! `--mute` (windowed runs) opens no audio device: the game runs silent, the same as `sound = off` in `dino.cfg`.
 //! `--fullscreen` starts the game in fullscreen mode (F11 or Alt+Enter / Option+Enter toggles fullscreen).
-//! `--jump NAME` starts at a named point (episode start, area start or the place before a boss fight; `--list-jumps` prints them):
+//! `--jump NAME` starts at a named point (an episode start or an area start; `--list-jumps` prints them):
 //! the same start as `--episode E --area A --camx X`, and it takes `--chars`. It cannot be combined with those flags.
 //! `--test` is a windowed run with the debug keys on and the test menu open (`menu.rs`); `--test --headless --screenshots F --shot-dir DIR`
 //! draws the menu in the picture. With the debug keys on, F1 opens and closes the menu at any time (without them F1 shows the hit boxes).
