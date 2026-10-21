@@ -119,6 +119,24 @@ C11 The settings variants of M10-21 (Q21, U21).  [re/harness/m10-21-report.md; 0
     code when 0x81FE returned early: one hidden cell write (m21e_coin6, m21f_coin7, flow_m21e_coin5 / 6 / 7). Coin counts, credit counts and deductions agree.
     Player sees: no. All 20 settings recordings are equal in step mode (task 69).
 
+C23 The Episode 8 story panel loaded in the middle of its palette play (found in task 18; the cause of the old row N2).  [0xDF60 .. 0xDF6A, 0xE0E4 .. 0xE150, the entry clear 0xAE0]
+    m800_bta6_sl_kill, lagsync mode, records 5564 to 5867 (the panel of Episode 8 after the Slisaurs; the lag record 5563 holds its entry): two loader gaps. (a) The palette play
+    0xE0E4 (five steps of the two scroll3 palettes 0x914EC0 / 0x914EE0, called 0x3D times by the loop 0xDF62 / 0xDF66) sleeps at 0xE142; the sleep's return 0xE148 is known to the loader
+    (`Story::part_at_sleep_return`), but the step and the call count are not restored. They are in the task's saved registers: d2 (the steps left of the call) at +$08 and the
+    caller's loop counter d1 (pushed by the movem of 0xE0E4) at +$44 of the game task stack. The port started at step 0 and drew the palette cycle one record late for the whole panel:
+    27 palette words (bank 3, palette 22: MAME 0xF887, port 0xF233) in 304 records. (b) The port's own entry clear (`flow_attract_clear`: scroll2 in the next frame, scroll3 in the
+    one after) is still pending when the snapshot is loaded; it wiped the 21 cells that the panel drew after its own clear (0x913864, 7 x 3 cells; scroll3 303 records). The sound
+    0x11 d1 / d2 (MAME 8 / 0, port 0 / 0) of that record is the R4 register leftover (section 4).
+    The fix is two small changes in `trace.rs`, in the story branch of `trace_load_tasks` (not mine to edit: the file belongs to the Sonnet sub-agent); the patch is
+    re/out/desk/dsonnet/t18_story_palette_patch.diff: for the return 0xE148 set `flow.story.step` and `flow.story.counter` from d2 and d1 (step = 5 - d2 and counter = d1 + 1, or step 0 and
+    counter = d1 when d2 is 0), and set `flow.front.clear_stage = 0` and `clear3_cut = 0` for every story part. With the patch m800_bta6_sl_kill lagsync has no difference in the panel (5564 to
+    5867), and 20 whole-run checks (step and lagsync of ep2_jack, ep2_3p, ep3_jack, ep3_mustapha, ep3_3p, ep4_3p, ep6_3p, ep7_3p, ep7_jack, m517_ep1_jack) stay equal with their rules; ep2_3p,
+    ep3_mustapha and ep4_3p, and the lagsync runs of ep3_jack, ep3_3p, ep7_jack and m517_ep1_jack, need no cause S rule at all any more.
+    Player sees: no (a free run does not load a snapshot; this is a harness gap).
+    What is left in the same recording after the panel: records 5869 to 5883, scroll2 1004 cells and scroll3 85 cells at the level start of Episode 8 after the panel (the lag records 5868 and
+    5884 to 5886): the first screens of the map are drawn across the video frame boundaries of the area start in the original (the blocking code of the area start, cause C1; the same
+    first level frames as the cuts of allow/m228.txt). Player sees: no.
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 4. SOUND SIDE ARGUMENTS AND ONE SOUND CODE  (the request codes and the frames are equal to MAME; d1 / d2 are registers the original leaves)
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -145,8 +163,7 @@ C13 The hit sound mode (bits 16 to 23 of d1 of 0x39 / 0x3A / 0x3B / 0x5E / 0x5F 
     Needs the a6 of every routine that runs before the passes. Player sees: a pan sweep direction on some hit sounds (stereo only). Not found audible in play.
 
 C14 Sound code differences at single records.  m600_bs_v2_v9_alt 5005: step mode no longer sends the extra Vice summon request 0x13 (the old row BS05); what is left there is the
-    scroll3 cells (C6) and 0x0E d1 / d2 (C12 R4). m800_bta6_sl_kill lagsync 5564: the sound 0x11 with d1 / d2 MAME 8 / 0 against 0 / 0 and a palette change of 27 words (bank 3,
-    palette 22), see section 8. The sound requests of the attract loop are equal in code, d1 and d2 for the 37 requests that the flush sends (allow/m10.txt).
+    scroll3 cells (C6) and 0x0E d1 / d2 (C12 R4). m800_bta6_sl_kill lagsync 5564: the sound 0x11 with d1 / d2 MAME 8 / 0 against 0 / 0 (R4; the palette and the scroll3 cells of that record are C23). The sound requests of the attract loop are equal in code, d1 and d2 for the 37 requests that the flush sends (allow/m10.txt).
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 5. THE ATTRACT LOOP FROM POWER ON  (allow/m1.txt, allow/m10.txt, allow/m2.txt, D5-errata M10-06)
@@ -213,13 +230,10 @@ C22 Sound requests of the attract demos in a free run (allow/m4.txt, last rules,
 
 N1  ep8_3p records 48588 to 48776, sprites only: the port shows a debris piece of Fessenden's quake (pool C class 40, 0x97674) that MAME does not show; every field of the objects is
     equal.  [re/out/desk/opus/report.md, task 20: "NOT listed (open)"]   Player sees: yes, one extra debris sprite for about 190 frames in the Fessenden fight with three heroes.
-N2  m800_bta6_sl_kill, lagsync mode, record 5564 (a free run of the Slisaur kill recording): 27 palette words (bank 3, palette 22: MAME 0xF887, port 0xF233) and the sound 0x11 with
-    d1 / d2 MAME 8 / 0 against 0 / 0. In step mode the recording differs only at 905 (C7). No source names the cause (it lies at the stage change after the Slisaurs, which C5 / C7
-    explain for other recordings, but it has not been traced).   Player sees: a palette fade step a frame off in the stage change, if at all.
 N3  The scroll3 cell group of C6 is explained by an analysis, not by a fix; if the story portrait is not the cause, the six recordings of C6 belong here.
-N4  The jump points `butcher` and `slice` of the test menu (--jump) never bring the boss (the camera goes back to 0x180 and locks, the spawn list was skipped by flow_jump_camera): a
-    debug route problem noted by the main session on 2026-10-21 (re/out/cli/pending_fixes.md). Not a game difference.   Player sees: no (debug only).
-N5  Hogg and Tyrog are not listed jump points (a right walk never reaches the fight: run.md).   Player sees: no (debug only).
+N4  Scene jump points: none any more. The boss points of the test menu and of `--jump` (Vice T., Butcher, the car, Slice, Morgan, the lift, the Slisaurs, Fessenden; the Butcher and
+    Slice points never brought the boss, and Hogg and Tyrog were never listed) were removed on 2026-10-21 because the user does not need scene jumps. `dino-rs/crates/dino-game/src/jumps.rs`
+    and run.md section 3 list the same 22 episode and area start points (ep1 .. ep8a3, camera X 0). Not a game difference.   Player sees: no.
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 9. THE RE-RUN OF 2026-10-21 (integ c409444, re/harness/m10_check.sh, step and lagsync, no rules)
@@ -237,7 +251,7 @@ m700_bt_a5_m5_morgue_kill          7056 scroll3 10 cells, sound 0x0E           s
 m800_a14_n_e7a1_full               1 player +$F9 invuln (56 fields)            1 (355 fields)                                   C20
 m800_a31_ee_f84_kill               13262 splash_timer (56 fields)              13262 (69 fields)                                C7
 m800_bta17_f84_kill                13262 splash_timer (56 fields)              13262 (69 fields)                                C7
-m800_bta6_sl_kill                  905 splash_timer, G.$0 (39 fields)          5564 palette 27 words, sound 0x11                C7 (step), N2 (lagsync)
+m800_bta6_sl_kill                  905 splash_timer, G.$0 (39 fields)          5564 palette 27 words, sound 0x11 (5564-5867)    C7 (step), C23 (lagsync); then 5869-5883 C1
 m800_bta7_k8_start                 equal (it ran again after task 66)          equal                                            -
 m800_bta9_ty_full_c                7990 scroll3 15 cells                       same                                             C6
 m523_ep1_2p                        30613 sprites (blank list)                  equal                                            C10 X
