@@ -1,0 +1,131 @@
+# Task 22 (M10-19 follow-ups, desktop opus): the bazooka recoil of Mustapha, Hannah and Mess at the left screen edge and facing left, Mustapha's air special
+# (0x1AAE6) hitting three thugs. Record: re/harness/probe/probe_record.sh re/harness/pokes/t22_moves.txt all; compare: re/harness/m10_check.sh NAME:FRAMES
+# (t22_bazedge_* and t22_bazleft_* 320, t22_airspecial_mustapha 240).
+
+segment t22_bazedge_mustapha
+jump 1 0 928 char=mustapha
+god on
+rank 0
+level 0
+1 hold 0xffb27c 2 960
+2 spawn E 0 var=12 ax=963 z=296
+3 spawn A 2 var=0 ax=1110 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1110
+4 hold 0xffd9a4 2 296
+5 release 0xffb27c
+6 snapshot keep
+35 objset A hp 100
+125 objset A hp 100
+6-6:A
+36-36:A
+126-126:A
+216-216:A
+trace 320
+
+segment t22_bazleft_mustapha
+jump 1 0 928 char=mustapha
+god on
+rank 0
+level 0
+2 spawn E 0 var=12 ax=1027 z=296
+3 spawn A 2 var=0 ax=930 z=296 n=1 dx=40
+4 hold 0xffd99c 2 930
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+125 objset A hp 100
+6-6:A
+20-21:L
+36-36:A
+126-126:A
+216-216:A
+trace 320
+
+segment t22_bazedge_hannah
+jump 1 0 928 char=hannah
+god on
+rank 0
+level 0
+1 hold 0xffb27c 2 960
+2 spawn E 0 var=12 ax=963 z=296
+3 spawn A 2 var=0 ax=1110 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1110
+4 hold 0xffd9a4 2 296
+5 release 0xffb27c
+6 snapshot keep
+35 objset A hp 100
+125 objset A hp 100
+6-6:A
+36-36:A
+126-126:A
+216-216:A
+trace 320
+
+segment t22_bazleft_hannah
+jump 1 0 928 char=hannah
+god on
+rank 0
+level 0
+2 spawn E 0 var=12 ax=1027 z=296
+3 spawn A 2 var=0 ax=930 z=296 n=1 dx=40
+4 hold 0xffd99c 2 930
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+125 objset A hp 100
+6-6:A
+20-21:L
+36-36:A
+126-126:A
+216-216:A
+trace 320
+
+segment t22_bazedge_mess
+jump 1 0 928 char=mess
+god on
+rank 0
+level 0
+1 hold 0xffb27c 2 960
+2 spawn E 0 var=12 ax=963 z=296
+3 spawn A 2 var=0 ax=1110 z=296 n=1 dx=40
+4 hold 0xffd99c 2 1110
+4 hold 0xffd9a4 2 296
+5 release 0xffb27c
+6 snapshot keep
+35 objset A hp 100
+125 objset A hp 100
+6-6:A
+36-36:A
+126-126:A
+216-216:A
+trace 320
+
+segment t22_bazleft_mess
+jump 1 0 928 char=mess
+god on
+rank 0
+level 0
+2 spawn E 0 var=12 ax=1027 z=296
+3 spawn A 2 var=0 ax=930 z=296 n=1 dx=40
+4 hold 0xffd99c 2 930
+4 hold 0xffd9a4 2 296
+4 snapshot keep
+35 objset A hp 100
+125 objset A hp 100
+6-6:A
+20-21:L
+36-36:A
+126-126:A
+216-216:A
+trace 320
+
+segment t22_airspecial_mustapha
+jump 1 0 928 char=mustapha
+god on
+rank 0
+level 0
+3 spawn A 2 var=0 ax=1060 z=296 n=3 dx=24
+6 snapshot keep
+20-20:AJ
+trace 240
+
