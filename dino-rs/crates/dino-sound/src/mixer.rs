@@ -33,7 +33,10 @@ const PAN_MAX: u16 = 0x20;
 /// peaks near 0.5 (codes 0x00 to 0x26, 20 s renders: the peak was 0.109 at 0.25, so 0.25 * 0.5 / 0.109
 /// = 1.15). At this level the loudest sound effect peaks near 0.57, and a sum above 1.0 is clipped by
 /// the clamp. Tuned by the peaks of the renders, not by ear (the main session listens).
-pub const OUTPUT_GAIN: f32 = 1.15;
+/// M10-23: the whole game through the sound side (the flow bot from power on to the ending, `audio.rs`
+/// `whole_game_mix_is_finite_audible_and_does_not_clip`) reached 1.10 of full scale at 1.15 (62 clipped frames, explosions over the
+/// music in Episodes 1 and 4 to 8); at 1.0 the loudest frame of the game is 0.96 and the loudest music code peaks near 0.43.
+pub const OUTPUT_GAIN: f32 = 1.0;
 
 /// Echo registers (SPEC 8): feedback, delay length, and the send base (`0xBA + v`).
 const REG_ECHO_FB: usize = 0x93;

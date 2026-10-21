@@ -1826,3 +1826,36 @@ re/.venv/bin/python -I re/harness/diff.py re/out/traces/m517_ep1_jack.mame.trc r
 Results (2026-10-21): the five runs of M5-17 are equal for every record in `lagsync` and in `step --lag-jumps`; the 2 player run and the Jack, Hannah, Mustapha run are equal until two idle heroes start the tag team (records 24568 and 24916; the port has no tag team yet, M9-01). `run` differs from the first MAME lag record on (records 1696 to 3328).
 
 Catch-up records: after an area start MAME has a record that is not flagged as a lag record but holds 2 to 0x100 game frames (G.$0 jumps by more than 1: 0x23 to 0x29 at record 2369 of the Jack run). One port tick cannot replay it. `MODE=lagsync` resyncs after it like after a lag record, `diff.py` leaves it out in lagsync mode, and `--lag-jumps` leaves it out in step mode (not by default, so the sweeps keep their numbers). The harness itself: `harness.rs` `catch_up_record`.
+
+## Sound streams, register traces and the attract loop with sound (M10-22, M10-23, M10-06)
+
+`snd_stream.py MAME PORT [--allow FILE] [--state DIFF.txt] [--heard] [--json OUT]` compares the sound requests (code, d1, d2) of two traces
+record by record (MAME: the ring G.$3A / G.$34; port: `snd` / `snd_d`). It reads only the RAM blocks of the ring and the filter state, so a
+70000 record trace takes seconds. `--state` takes `diff.py --frame-list` of the same pair and counts a difference in a record whose state
+differs too apart (a consequence of that state difference); `--heard` keeps the requests that the flush 0x610 sends (the attract filter).
+Allow keys: `sounds` (the record) and `sound.CODE`, `sound.CODE.d1`, `sound.CODE.d2` (hex code, at least two digits).
+
+```sh
+re/harness/m10_sound_check.sh        # M10-22: the 30 natural whole runs in step mode (PORT_OUT, default re/out/m10snd), rules: allow/m10_runs.txt (R1 .. R6)
+re/harness/m10_loop_check.sh         # M10-06: the two attract loops from power on: states (allow/m1.txt + allow/m10.txt), heard sounds, pictures
+```
+
+Result (2026-10-21): no sound-only difference in the 30 runs (1,645 hit sounds had the other pan mode before the fix of the a6 that 0x962A
+reads, D5-errata M10-22); what is left is in records whose state differs too (Episodes 4 to 8 and the three player runs: the camera events of
+Episode 5, 6 and 7, the ranking after the Episode 8 ending, the story cards in lag records). The attract loop: every record equal, the heard
+requests equal, 385 of 416 pictures exact (the rest in allow/m1.txt section 4).
+
+M10-23, the register traces of every effect request the whole runs and the attract loop use (one MAME process, about 3 minutes):
+
+```sh
+re/.venv/bin/python -I re/harness/snd_requests.py re/out/m1023/requests.txt TRACES...     # the MAME traces of the list below
+SQ_INPUT=re/out/m1023/requests.txt SQ_FRAMES=900 SQ_TIMEOUT=3600 re/harness/probe/sound.sh
+cd dino-rs && cargo run --release -p dino-sound --example compare -- ../re/out/m1023/requests.txt ../re/out/sound 900
+```
+(the trace list of M10-23: `re/out/traces/NAME.mame.trc` of the 30 natural whole runs in the list of `m10_sound_check.sh` and
+`flow_m1003-loop`: 3,459 distinct requests of 197 codes)
+
+315 cases (each effect code in pan mode 0 with its most used request; each code, mode, spread and speed of the modes 3 to 7 with a pan below
+and from 0x11; the fade 0xFF07 after an area tune): all register equal (77,863 DSP writes). The music codes read no request byte (M4-10 covers
+all 39). The whole game through the mixer: `cargo test --release -p dino-game whole_game_mix -- --ignored --nocapture` (`DINO_WAV_OUT=DIR`
+writes the first minute of each part as WAV for a listening check).
