@@ -113,6 +113,8 @@ Hogg (Episode 3) and Tyrog (Episode 6 area 2) are not listed: a right walk from 
 
 ## 4. Headless runs (no window)
 
+Every enemy class of the game runs its own code now. The placeholder stand-ins (labelled boxes) and the flag `--list-placeholders` are gone (task 14, M9-14). A class word the port does not know is freed with the message `pool A class N not ported (freed)` on stderr; the census of the bot (`DINO_AUTO_CENSUS=1`) prints `class:count` pairs without a marker.
+
 - `--headless --autoplay`: a bot (god mode, the flow test) plays from power on through the eight episodes to the ending and back to the attract loop. It stops there (a few seconds). Mode changes go to stderr.
 - `--headless --screenshots 60,600 --shot-dir DIR`: runs the game and saves the pictures at frames 60 and 600 as `DIR/f00060.png` and `DIR/f00600.png`. Add `--jump NAME` (or `--episode`, `--area`, `--camx`) to choose the start.
 - `--test --headless --screenshots 30 --shot-dir DIR`: draws the test menu over the picture at frame 30.

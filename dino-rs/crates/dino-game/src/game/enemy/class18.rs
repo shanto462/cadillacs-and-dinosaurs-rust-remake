@@ -3,7 +3,8 @@ use super::{in_win, Enemy};
 use crate::game::{Game, Handle};
 
 impl Game {
-    /// 0x42590: class 18 always uses its native sprites, including Walther.
+    /// 0x42590: class 18 always uses its native sprites, including Walther (the harness test of the Vice intro reads it).
+    #[cfg(test)]
     pub(crate) fn enemy_vice_intro_active(b: &crate::game::body::Body) -> bool {
         b.k20 == 18 * 4
     }

@@ -16,7 +16,7 @@ Working mode (2026-10-19): three Claude Desktop sessions (Opus, Sonnet, Haiku) t
 sub-agents (Sonnet, Haiku) and the external CLIs codex and agy take the others; everybody works in a git worktree (`.worktrees/`) and the main
 session merges into `integ`; every task is
 reviewed against the disassembly, built, tested, compared with MAME and looked at in the running game before it is
-merged. Review aids: `--episode N --area A --camx X`, `--autoplay`, `--debug-keys`, `--list-placeholders`, `--help`.
+merged. Review aids: `--episode N --area A --camx X`, `--autoplay`, `--debug-keys`, `--help`.
 
 ## Milestones
 

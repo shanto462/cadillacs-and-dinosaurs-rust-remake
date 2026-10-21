@@ -48,7 +48,7 @@ struct Back {
 
 /// The census of the pool A objects the bot makes (`DINO_AUTO_CENSUS=1`): per episode, the count of objects made per class. An object
 /// is made when a slot becomes live, or live with another class (`k20 / 4`). A line is printed for each episode when the game leaves it
-/// (and for the last one when the attract loop returns). A placeholder class (`game::placeholder::SPECS`) is marked with `*`.
+/// (and for the last one when the attract loop returns).
 #[derive(Default)]
 pub struct Census {
     /// The episode (stage) being counted, and the made count per class of it.
@@ -79,7 +79,7 @@ impl Census {
             let parts: Vec<String> = self
                 .made
                 .iter()
-                .map(|(c, n)| format!("{c}{}:{n}", if crate::game::placeholder::spec_of(*c).is_some() { "*" } else { "" }))
+                .map(|(c, n)| format!("{c}:{n}"))
                 .collect();
             eprintln!("census: episode {} made {} classes: {}", stage + 1, self.made.len(), parts.join(" "));
         }
