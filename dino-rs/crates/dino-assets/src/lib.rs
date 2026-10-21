@@ -31,8 +31,11 @@ pub const SCREEN_H: u32 = 224;
 /// Pixel index that is never drawn.
 pub const TRANSPARENT: u8 = 15;
 
-/// Scroll3 (32x32) codes in use are 0x1C00..0x1FFF (SPEC stage 3); the bank mapper hides others.
-pub const TILES32_FIRST: u16 = 0x1C00;
+/// Scroll3 (32x32) codes 0x0000..0x1FFF (the code is masked with 0x3FFF; the 4 MB graphics ROM holds 0x2000 tiles of 512 bytes,
+/// higher codes are not drawn). The maps use 0x1C00..0x1FE7, but the screen shows every code: a cell with another code (0 or a
+/// stale one) shows the ROM read as 32x32 tiles where no layer above covers it (MAME's pictures of the movie, records 12898,
+/// 12908, 13378).
+pub const TILES32_COUNT: u16 = 0x2000;
 /// Scroll1 (8x8) codes in use are 0x000..0xFFF.
 pub const TILES8_COUNT: u16 = 0x1000;
 
@@ -41,7 +44,7 @@ pub const TILES8_COUNT: u16 = 0x1000;
 pub struct AssetPack {
     /// 16x16 tiles, 256 palette indices per tile (row-major), indexed by the original tile code.
     pub tiles16: Vec<u8>,
-    /// 32x32 scroll3 tiles for codes `TILES32_FIRST..TILES32_FIRST + 1024`, 1024 indices each.
+    /// 32x32 scroll3 tiles for codes `0..TILES32_COUNT`, 1024 indices each.
     pub tiles32: Vec<u8>,
     /// 8x8 scroll1 tiles: for code c and half h (column parity), 64 indices at `(c * 2 + h) * 64`.
     pub tiles8: Vec<u8>,

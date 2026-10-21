@@ -337,8 +337,10 @@ impl Game {
         self.flow_frame();
         self.run_fade_task();
         self.skip_wait_rounds(); // 0x9E38C: the extra rounds of a scripted scene while a hero holds attack or jump
-        // the video hardware shows the scroll and the sprite list of two frames ago (`camera::VIDEO_LATENCY`)
-        self.cam.latch_scroll();
+        // the video hardware shows the scroll X and the sprite list of two frames ago (`camera::VIDEO_LATENCY`), the scroll Y and
+        // the layer registers of the frame before
+        let regs = camera::LayerRegs { layer_ctrl: self.w.layer_ctrl, video_ctrl: self.w.video_ctrl, scroll3_base: self.w.scroll3_base };
+        self.cam.latch_scroll(regs);
         self.sprites.latch();
         self.pal.latch(); // the palette one frame late
     }

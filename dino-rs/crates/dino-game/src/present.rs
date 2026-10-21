@@ -3,39 +3,44 @@
 //! logic never reads anything back from here.
 
 use crate::game::Game;
-use crate::game::camera::layer_origin;
+use crate::game::camera::{LayerRegs, layer_origin};
 use crate::game::vram::Vram;
 use crate::render::{Atlas, Bank, DrawTarget, Layer, TileDraw};
-use dino_assets::{SCREEN_H, TILES8_COUNT, TILES32_FIRST};
+use dino_assets::{SCREEN_H, TILES8_COUNT, TILES32_COUNT};
 
 pub fn draw(g: &mut Game, gpu: &mut impl DrawTarget) {
     if g.pal.dirty {
         gpu.upload_palettes(g.pal.shown_words());
         g.pal.dirty = false;
     }
-    let scroll1_behind = g.w.layer_ctrl == 0x06D6;
     // The screen shows the game a few frames late (`camera::VIDEO_LATENCY`): the tile layers are drawn from
-    // the scroll registers, which hold the camera shadows of two frames ago, the sprite list is the one of
-    // two frames ago (`SpriteList::submit`, so the sprites stay in step with the tiles) and the colours
-    // are the ones of the frame before (`PaletteRam::latch`). The tile maps themselves are shown at once.
+    // the scroll registers, which hold the camera X shadows of two frames ago and the Y of the frame before
+    // (`Camera::shown_scroll`), with the layer control, the video control and the scroll3 base of the frame
+    // before (`Camera::shown_layers`: the vblank IRQ writes them after each frame); the sprite list is the one
+    // of two frames ago (`SpriteList::submit`, so the sprites stay in step with the tiles) and the colours are
+    // the ones of the frame before (`PaletteRam::latch`). The tile maps and the priority masks (written in the
+    // frame, 0x8D92) are shown at once.
+    let live = LayerRegs { layer_ctrl: g.w.layer_ctrl, video_ctrl: g.w.video_ctrl, scroll3_base: g.w.scroll3_base };
+    let regs = g.cam.shown_layers().unwrap_or(live);
     let scroll = g.cam.shown_scroll();
-    draw_scroll3(g, gpu, scroll.s3, if g.w.layer_ctrl == 0x1396 { Layer::BackdropFront } else { Layer::Backdrop });
-    draw_scroll2(g, gpu, scroll.s2);
-    draw_scroll1(g, gpu, scroll.cam1, if scroll1_behind { Layer::TextBehind } else { Layer::Hud });
+    draw_scroll3(g, gpu, scroll.s3, regs);
+    draw_scroll2(g, gpu, scroll.s2, regs.video_ctrl & 1 != 0);
+    draw_scroll1(g, gpu, scroll.cam1, if regs.layer_ctrl == 0x06D6 { Layer::TextBehind } else { Layer::Hud });
     g.sprites.submit(gpu);
 }
 
-/// Scroll3: 32x32 tiles, codes 0x1C00..0x1FFF (others are hidden by the bank mapper).
-fn draw_scroll3(g: &Game, gpu: &mut impl DrawTarget, cam: (u16, u16), layer: Layer) {
+/// Scroll3: 32x32 tiles, codes 0..0x1FFF of the code masked with 0x3FFF (`TILES32_COUNT`: every code the graphics ROM holds).
+fn draw_scroll3(g: &Game, gpu: &mut impl DrawTarget, cam: (u16, u16), regs: LayerRegs) {
+    let layer = if regs.layer_ctrl == 0x1396 { Layer::BackdropFront } else { Layer::Backdrop };
     let (ox, oy) = layer_origin(cam.0, cam.1, 0x700);
     let (c0, r0) = ((ox & 0x7FF) as i32 >> 5, (oy & 0x7FF) as i32 >> 5);
     let (fx, fy) = ((ox & 31) as i32, (oy & 31) as i32);
     for r in 0..8 {
         for c in 0..13 {
-            let cells = if g.w.scroll3_base == 0x9200 && g.w.layer_ctrl == 0x1396 && !g.vram.intro3.is_empty() { &g.vram.intro3 } else { &g.vram.scroll3 };
+            let cells = if regs.scroll3_base == 0x9200 && regs.layer_ctrl == 0x1396 && !g.vram.intro3.is_empty() { &g.vram.intro3 } else { &g.vram.scroll3 };
             let cell = cells[Vram::index3(((c0 + c) & 63) as usize, ((r0 + r) & 63) as usize)];
             let code = cell.code & 0x3FFF;
-            if !(TILES32_FIRST..TILES32_FIRST + 0x400).contains(&code) {
+            if code >= TILES32_COUNT {
                 continue;
             }
             gpu.tile(TileDraw {
@@ -43,7 +48,7 @@ fn draw_scroll3(g: &Game, gpu: &mut impl DrawTarget, cam: (u16, u16), layer: Lay
                 atlas: Atlas::T32,
                 x: c * 32 - fx,
                 y: r * 32 - fy,
-                tile: (code - TILES32_FIRST) as u32,
+                tile: code as u32,
                 bank: Bank::Backdrop,
                 palette: (cell.attr & 0x1F) as u8,
                 flip_x: cell.attr & 0x20 != 0,
@@ -59,13 +64,13 @@ fn draw_scroll3(g: &Game, gpu: &mut impl DrawTarget, cam: (u16, u16), layer: Lay
 /// Scroll2: 16x16 tiles, codes 0x4000..0x6FFF. Tiles whose priority group mask is nonzero are
 /// drawn again over the sprites with only the masked pens.
 ///
-/// With the row scroll on (video control bit 0, stage 2 only) screen line s shows the layer shifted by `rowscroll[(s + 16) & 0x3FF]`
+/// With the row scroll on (`row_scroll`: video control bit 0, stage 2 only) screen line s shows the layer shifted by `rowscroll[(s + 16) & 0x3FF]`
 /// more (CPS-A register 0x108 = 0x9158, offset register 0x120 always 0; the rows of the hardware are the screen lines). The lines
 /// are drawn in bands of equal offsets, a tile that crosses a band in pieces (`TileDraw::rows`). Without row scroll, or with
 /// every offset of the 224 lines zero, the whole screen is one band and the tiles are drawn whole, as before.
-fn draw_scroll2(g: &Game, gpu: &mut impl DrawTarget, cam: (u16, u16)) {
+fn draw_scroll2(g: &Game, gpu: &mut impl DrawTarget, cam: (u16, u16), row_scroll: bool) {
     let offsets: Vec<u16> = (0..SCREEN_H as usize).map(|s| g.vram.rowscroll[(s + 16) & 0x3FF]).collect();
-    if g.w.video_ctrl & 1 == 0 || offsets.iter().all(|&o| o == 0) {
+    if !row_scroll || offsets.iter().all(|&o| o == 0) {
         draw_scroll2_band(g, gpu, cam, None);
         return;
     }
@@ -186,7 +191,7 @@ mod tests {
 
     fn scroll2(g: &Game) -> Vec<TileDraw> {
         let mut r = Rec::default();
-        draw_scroll2(g, &mut r, (0, 0));
+        draw_scroll2(g, &mut r, (0, 0), g.w.video_ctrl & 1 != 0);
         r.tiles
     }
 

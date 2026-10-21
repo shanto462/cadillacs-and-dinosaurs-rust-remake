@@ -886,3 +886,9 @@ Natural recordings `ep3_*`, `ep5_*`, `ep8_*` of Mustapha, Hannah and Mess, `m523
   has no code for the held state. The port equals MAME up to that point (`t22_zrev_mustapha`) and goes on (Zeke is thrown).
 - The bazooka recoil at the left screen edge stops at the camera X + 0x10; facing left it pushes to the right; Mustapha's air special costs 10 + 4 HP
   for two thugs hit (MAME `t22_bazedge_*`, `t22_bazleft_*`, `t22_airspecial_mustapha`: all equal in step, lagsync and run).
+
+## M10-06 follow-up: the picture model of the attract loop (opus worktree, 2026-10-21)
+
+- **The video registers follow the vblank IRQ 0x542** (it runs after each record): the picture of record r shows the palette, the layer control G.$28, the video control G.$26 and the scroll3 base G.$2E of r - 1, the scroll X and scroll3 Y shadows of r - 2 (0x6C0 writes each register from its copy G.$85C .. $870, then copies the shadow), the scroll1 and scroll2 Y from the copies G.$860 / G.$868 of r - 1 and the sprite list built in r - 2. Since G.$868 became a port field (the shake fix), the renderer had read it at r - 2, one record late, and the layer control at r, one early: 17 pictures of the loop differed at every start of a ranking, slide or jungle scroll. `Camera::shown_scroll` / `shown_layers` (`camera.rs`), `present.rs`. No game state changes (the loop trace is byte equal).
+- **Scroll3 shows every code below 0x2000** (re/specs/stage/SPEC.md section 3): MAME draws a scroll3 cell 0 as ROM tile 0 where scroll2 is transparent, and the stale cells of the last clear of the movie (13380, the D5-errata line of M1-10 / M1-11 above). `dino_assets::TILES32_COUNT` (the atlas has all 0x2000 tiles).
+- Left (allow/m1.txt section 4): the first-loop screens where the IRQ of a frame did not run or ran late (no CPU time model), and two demo setup records of allow/m10.txt section 1. 403 of 416 pictures exact.

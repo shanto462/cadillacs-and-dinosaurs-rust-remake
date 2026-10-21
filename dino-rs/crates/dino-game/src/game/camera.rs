@@ -131,17 +131,29 @@ pub struct ScrollShadows {
     pub s3: (u16, u16),
 }
 
-/// How many frames late the video hardware shows what the game computes: the scroll registers (CPS-A
-/// 0x0C .. 0x16) of a recording's record k are the camera shadows of record k - 2, and a MAME picture
+/// The layer registers that the vblank IRQ writes from their shadows after each frame: the scroll3 base G.$2E (0x57A, CPS-A
+/// 0x800106), the layer control G.$28 (0x80A, CPS-B 0x80014A) and the video control G.$26 (0x826, CPS-A 0x800122, the row scroll
+/// bit). The screen of a record shows the values of the record before (`Camera::shown_layers`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct LayerRegs {
+    pub layer_ctrl: u16,
+    pub video_ctrl: u16,
+    pub scroll3_base: u16,
+}
+
+/// How many frames late the video hardware shows what the game computes: the scroll X registers (CPS-A
+/// 0x0C, 0x10, 0x14) of a recording's record k are the camera X shadows of record k - 2, and a MAME picture
 /// taken at the same moment shows the sprite list of that frame (the one the shadows of k - 2 positioned),
-/// so the tiles and the sprites stay in step with each other. (The tile maps and the palettes are written
-/// at once.) `Camera::shown_scroll` and `SpriteList::latch` give what the screen shows.
+/// so the tiles and the sprites stay in step with each other. The Y registers and the layer registers are one
+/// record late (`Camera::shown_scroll`, `Camera::shown_layers`); the palette is one record late too
+/// (`PaletteRam::latch`), the tile maps are shown at once. `SpriteList::latch` gives the sprites the screen shows.
 pub const VIDEO_LATENCY: usize = 2;
 
-/// The last shadows, oldest first, for [`Camera::shown_scroll`].
+/// The last shadows and layer registers, oldest first, for [`Camera::shown_scroll`] and [`Camera::shown_layers`].
 #[derive(Clone, Debug, Default)]
 pub struct ScrollLatch {
     hist: [ScrollShadows; VIDEO_LATENCY + 1],
+    regs: [LayerRegs; VIDEO_LATENCY + 1],
     filled: bool,
 }
 
@@ -253,23 +265,42 @@ impl Camera {
         ScrollShadows { cam1: (self.cam1_x, self.display_y1), s2: (self.s2.cam_x, self.display_y2), s3: (self.s3.cam_x, self.s3.cam_y) }
     }
 
-    /// The end of a frame: remember the shadows. The first call fills the whole history, so a game that
-    /// starts (or loads a state) in a scene shows its scroll at once.
-    pub fn latch_scroll(&mut self) {
+    /// The end of a frame: remember the shadows and the layer registers `regs` of this frame. The first call fills the whole
+    /// history, so a game that starts (or loads a state) in a scene shows its scroll at once.
+    pub fn latch_scroll(&mut self, regs: LayerRegs) {
         let now = self.scroll_now();
         let l = &mut self.latch;
         if !l.filled {
             l.hist = [now; VIDEO_LATENCY + 1];
+            l.regs = [regs; VIDEO_LATENCY + 1];
             l.filled = true;
         } else {
             l.hist.rotate_left(1);
             l.hist[VIDEO_LATENCY] = now;
+            l.regs.rotate_left(1);
+            l.regs[VIDEO_LATENCY] = regs;
         }
     }
 
-    /// The scroll the hardware shows after the frames latched so far (the live shadows before the first).
+    /// The scroll the hardware shows after the frames latched so far (the live shadows before the first). The vblank IRQ
+    /// (0x6C0) writes each scroll register from its copy and then copies the shadow: the X registers from G.$85C / $864 / $86C
+    /// (the X shadows of the frame before the last), the scroll3 Y from G.$870 (the same age), the scroll1 and scroll2 Y from
+    /// G.$860 / $868 as they were at the end of the last frame (`display_y1` / `display_y2`: the copy of the camera Y that
+    /// the shake routine may overwrite in the frame, 0x22356 / 0x22364). So a record's screen shows the X shadows and the
+    /// scroll3 Y of two records before and the scroll1 and scroll2 Y of the record before (the attract recording
+    /// `attract3.mame.trc`: the CPS-A registers of every record from 41 on fit this, except where the IRQ of a frame did not run).
     pub fn shown_scroll(&self) -> ScrollShadows {
-        if self.latch.filled { self.latch.hist[0] } else { self.scroll_now() }
+        if !self.latch.filled {
+            return self.scroll_now();
+        }
+        let (old, last) = (self.latch.hist[0], self.latch.hist[VIDEO_LATENCY - 1]);
+        ScrollShadows { cam1: (old.cam1.0, last.cam1.1), s2: (old.s2.0, last.s2.1), s3: old.s3 }
+    }
+
+    /// The layer registers the hardware shows after the frames latched so far: those latched one frame before the last
+    /// (the IRQ after that frame wrote them); `None` before the first frame (then the live values are shown).
+    pub fn shown_layers(&self) -> Option<LayerRegs> {
+        self.latch.filled.then(|| self.latch.regs[VIDEO_LATENCY - 1])
     }
 }
 
@@ -1748,10 +1779,27 @@ mod latency_tests {
         for x in 1..=6u16 {
             c.s2.cam_x = x;
             c.s3.cam_y = 10 * x;
-            c.latch_scroll();
+            c.latch_scroll(LayerRegs::default());
             shown.push((c.shown_scroll().s2.0, c.shown_scroll().s3.1));
         }
         assert_eq!(shown, [(1, 10), (1, 10), (1, 10), (2, 20), (3, 30), (4, 40)]);
+    }
+
+    /// The scroll1 and scroll2 Y (the copies G.$860 / $868) and the layer registers are one frame late, the X two.
+    #[test]
+    fn the_y_registers_and_the_layer_registers_are_one_frame_late() {
+        let mut c = Camera::default();
+        assert_eq!(c.shown_layers(), None, "before the first frame the live values");
+        let mut shown = Vec::new();
+        for k in 1..=5u16 {
+            c.s2.cam_x = k;
+            c.display_y2 = 10 * k;
+            c.display_y1 = 100 * k;
+            c.latch_scroll(LayerRegs { layer_ctrl: k, video_ctrl: 0, scroll3_base: 0x9100 });
+            let s = c.shown_scroll();
+            shown.push((s.s2.0, s.s2.1, s.cam1.1, c.shown_layers().unwrap().layer_ctrl));
+        }
+        assert_eq!(shown, [(1, 10, 100, 1), (1, 10, 100, 1), (1, 20, 200, 2), (2, 30, 300, 3), (3, 40, 400, 4)]);
     }
 }
 
@@ -1799,9 +1847,9 @@ mod shake_tests {
         c.shake_req = 1;
         c.step_shake(false);
         assert_eq!((c.shake_dy2, c.shake_timer, c.shake_sign), (-4, 2, 1));
-        c.latch_scroll();
+        c.latch_scroll(LayerRegs::default());
         c.step_shake(false);
-        c.latch_scroll();
+        c.latch_scroll(LayerRegs::default());
         assert_eq!(c.shown_scroll().s2.1, (-4i16) as u16);
         assert_eq!(c.s2.cam_y, 0);
     }
