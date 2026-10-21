@@ -14,6 +14,9 @@
 #     (G.$744, G.$7E4, G.$7E8) and the scroll layers start again, the sound 0x15 of the panel comes a frame early. The panel itself is checked by the link recordings of M2-28 (free run
 #     from the stage clear, allow/m228.txt). G.$77E (map_ptr) is derived from the stage number, which the port has already counted up at the panel; the original keeps the old map until the
 #     stage start (the same as allow/m228.txt "the derived pointers").
+#     (Since the story panel loader of `trace_load_tasks` reads the part of the panel from the saved return on the task stack, ends the staged entry clear (`clear_stage`, `clear3_cut`)
+#     and restores the Episode 8 palette play (0xE0E4), the rules S of ep2_3p, ep3_jack, ep3_3p, ep4_jack, ep4_3p, ep7_3p and ep6_3p (except one counter) are gone. What stands: the G.$744 /
+#     G.$77E of ep2_jack, the step mode of the four m517 Episode 1 runs, the coin pulse timer of ep6_3p.)
 #  K  The skip wait (skip.rs, task 0x9E38C): a hero holds attack or jump in a scripted scene, the original runs as many game frames in a video frame as the CPU time allows (here 5),
 #     the port a fixed number (SKIP_ROUNDS = 3, plan decision: the real number depends on the load of the frame, 2.2 to 4 in the other recordings). Every counter that counts game frames
 #     differs by the missing rounds in that one record (the objects, the timers, the scripted flags). The next record is equal in step mode again; in lagsync the offset stays until the next
@@ -26,14 +29,9 @@ ep2_jack.*: global.cam_x 41851-41915          # S
 ep2_jack.*: global.map_ptr 41851-41915        # S
 
 # ep2_3p (42001 records): the tally ends in the lag record 28970 (the panel of Episode 3 starts inside it, cause S)
-ep2_3p.*: global.frame 28971-28990            # S
-ep2_3p.*: global.game_frame 28971-28990       # S
-ep2_3p.*: global.obst_slot 28971-28990        # S
-ep2_3p.*: sounds 28971-28990                  # S
 
 # ep3_jack (10501 records): K in the record 9476 (the stage clear walk: 5 game frames in MAME, 3 in the port); the story panel of Episode 4 starts in the lag records 9484 .. 9488
 ep3_jack.*: * 9476-9476	# K
-ep3_jack.*: scroll3 9486-9486	# S: the entry block (8 cells of scroll3) that MAME draws in the frame after the lag record 9484; the loader restores the wait (M10 story loader)
 
 # ep3_hannah (10501 records): no difference in step and lagsync mode, nothing to allow
 
@@ -43,18 +41,6 @@ ep3_mess.*: * 9909-9909	# K
 # ep3_mustapha (10501 records): the stage clear tally ends in the lag record 7469 and the story panel of Episode 4 starts inside it
 
 # ep3_3p (10501 records): the tally ends in the lag record 8183 (story panel, S; its typewriter P: pool B class 26 in the slot 23, the free list G.$65F6 / G.$6600); K in the record 8318 (the skip of the scripted entrance of the level)
-ep3_3p.*: global.frame 8184-8214	# S
-ep3_3p.*: global.game_frame 8184-8214	# S
-ep3_3p.*: global.cam_x 8184-8214	# S
-ep3_3p.*: global.cam3_x 8184-8214	# S
-ep3_3p.*: global.cam3_y 8184-8214	# S
-ep3_3p.*: global.map_ptr 8184-8214	# S
-ep3_3p.*: global.obst_slot 8184-8214	# S
-ep3_3p.*: scroll1 8184-8214	# S
-ep3_3p.*: scroll2 8184-8214	# S
-ep3_3p.*: scroll3 8184-8214	# S
-ep3_3p.*: palette 8184-8214	# S
-ep3_3p.*: sounds 8184-8214	# S
 ep3_3p.*: global.free_count 8236-8246	# P
 ep3_3p.*: global.free_ptr 8236-8246	# P
 ep3_3p.*: prop.live 8236-8246	# P
@@ -100,22 +86,8 @@ ep4_jack.step: prop.wave_ptr 27532-27532 # K
 ep4_jack.step: prop.boss_group_ptr 27532-27532 # K
 ep4_jack.step: scroll1 27532-27532 # K
 ep4_jack.step: palette 27532-27532 # K
-# S: Episode 5's panel starts inside lag record 27578. Loading its state cannot
-# restore the sleeping story routine, so 0xDBB2 replays sound 0x16 at 27579.
-ep4_jack.step: sounds 27579-27579 # S
-ep4_jack.lagsync: sounds 27579-27579 # S
-# S: lag record 27608 enters the picture loop 0xDC54 and sleeps at 0xDC6C.
-# Its saved return is 0xDC72. The loader does not restore Story::sub, so the next
-# picture repeats instead of alternating. Later lag loads keep the Rust phase
-# instead of taking the saved return of 0xDC72 / 0xDC90; step is wrong each frame.
-ep4_jack.step: scroll2 27609-27613 # S
-ep4_jack.step: scroll2 27616-27621 # S
-ep4_jack.lagsync: scroll2 27609-27609 # S
-ep4_jack.lagsync: scroll2 27611-27611 # S
-ep4_jack.lagsync: scroll2 27613-27613 # S
-ep4_jack.lagsync: scroll2 27616-27616 # S
-ep4_jack.lagsync: scroll2 27618-27618 # S
-ep4_jack.lagsync: scroll2 27620-27620 # S
+# S (gone): Episode 5's panel starts inside lag record 27578 (0xDBB2 replayed sound 0x16 at 27579) and lag record 27608 enters the picture loop 0xDC54 (sleep 0xDC6C): the
+# story panel loader (`trace_load_tasks`: the part from the saved return, the staged entry clear, the palette play) restores both; step and lagsync are equal.
 # Sound arguments are reported separately by diff.py, outside its equality
 # summary: 50 frames of 2514 paired requests differ in lagsync, first at 178.
 # Codes 0x18, 0x39..0x3B, 0x3E, 0x62, 0x63 and 0x66 carry stale register or
@@ -251,36 +223,9 @@ ep1_3p.step: * 6177-6177	# K
 ep1_3p.step: * 6193-6193	# K
 
 # ep4_3p: the tally ends in the lag record 27307, the story panel of Episode 5 starts inside it (cause S); 27389 / 27391: scroll2 cells of the panel after the lag records 27388 / 27393
-ep4_3p.*: global.frame 27308-27312	# S
-ep4_3p.*: global.game_frame 27308-27312	# S
-ep4_3p.*: global.cam_x 27308-27312	# S
-ep4_3p.*: global.cam3_x 27308-27312	# S
-ep4_3p.*: global.cam3_y 27308-27312	# S
-ep4_3p.*: global.map_ptr 27308-27312	# S
-ep4_3p.*: global.obst_slot 27308-27312	# S
-ep4_3p.*: global.coin_pulse_timer 27308-27312	# S
-ep4_3p.*: scroll1 27308-27312	# S
-ep4_3p.*: scroll2 27308-27312	# S
-ep4_3p.*: scroll3 27308-27312	# S
-ep4_3p.*: palette 27308-27312	# S
-ep4_3p.*: sounds 27308-27312	# S
-ep4_3p.*: scroll2 27389-27395	# S
-ep4_3p.*: sounds 27389-27395	# S
 
 # ep6_3p: the tally ends in a lag record before 42639 (the story panel of Episode 7 starts inside it, cause S)
-ep6_3p.*: global.frame 42639-42650	# S
-ep6_3p.*: global.game_frame 42639-42650	# S
-ep6_3p.*: global.cam_x 42639-42650	# S
-ep6_3p.*: global.cam3_x 42639-42650	# S
-ep6_3p.*: global.cam3_y 42639-42650	# S
-ep6_3p.*: global.map_ptr 42639-42650	# S
-ep6_3p.*: global.obst_slot 42639-42650	# S
 ep6_3p.*: global.coin_pulse_timer 42639-42650	# S
-ep6_3p.*: scroll1 42639-42650	# S
-ep6_3p.*: scroll2 42639-42650	# S
-ep6_3p.*: scroll3 42639-42650	# S
-ep6_3p.*: palette 42639-42650	# S
-ep6_3p.*: sounds 42639-42650	# S
 
 # ep6_3p 27280 to 27284 (the slow motion of the boss death: the game frame runs every third video frame and the sprite list is built once per game frame; the records 27279 and 27282 are
 # lag records): cause L. The sprite list shown in the two video frames after a lag record is the one the original built in the game frames of that lag record. In step and lagsync mode
@@ -313,8 +258,11 @@ ep7_jack.step: * 34860-34860	# K
 #     itself is checked in run mode from its own snapshots (m328_end-*: equal to MAME up to the attract loop after it, allow/m3e.txt).
 #     (M10-19 / M10-20 merge: no rule uses E any more: the lagsync loader restores the ending and the attract task, ep8_jack lagsync is equal for every record, ep8_3p has no
 #     difference before its A records; the rules E of ep8_jack, ep8_mess and ep8_3p are removed.)
-#  A  After the ending's game over: the attract task (0x97C20) is not in RAM and its clears 0xAE0 are task waits in the port (equal in power clock, M10-03 .. M10-05); a game
-#     clock recording joins them into lag records, so the first records of the attract loop differ.
+#  A  (gone) After the ending's game over: the attract task (0x97C20) is not in RAM and its clears 0xAE0 are task waits in the port; a game clock recording joins them into
+#     lag records. The lagsync loader restores the attract task and a lagsync load drops the clear that the port counts out over the next frames (`front.clear_stage`),
+#     so ep8_3p after 55194 is equal in step and lagsync mode (the rule A is removed). Its 7 fields after 55228 were two port gaps: the join of the 3 player select did not run
+#     the hero strip of 0x70D4 / 0x70DA (`select_join_init`: the objects of players 2 and 3 show Hannah and Mustapha before the pick), and a lagsync load in the lag record
+#     55535 took the HUD slide-in as not yet drawn (G.$4D5 is cleared by the slide's first step, 0xCCF4).
 # Run mode of every recording here is equal up to its first MAME lag record (ep8_jack 4131, ep8_mess 2662, ep8_3p 1971, ep7_3p 2303).
 ep8_jack.*: * 26332-26332	# C
 ep8_jack.step: * 33713-33713	# K
@@ -330,23 +278,19 @@ ep8_mess.lagsync: * 38583-38583	# L
 ep8_mess.lagsync: * 58662-58662	# L
 ep8_mess.*: * 59086-59086	# C
 ep8_mess.step: * 60049-60049	# C
+ep8_mess.step: * 64981-64981	# K: the level start's scripted entrance of the new game (MAME 6 game frames in the record, the port 3)
+ep8_mess.step: * 67151-67151	# K: the skip wait (MAME 4 game frames, the port 3); the next record is the lag record 67152
 # ep8_mess: the lagsync rules E (60049-64160) and A (64626-69999) are gone: since M10-19 / M10-20 the loader restores the ending and the attract task and the game clock join
 # of the game over exit (0xAC06 / 0xAC26) follows MAME, so lagsync is equal over the whole ending and the new game (except N below). The step tail after the game over is A2 below.
 # ep7_3p (60000 records, 3 players, M10-18): no field differs in step or lagsync mode. The video items: the slow motion after the last Slisaur (speed 4) holds a record
 # in which MAME ran two game frames (37838: G.$0 + 2), so the next records without a game frame show the other sprite build (cause C); the story panel of Episode 8
 # starts inside the lag records of the stage change (cause S).
 ep7_3p.*: sprites 37839-37853	# C
-ep7_3p.*: scroll1 38467-38476	# S
-ep7_3p.*: scroll3 38467-38476	# S
-ep7_3p.*: palette 38467-38476	# S
-ep7_3p.*: sprites 38467-38476	# S
-ep7_3p.*: sounds 38467-38476	# S
 # ep8_3p (70000 records, 3 players, M10-18): Fessenden form 2 with three heroes, the ending, the game over and the attract loop after it.
-# NOT listed (open, see the report of Task 20): records 48588 .. 48776, sprites only: the port shows a debris piece of Fessenden's quake (pool C 40, 0x97674) that MAME
-# does not show; every field of the objects is equal.
-ep8_3p.*: * 49269-49269	# C
-ep8_3p.step: * 50232-50232	# C
-ep8_3p.*: * 55194-69999	# A
+# Step and lagsync are equal for every record except the two K records below (the rules C of 49269 / 50232 and A of 55194 .. 69999 are gone). The debris piece of Fessenden's
+# quake at 48588 .. 48776 (pool C 40, 0x97674), which this file listed as open, is equal in step and lagsync since the effect bytes +$4C..+$4F (M10-19 / M10-20).
+ep8_3p.step: * 62386-62386	# K: the skip wait of the scripted walk (MAME 4 game frames in the record, the port 3)
+ep8_3p.step: * 62433-62433	# K: the same (MAME 2 game frames, the port 3); the lagsync run resyncs at both
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # M10-22: the sound request streams (re/harness/m10_sound_check.sh, snd_stream.py; step mode of all 30 natural whole runs). The keys `sound.CODE`, `sound.CODE.d1`,
@@ -378,7 +322,6 @@ sound.E1.d2	# R3
 sound.0?.*	# R4
 sound.1?.*	# R4
 sound.2[0-6].*	# R4
-ep4_jack.step: sounds 27579-27579	# S
 sound.78.d2	# R5
 ep8_3p.step: sound.39.d1 44910-44964	# R6
 ep8_hannah.step: sound.39.d1 55951-62675	# R6
@@ -391,18 +334,12 @@ ep8_mess.step: sound.39.d1 51795-51795	# R6
 # Results: lagsync is equal for every record of ep5_* (3), ep8_hannah, m523_* (2), m1020_* (14) and m1019_* (8); run is equal up to the first MAME lag record of each recording.
 #  X  Step mode, the exit of the game over (0xAC06 / 0xAC26): the port counts its wait for the end of the clear (`Flow::cont.exit_wait`) itself; the step loader does not carry it, so
 #     the sprite buffer is wiped 1 record late (3 records, sprites only). In lagsync the loader sets the wait of a loaded game over (2 vertical blanks away).
-#  A2 Step mode, the game over to the new game (ep8_mustapha, ep8_mess; the same family as A above): the fade of the start from the attract, the select setup (two sleeps in one routine),
-#     the level start of the new game and the attract task keep their position in the variables of the tasks, which the step loader (every record) cannot rebuild. The tail goes to the
-#     end of the 70000 records (ep8_mustapha from 68891, ep8_mess from 64711). Lagsync is equal over the same records except N.
-#  N  The first columns of scroll2 and scroll3 of the new game's Episode 1 level start are drawn 1 record late (the area start is in the lag records 64977 / 69074 of a 6 vertical
-#     blank lag; the port draws them in the record after).
+#  A2 (gone) Step mode, the game over to the new game (ep8_mustapha, ep8_mess): the start from the attract, the fade out in the system task (0x87BA from 0x9D16E), the sleep
+#     0xA76 after it, the select setup and the level start. The step loader now takes the position of the system task from the sleep returns on its stack (0x881C / 0x9D174 and
+#     0xA98 / 0x9D17A, `trace_load_tasks`), and the game task not yet created (G.$4CC set, slot 2 empty): `game_pending`, the fade, the wait for the clear 0xAE0.
+#  N  (gone) The first columns of scroll2 and scroll3 of the new game's Episode 1 level start were drawn 1 record late in lagsync mode: the port's clear 0xAE0 of the game start
+#     was still being counted out (`front.clear_stage`) and cleared the columns that the lag record (6 vertical blanks) had drawn; a game clock load now ends it.
 # ep5_hannah 57870 and ep5_mess 45375 (step) are the K records of the section above (codex, M10-11): no rule of this section.
-ep8_mustapha.step: * 68891-70001	# A2
-ep8_mess.step: * 64711-70001	# A2
-ep8_mustapha.lagsync: scroll2 69075-69079	# N
-ep8_mustapha.lagsync: scroll3 69075-69079	# N
-ep8_mess.lagsync: scroll2 64978-64979	# N
-ep8_mess.lagsync: scroll3 64978-64979	# N
 m523_ep1_2p_full.step: sprites 30613-30616	# X
 m523_ep1_3pjhm_full.step: sprites 33745-33748	# X
 m1020_e1a1_gameover.step: sprites 1973-1976	# X

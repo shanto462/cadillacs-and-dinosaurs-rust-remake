@@ -425,6 +425,16 @@ impl Game {
         self.spawn_reset();
     }
 
+    /// Harness (`harness::run`, the first state of a snapshot or step run): the snapshot was taken in a running game, so the titles that came before it are not the
+    /// first titles since power on that the measured `TITLE_RUNS` start with (their frame cuts belong to the first title of the attract from power on): the title
+    /// after the game over of `m328_end-hiscore` (6194) cuts like the runs after the table.
+    pub fn flow_title_runs_late(&mut self) {
+        if self.flow.in_game != 0 {
+            self.flow.front.title_runs = self.flow.front.title_runs.max(TITLE_RUNS.len() as u16);
+            self.flow.front.profile_runs = self.flow.front.profile_runs.max(2); // (`profile_first_run`: the first run is one frame ahead of the later ones)
+        }
+    }
+
     /// 0x9A3CE up to the first clear: pool resets, G.-$701C = 0, G.$7E4 and G.$744 = 0, 0xAE0 (the title
     /// counter G.-$7022 is cleared later, in `title_setup`).
     pub(super) fn title_reset(&mut self) {

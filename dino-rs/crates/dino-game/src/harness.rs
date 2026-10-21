@@ -629,6 +629,9 @@ pub fn run(
             }
         }
     }
+    if load.is_some() || step.is_some() {
+        game.flow_title_runs_late();
+    }
     for w in &warnings {
         eprintln!("load-state: {w}");
     }
