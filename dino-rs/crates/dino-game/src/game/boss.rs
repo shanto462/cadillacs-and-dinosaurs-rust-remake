@@ -128,8 +128,23 @@ impl Game {
                 self.boss_threshold(p);
             }
             4 => self.boss_ctrl_end(p),
-            _ => self.prop_free(p, i),
+            _ => {
+                self.boss_ctrl_stale_pointers(p);
+                self.prop_free(p, i)
+            }
         }
+    }
+
+    /// The free 0x4938 clears only +$00 .. +$27 and +$63: the controller's pointers +$A0 (the timed record) and +$A4 (the threshold group) stay in the
+    /// slot as longs, which the next object of the slot may overwrite only later (ep8_hannah 66415: the dialogue prop starts with them in +$A0 .. +$A3). The
+    /// port keeps list indexes there; the same conversion as `Prop::trace_visit` writes the pointers back when the slot is freed.
+    fn boss_ctrl_stale_pointers(&mut self, p: &mut Prop) {
+        let Some(l) = self.assets.boss.stages.get(self.w.stage as usize) else { return };
+        let t = l.timed_addr + 16 * p.m.w(off::TIMED) as u32;
+        let (g, r) = (p.m.w(off::GROUP) as usize, p.m.w(off::REC) as usize);
+        let group = if p.m.b(off::DONE) != 0 { super::trace::wave_ptr(&l.groups, g, 0, 0) + 6 } else { super::trace::wave_ptr(&l.groups, g, r, p.b.sub) };
+        p.m.sl(off::TIMED, t);
+        p.m.sl(off::GROUP, group);
     }
 
     /// 0x7BF0A: the lists of the stage (G.$4D9), timers cleared.

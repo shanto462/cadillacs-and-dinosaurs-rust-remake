@@ -36,7 +36,7 @@ impl Game {
                 e.b.anim_table = MUZZLE_ANIMS;
                 e.b.draw_flags = 0x10;
                 let anim = e.b.var26 >> 8; // move.b $26(a6), d0 (the high byte)
-                fx_start(&mut e.b, fx, anim); // jsr 0x120E
+                fx_start_obj(&mut e.b, fx, anim); // jsr 0x120E
                 let sel = u32::from(e.b.var26 & 0xFF); // move.b $27(a6), d0
                 let set = assets.enemy.t.u32(MUZZLE_VELOCITY, sel);
                 let k = u32::from(e.b.dir) * 4; // move.b $22(a6), d0 ; lsl.w #2

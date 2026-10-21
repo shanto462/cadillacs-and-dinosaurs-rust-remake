@@ -92,3 +92,34 @@ ep3_3p.*: scroll2 8236-8246	# P
 ep3_3p.*: scroll3 8236-8246	# P
 ep3_3p.*: sounds 8236-8246	# P
 ep3_3p.*: palette 8236-8246	# P
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# The other heroes (M10-19) and the flows with real content (M10-20), desktop sonnet / sonnet worktree: ep3_*, ep5_*, ep8_* (Mustapha, Hannah, Mess), the two Episode 1 game
+# over recordings m523_ep1_2p_full / m523_ep1_3pjhm_full, and the probe recordings m1020_* (join, continue, game over, name entry in Episodes 1, 3 and 7). m10_check.sh sets
+# DINO_GAME_CLOCK=1: all of them are game clock recordings (a record per finished game frame), so the port joins the ticks of its own lags into one record.
+# Results: lagsync is equal for every record of ep5_* (3), ep8_hannah, m523_* (2), m1020_* (14) and m1019_* (8); run is equal up to the first MAME lag record of each recording.
+#  X  Step mode, the exit of the game over (0xAC06 / 0xAC26): the port counts its wait for the end of the clear (`Flow::cont.exit_wait`) itself; the step loader does not carry it, so
+#     the sprite buffer is wiped 1 record late (3 records, sprites only). In lagsync the loader sets the wait of a loaded game over (2 vertical blanks away).
+#  A  Step mode, the game over to the new game (ep8_mustapha, ep8_mess): the fade of the start from the attract, the select setup (two sleeps in one routine), the level start of the
+#     new game and the attract task keep their position in the variables of the tasks, which the step loader (every record) cannot rebuild. The tail goes to the end of the
+#     70000 records (ep8_mustapha from 68891, ep8_mess from 64711). Lagsync is equal over the same records except N.
+#  N  The first columns of scroll2 and scroll3 of the new game's Episode 1 level start are drawn 1 record late (the area start is in the lag records 64977 / 69074 of a 6 vertical
+#     blank lag; the port draws them in the record after).
+#  C  A catch-up record (G.$0 moves by 2 and it is not flagged: the first record after an area start), left out by `diff.py --lag-jumps`: ep5_mess 45375.
+#  S  (see above) ep5_hannah 57870: the story panel of Episode 6 starts inside the lag records.
+ep5_hannah.step: * 57870-57870	# S
+ep5_mess.step: * 45375-45375	# C
+ep8_mustapha.step: * 68891-70001	# A
+ep8_mess.step: * 64711-70001	# A
+ep8_mustapha.lagsync: scroll2 69075-69079	# N
+ep8_mustapha.lagsync: scroll3 69075-69079	# N
+ep8_mess.lagsync: scroll2 64978-64979	# N
+ep8_mess.lagsync: scroll3 64978-64979	# N
+m523_ep1_2p_full.step: sprites 30613-30616	# X
+m523_ep1_3pjhm_full.step: sprites 33745-33748	# X
+m1020_e1a1_gameover.step: sprites 1973-1976	# X
+m1020_e1a1_gameover_name.step: sprites 2429-2432	# X
+m1020_e3a0_gameover.step: sprites 2031-2034	# X
+m1020_e3a0_gameover_name.step: sprites 2429-2432	# X
+m1020_e7a0_gameover.step: sprites 2031-2034	# X
+m1020_e7a0_gameover_name.step: sprites 2429-2432	# X

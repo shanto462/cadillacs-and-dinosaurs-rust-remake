@@ -450,6 +450,7 @@ impl Game {
         // 0x9D134: the tasks of slots 0x10 to 0x40 end, G.$4CC = 1, sound 0x31, fade out (0x87BA)
         self.flow_kill_front_tasks();
         self.flow.in_game = 1;
+        self.flow.start_tick = 1;
         self.flow.game_pending = true; // the game task does not exist for the next 18 frames
         self.sound_ex(0x31, 0x10, 0); // 0x9D168 (checked)
         self.fade.mask = 0x0F;

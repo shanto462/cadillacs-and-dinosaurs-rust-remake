@@ -18,7 +18,7 @@ impl Game {
                 let e = &mut self.effects.slots[i];
                 e.b.anim_table = PUFF_ANIMS;
                 e.b.draw_flags = 0x10;
-                fx_start(&mut e.b, fx, 0); // jsr 0x120E
+                fx_start_obj(&mut e.b, fx, 0); // jsr 0x120E
                 let r = (self.rand() & 0x18) as u32;
                 let t = &self.assets.enemy.t;
                 let (dx, dy) = (t.u32(DRIFTS, r), t.u32(DRIFTS, r + 4));

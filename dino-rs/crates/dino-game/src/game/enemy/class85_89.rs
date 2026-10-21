@@ -439,12 +439,12 @@ impl Game {
 
     /// 0x64210: the fire: sound 0x69 (0xA1DC), the muzzle flash 0x13 (0x92422) at the mouth (X -62 / +62, Y -25, Z -1), and a class 95 ball
     /// (0x69932) there with the variant T1[body to its target's X distance / 32] + T2[`rand & 31`], kept in 0 .. 8.
-    fn head_fire(&mut self, e: &mut Enemy, h: Handle) {
+    fn head_fire(&mut self, e: &mut Enemy, _h: Handle) {
         let side: u32 = if e.b.facing != 0 { 6 } else { 5 };
         self.sound_ex(0x69, (side << 16) | 0x2000 | self.snd_pan_x(e.b.xi()) as u32, 0x0240_0200);
         let dx: i16 = if e.b.facing != 0 { 0x3E } else { -0x3E };
         let (x, y, z) = (e.b.xi().wrapping_add(dx), e.b.yi().wrapping_sub(0x19), e.b.zi().wrapping_sub(1));
-        self.fx_spawn_spark_at(h, x, y, z, 0x13);
+        self.fx_spawn_spark_facing(e.b.facing, x, y, z, 0x13);
         let d = Self::part_body(e).map(|k| {
             let b = &self.enemies.slots[k];
             let tx = self.body(b.m.w(TARGET)).xi();

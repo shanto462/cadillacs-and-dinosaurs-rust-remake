@@ -314,6 +314,17 @@ impl Game {
             }
         };
         if !leave {
+            // 0x754C: the label of the block by the frame counter (the join task runs before the game task counts it): the word G.$4DA & $3F = 0 draws the
+            // GAME OVER string 0x875C at the origin of the player (0x8196, only while G.$4D5 is 0), 0x30 draws the blank block (0x80A2).
+            match self.flow.frame & 0x3F {
+                0 if self.flow_join_prompt_visible() => {
+                    let at = self.flow_join_prompt_at(i);
+                    let t = &self.assets.frontend.text;
+                    self.text_words(t.slice_from(0x875C), at);
+                }
+                0x30 => self.flow_join_prompt(i, 0x843A),
+                _ => {}
+            }
             return;
         }
         self.flow.join[i].state = 0; // 0x7538
@@ -474,6 +485,31 @@ mod tests {
             let p = Path::new("../../../dino.zip");
             p.exists().then(|| &*Box::leak(Box::new(dino_extract::extract(p).unwrap())))
         })
+    }
+
+    /// 0x754C: the GAME OVER label of a block in state 0xC is drawn when G.$4DA & $3F is 0 (0x8196: the string 0x875C at the origin of the player) and erased
+    /// at $30 (0x80A2, the blank block 0x843A); the other frames draw nothing (m523_ep1_2p_full 28371: the erase of the block of P1, 1 frame late before).
+    #[test]
+    fn the_game_over_label_follows_the_frame_counter() {
+        let Some(a) = assets() else { return };
+        let mut g = Game::new(a);
+        g.flow.mode = 0xC;
+        g.flow.join[0].state = 0xC;
+        g.players[0].w80 = 0x0A00; // the counter byte of the block, far from a borrow
+        g.spawn.g.b4d5 = 0;
+        let at = g.flow_join_prompt_at(0);
+        let text = &a.frontend.text;
+        let first = text.u16(0x875C, 2); // the first code word after the attribute word
+        g.flow.frame = 5;
+        g.flow_join_game_over(0);
+        assert_ne!(g.hud_read(at), first, "no draw at 5");
+        g.flow.frame = 0x40; // & 0x3F = 0
+        g.flow_join_game_over(0);
+        assert_eq!(g.hud_read(at), first, "the label at 0");
+        g.flow.frame = 0x30;
+        g.flow_join_game_over(0);
+        assert_eq!(g.hud_read(at), 0x20, "the blank block at 0x30");
+        assert_eq!(g.flow.join[0].state, 0xC, "the block stays in the game over state");
     }
 
     #[test]

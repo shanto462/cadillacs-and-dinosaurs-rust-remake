@@ -1826,3 +1826,35 @@ re/.venv/bin/python -I re/harness/diff.py re/out/traces/m517_ep1_jack.mame.trc r
 Results (2026-10-21): the five runs of M5-17 are equal for every record in `lagsync` and in `step --lag-jumps`; the 2 player run and the Jack, Hannah, Mustapha run are equal until two idle heroes start the tag team (records 24568 and 24916; the port has no tag team yet, M9-01). `run` differs from the first MAME lag record on (records 1696 to 3328).
 
 Catch-up records: after an area start MAME has a record that is not flagged as a lag record but holds 2 to 0x100 game frames (G.$0 jumps by more than 1: 0x23 to 0x29 at record 2369 of the Jack run). One port tick cannot replay it. `MODE=lagsync` resyncs after it like after a lag record, `diff.py` leaves it out in lagsync mode, and `--lag-jumps` leaves it out in step mode (not by default, so the sweeps keep their numbers). The harness itself: `harness.rs` `catch_up_record`.
+
+## The other heroes and the flows with real content (M10-19, M10-20)
+
+**The game clock.** Every natural recording (`record.sh`, `probe_record.sh` snapshots) uses record.lua's game clock: a record is taken at a vertical blank where no game task is busy, the vblanks of a game frame that overran are left out and the next record carries the lag flag (G.$0 can move by 2 in it). The port has to join the ticks of its own lags (`Flow::lag`, the exit of the game over, the continue start, the game start) into one record the same way: `DINO_GAME_CLOCK=1` (`harness.rs`). `m10_check.sh` sets it; for a hand run write `DINO_GAME_CLOCK=1 MODE=lagsync re/harness/port.sh ...`. Without it the ending start, the game over exit and the game start are one record out. The lagsync resync (`Flow::resume`, `wait`, the attract and join tasks, the name entry blocks, the sprite wipe) is derived from the loaded RAM where the original keeps it there (`Game::trace_load_tasks`, `trace_load`).
+
+**Results** (2026-10-21, desktop sonnet worktree; the rules are in `allow/m10_runs.txt`, the causes X, A, N, C, S there; run = equal up to the first MAME lag record in every row):
+
+| recording | step | lagsync |
+| --- | --- | --- |
+| `ep3_mustapha`, `ep3_hannah`, `ep3_mess` (M10-09 rules) | equal with the listed causes S, K | equal with the listed causes |
+| `ep5_mustapha`, `ep5_hannah`, `ep5_mess` (65000 records, 8, 6, 7 lives lost) | equal (ep5_hannah 57870 S, ep5_mess 45375 C) | equal for every record |
+| `ep8_hannah` (70000, the ending and the name entry after it) | equal for every record | equal for every record |
+| `ep8_mustapha`, `ep8_mess` (the ending, the name entry after it, the game over, the next game) | equal to the game over, then A | equal for every record except N (the next game's first level frames, 9 and 3 items) |
+| `m517_ep1_mustapha`, `m517_ep1_hannah`, `m517_ep1_mess` | the story panel at the end (M10-07 rules) | equal for every record |
+| `m523_ep1_2p_full`, `m523_ep1_3pjhm_full` (40000 records: joins, continues, name entries in the level and in the continue mode, the game over, the attract) | equal, 3 records of X | equal for every record |
+
+The name entry after the ending (D4d A21) is in `ep8_hannah`, `ep8_mustapha` and `ep8_mess` (the hero is in state 0xA from the first record of the ending, G.$507 releases it); the name entry after a game over in `m523_ep1_2p_full` / `m523_ep1_3pjhm_full` (in the level, state 0xA with the other heroes alive, and in the continue mode) and in the probe recordings below.
+
+**The new recordings** (one MAME process: `PR_TIMEOUT=3600 re/harness/probe/probe_record.sh re/harness/pokes/m1020_flow.txt all`, names `m1020_*` and `m1019_*`; run them with `re/harness/m10_check.sh NAME:FRAMES`):
+
+| recording | frames | what | step | lagsync | run |
+| --- | --- | --- | --- | --- | --- |
+| `m1020_{e1a1,e3a0,e7a0,e7lift}_cont` | 900 | the hero dies (lives 0), the continue strip over the level (coin 300, start 340, attack 460), the restore | equal | equal | equal to the first lag record (191, 249, 249, 238) |
+| `m1020_{e1a1,e3a0,e7a0,e7lift}_join` | 400 | P2 joins in the fight (coin, start, attack) | equal | equal | equal (e1a1: to the lag record 204) |
+| `m1020_{e1a1,e3a0,e7a0}_gameover` | 2300 | the countdown to 0, the game over, the attract | equal, 3 records of X | equal for every record | to the first lag record |
+| `m1020_{e1a1,e3a0,e7a0}_gameover_name` | 2700 | score 450000, the name entry with keys, END, the game over | equal, 3 records of X | equal for every record | to the first lag record |
+| `m1019_wjk{30,38}_{mustapha,hannah}` | 130 | the kick after the wall jump | equal | equal | equal |
+| `m1019_butcher_hold_{jack,mustapha,hannah,mess}` | 450 | the hero holds the Butcher and mashes the stick | equal | equal | equal |
+
+Hero moves of D2a that the older scenarios cover and that stay equal: `m515_a1` to `a14` (all four heroes, 90 of 90 equal in step mode), the knife swings and bazookas of `m516_*` (255 of 256, the food 18 is unrelated), the three weapons sets `m519` / `m520h` (269 of 269). A thug that holds the hero was not recorded: the thug of class 10 never grabs (the window of 0x3C74A carries a bias of 0x400), a Rock Hopper did not close in and the Butcher did not take the hero in the scenarios tried; the natural runs hold the hero (Zeke's dive grab, `ep5_mustapha` 962 and 9594) and are equal.
+
+What the port got from these checks (original addresses): the shadow type and wading clip bytes +$4C..+$4F of effects and props (0x1236 / 0x120E / 0x143C8 / 0x14BC6, `fx_start_obj`, class 18 `fx_load_sprite_frame`), the muzzle flash of Fessenden's heads takes the facing of the head (0x92422), the game over exit does not count G.$0 in its sleeps (0xAC06 / 0xAC26) and its first pass after the clear is the 2nd vertical blank away in a real run, the label of the block in state 0xC (0x754C: 0x8196 at G.$4DA & 0x3F = 0, 0x80A2 at 0x30), the continue return in the lift (0xEF6E), the rank blink counter G.$7017 and the name entry blocks (G.-$711C) in the trace, the cloud speed long +$60 of pool C class 32 (0x96A7E), the pointers of the boss controller left in a freed slot (0x4938, +$A0 / +$A4), the camera event pointer of a new game (0 until the first event load).

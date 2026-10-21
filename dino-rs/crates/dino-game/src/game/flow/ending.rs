@@ -221,4 +221,28 @@ mod tests {
         assert_eq!((g.flow.mode, g.flow.sub, g.flow.lag), (0x14, 0, 1));
         assert!(g.flow.ending.ranking_follows);
     }
+
+    /// 0xAC06 / 0xAC26 are one pass of the game task: the sleeps of the clear 0xAE0 inside it do not count G.$0 / G.$4DA (`resume`), only the pass of 0xAC06 does (the
+    /// next tick after the wait of the first clear); in a game clock recording the two ticks before it are in its record (`join_next`), the ticks of mode 0x18 are not
+    /// (M10-20: m523_ep1_2p_full 30612 .. 30616, ep8_mustapha 68866 .. 68868). The end of the pass starts the attract task and gathers the next 5 ticks in one record.
+    #[test]
+    fn the_game_over_exit_is_one_pass_of_the_game_task() {
+        let Some(a) = assets() else { return };
+        let mut g = Game::new(a);
+        g.flow.mode = 0x14;
+        g.flow.in_game = 1;
+        g.flow.cont.exit_wait = 4; // the continue mode has set the mode 0x14 and the wait of its clear
+        for want in [(3, true, false), (2, true, true), (1, false, true)] {
+            g.flow_game_over();
+            assert_eq!((g.flow.cont.exit_wait, g.flow.resume, g.flow.join_next), want, "wait ticks of the mode 0x14");
+        }
+        g.flow_game_over(); // the pass of 0xAC06: the mode 0x18 and the clear
+        assert_eq!((g.flow.mode, g.flow.cont.exit_wait, g.flow.resume), (0x18, 4, true));
+        for want in [3, 2, 1] {
+            g.flow_game_over();
+            assert_eq!((g.flow.cont.exit_wait, g.flow.resume, g.flow.join_next), (want, true, false), "wait ticks of the mode 0x18");
+        }
+        g.flow_game_over(); // the end of 0xAC26: the game task ends, the attract task starts
+        assert_eq!((g.flow.in_game, g.flow.attract_join), (0, 5));
+    }
 }
