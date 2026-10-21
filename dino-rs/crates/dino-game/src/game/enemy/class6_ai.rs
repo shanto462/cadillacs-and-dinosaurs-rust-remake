@@ -335,7 +335,8 @@ impl Game {
         let mut d0 = abs_d / 44;
         let mut d1 = abs_d % 44;
 
-        if (diff as i16) >= 0 {
+        // 0x399E8 / 0x39A10: `sub.w dest,d2 ; bcs`: the sign is the unsigned borrow of the word compare (a destination above 0x7FFF, such as -2, is "above" the position)
+        if (current as u16) >= (dest as u16) {
             d0 = (-(d0 as i16)) as u16;
             d1 = (-(d1 as i16)) as u16;
         }

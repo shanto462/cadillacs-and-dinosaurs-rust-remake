@@ -502,6 +502,12 @@ impl Typer {
         (a & 0x909FFF) | 0x908000
     }
 
+    /// A typewriter object of the level taken over from a snapshot (`Game::trace_load`): the bytes of the original object. `read` is the string from the read pointer
+    /// +$88 on (from the start of the string while the object is new, sub state 0: the pointer is in +$80 then).
+    pub fn restore(state: u8, sub: u8, read: &[u8], cursor: u32, delay: u16, period: u16, fast: bool, slot: usize) -> Typer {
+        Typer { live: true, state, sub, text: read.to_vec(), cursor, pos: 0, delay, period, fast, slot: Some(slot) }
+    }
+
     /// The write address (+$80), for tests and for scenes that react to the cursor.
     pub fn cursor(&self) -> u32 {
         self.cursor

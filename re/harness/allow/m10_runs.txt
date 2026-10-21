@@ -92,3 +92,48 @@ ep3_3p.*: scroll2 8236-8246	# P
 ep3_3p.*: scroll3 8236-8246	# P
 ep3_3p.*: sounds 8236-8246	# P
 ep3_3p.*: palette 8236-8246	# P
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Task 13 (M10-15 .. M10-17, the 3 player runs of Episodes 1 to 6): ep1_3p (24337 records), ep4_3p (28001), ep5_3p (65001), ep6_3p (70001); ep2_3p and ep3_3p are above.
+# ep5_3p has no difference in step and lagsync mode and needs no rule.
+
+# ep1_3p, step mode only (lagsync resyncs at these records and has 0 differences): K in the records 6144, 6177 and 6193 (the skip wait: MAME runs 4 game frames in the video frame, the port 3)
+ep1_3p.step: * 6144-6144	# K
+ep1_3p.step: * 6177-6177	# K
+ep1_3p.step: * 6193-6193	# K
+
+# ep4_3p: the tally ends in the lag record 27307, the story panel of Episode 5 starts inside it (cause S); 27389 / 27391: scroll2 cells of the panel after the lag records 27388 / 27393
+ep4_3p.*: global.frame 27308-27312	# S
+ep4_3p.*: global.game_frame 27308-27312	# S
+ep4_3p.*: global.cam_x 27308-27312	# S
+ep4_3p.*: global.cam3_x 27308-27312	# S
+ep4_3p.*: global.cam3_y 27308-27312	# S
+ep4_3p.*: global.map_ptr 27308-27312	# S
+ep4_3p.*: global.obst_slot 27308-27312	# S
+ep4_3p.*: global.coin_pulse_timer 27308-27312	# S
+ep4_3p.*: scroll1 27308-27312	# S
+ep4_3p.*: scroll2 27308-27312	# S
+ep4_3p.*: scroll3 27308-27312	# S
+ep4_3p.*: palette 27308-27312	# S
+ep4_3p.*: sounds 27308-27312	# S
+ep4_3p.*: scroll2 27389-27395	# S
+ep4_3p.*: sounds 27389-27395	# S
+
+# ep6_3p: the tally ends in a lag record before 42639 (the story panel of Episode 7 starts inside it, cause S)
+ep6_3p.*: global.frame 42639-42650	# S
+ep6_3p.*: global.game_frame 42639-42650	# S
+ep6_3p.*: global.cam_x 42639-42650	# S
+ep6_3p.*: global.cam3_x 42639-42650	# S
+ep6_3p.*: global.cam3_y 42639-42650	# S
+ep6_3p.*: global.map_ptr 42639-42650	# S
+ep6_3p.*: global.obst_slot 42639-42650	# S
+ep6_3p.*: global.coin_pulse_timer 42639-42650	# S
+ep6_3p.*: scroll1 42639-42650	# S
+ep6_3p.*: scroll2 42639-42650	# S
+ep6_3p.*: scroll3 42639-42650	# S
+ep6_3p.*: palette 42639-42650	# S
+ep6_3p.*: sounds 42639-42650	# S
+
+# ep6_3p 27280 to 27284 (the slow motion of the boss death, the game runs every third video frame; the records 27282 is a lag record): OPEN, not explained. The head sprite of a lobbed projectile
+# (item class 8, 0x29EC4; sprite 572F) is drawn 1 pixel right and 5 pixels higher than in MAME and its trail has one element less; no object field differs. Draw only, 4 records.
+ep6_3p.*: sprites 27280-27284	# OPEN
