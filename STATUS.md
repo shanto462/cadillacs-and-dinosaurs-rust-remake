@@ -47,4 +47,4 @@ Work resumed 2026-10-21 after the M4 checkpoint (M1 to M4 and M6 done). Open lea
 ## How to run
 
 From `dino-rs/`: `cargo run -p dino-game -- --rom ../dino.zip [--stage N] [--chars 0,2]`.
-Keys (player 1): arrows or WASD to move, J or Z attack, K or X jump, Enter or 1 = start, 5 = coin, F1 = hit boxes; players 2 and 3 use gamepads. Viewer: `--viewer`.
+Keys (player 1): arrows to move, J or Z attack, K or X jump, A S D F G special moves (run.md), Enter or 1 = start, 5 = coin, F1 = hit boxes; players 2 and 3 use gamepads. Viewer: `--viewer`.
