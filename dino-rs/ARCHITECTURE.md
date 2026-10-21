@@ -9,8 +9,9 @@ runs, and there is no memory image. Every original routine is rewritten as plain
 | crate | role |
 | --- | --- |
 | `dino-assets` | Data model shared by extractor and game (`AssetPack`). Plain types, no ROM access. |
-| `dino-extract` | Reads `dino.zip`, decodes tiles, palettes, sprite frames, hitboxes, maps, tables into `AssetPack`. The only crate that reads ROM bytes. `cargo run -p dino-extract` prints a summary. |
-| `dino-game` | The game: `game/` is the logic port, `render.rs` the GPU renderer, `present.rs` turns game state into draw commands, `main.rs` the window and fixed 60 Hz loop. |
+| `dino-extract` | Reads `dino.zip`, decodes tiles, palettes, sprite frames, hitboxes, maps, tables into `AssetPack`. The only crate that reads ROM bytes. `cargo run -p dino-extract` prints a summary (`src/main.rs`; `anim <table_hex> <id>` dumps one animation's frames). |
+| `dino-game` | The game: `game/` is the logic port, `render.rs` the GPU renderer, `present.rs` turns game state into draw commands, `main.rs` the window and fixed 60 Hz loop. `input.rs` reads keys and pads (see Input), `audio.rs` the sound output. |
+| `dino-sound` | Port of the QSound Z80 sound driver: `driver.rs` (mailbox, 250 Hz IRQ, commands), `seq.rs` (sequencer, events, notes), `voice.rs` (per-frame voice steps, LFO, envelope), `pan.rs` (pan setup), `map.rs` (Z80 RAM map and field offsets), `mixer.rs` (16 voices, echo, f32 stereo out), `tests.rs`. Reads the sound data from `dino-assets` (`sound.rs`); no ROM access and no dependency on `dino-game`. |
 
 ## The one rule: data vs code
 
@@ -28,7 +29,42 @@ runs, and there is no memory image. Every original routine is rewritten as plain
   8.8 velocities, unsigned vs signed compares exactly as the branch used (`bcs/bhi` = unsigned,
   `blt/bgt` = signed). Keep quirks and bugs; note them in a comment.
 - Random numbers: only `Game::rand()` (0x119C), called in the original order.
-- Sounds: `Game::sound(id)` records the request (audio is not implemented yet).
+- Sounds: `Game::sound(id)` (and `sound_ex(id, d1, d2)`) queues the request in `w.snd_reqs`, cleared each tick. `audio.rs` feeds the
+  requests to `dino-sound` after the tick. The game never reads the sound side.
+
+## Screen latency (what the picture shows)
+
+The real board shows the game a few frames late. The port keeps that, so MAME pictures and ours match. The game state is always
+the live one; only `present.rs` (through the latches in `Game::tick`) reads the older values:
+
+- Scroll X registers of scroll1 and scroll2, and the scroll3 X and Y: two frames late (`camera::VIDEO_LATENCY` = 2, `Camera::shown_scroll`).
+- Scroll Y of scroll1 and scroll2: one frame late (same function).
+- Layer registers (layer control, video control, scroll3 base): one frame late (`LayerRegs`, `Camera::shown_layers`).
+- Sprite list: two frames late (`SpriteList::latch`, `submit`). Palette colours: one frame late (`PaletteRam::latch`).
+- Tile maps and the priority masks: at once.
+
+The first latch fills the history, so a game that starts in a scene shows its scroll and sprites at once.
+
+## Input and the combo toggle (`input.rs`, `main.rs`)
+
+- `Inputs::poll(hero)` builds one `input::Frame` per video frame in the window: player 1 from the keyboard, players 2 and 3
+  from gamepads (gilrs; keyboard still works without a pad), system bits (start, SERVICE) and coins.
+- `Player1Keys::frame` is the pure per-frame function that the tests drive (`input.rs` tests). It takes the held keys, the Q press,
+  the special move key pressed (if any) and `Hero`. A move key starts its sequence (`Move::frames`, the way to go is the last
+  horizontal direction held). While a sequence runs it replaces player 1's buttons.
+- Special move keys (`MOVE_KEYS`): A `Command`, S `Dive`, D `JumpAttack`, F `Special`, G `Dash`. Each plays the original's own input sequence.
+- Q toggles `Combo`. While it is on, the attack press that would be the third hit of a punch chain plays the command move
+  instead. The chain is the game's own hit count `+$B2` (it counts only hits that land, a miss sets it back to 0). The move waits up
+  to `Combo::WAIT` (60) frames until the hero is ready, and only while the chain stays at its third hit; the press stays off until the key is let go.
+- `HeroWatch` (`main.rs`, window loop only) reads the hero's chain state from the game before each tick and fills `input::Hero`
+  (`third_next`, `ready`). The game logic does not see the combo.
+- P toggles `user_paused` in `main.rs`: no game tick runs while paused, the picture stays and the sound stops (the audio frame runs only for the test menu's pause). The PAUSED text and the COMBO label (while Q is on)
+  are drawn in the window only.
+
+## Check tools
+
+These modules are review aids, not game logic: `autoplay.rs` (the bot), `planner.rs` (`--autoplay smart`, a beam search on copies of
+`Game`), `debug.rs` (debug keys), `menu.rs` and `jumps.rs` (test menu and jump points), `headless.rs` and `harness.rs` (CPU screenshots, trace runs).
 
 ## Objects
 
@@ -49,7 +85,7 @@ runs, and there is no memory image. Every original routine is rewritten as plain
 `rank_tick` 0x186CC, `objects_update` 0xE90E (census 0x3242E, players 0x18834, items 0x233C6,
 enemies 0x23420, shake 0x222D6, props 0x23604, effects 0x237B2, held players 0x188DA, background
 0x2042E), `collision` 0x10546 (passes in `combat.rs`), `hud_update` 0x16BEA, `build_sprite_list`
-0x13FA6, `combat_lists_reset` 0x105E8, `time_limit`, `spawn_script_tick` 0xFBF4; then the fade task.
+0x13FA6, `combat_lists_reset` 0x105E8, `time_limit`, `spawn_script_tick` 0xFBF4; then the fade task. `Game::tick` (`game/mod.rs`) runs `flow_frame`, then `skip_wait_rounds` (0x9E38C), then the latches that the screen reads (see Screen latency).
 
 ## Naming rule for `impl Game` methods
 
@@ -83,13 +119,13 @@ session. If the build breaks in a file you do not own, wait and retry instead of
 | terrain collision (shared, phase 1 task 1) | `game/terrain.rs`, `dino-assets/src/terrain.rs`, `dino-extract/src/terrain.rs`; checked by `re/harness/terrain_oracle.py` |
 | main session | `game/mod.rs`, `body.rs`, `collide.rs`, `combat.rs`, `palette.rs`, `render.rs`, `main.rs`, `input.rs`, `viewer.rs`, both `lib.rs` files, `rom.rs`, `gfx.rs`, `sprites.rs` |
 | stage / camera port | `game/camera.rs`, `game/vram.rs`, `present.rs`, `dino-assets/src/stage.rs`, `dino-extract/src/stage.rs` |
-| player port | `game/player.rs`, `game/player_combat.rs`, `game/player_weapon.rs` (a child module of `player.rs`, declared there with `#[path]`), `dino-assets/src/player.rs`, `dino-extract/src/player.rs` |
+| player port | `game/player.rs`, `game/player_combat.rs`, `game/player_weapon.rs` (a child module of `player.rs`, declared there with `#[path]`), `game/player_tag.rs` (the tag team move, a child module of `player.rs`), `dino-assets/src/player.rs`, `dino-extract/src/player.rs` |
 | draw / effects port | `game/draw.rs`, `game/effect.rs`, `dino-assets/src/effect.rs`, `dino-extract/src/effect.rs` |
-| enemy port | `game/enemy.rs`, `enemy_combat.rs`, `prop.rs`, `item.rs`, `spawn.rs`, `rank.rs`, `dino-assets/src/enemy.rs`, `dino-extract/src/enemy.rs` |
-| sound port | `crates/dino-sound/`, `dino-game/src/audio.rs`, `dino-assets/src/sound.rs`, `dino-extract/src/sound.rs` |
+| enemy port | `game/enemy.rs`, `enemy_combat.rs`, `prop.rs`, `item.rs`, `spawn.rs`, `rank.rs`, `enemy/claim.rs` (the claim of a downed player, 0x6606), `enemy/scene_actors.rs` (opening scene actors), `enemy/scenery.rs` (scenery and scene classes), `item/*.rs` (child modules of `item.rs`: weapons, containers, blasts, small items, the item hit passes), `dino-assets/src/enemy.rs`, `dino-extract/src/enemy.rs` |
+| sound port | `crates/dino-sound/`, `dino-game/src/audio.rs`, `game/snd.rs` (the 68000 sound requests), `dino-assets/src/sound.rs`, `dino-extract/src/sound.rs` |
 | flow / HUD port | `game/hud.rs`, `game/flow.rs` (also the `hook_*` stage routines the camera calls), `dino-assets/src/text.rs`, `dino-extract/src/text.rs`; `game/flow/*.rs` (boot, attract, movie, demo, slides, profiles, ranking, picture, scene, text, system, select, front, join, cont, name_entry, tally, cards, ending, config, skip, mame_check), `game/script.rs` (scripted control), `dino-assets/src/frontend.rs`, `script.rs`, `dino-extract/src/frontend.rs`, `script.rs` |
 | enemy port (bosses and classes) | `game/enemy/classNN*.rs` (one file or a small family per class), `game/boss.rs`, `game/boss_common.rs` (the shared boss skeleton), `game/car.rs`, `game/prop/*.rs` (child modules of `prop.rs` with `#[path]`, one per pool B class or family), `dino-assets/src/boss.rs`, `dino-extract/src/boss.rs` |
-| draw / effects port (pool C) | `game/effect/fxNN*.rs` (child modules of `effect.rs` with `#[path]`, one per pool C class or family) |
+| draw / effects port (pool C) | `game/effect/fxNN*.rs` (child modules of `effect.rs` with `#[path]`, one per pool C class or family), `game/effect/fx_cloud.rs` (ranking clouds), `fx_tally.rs` (stage clear tally), `fx_time_over.rs` (the TIME OVER words) |
 | review tools (main session) | `autoplay.rs` (the review bot), `debug.rs` (debug keys), `menu.rs`, `jumps.rs`, `font5x7.rs` (the test menu and jump points), `headless.rs` (the CPU renderer), `harness.rs` and `game/trace.rs` (the trace writer and the step loader), `re/harness/*` |
 
 Allowed small edits in files you do not own (re-read the file right before editing):
