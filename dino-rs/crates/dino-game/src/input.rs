@@ -183,6 +183,11 @@ pub struct Inputs {
     last_dir: u8,
 }
 
+/// Enter starts player 1 (bit 0 of the system byte), except while Alt is held: Alt+Enter is the fullscreen toggle (main.rs).
+fn enter_start_bit(enter_down: bool, alt_down: bool) -> u8 {
+    (enter_down && !alt_down) as u8
+}
+
 fn keys(list: &[(KeyCode, u8)]) -> u8 {
     list.iter().filter(|(k, _)| is_key_down(*k)).fold(0, |acc, (_, bit)| acc | bit)
 }
@@ -213,7 +218,8 @@ impl Inputs {
         let live = keys(&[(Right, RIGHT), (Left, LEFT), (Down, DOWN), (Up, UP), (J, ATTACK), (Z, ATTACK), (K, JUMP), (X, JUMP)]);
         let mut f = Frame {
             players: [self.player1_keys(live), 0, 0],
-            system: keys(&[(Key1, 1), (Enter, 1), (Key2, 2), (Key3, 4), (Key9, SERVICE)]),
+            system: keys(&[(Key1, 1), (Key2, 2), (Key3, 4), (Key9, SERVICE)])
+                | enter_start_bit(is_key_down(Enter), is_key_down(LeftAlt) || is_key_down(RightAlt)),
             coins: keys(&[(Key5, 1), (Key6, 2), (Key7, 4)]),
         };
         if let Some(g) = &mut self.gilrs {
@@ -309,5 +315,18 @@ mod tests {
         let s = Move::Dash.frames(RIGHT);
         let second = s.iter().enumerate().skip(1).find(|&(i, &b)| b & RIGHT != 0 && s[i - 1] & RIGHT == 0).unwrap().0;
         assert!(second <= 12 && first(&s, ATTACK) > second);
+    }
+}
+
+#[cfg(test)]
+mod enter_tests {
+    use super::enter_start_bit;
+
+    #[test]
+    fn enter_starts_player_one_only_without_alt() {
+        assert_eq!(enter_start_bit(true, false), 1);
+        assert_eq!(enter_start_bit(true, true), 0, "Alt+Enter toggles fullscreen, it does not start");
+        assert_eq!(enter_start_bit(false, false), 0);
+        assert_eq!(enter_start_bit(false, true), 0);
     }
 }
