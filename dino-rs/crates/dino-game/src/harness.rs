@@ -421,7 +421,14 @@ fn load_regions(game: &mut Game, rd: &TraceReader) -> Result<Vec<String>, String
     let ram = rd.region("ram")?.check(0xFF0000)?;
     let gfx = rd.region("gfx")?.check(0x900000)?;
     game.hold_unported = true; // keep objects of unported classes (`Game::trace_hold`)
-    Ok(game.trace_load(ram, gfx))
+    let warn = game.trace_load(ram, gfx);
+    // The shown sprite buffer of the snapshot is all zero (the clear 0xAE0, no build since): the list the port built before the load is gone too, as after
+    // its own clear (`SpriteList::wipe`). Without this a load inside a clear that the port had not reached itself (the continue strip's game over clear in
+    // the lag record m523_ep1_2p 30612) kept the old list on the screen until the port's own clear four records later.
+    if game.sprites.blank {
+        game.sprites.entries.clear();
+    }
+    Ok(warn)
 }
 
 pub struct TraceWriter {
