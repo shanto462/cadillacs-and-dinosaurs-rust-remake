@@ -830,6 +830,29 @@ impl Prop {
             f.u16(0x80, "wave_timer", &mut t);
             self.m.sw(0x80, t);
         }
+        if f.all() || self.b.k20 == 19 * 4 {
+            // 0x7B7DE..0x7B7F2: +$A0 is G.$638 + 12 * player in
+            // MAME, but class19.rs keeps the player index in its first byte.
+            // A fresh mode-0 object has not written the pointer yet.
+            let mut record = if f.loading() || self.b.mode == 0 {
+                self.m.l(0xA0)
+            } else {
+                // A5 came from LEA $8000.w and remains sign extended.
+                0xFF000000 | (g(0x638) + 12 * self.m.b(0xA0) as u32)
+            };
+            f.u32(0xA0, "select_record", &mut record);
+            if f.loading() && self.b.mode != 0 {
+                let offset = (record & 0xFFFFFF).wrapping_sub(g(0x638));
+                if offset % 12 == 0 && offset / 12 < 3 {
+                    self.m.sb(0xA0, (offset / 12) as u8);
+                } else if self.b.live != 0 {
+                    f.v.error(format!("select picture: invalid record pointer {record:#x}"));
+                }
+            }
+            let mut pos = self.m.b(0xA4);
+            f.u8(0xA4, "select_position", &mut pos);
+            self.m.sb(0xA4, pos);
+        }
         if f.all() || self.b.k20 == 20 * 4 {
             for (off, name) in [(0x80, "go_ticks"), (0x81, "go_blinks")] {
                 let mut v = self.m.b(off);
@@ -1723,14 +1746,21 @@ impl Game {
         // 0x6C4A reads the system task's credit/debounce state between snapshots.
         let s = &mut fl.front.sys;
         f.u8(0x046A, "credits", &mut s.credits);
-        f.flag(0x046B, "free_play", &mut s.free_play);
+        // 0x9CFD2..0x9CFDA stores the masked bit, not a normalized bool.
+        let mut free_play = if s.free_play { 4 } else { 0 };
+        f.u8(0x046B, "free_play", &mut free_play);
+        s.free_play = free_play != 0;
         f.flag(0x046C, "two_coin_start", &mut s.two_coin_start);
         f.u8(0x046D, "press_up", &mut s.press_up);
         f.u8(0x046E, "coin_pulse", &mut s.pulse);
         f.u8(0x046F, "coin_pulse_timer", &mut s.pulse_timer);
         f.u8(0x0470, "coins_per_credit", &mut s.coins_per_credit);
         f.u8(0x0471, "credits_per_coin", &mut s.credits_per_coin);
-        f.flag(0x0472, "common_chute", &mut s.common);
+        // 0x9CFDE..0x9CFE6 stores bit 3; 0x9D002 replaces it with 1
+        // for the two-player layout. The native system task only tests nonzero.
+        let mut common = if s.common { if s.two_player { 1 } else { 8 } } else { 0 };
+        f.u8(0x0472, "common_chute", &mut common);
+        s.common = common != 0;
         f.flag(0x0473, "credit_redraw", &mut s.redraw);
         f.flag(0x0474, "two_player_chute", &mut s.two_player);
         f.u8(0x0475, "common_coins", &mut s.common_coins);
@@ -2604,6 +2634,52 @@ mod tests {
 
     fn assets() -> &'static AssetPack {
         Box::leak(Box::new(AssetPack::default()))
+    }
+
+    /// 0x9CFDA / 0x9CFE6 / 0x9D002: flag bytes retain the original masks.
+    #[test]
+    fn settings_flags_round_trip_as_original_bytes() {
+        let mut game = Game::new(assets());
+        for (free, common, two, raw_common) in [
+            (false, false, false, 0),
+            (true, false, false, 0),
+            (false, true, false, 8),
+            (true, true, true, 1),
+        ] {
+            let s = &mut game.flow.front.sys;
+            (s.free_play, s.common, s.two_player) = (free, common, two);
+            let c = game.trace_ram();
+            assert_eq!(c.ram[0x846B], if free { 4 } else { 0 });
+            assert_eq!(c.ram[0x8472], raw_common);
+            let mut loaded = Game::new(game.assets);
+            loaded.trace_load(&c.ram, &vec![0; 0x30000]);
+            let s = &loaded.flow.front.sys;
+            assert_eq!((s.free_play, s.common, s.two_player), (free, common, two));
+            assert_eq!(loaded.trace_ram().ram[0x8472], raw_common);
+        }
+    }
+
+    /// 0x7B7F2 / 0x7B7FA: a RAM pointer must become an index before the next update.
+    #[test]
+    fn two_player_select_picture_restores_its_player_index() {
+        let mut game = Game::new(assets());
+        let slot = game.props.alloc().unwrap();
+        let base = game.props.handle(slot) as usize;
+        for player in 0..3u8 {
+            let p = &mut game.props.slots[slot];
+            p.b.live = 1;
+            p.b.k20 = 19 * 4;
+            p.b.mode = 2;
+            p.m.sb(0xA0, player);
+            p.m.sb(0xA4, 3);
+            let c = game.trace_ram();
+            assert_eq!(u32::from_be_bytes(c.ram[base + 0xA0..base + 0xA4].try_into().unwrap()), 0xFF000000 | (g(0x638) + 12 * player as u32));
+            let mut loaded = Game::new(game.assets);
+            loaded.trace_load(&c.ram, &vec![0; 0x30000]);
+            let p = &loaded.props.slots[slot];
+            assert_eq!(p.m.b(0xA0), player);
+            assert_eq!(p.m.b(0xA4), 3);
+        }
     }
 
     /// 0xB97E / 0x95A: the saved caller, not the counter, identifies a tally sleep.
