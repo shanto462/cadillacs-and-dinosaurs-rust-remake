@@ -362,6 +362,14 @@ impl Game {
         }
     }
 
+    /// Step and lagsync loader (`trace.rs`): the system task sleeps inside the start of a game from the attract (0x9D134 .. 0x9D17E), in the fade out 0x87BA or in the sleep
+    /// 0xA76 after it: it runs the clear 0xAE0 (`sst::CLEAR`) `frames` frames from now.
+    pub(in crate::game) fn flow_sys_restore_start(&mut self, frames: u16) {
+        self.flow.front.sys_task = Scene::start(sst::CLEAR);
+        self.flow.front.sys_task.wait(frames, sst::CLEAR);
+        self.flow.front.sys_skip = 0;
+    }
+
     /// One pass of the loop 0x9D04C: SERVICE with the conversion, the lockout, the coin counter pulse, the attract part.
     fn flow_sys_pass(&mut self) {
         // The attract task is busy (a clear of all layers that the port writes as a sleep):

@@ -123,6 +123,9 @@ impl Game {
                 // the first half of the pass after a card start: pool B up to the frame boundary
                 self.screen_shake();
                 self.pool_b_update();
+                // the frame boundary falls inside this pass: a game clock recording has both halves in one record (a lag record of 1 vertical blank,
+                // `m328_end-hiscore` 6805)
+                self.flow.join_next = true;
                 self.flow.front.task.wait(1, pst::CUT_END);
             }
             pst::CUT_END => {

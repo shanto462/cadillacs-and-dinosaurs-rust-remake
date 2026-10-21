@@ -185,6 +185,10 @@ impl Game {
                 // 0x9A7E6: the profile cards (`profiles.rs`); it returns in `st::PROFILES_END`
                 self.flow.front.profile_runs = self.flow.front.profile_runs.saturating_add(1);
                 self.flow_profile_start();
+                // the start keeps the CPU for 3 video frames (the clear, the palettes): one record of a game clock recording (a lag record of 2
+                // vertical blanks, `m328_end-hiscore` 6794)
+                self.flow.join_next = true;
+                self.flow.attract_join = 2;
             }
             _ => {
                 // 2 and 6: 0x98330 (the World set re-creates the INSERT COIN blink task), the demo counter G.$757A + 1
@@ -263,6 +267,10 @@ impl Game {
             self.flow.front.after_ranking_pass = false;
             self.flow.ending.ranking_follows = false;
             self.flow.front.game_over_flag = 0; // clr.b -$702E(a5)
+            // The state routine (clear, palettes, the title) keeps the CPU for 6 video frames: a game clock recording has them in one record (a lag record of
+            // 5 vertical blanks, `m328_end-hiscore` 6194; the video clock shows the clear of the layers and the title in the ticks of the record).
+            self.flow.join_next = true;
+            self.flow.attract_join = 5;
             self.flow_attract_state_routine();
             return;
         }

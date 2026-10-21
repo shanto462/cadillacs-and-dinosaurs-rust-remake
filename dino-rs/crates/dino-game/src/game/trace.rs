@@ -1245,7 +1245,7 @@ pub const PORTED_CLASSES: [(&str, &[u16]); 6] = [
             class::ATTACK_BOX,
         ],
     ),
-    ("effect", &[0x04 / 4, 0x10 / 4, 0x14 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x2C / 4, 0x38 / 4, 0x50 / 4, 0x54 / 4, 0x0C / 4, 0x1C / 4, 0x4C / 4, 0x60 / 4, 0x64 / 4, 0x3C / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x74 / 4, 0x88 / 4, 0x08 / 4, 0x7C / 4, 0x84 / 4, 0x90 / 4, 0x94 / 4, 0xA4 / 4, 0x78 / 4, 0x6C / 4, 0x48 / 4, 0x9C / 4, 0xA0 / 4]),
+    ("effect", &[1 /* 0x04 / 4 */, 0x10 / 4, 0x14 / 4, 0x18 / 4, 0x40 / 4, 0x44 / 4, 0x20 / 4, 0x2C / 4, 0x38 / 4, 0x50 / 4, 0x54 / 4, 0x0C / 4, 0x1C / 4, 0x4C / 4, 0x60 / 4, 0x64 / 4, 0x3C / 4, 0x58 / 4, 0x5C / 4, 0x68 / 4, 0x70 / 4, 0x74 / 4, 0x88 / 4, 0x08 / 4, 0x7C / 4, 0x84 / 4, 0x90 / 4, 0x94 / 4, 0xA4 / 4, 0x78 / 4, 0x6C / 4, 0x48 / 4, 0x9C / 4, 0xA0 / 4]),
     // a pool D slot has no class word: the diff tool reads +$20 of the slot, which is 0 for the clock's slot (a sprite word)
     ("special", &[0]),
 ];
@@ -2088,8 +2088,28 @@ impl Game {
             if let Some(p) = super::flow::cards::Story::part_at_sleep_return(ret) {
                 self.flow.story.part = p;
                 self.sprites.wipe(); // the entry's clear (0xAE0, `flow_attract_clear`) ran before the sleep in the original: no sprites until the next draw
+                // The same clear is complete in the snapshot: the port's own clear of the entry (`flow_attract_clear`: scroll2 in the next frame, scroll3 in the one after) must
+                // not go on, it would wipe the picture the panel drew after it (m800_bta6_sl_kill lagsync 5565, the 21 cells of the Episode 8 panel). (Desktop Sonnet's loader
+                // patch `t18_story_palette_patch.diff`, taken over as it is; the staged entry clear in MAME's lag record also explains the scroll3 cell group of
+                // `m600_bs_e1_h4_foot`, Desktop Opus.)
+                self.flow.front.clear_stage = 0;
+                self.flow.front.clear3_cut = 0;
                 if p == super::flow::cards::Story::WAIT_PART {
                     self.flow.story.counter = u16::from_be_bytes(ram[0x0E66..0x0E68].try_into().unwrap());
+                }
+                // The Episode 8 palette play 0xE0E4 (the sleep returns into 0xE148): the task's saved registers hold d2 (the steps left of the call, at +$08) and the
+                // caller's loop counter d1 (the dbra of 0xDF66, pushed by the movem of 0xE0E4, at +$44). The port counts the steps done (`step`, 0 to 4) and the calls
+                // left plus one (`counter`).
+                if ret == 0xE148 {
+                    let d2 = u32::from_be_bytes(ram[sp + 8..sp + 12].try_into().unwrap()) as u16;
+                    let d1 = u32::from_be_bytes(ram[sp + 0x44..sp + 0x48].try_into().unwrap()) as u16;
+                    if d2 == 0 {
+                        self.flow.story.step = 0; // the fifth step is done: the port has counted the call
+                        self.flow.story.counter = d1;
+                    } else {
+                        self.flow.story.step = (5 - d2) as _;
+                        self.flow.story.counter = d1.wrapping_add(1);
+                    }
                 }
             }
         }
@@ -2135,10 +2155,11 @@ impl Game {
                 // (+$10A, 0x33 at the start, set by the redraw) is untouched.
                 // 0xCC58 sleeps once (`jsr 0xA76`) after G.$4E3 is set by the (4, 2) step: the first record with sub 4 holds that sleep.
                 let first_sub4 = it.state == 4 && it.sub == 4 && !it.sub4_seen;
+                // (a lag record that holds the sleep and the slide's first step too has G.$4D5 cleared, which every step of the slide does at 0xCCF4: the redraw is done, ep8_3p 55535)
                 it.sub4_seen = it.state == 4 && it.sub == 4;
                 it.after = if it.state == 4
                     && it.sub == 4
-                    && ((it.w6 == 0 && self.players.iter().any(|p| p.b10a == 0x33 && p.b.live != 0)) || (first_sub4 && ram[0x84E3] != 0))
+                    && ((it.w6 == 0 && self.players.iter().any(|p| p.b10a == 0x33 && p.b.live != 0)) || (first_sub4 && ram[0x84D5] != 0 && ram[0x84E3] != 0))
                 {
                     super::flow::IntroAfter::Redraw
                 } else if it.state == 4 && it.sub == 0 && cnt == 1 && ram[0x84D5] == 0 {
@@ -2184,6 +2205,12 @@ impl Game {
                 }
             }
         }
+        // A game clock record is taken where no game task is busy: a clear 0xAE0 that the port still counts out over the next frames (`clear_stage`,
+        // `flow_attract_clear_step`) is done in the loaded state. A lagsync load after the record that holds the game start (ep8_mess 64977: the clear,
+        // the area start and the first columns of the level in one lag record of 6 vertical blanks) would clear the level's first columns again.
+        if self.flow.game_clock {
+            self.flow.front.clear_stage = 0;
+        }
         // The next vblank copies the snapshot's current inputs to the previous
         // bytes before sampling the new frame (0x738).
         self.flow.front.prev_system = ram[0x801A];
@@ -2203,6 +2230,28 @@ impl Game {
                     scene.sleep(cnt as u16);
                 } else if st == 2 {
                     scene.sleep(0);
+                }
+            }
+        }
+        // The start of a game from the attract (0x9D134): G.$4CC is set and the game task (slot 2) is not created yet. The system task (slot 0) runs the fade out
+        // 0x87BA itself (its sleep 0x95A at 0x8818, return 0x881C; the fade task of slot 4 is not used), then sleeps once (0xA76, return 0x9D17A), then clears the
+        // screen (0xAE0) and creates the game task. `ram[0x844B]` is the number of steps left (G.$44B). (The game over exit 0xAC26 leaves G.$4CC set for two
+        // records with the game task gone too: only the system task's own sleeps tell the start from it.)
+        self.flow.game_pending = false;
+        if self.flow.in_game != 0 && task(2).0 == 0 {
+            let (st, cnt) = task(0);
+            let sp = u32::from_be_bytes(ram[0x5A..0x5E].try_into().unwrap()) as usize;
+            if st == 1 && sp >> 16 == 0xFF && (sp & 0xFFFF) + 0x44 <= ram.len() {
+                let at = |o: usize| u32::from_be_bytes(ram[(sp & 0xFFFF) + o..(sp & 0xFFFF) + o + 4].try_into().unwrap());
+                let (ret, ret2) = (at(0x3C), at(0x40));
+                let steps = ram[0x844B] as u16;
+                if ret == 0x881C && ret2 == 0x9D174 {
+                    self.flow.game_pending = true;
+                    self.fade.task = Some(crate::game::palette::FadeTask { fade_in: false, sleep: cnt as u16, started: true });
+                    self.flow_sys_restore_start(steps + 1);
+                } else if ret == 0xA98 && ret2 == 0x9D17A {
+                    self.flow.game_pending = true;
+                    self.flow_sys_restore_start(cnt as u16);
                 }
             }
         }
@@ -2718,6 +2767,42 @@ mod tests {
                 }
             }
         }
+    }
+
+    /// 0x9D134 .. 0x9D17E: the system task sleeps in the fade out of a game start (0x87BA, return 0x881C, caller 0x9D174) or in the 0xA76 after it (0x9D17A); the
+    /// game task of slot 2 is not created yet. The game over exit leaves G.$4CC set with the game task gone too, but with another sleep on the stack.
+    #[test]
+    fn loader_restores_the_game_start_sleeps_of_the_system_task() {
+        let mut game = Game::new(assets());
+        game.flow.in_game = 1;
+        game.flow.game_pending = false;
+        let mut ram = vec![0u8; 0x10000];
+        ram[0x52] = 1; // slot 0: sleeping
+        ram[0x53] = 1;
+        ram[0x5A..0x5E].copy_from_slice(&0xFF1000u32.to_be_bytes());
+        ram[0x103C..0x1040].copy_from_slice(&0x881Cu32.to_be_bytes());
+        ram[0x1040..0x1044].copy_from_slice(&0x9D174u32.to_be_bytes());
+        ram[0x844B] = 5; // G.$44B: 5 steps left
+        game.trace_load_tasks(&ram, &mut Vec::new());
+        assert!(game.flow.game_pending);
+        assert!(game.fade.task.is_some_and(|t| !t.fade_in && t.sleep == 1));
+        assert_eq!(game.flow.front.sys_task.sleeping(), 6, "the 5 steps and the sleep after them");
+        // after the fade: the sleep of 0xA76
+        game.fade.task = None;
+        ram[0x103C..0x1040].copy_from_slice(&0xA98u32.to_be_bytes());
+        ram[0x1040..0x1044].copy_from_slice(&0x9D17Au32.to_be_bytes());
+        ram[0x844B] = 0;
+        game.trace_load_tasks(&ram, &mut Vec::new());
+        assert!(game.flow.game_pending && game.fade.task.is_none());
+        assert_eq!(game.flow.front.sys_task.sleeping(), 1);
+        // the game task exists, or another sleep of the system task: no game start
+        ram[0x1040..0x1044].copy_from_slice(&0x9D062u32.to_be_bytes());
+        game.trace_load_tasks(&ram, &mut Vec::new());
+        assert!(!game.flow.game_pending);
+        ram[0x1040..0x1044].copy_from_slice(&0x9D17Au32.to_be_bytes());
+        ram[0x72] = 1;
+        game.trace_load_tasks(&ram, &mut Vec::new());
+        assert!(!game.flow.game_pending);
     }
 
     /// What `trace_ram` writes, `trace_load` reads back: fields and pool free lists.

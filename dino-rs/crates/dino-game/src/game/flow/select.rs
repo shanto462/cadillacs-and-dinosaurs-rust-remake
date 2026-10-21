@@ -875,6 +875,12 @@ impl Game {
         let j = &mut self.flow.join[i];
         j.seconds = if self.flow.b4cf != 0 { 6 } else { 0x11 }; // 0x70B4
         j.frames = 1;
+        // 0x70CE: `clr.w $80(a6)`, then the strip of heroes moves the cursor of the object one step back and one forward (0x70D4, 0x70DA: 0x723E skips the heroes
+        // that started players hold), which gives the object the hero (+$03) and the class word (+$20) it shows until the pick: a 3 player game starts with
+        // Jack, Hannah and Mustapha on the objects of the three players (ep8_3p 55228)
+        self.players[i].w80 = 0;
+        self.flow_join_cursor(i, -1);
+        self.flow_join_cursor(i, 1);
         self.flow.started |= 1 << self.players[i].b.who; // 0x70DE
         self.flow.join[i].state = 4; // 0x70E6
     }
