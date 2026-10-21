@@ -623,7 +623,7 @@ impl Game {
                 e.m.sb(SLOT, v);
             }
             2 => {
-                let c = (self.cam.s2.cam_x as u16).wrapping_add(0xC0);
+                let c = self.cam.s2.cam_x.wrapping_add(0xC0);
                 e.m.sb(SLOT, (c >= tx) as u8);
             }
             4 => {

@@ -669,7 +669,7 @@ impl Game {
         if t == 0 {
             e.b.set_zi_keep(e.b.zi().wrapping_sub(e.m.w(o::SPEED_Z) as i16));
         }
-        if (e.b.yi() as i16) < 0 {
+        if e.b.yi() < 0 {
             self.enemy_anim(&mut e.b, 2);
             e.m.sw(o::TIMER, 0x60);
             e.b.act = e.b.act.wrapping_add(2);

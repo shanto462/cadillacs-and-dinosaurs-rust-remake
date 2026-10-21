@@ -456,11 +456,10 @@ impl Game {
         let mut best = 0xFFFF;
         for h in list {
             let b = self.body(h);
-            if let Some(crate::game::Slot::Enemy(i)) = crate::game::slot_of(h) {
-                if (self.enemies.slots[i].m.b(0x7D) as i8) < 0 {
+            if let Some(crate::game::Slot::Enemy(i)) = crate::game::slot_of(h)
+                && (self.enemies.slots[i].m.b(0x7D) as i8) < 0 {
                     continue;
                 }
-            }
             let dx = b.xi().wrapping_sub(e.b.xi()).wrapping_abs() as u16;
             let dz = b.zi().wrapping_sub(e.b.zi()).wrapping_abs() as u16;
             let d = dx.wrapping_add(dz);
@@ -964,12 +963,11 @@ impl Game {
                 self.enemy_hopper_hold_end(e);
                 return;
             }
-            if let Some(crate::game::Slot::Enemy(i)) = crate::game::slot_of(target) {
-                if (self.enemies.slots[i].m.b(0x7D) as i8) < 0 {
+            if let Some(crate::game::Slot::Enemy(i)) = crate::game::slot_of(target)
+                && (self.enemies.slots[i].m.b(0x7D) as i8) < 0 {
                     self.enemy_hopper_hold_end(e);
                     return;
                 }
-            }
             e.b.partner = target;
             let b = self.body_mut(target);
             b.partner = h;

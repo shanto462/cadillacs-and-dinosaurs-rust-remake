@@ -157,11 +157,10 @@ impl Game {
 
     fn spawn_area_script(&self) -> &'static dino_assets::enemy::AreaScript {
         // The list the spawn pointer G.$674 points to (set at the area start): a stage change does not move it.
-        if self.spawn.base1 != 0 {
-            if let Some(sc) = self.assets.enemy.stages.iter().flat_map(|s| s.areas.iter()).find(|a| a.list1_addr == self.spawn.base1) {
+        if self.spawn.base1 != 0
+            && let Some(sc) = self.assets.enemy.stages.iter().flat_map(|s| s.areas.iter()).find(|a| a.list1_addr == self.spawn.base1) {
                 return sc;
             }
-        }
         &self.assets.enemy.stages[self.w.stage as usize].areas[self.cam.s2.area as usize & 3]
     }
 

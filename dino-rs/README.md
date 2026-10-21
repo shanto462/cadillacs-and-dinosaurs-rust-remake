@@ -19,6 +19,17 @@ cargo build --release -p dino-game
 
 The compiled binary is placed at `target/release/dino-game`.
 
+### Check the Build Without a Window
+To see that the build and `dino.zip` work (no window, no sound), run the game headless for 3000 frames from power on and save two pictures:
+
+```sh
+./target/release/dino-game --rom ../dino.zip --headless --frames 3000 --screenshots 600,3000 --shot-dir shots
+```
+
+`shots/f00600.png` shows the Capcom title and `shots/f03000.png` the same title with INSERT COIN (checked in a fresh clone on 2026-10-21).
+
+If the build prints `warning: stripping debug info with rust-objcopy failed`, it is harmless: the binary is built and works (the Rust installation has no `llvm-tools` component).
+
 ### System Notes
 - **macOS**: Fullscreen toggle uses Option+Enter or F11. No extra system packages are required.
 - **Linux / Windows**: Fullscreen toggle uses Alt+Enter or F11. On Linux, standard graphics (X11 or Wayland) and audio (ALSA) development libraries are used if compiling from source.

@@ -116,13 +116,7 @@ impl Game {
     /// (the 68000 would read garbage) keeps the current frame.
     pub(super) fn item_anim(&self, it: &mut Item, id: u16) {
         let s = &self.assets.sprites;
-        match s.anim_tables.get(&it.b.anim_table).and_then(|t| t.anims.get(id as usize)).copied().flatten() {
-            Some(first) => it.b.load_frame(s, first),
-            None => {
-                #[cfg(debug_assertions)]
-                eprintln!("item animation {id} of table {:#x} is not extracted", it.b.anim_table);
-            }
-        }
+        if let Some(first) = s.anim_tables.get(&it.b.anim_table).and_then(|t| t.anims.get(id as usize)).copied().flatten() { it.b.load_frame(s, first) }
     }
 
     /// 0x121E: tick the animation, true when it followed its link (carry).
@@ -238,20 +232,17 @@ impl Game {
     /// `item_lift_a`, but the frame byte 1 also arms the floor timer (+$A4 = 600) and an owner
     /// that left the pick-up state makes the item "held" as well (sub 8).
     pub(super) fn item_lift_b(&mut self, it: &mut Item, h: Handle) {
-        match self.item_lift_owner(it) {
-            Some((idx, pa)) => {
-                if pa == 0 {
-                    return self.item_draw_check(it, h);
-                }
-                if pa != 1 {
-                    if self.item_follow_hand(it, idx) {
-                        return;
-                    }
-                    return self.item_draw_check(it, h);
-                }
-                it.m.sw(LIFE, 0x258);
+        if let Some((idx, pa)) = self.item_lift_owner(it) {
+            if pa == 0 {
+                return self.item_draw_check(it, h);
             }
-            None => {}
+            if pa != 1 {
+                if self.item_follow_hand(it, idx) {
+                    return;
+                }
+                return self.item_draw_check(it, h);
+            }
+            it.m.sw(LIFE, 0x258);
         }
         it.b.sub = 8;
         it.b.act = 0;

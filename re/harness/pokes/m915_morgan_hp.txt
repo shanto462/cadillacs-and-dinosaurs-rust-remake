@@ -1,0 +1,51 @@
+# Task 16 item 4: boss HP at rank level 0 by player count: Morgan (class 36, HP index 4) and Morgue (class 40, HP index 5) spawned in Episode 5 area 1 with 3, 2 and 1 players.
+
+segment m915_morgan_3p_l0
+jump 5 1 0x1120 char=jack,hannah,mess
+rank 0 ; level 0
+god on
+3 spawn A 36 var=0 w5c=0x7fff ax=4640 z=296
+4 hold 0xFFD99C 2 4640
+4 hold 0xFFD9A4 2 296
+59 snapshot keep
+trace 120
+
+segment m915_morgue_3p_l0
+jump 5 1 0x1120 char=jack,hannah,mess
+rank 0 ; level 0
+god on
+3 spawn A 40 var=0 w5c=0x7fff ax=4640 z=296
+4 hold 0xFFD99C 2 4640
+4 hold 0xFFD9A4 2 296
+59 snapshot keep
+trace 120
+
+segment m915_morgue_2p_l0
+jump 5 1 0x1120 char=jack,hannah
+rank 0 ; level 0
+god on
+3 spawn A 40 var=0 w5c=0x7fff ax=4640 z=296
+4 hold 0xFFD99C 2 4640
+4 hold 0xFFD9A4 2 296
+59 snapshot keep
+trace 120
+
+segment m915_morgue_1p_l0
+jump 5 1 0x1120 char=jack
+rank 0 ; level 0
+god on
+3 spawn A 40 var=0 w5c=0x7fff ax=4640 z=296
+4 hold 0xFFD99C 2 4640
+4 hold 0xFFD9A4 2 296
+59 snapshot keep
+trace 120
+
+segment m915_morgan_1p_l0
+jump 5 1 0x1120 char=jack
+rank 0 ; level 0
+god on
+3 spawn A 36 var=0 w5c=0x7fff ax=4640 z=296
+4 hold 0xFFD99C 2 4640
+4 hold 0xFFD9A4 2 296
+59 snapshot keep
+trace 120

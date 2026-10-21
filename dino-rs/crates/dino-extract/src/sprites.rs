@@ -249,7 +249,7 @@ struct FrameWalker<'a> {
 
 impl FrameWalker<'_> {
     fn comp_valid(&self, index: u16) -> bool {
-        index % 4 == 0 && ((index / 4) as usize) < self.data.compositions.len()
+        index.is_multiple_of(4) && ((index / 4) as usize) < self.data.compositions.len()
     }
 
     /// Decodes one animation table and every frame reachable from it.

@@ -364,14 +364,13 @@ impl Game {
             p.b.mode += 2; // 0x8B2B8
             return;
         }
-        if t & 3 == 0 {
-            if let Some(j) = self.enemies.alloc() {
+        if t & 3 == 0
+            && let Some(j) = self.enemies.alloc() {
                 let e = &mut self.enemies.slots[j];
                 e.b.live = 1;
                 e.b.k20 = 92 * 4;
                 e.b.var26 = p.b.var26;
             }
-        }
         if t & 0xF == 0 {
             self.snd_rumble(p.b.xi(), p.b.facing); // jsr 0x9F12
         }
@@ -403,13 +402,12 @@ impl Game {
             return;
         }
         let spawn = if p.b.var26 == 0x10 && t & 7 == 0 { true } else { t & 0x1F == 0 };
-        if spawn {
-            if let Some(j) = self.enemies.alloc() {
+        if spawn
+            && let Some(j) = self.enemies.alloc() {
                 let e = &mut self.enemies.slots[j];
                 e.b.live = 1;
                 e.b.k20 = 93 * 4; // move.w #$174,$20(a0); the variant stays 0
             }
-        }
     }
 
     /// 0x8B34C pool B class 85 (jump table 0x8B358: mode 0 -> 0x8B360, 2 -> 0x8B37A, 4 and 6 -> 0x8B422): the quake: for 100 frames

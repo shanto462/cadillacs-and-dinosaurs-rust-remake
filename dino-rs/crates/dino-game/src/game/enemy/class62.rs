@@ -208,13 +208,12 @@ impl Game {
         e.m.sw(RISE, 0x50);
         self.enemy_anim(&mut e.b, 0);
         let lh = Self::c62_lash(e);
-        if self.body(lh).sub < 2 {
-            if let Some(Slot::Enemy(k)) = slot_of(lh) {
+        if self.body(lh).sub < 2
+            && let Some(Slot::Enemy(k)) = slot_of(lh) {
                 let mut b = std::mem::take(&mut self.enemies.slots[k].b);
                 self.enemy_anim(&mut b, 0x11);
                 self.enemies.slots[k].b = b;
             }
-        }
     }
 
     /// 0x5A75E: sub 8, the flight back: the speed added, the height above the Lash; at the end sub 0 and the mace is in his hand again.

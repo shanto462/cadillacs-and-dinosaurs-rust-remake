@@ -69,8 +69,8 @@ impl Game {
             return self.enemy_draw_check(&mut e.b, h);
         }
         self.enemy_step(&mut e.b); // the carry is not used
-        if self.rand() & 0x1F == 0 {
-            if let Some(j) = self.enemies.alloc() {
+        if self.rand() & 0x1F == 0
+            && let Some(j) = self.enemies.alloc() {
                 let (x, y, z) = (e.b.xi(), e.b.yi(), e.b.zi());
                 let n = &mut self.enemies.slots[j];
                 n.b.live = 1;
@@ -80,7 +80,6 @@ impl Game {
                 n.b.set_yi(y);
                 n.b.set_zi(z);
             }
-        }
         self.enemy_draw_check(&mut e.b, h);
     }
 

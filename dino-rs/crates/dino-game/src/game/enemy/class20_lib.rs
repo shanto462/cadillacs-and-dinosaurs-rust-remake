@@ -270,7 +270,7 @@ impl Game {
         let t = &self.players[tp].b;
         let mut d1 = 0u8;
         let mut d2 = 0xCi16;
-        if !((e.b.xi() as i16) < (t.xi() as i16)) {
+        if !(e.b.xi() < t.xi()) {
             d1 = 3;
         }
         if (e.b.zi() as u16) < (t.zi() as u16) {

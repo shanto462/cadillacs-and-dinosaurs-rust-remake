@@ -189,8 +189,8 @@ impl Game {
         }
         if hero && ab.kind == 6 {
             if db.k20 != 0x7C { self.body_mut(d).facing = (ab.xi() > db.xi()) as u8; }
-            if self.w.scripted == 0 {
-                if let Some(Slot::Player(i)) = slot_of(a) {
+            if self.w.scripted == 0
+                && let Some(Slot::Player(i)) = slot_of(a) {
                     let p = &mut self.players[i];
                     let cost = if p.special_budget == 0x14 { 10 } else { 4 };
                     p.special_budget = p.special_budget.wrapping_sub(cost);
@@ -200,7 +200,6 @@ impl Game {
                         self.hud_life_bar(i); // 0x16446
                     }
                 }
-            }
         }
     }
 
@@ -655,7 +654,7 @@ impl Game {
         } else {
             0x40
         };
-        let v = d.wrapping_mul(m) & 0xFFFF_FFFF;
+        let v = d.wrapping_mul(m);
         (v & 0xFFFF_0000) | ((v & 0xFFFF) >> 5)
     }
 
@@ -745,11 +744,10 @@ impl Game {
                     break 'outer;
                 }
                 // 0x11652: same swing already hit this player (+$E9) by the same attacker (+$68).
-                if let Some(Slot::Player(i)) = slot_of(p) {
-                    if eb.serial == self.players[i].hit_serial && pb.attacker == e {
+                if let Some(Slot::Player(i)) = slot_of(p)
+                    && eb.serial == self.players[i].hit_serial && pb.attacker == e {
                         continue;
                     }
-                }
                 if collide::boxes_hit(&self.assets.sprites, &eb, eb.attack_box, &pb, pb.body_box).is_none() {
                     continue;
                 }

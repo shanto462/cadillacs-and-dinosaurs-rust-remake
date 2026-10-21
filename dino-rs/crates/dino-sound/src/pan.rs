@@ -66,7 +66,7 @@ impl<'a> Driver<'a> {
             (b, if a < 0x21 { a } else { 0x20 }, v)
         } else {
             let pan = b.min(0x20);
-            let limit = if pan >= s { pan - s } else { 0 };
+            let limit = pan.saturating_sub(s);
             (pan, limit, 0u16.wrapping_sub(v))
         };
         self.w8(t + T_PAN_LIMIT, limit);
@@ -89,7 +89,7 @@ impl<'a> Driver<'a> {
     /// 0x0322: sweeps down to the limit max(pan - S, 0), then stops. Speed negated.
     fn pan_mode4(&mut self, t: u16, b: u8, s: u8, v: u16) {
         let pan = b.min(0x20);
-        let limit = if pan >= s { pan - s } else { 0 };
+        let limit = pan.saturating_sub(s);
         self.w8(t + T_PAN_LIMIT, limit);
         self.w8(t + T_PAN, pan);
         self.w8(t + T_PAN_FRAC, 0);
@@ -115,7 +115,7 @@ impl<'a> Driver<'a> {
             self.w8(next + i, byte);
         }
         let pan = b.min(0x20);
-        let limit = if pan >= s { pan - s } else { 0 };
+        let limit = pan.saturating_sub(s);
         self.w8(next + T_PAN_LIMIT, limit);
         self.w8(next + T_PAN, pan);
         self.w8(next + T_PAN_FRAC, 0);

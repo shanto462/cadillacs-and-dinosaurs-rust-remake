@@ -69,7 +69,6 @@ impl Game {
                     return self.weapon_drop_flight(it, h); // 0x250F0
                 }
                 if !self.weapon_init(it, h) {
-                    return;
                 }
             }
             2 => match it.b.sub {
@@ -97,7 +96,7 @@ impl Game {
     fn weapon_init(&mut self, it: &mut Item, h: Handle) -> bool {
         let var = it.b.var26;
         let k = (var / 2) as usize;
-        if var % 2 != 0 || k >= KINDS.len() {
+        if !var.is_multiple_of(2) || k >= KINDS.len() {
             it.b.mode = 6;
             return false;
         }
@@ -1033,15 +1032,15 @@ impl Game {
     /// hurt only before its first bounce: the attacker list is skipped afterwards); four
     /// bounces end the flight (sub 0x24).
     fn weapon_fly_10(&mut self, it: &mut Item, h: Handle) {
-        let wall;
-        if it.b.hitstop != 0 {
+        
+        let wall = if it.b.hitstop != 0 {
             it.b.hitstop = 0;
             it.b.live = 2;
-            wall = true;
+            true
         } else {
             self.weapon_fly_terrain(it, h);
-            wall = it.m.b(B1) == 0 && it.b.wall != 0;
-        }
+            it.m.b(B1) == 0 && it.b.wall != 0
+        };
         if wall && Self::weapon_wall_bounce(it) {
             return;
         }

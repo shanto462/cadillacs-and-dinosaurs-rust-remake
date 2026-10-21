@@ -151,7 +151,7 @@ impl Game {
             0x300
         };
         e.b.ax = 0;
-        let r = (self.rand() & 0xF) as u16;
+        let r = self.rand() & 0xF;
         let bz = self.assets.enemy.t.u8(SIDE_Z, zc.wrapping_add(r) as i16 as i32 as u32);
         e.b.vz = if bz == 0 {
             0

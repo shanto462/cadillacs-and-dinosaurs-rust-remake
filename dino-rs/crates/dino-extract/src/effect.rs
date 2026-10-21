@@ -167,15 +167,15 @@ impl Walker<'_> {
         let mut seen = Vec::new();
         let mut p = start;
         while !seen.contains(&p) && !self.d.frame_by_addr.contains_key(&p) && !self.d.raw_by_addr.contains_key(&p) {
-            if p % 2 != 0 || p + stride + 2 > len {
+            if !p.is_multiple_of(2) || p + stride + 2 > len {
                 return false;
             }
             let ok = if stride == 8 {
                 let list = self.rom.u32(p);
-                list % 2 == 0 && list + 4 <= len && list + 4 + 8 * self.rom.u16(list + 2) as u32 <= len
+                list.is_multiple_of(2) && list + 4 <= len && list + 4 + 8 * self.rom.u16(list + 2) as u32 <= len
             } else {
                 let (w0, w1) = (self.rom.u16(p), self.rom.u16(p + 2));
-                let comp = |w: u16| w % 4 == 0 && ((w / 4) as u32) < self.n_comps;
+                let comp = |w: u16| w.is_multiple_of(4) && ((w / 4) as u32) < self.n_comps;
                 if w0 & 0x8000 != 0 {
                     let q = (p + 2).wrapping_add(self.rom.i16(p + 2) as i32 as u32);
                     q + 2 < len && self.rom.u16(q) < 64
@@ -195,7 +195,7 @@ impl Walker<'_> {
     /// One 10 byte record looks like frame data: a compound frame with a short part list, or one or two composition numbers.
     fn record_ok(&self, p: u32) -> bool {
         let (w0, w1) = (self.rom.u16(p), self.rom.u16(p + 2));
-        let comp = |w: u16| w % 4 == 0 && ((w / 4) as u32) < self.n_comps;
+        let comp = |w: u16| w.is_multiple_of(4) && ((w / 4) as u32) < self.n_comps;
         if w0 & 0x8000 != 0 {
             let q = (p + 2).wrapping_add(self.rom.i16(p + 2) as i32 as u32);
             (q as usize) + 2 < self.rom.program.len() && self.rom.u16(q) < 64

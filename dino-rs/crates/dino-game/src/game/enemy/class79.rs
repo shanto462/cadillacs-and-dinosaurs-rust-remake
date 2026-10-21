@@ -381,11 +381,10 @@ impl Game {
     /// every other frame; then mode 6.
     fn c79_death(&mut self, e: &mut Enemy, h: Handle) {
         if e.b.sub == 0 {
-            if let Some(Slot::Enemy(i)) = slot_of(e.m.w(TARGET)) {
-                if self.enemies.slots[i].b.live != 0 {
+            if let Some(Slot::Enemy(i)) = slot_of(e.m.w(TARGET))
+                && self.enemies.slots[i].b.live != 0 {
                     self.enemies.slots[i].m.sb(CLAIM, 0);
                 }
-            }
             let b = e.b.clone();
             self.enemy_award_kill_score(&b); // jsr 0x325E6
             e.m.sw(T80, 0x78);

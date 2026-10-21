@@ -57,7 +57,7 @@ All of these bosses are written on the same frame, which the port should build o
 | Boss | HP index | HP at rank 0 (1P / 2P / 3P) | HP measured | Kill score | Music code (table 0xA5C8) | `+7D` | `+63` |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Morgan | 4 | 256 / 320 / 512 | 256 [M m5-a] | 0 | 0x0E (written at init, 0x517D4) | 0xFE | 2 |
-| Morgue | 5 | 512 / 576 / 768 | 512 [M m5-b] | 30,000 | no new request | 0xFF after init | 2 |
+| Morgue | 5 | 512 / 576 / 704 | 512 [M m5-b; 576 and 704: M m915_morgue_2p_l0, _3p_l0] | 30,000 | no new request | 0xFF after init | 2 |
 | Tyrog fight 1 (class 4, var 2) | 6, then halved | 256 / 288 / 352 | 256 [M ty-chain] | none (the death routine skips 0x325E6 for forms 2 and 1) | 0x0F (0x36B6C, only var 2) | 0xFE | 2 |
 | Tyrog host (class 72) | 0 | 350 / 550 / 650 | 450 [M ty-full-c] | 100,000 (0x1B row, call at 0x5E48C) if the host dies (this is the web's "speedrun finish gives 100,000"); its death also calls `0xACEE` (0x5E460) and ends the stage; **never reached in the natural chain** (it is only hurt for 14 HP at most) | none | 0xFE | 2 |
 | Tyrog fight 3 (class 4, var 0) | 6, halved | 256 / 288 / 352 | 256 [M ty-full-c] | 60,000 (0x38D56) | none | 0xFF | 2 |
@@ -193,7 +193,7 @@ Actions (jump table 0x52CD4): 0 melee (0x52732: long punch, `+6 = 0x18`), 1 go b
 | Item | Value |
 | --- | --- |
 | Name, `+84`, anim table | 0x16 MORGUE, 0x58, table 0x6EA48 (30 animations), boxes 0x103C00; the art is a green raptor like dino man, shown first in a flashing palette cycle [R, M m5-trans snapshots] |
-| HP | 512 / 576 / 768 at rank 0 (boss index 5): the supplement's "same HP as the Butcher" is true for one and two players only (Butcher 512 / 576 / 640) [R D2c 16.3] |
+| HP | 512 / 576 / 704 at rank 0 (boss index 5; 704 is the level 0 to 3 value for three players, 768 comes at level 8 to 23; MAME m915_morgue_3p_l0): the supplement's "same HP as the Butcher" is true for one and two players only (Butcher 512 / 576 / 640) [R D2c 16.3] |
 | Palette | `+23 = 0x9D` after init; init rewrites **sprite palette 0x1D** (16 words at 0x9143A0 from 0xB7D32) with Morgue's colours [R 0x53EE0..0x53F0C] |
 | Intro | state `+6 = 0xE`: anim 11 (44 frames, 136 ticks) with `+23` cycling through **0x9E, 0x9D, 0x9F, 0x6E, 0xAC, 0x00** every 2 frames for 136 frames (t = 2684 to 2820) [M m5-b; R 0x5489E] |
 | Arena clamp | `camX - 0x50 .. camX + 0x1D0`; leaves via the same boundaries; arena centre X 0x11C0 [R 0x53F36..0x53F74] |
@@ -235,7 +235,7 @@ Measured damage (hero HP 100, level 10, Jack) [M m5-morgue-dmg]: slap 0x6C = 20,
 | "Morgan hops, throws knives, rocks and grenades, fires an Uzi" (supplement, blueprint) | **True**: hop (states 0x28, 0x2A), knife / rock / stone throws (class 68 var 2, 3, 4), close grenades (class 26), Uzi burst (5 shots) | 2.3, 2.4 |
 | "gives 0 points" | **True** | 2.2 |
 | "drops the Uzi when beaten" | **True** (pool E Uzi, var 6) | 2.5 |
-| "Morgue has the Butcher's HP" | true for 1P and 2P, not 3P (768 against 640) | 2.6 |
+| "Morgue has the Butcher's HP" | true for 1P and 2P, not 3P (704 against 640) | 2.6 |
 | "roaring headbutt rush and close slaps" | **True**: charge 0x41 at 7 px per frame, slap 0x6C | 2.6 |
 | "Jack's slide passes under Morgue's charge" | **True by the numbers**: every Morgue attack box starts at height 37 or more (114: 42, 115: 37, 116: 49) and Jack's slide body box is 35 px high (D2a section 7); not run in MAME | R |
 | "beats even Mustapha's drop kick in a trade" | not checked (trade rules of the hit passes, D2b) | |
@@ -713,7 +713,7 @@ There is no file `gpt_suggestions.md` in the repo: its rows G06 to G16 are in `p
 | L11 | Episode 8: jar 3 releases Bludge, jar 4 Rock Hopper, jar 11 Tyrog 2 (one form, does not revive, 1000 points); Fessenden's second form slashes, drops ground fireballs and calls Blade groups that throw knives | **P** | jar 11 Tyrog 2 **C** (300 HP, 1,000 points, no form change, 3.8); jars 3 and 4 are **swapped** in the web: cylinder 03 releases the Rock Hopper and cylinder 04 a Bludge, and the web misses cylinder 01 (a Bludge at the very start); form 2 **C** (arm strikes, fireballs, Blade groups of four from the controller) |
 | M06 | Bosses have a fixed HP total regardless of rank; helper limit up by 1 or 2 with more players | **R** for the HP (it grows by level band and by player count, 1.3, 3.3, 6.2, 6.3); **C** for the helper limit `{4, 5, 6}` (1.6) | R 0x31E14, 0x7BFEE |
 | M10 | Slisaurs: same patterns as Slice, more HP, no wind-up before the wake-up super, stay down longer, each tracks its own target | **P** | same HP table row as Slice (equal HP); no wake-up super exists; each body re-picks its own target every 600 frames; lying time not measured against Slice (U), section 4.8 |
-| M11 | Morgan hops, throws knives, rocks, grenades, fires an Uzi, gives 0 points; Morgue has the Butcher's HP, a roaring headbutt rush and close slaps | **C** | Morgan 0 points (2.2); Morgue 512 / 576 / 768 equals the Butcher's only for 1 and 2 players (the Butcher has 640 for 3); the roar then charge and the slap are in 2.6 |
+| M11 | Morgan hops, throws knives, rocks, grenades, fires an Uzi, gives 0 points; Morgue has the Butcher's HP, a roaring headbutt rush and close slaps | **C** | Morgan 0 points (2.2); Morgue 512 / 576 / 704 equals the Butcher's only (the Butcher has 640 for 3; the earlier 768 was wrong, see 2.6) for 1 and 2 players (the Butcher has 640 for 3); the roar then charge and the slap are in 2.6 |
 | M12 | Tyrog: chest bone spear, short arm hits, flying body press; the small head enters a fat enemy (fire) then a Walther (acid); HP refills at each change; one hit chance in the small-head phase; form 3 does not chase off screen; co-op multiplies the jellyfish HP; Tyrog 2 never absorbs and counterattacks when cornered | **P** | chest blades (class 74), claws, pounce **C**; HP refill **C**; **no "one hit chance" rule**: the host is hittable after 30 frames for 220 frames (3.7); co-op: HP 256 / 288 / 352 per form and 450 / 600 / 650 per host **C**; the arena clamp keeps every form on screen (the "does not chase" is **U**); Tyrog 2 never absorbs **C**; its "counterattack" is the wake-up claw of the recover entry (3.4, **P**) |
 | M13 | Fessenden form 2 needs about six hits to be knocked down, ignores attacks mid-combo, grab and throw knocks it down at once, targets the rearmost player first | **P** | knock down on the 4th hit in the test (the guard counter `+BD` and the hit table 0x6350C, 6.3); "ignores attacks" is the guard counter and the counter reaction to jump attacks; the throw did **not** keep it down in `grab-f84b` (U); the target rule picks the **highest numbered** player among the least targeted **C** |
 | N04 | Health in bars: sub-bosses (Tyrog 2) up to 3; Fessenden's last form 7 | **C / P** | Tyrog 2 has 300 HP at bar scale 100 = 3 gauges; the last form has 640 HP at level 10 = 6.4 gauges, 660 to 700 at higher levels = 7 gauges if the HUD rounds up (U, D4c) |

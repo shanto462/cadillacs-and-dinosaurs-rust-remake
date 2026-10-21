@@ -574,7 +574,7 @@ impl Game {
                 s.b.k20 = 75 * 4;
                 s.b.var26 = 0x13;
                 s.b.facing = e.b.facing;
-                let dx = (0x28 - (t_next as i16)) as i16;
+                let dx = 0x28 - (t_next as i16);
                 s.b.set_xi_keep(e.b.xi().wrapping_add(if e.b.facing == 0 {
                     dx
                 } else {

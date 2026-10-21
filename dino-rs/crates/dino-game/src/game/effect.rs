@@ -672,6 +672,7 @@ impl Game {
                 // 0x88 0x96DC4, 0x8C 0x96E56, 0x90 0x96FF4, 0x94 0x9720A,
                 // 0x98 (null entry), 0xA0 0x97674, 0xA4 0x97800.
                 // See re/specs/anim/HANDOFF.md. Until then they are freed on their first update.
+                #[allow(unused_variables)]
                 other => {
                     #[cfg(debug_assertions)]
                     {
@@ -730,9 +731,7 @@ impl Game {
                     let ob = self.body_mut(owner);
                     ob.draw_flags |= 0x20;
                     d0 = (ob.extra[2] & 0xF) as u16;
-                    if d0 != 0 {
-                        d0 -= 1;
-                    }
+                    d0 = d0.saturating_sub(1);
                 }
                 let b = &mut self.effects.slots[i].b;
                 b.anim_table = SPLASH_TABLE;

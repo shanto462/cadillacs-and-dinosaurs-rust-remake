@@ -133,7 +133,7 @@ impl HitBoxBank {
     /// The 12 byte record at any address (a box offset that is not a multiple of 12, as a stale register can give it); `None` outside the bank.
     pub fn try_at(&self, a: u32) -> Option<HitBox> {
         let end = self.base as u64 + 2 * self.words.len() as u64;
-        (a >= self.base && (a as u64 + 12) <= end && a % 2 == 0).then(|| self.read(a))
+        (a >= self.base && (a as u64 + 12) <= end && a.is_multiple_of(2)).then(|| self.read(a))
     }
 
     /// Multi-box table (obj+$4A == 1): table + i16(table + 2*index) -> (count-1, boxes...).

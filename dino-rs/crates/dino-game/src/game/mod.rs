@@ -77,7 +77,7 @@ pub fn slot_of(h: Handle) -> Option<Slot> {
         (POOL_D, Slot::Special),
     ];
     for ((base, stride, n), make) in pools {
-        if h >= base && h < base + stride * n as u16 && (h - base) % stride == 0 {
+        if h >= base && h < base + stride * n as u16 && (h - base).is_multiple_of(stride) {
             return Some(make(((h - base) / stride) as usize));
         }
     }
