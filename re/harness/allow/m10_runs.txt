@@ -160,3 +160,109 @@ m517_ep1_mustapha.run: * 3328-3328     # L: first MAME lag record (slowdown of t
 m517_ep1_hannah.run: * 1696-1696       # L: first MAME lag record (slowdown of the original)
 m517_ep1_mess.run: * 2752-2752         # L: first MAME lag record (slowdown of the original)
 m517_ep1_3p.run: * 2544-2544           # L: first MAME lag record (slowdown of the original)
+
+# ep5_jack (65000 gameplay records, M10-11): K at 40143, 40150 and
+# 40161. Scripted dialogue/entrance, attack held: 0x9E38C runs five game
+# frames versus the fixed three. Lagsync excludes and restores these records.
+ep5_jack.step: enemy.repos 40143-40143 # K
+ep5_jack.step: enemy.timer 40143-40143 # K
+ep5_jack.step: enemy.x 40143-40143 # K
+ep5_jack.step: global.blink_timer 40143-40143 # K
+ep5_jack.step: global.frame 40143-40143 # K
+ep5_jack.step: global.game_frame 40143-40143 # K
+ep5_jack.step: global.phase72 40143-40143 # K
+ep5_jack.step: global.prev73 40143-40143 # K
+ep5_jack.step: global.splash_phase 40143-40143 # K
+ep5_jack.step: global.splash_timer 40143-40143 # K
+ep5_jack.step: global.t71 40143-40143 # K
+ep5_jack.step: player.facing_age 40143-40143 # K
+ep5_jack.step: prop.boss_group_ptr 40143-40143 # K
+ep5_jack.step: prop.boss_obj 40143-40143 # K
+ep5_jack.step: prop.wave_ptr 40143-40143 # K
+ep5_jack.step: scroll1 40143-40143 # K
+ep5_jack.step: scroll2 40143-40143 # K
+ep5_jack.step: sprites 40143-40143 # K
+ep5_jack.step: enemy.repos 40150-40150 # K
+ep5_jack.step: enemy.timer 40150-40150 # K
+ep5_jack.step: enemy.x 40150-40150 # K
+ep5_jack.step: global.blink_timer 40150-40150 # K
+ep5_jack.step: global.frame 40150-40150 # K
+ep5_jack.step: global.game_frame 40150-40150 # K
+ep5_jack.step: global.splash_timer 40150-40150 # K
+ep5_jack.step: global.t71 40150-40150 # K
+ep5_jack.step: palette 40150-40150 # K
+ep5_jack.step: player.facing_age 40150-40150 # K
+ep5_jack.step: prop.boss_group_ptr 40150-40150 # K
+ep5_jack.step: prop.wave_ptr 40150-40150 # K
+ep5_jack.step: sprites 40150-40150 # K
+ep5_jack.step: enemy.repos 40161-40161 # K
+ep5_jack.step: enemy.timer 40161-40161 # K
+ep5_jack.step: enemy.x 40161-40161 # K
+ep5_jack.step: global.blink_timer 40161-40161 # K
+ep5_jack.step: global.frame 40161-40161 # K
+ep5_jack.step: global.game_frame 40161-40161 # K
+ep5_jack.step: global.phase72 40161-40161 # K
+ep5_jack.step: global.prev73 40161-40161 # K
+ep5_jack.step: global.splash_timer 40161-40161 # K
+ep5_jack.step: global.t71 40161-40161 # K
+ep5_jack.step: palette 40161-40161 # K
+ep5_jack.step: player.facing_age 40161-40161 # K
+ep5_jack.step: prop.boss_group_ptr 40161-40161 # K
+ep5_jack.step: prop.wave_ptr 40161-40161 # K
+ep5_jack.step: scroll2 40161-40161 # K
+
+# ep5_hannah (65000 gameplay records, M10-11): K at 57870 in the
+# stage clear walk, scripted control and attack held. Four game frames
+# in MAME versus the fixed three, including the tally numbers and its
+# palette flash. Lagsync excludes and restores this record.
+ep5_hannah.step: effect.owner58 57870-57870 # K
+ep5_hannah.step: global.blink_timer 57870-57870 # K
+ep5_hannah.step: global.frame 57870-57870 # K
+ep5_hannah.step: global.free_count 57870-57870 # K
+ep5_hannah.step: global.free_ptr 57870-57870 # K
+ep5_hannah.step: global.game_frame 57870-57870 # K
+ep5_hannah.step: global.intro_w4 57870-57870 # K
+ep5_hannah.step: global.prev73 57870-57870 # K
+ep5_hannah.step: global.splash_timer 57870-57870 # K
+ep5_hannah.step: global.t71 57870-57870 # K
+ep5_hannah.step: global.timer508 57870-57870 # K
+ep5_hannah.step: item.ra5 57870-57870 # K
+ep5_hannah.step: item.timer 57870-57870 # K
+ep5_hannah.step: palette 57870-57870 # K
+ep5_hannah.step: player.facing_age 57870-57870 # K
+ep5_hannah.step: player.sc_timer 57870-57870 # K
+ep5_hannah.step: prop.live 57870-57870 # K
+ep5_hannah.step: prop.wave_ptr 57870-57870 # K
+ep5_hannah.step: prop.y 57870-57870 # K
+ep5_hannah.step: scroll1 57870-57870 # K
+ep5_hannah.step: scroll2 57870-57870 # K
+ep5_hannah.step: sprites 57870-57870 # K
+# K: the extra tally/map-card task pass also changes four bytes of G.$735E
+# which have no field name in this record's trace schema.
+ep5_hannah.step: unnamed 57870-57870 # K
+
+# ep5_mess (65000 gameplay records, M10-11): K at 45375 during the
+# scripted dialogue/entrance, attack held. Five game frames in MAME
+# versus the fixed three. Lagsync excludes and restores this record.
+ep5_mess.step: enemy.repos 45375-45375 # K
+ep5_mess.step: enemy.timer 45375-45375 # K
+ep5_mess.step: enemy.x 45375-45375 # K
+ep5_mess.step: global.blink_timer 45375-45375 # K
+ep5_mess.step: global.frame 45375-45375 # K
+ep5_mess.step: global.game_frame 45375-45375 # K
+ep5_mess.step: global.splash_timer 45375-45375 # K
+ep5_mess.step: global.t71 45375-45375 # K
+ep5_mess.step: player.facing_age 45375-45375 # K
+ep5_mess.step: prop.boss_group_ptr 45375-45375 # K
+ep5_mess.step: prop.wave_ptr 45375-45375 # K
+ep5_mess.step: sprites 45375-45375 # K
+
+# ep5_mustapha and ep5_3p (65000 gameplay records each, M10-11): no
+# step or lagsync differences. No allow rules needed.
+# Run-mode first differences, all the first MAME lag record: ep5_jack 6135,
+# ep5_hannah 8477, ep5_mess 8362, ep5_mustapha 3223, ep5_3p 1993.
+# The original's slowdown is not modelled (plan decision). No rule allows
+# the diverged run tails; the free-run acceptance check is lagsync.
+# Sound argument differences (outside diff.py's equality summary) remain
+# with M10-22: caller register leftovers and shared hit sound mode/pan.
+# See m10-11-report.md and the worktree-local sound argument frame lists.

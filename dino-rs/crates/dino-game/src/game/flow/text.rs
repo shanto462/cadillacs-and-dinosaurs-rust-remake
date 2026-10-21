@@ -497,6 +497,17 @@ impl Typer {
         Typer { live: true, text: text.to_vec(), period, ..Default::default() }
     }
 
+    /// 0x7EC48: restore a pool B typewriter from its saved state. `text` starts
+    /// at the saved read pointer (+$88), or at the first position block (+$80)
+    /// before sub-state 0 has run. The bytes come from the runtime asset pack.
+    pub(crate) fn from_pool_b_snapshot(text: &[u8], slot: usize, state_sub: (u8, u8), cursor: u32, timing: (u16, u16, u16)) -> Self {
+        Self {
+            live: true, state: state_sub.0, sub: state_sub.1, text: text.to_vec(),
+            cursor, pos: 0, delay: timing.0, period: timing.1, fast: timing.2 != 0,
+            slot: Some(slot),
+        }
+    }
+
     /// `move.l a1,d4; andi.l #$909fff,d4; ori.l #$908000,d4`.
     fn wrap(a: u32) -> u32 {
         (a & 0x909FFF) | 0x908000
