@@ -12,7 +12,7 @@ LIST=""
 LIST="$LIST m517_ep1_3p:24336 m517_ep1_hannah:15456 m517_ep1_jack:29857 m517_ep1_mess:16145 m517_ep1_mustapha:30544 m523_ep1_2p:30700 m523_ep1_2p_full:40000 m523_ep1_3pjhm:33800 m523_ep1_3pjhm_full:40000"
 # Episodes 1 to 8 natural whole runs (ep*_ heroes and 3-player runs; the *_probe traces are left out)
 LIST="$LIST ep1_3p:24336 ep2_3p:42000 ep2_jack:42000 ep3_3p:10500 ep3_hannah:10500 ep3_jack:10500 ep3_mess:10500 ep3_mustapha:10500 ep4_3p:28000 ep4_jack:28000 ep5_3p:65000 ep5_hannah:65000 ep5_jack:65000 ep5_mess:65000 ep5_mustapha:65000 ep6_3p:70000 ep6_jack:70000 ep7_3p:60000 ep7_jack:60000 ep8_3p:70000 ep8_hannah:70000 ep8_jack:70000 ep8_mess:70000 ep8_mustapha:70000"
-# (ep8_row and ep8_watch have no input under their own name: left out)
+# (ep8_row and ep8_watch replay the ep8_jack input and only repeat ep8_jack without its rules, e.g. its K record 33713: left out)
 LIST="$LIST "
 # Boss and scene scripts from m1019 (holds and walks, short)
 LIST="$LIST m1019_butcher_hold_hannah:450 m1019_butcher_hold_jack:450 m1019_butcher_hold_mess:450 m1019_butcher_hold_mustapha:450 m1019_hold_hannah:450 m1019_hold_jack:450 m1019_hold_mess:450 m1019_hold_mustapha:450 m1019_wjk30_hannah:130 m1019_wjk30_mustapha:130 m1019_wjk38_hannah:130 m1019_wjk38_mustapha:130"
@@ -21,3 +21,5 @@ LIST="$LIST m1020_e1a1_cont:900 m1020_e1a1_gameover:2300 m1020_e1a1_gameover_nam
 # Episode 1 to 8 end scenes from m328_end (story panel and endings)
 LIST="$LIST m328_end-3p:5700 m328_end-fine:5700 m328_end-hannah:5700 m328_end-hiscore:6900 m328_end-jack:5700 m328_end-mess-jack:5700 m328_end-mustapha:5700 m328_end-objs:5700"
 exec sh "$ROOT/re/harness/m10_check.sh" $LIST
+# The settings recordings of M10-21 are checked with the codex worktree's re/out/m21/run_checks.py and run_control.py (107 of 107,
+# re/harness/m10-21-report.md); the early m21_* variants (600 frames) are superseded by them.

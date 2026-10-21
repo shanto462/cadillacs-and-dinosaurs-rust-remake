@@ -1,6 +1,7 @@
 #!/bin/sh
 # M10 whole-run checks: natural recordings in step, lagsync and run mode (NAME[:FRAMES] ..., default Episodes 2 and 3 below).
-# Usage: [NORUN=1 (only compare the traces of the last run)] [MODES="step lagsync run"] re/harness/m10_check.sh [NAME[:FRAMES] ...]
+# Usage: [NORUN=1 (only compare the traces of the last run)] [MODES="step lagsync run"] re/harness/m10_check.sh [NAME[:FRAMES[:INPUT]] ...]
+# INPUT (optional, task 72) names the input script when the recording has none under its own name (e.g. ep8_row:33750:ep8_jack.txt).
 # Prints per mode the summary line and the first difference. The allowed differences are in re/harness/allow/m10_runs.txt (diff.py --allow); the second
 # line of each mode is the result with that file. The port traces go to PORT_OUT (default re/out/port), the logs to re/out/m10/.
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
@@ -13,8 +14,12 @@ export DINO_GAME_CLOCK=${DINO_GAME_CLOCK:-1}
 PY="$ROOT/re/.venv/bin/python -I"
 mkdir -p "$ROOT/re/out/m10"
 for item in $LIST; do
-  n=${item%%:*}; f=${item##*:}; [ "$f" = "$item" ] && f=10501
-  IN="$ROOT/re/out/traces/$n.input.txt"; [ -f "$IN" ] || IN="$ROOT/re/harness/scripts/$n.txt"
+  # NAME[:FRAMES[:INPUT]]: INPUT (optional) is the input script name (in re/out/traces or re/harness/scripts) when the recording has none under its own name
+  n=${item%%:*}; rest=${item#*:}; [ "$rest" = "$item" ] && rest=""
+  f=${rest%%:*}; [ -n "$f" ] || f=10501; [ "$f" = "$rest" ] && f=${rest:-10501}
+  inp=""; case "$rest" in *:*) inp=${rest#*:} ;; esac
+  if [ -n "$inp" ]; then IN="$ROOT/re/out/traces/$inp"; [ -f "$IN" ] || IN="$ROOT/re/harness/scripts/$inp"
+  else IN="$ROOT/re/out/traces/$n.input.txt"; [ -f "$IN" ] || IN="$ROOT/re/harness/scripts/$n.txt"; fi
   for m in $MODES; do
     [ -n "$NORUN" ] || MODE=$m "$ROOT/re/harness/port.sh" "$IN" "$n" "$f" > "$ROOT/re/out/m10/$n.$m.log" 2>&1 || { echo "$n $m: the port failed, see re/out/m10/$n.$m.log"; continue; }
     if grep -q panicked "$ROOT/re/out/m10/$n.$m.log"; then echo "$n $m: PANIC"; grep -A2 panicked "$ROOT/re/out/m10/$n.$m.log" | head -4; continue; fi
