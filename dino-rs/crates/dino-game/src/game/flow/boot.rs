@@ -178,7 +178,9 @@ impl Game {
                     }
                     // 0x9CFC6 (coin and chute modes) and the creation of the system task (slot 0);
                     // the skip wait task 0x9E38C (slot 0xF0) is not ported. The rest runs in
-                    // frame 70 (the clear ends frame 69).
+                    // frame 70 (the clear ends frame 69). The original's pass runs across the sample of record 69: G.$32 and the
+                    // coin modes G.$470 / G.$471 show in record 70 there, together with the system task's first pass (G.$21), which
+                    // the port runs in tick 70 (allow/m1.txt section 3).
                     self.flow_sys_init();
                     self.flow.front.task.wait(1, st::TEXT1);
                     return;

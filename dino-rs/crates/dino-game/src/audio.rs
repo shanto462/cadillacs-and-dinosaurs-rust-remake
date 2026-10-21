@@ -454,4 +454,78 @@ mod tests {
             }
         }
     }
+
+    /// M10-23, the whole game once through the sound side (the ear check without ears): the flow bot (`--autoplay`, god mode and the
+    /// clock top up, as `the_bot_plays_from_power_on_through_all_eight_episodes_to_the_ending`) plays from power on through the eight
+    /// episodes and the ending back to the attract loop, every frame's requests go to the driver and the mixer as in the windowed run.
+    /// Per part of the game (the attract loop before the coin, each episode, the ending): no NaN, no clipping (the peak stays below full
+    /// scale), sound in most of the part. With `DINO_WAV_OUT=dir` the first 60 seconds of each part are written as WAV files for a person
+    /// to listen to. Slow (the mixer renders about 50 minutes of audio): `cargo test --release -p dino-game whole_game_mix -- --ignored --nocapture`.
+    #[test]
+    #[ignore]
+    fn whole_game_mix_is_finite_audible_and_does_not_clip() {
+        let Some(assets) = rom() else {
+            eprintln!("skipped: no dino.zip");
+            return;
+        };
+        let mut g = crate::game::Game::new(assets);
+        g.flow_apply_config(Config::default());
+        g.flow_boot();
+        let (mut debug, mut bot) = (crate::debug::Debug::new(false), crate::autoplay::Bot::default());
+        let mut feed = Feed::new(&assets.sound, true);
+        let mut samples = Vec::new();
+        // (name, frames, audible frames, frames above 0.9, peak, the first 60 seconds of samples)
+        let mut parts: Vec<(String, u32, u32, u32, f32, Vec<f32>)> = Vec::new();
+        let keep = 60 * RATE as usize * 2;
+        for tick in 0..600_000u32 {
+            let f = bot.frame(&mut g, tick, &mut debug);
+            g.w.input = f.players;
+            g.w.system = f.system | 0x08;
+            g.w.coins = f.coins;
+            debug.before_tick(&mut g);
+            g.tick();
+            debug.after_tick(&mut g);
+            bot.report(&g, tick);
+            feed_frame(&mut feed, &mut g, &mut samples);
+            let name = if g.flow.mode == 0x1C {
+                "ending".to_string()
+            } else if g.flow.in_game != 0 {
+                format!("episode{}", g.w.stage + 1)
+            } else if parts.is_empty() {
+                "attract".to_string()
+            } else {
+                parts.last().unwrap().0.clone()
+            };
+            if parts.last().is_none_or(|p| p.0 != name) {
+                parts.push((name, 0, 0, 0, 0.0, Vec::new()));
+            }
+            let p = parts.last_mut().unwrap();
+            let peak = samples.iter().fold(0.0f32, |m, &x| m.max(x.abs()));
+            assert!(samples.iter().all(|x| x.is_finite()), "{}: NaN or infinity in the mix at tick {tick}", p.0);
+            p.1 += 1;
+            p.2 += (peak > 1e-3) as u32;
+            p.3 += (peak > 0.9) as u32;
+            p.4 = p.4.max(peak);
+            if p.5.len() < keep {
+                p.5.extend_from_slice(&samples);
+            }
+            if bot.done() {
+                break;
+            }
+        }
+        assert!(bot.done(), "the bot did not reach the ending and the attract loop");
+        for (name, frames, loud, over, peak, first) in &parts {
+            eprintln!("{name}: {frames} frames, {loud} audible ({:.0} %), {over} above 0.9, peak {peak:.3}", 100.0 * *loud as f64 / *frames as f64);
+            if let Some(dir) = std::env::var_os("DINO_WAV_OUT") {
+                std::fs::create_dir_all(&dir).expect("the output directory exists");
+                write_wav(&Path::new(&dir).join(format!("{name}.wav")), first);
+            }
+        }
+        for (name, frames, loud, _, peak, _) in &parts {
+            assert!(*peak < 1.0, "{name}: the mix reaches full scale ({peak}): clipping");
+            if name.starts_with("episode") || name == "ending" {
+                assert!(*loud * 2 > *frames, "{name}: sound in only {loud} of {frames} frames");
+            }
+        }
+    }
 }

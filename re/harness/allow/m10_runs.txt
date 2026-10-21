@@ -348,3 +348,39 @@ ep8_3p.step: * 50232-50232	# C
 ep8_3p.lagsync: * 50232-55193	# E
 ep8_3p.step: * 54883-55193	# E
 ep8_3p.*: * 55194-69999	# A
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# M10-22: the sound request streams (re/harness/m10_sound_check.sh, snd_stream.py; step mode of all 30 natural whole runs). The keys `sound.CODE`, `sound.CODE.d1`,
+# `sound.CODE.d2` (the code in hex, two digits at least) are read by snd_stream.py only (diff.py compares the codes, not d1 / d2). A rule without a recording
+# prefix holds for every recording. A difference in a record whose state differs too is not listed: it belongs to the state checks above (m10_check.sh).
+# Causes:
+#  R1 The GO sign 0x3E (pool B class 20, 0x7BC58 and 0x7BD7A): neither the handler (0x7BB68 / 0x7BD40) nor the pool B loop 0x23604 writes d2, so d2 is the register
+#     the update before it left (another object of the frame, seen 0x60, 0x70, 0xA, 0x4, 0xF000 ...). d1 = 0xA is the pan mode 0 (0x7BCCC), and the driver reads
+#     no d2 in mode 0 (0x0251 -> 0x0279): what plays is the same.
+#  R2 The landing voice 0x62 / 0xDE / 0xDF of the fall and drop landings (0x9C0C at 0x1A8F4 / 0x1B6DE) and the high word of the pick-up voice's d2 (0x9C20 at
+#     0x1983A after 0x5AA2): 0x9C0C writes no d2 and the player update 0x18952 does not either, so it is the register of the frame code before (for player 1 the
+#     code before 0x18834, for players 2 and 3 the update of the player before; seen 0x1F00, 0x4000, 0x3800, 0x60 ...). d1 is the pan byte (mode 0).
+#  R3 The landing of an object that is no hero (0x9C20, 0xE0 / 0xE1, the class 20 library): the same register d2 (mode 0).
+#  R4 Music codes 0x00 .. 0x26 (header type 0: 0x017D -> music_start reads no request byte C006 .. C00C): d1 / d2 are the registers the code before the call left
+#     (an animation step's frame words 0x121E, the HP row 0x31E14, the boss inits ...), seen with other values in other recordings.
+#  R5 The jungle call 0x78 of pool B class 80 (0x8A5E0): `move.w #$0,d1` / `move.w #$0,d2` clear the low words only; the high word of d2 is the register the
+#     code before left (seen 0x5, 0x100). d1 is 0 (mode 0), so the driver reads no d2.
+#  R6 Fessenden's hold (class 84, 0x62876 / 0x62938 -> 0x125C0 -> 0x1266E): the pan of the hit sound is the X of a2, which neither 0x125C0 nor the class 84
+#     update sets (the enemy loop 0x23420 does not either): a register of the code before the enemy loop (MAME pan 0 in all ten requests, the port uses
+#     Fessenden's X).
+#  S  (see above) The map card of the next episode starts inside a MAME lag record (0x16 in the lag record, which step mode leaves out); the loader cannot restore the
+#     card routine, so the port starts the card again in the record after it and queues its music once more.
+sound.3E.d2	# R1
+sound.62.d2	# R2
+sound.DE.d2	# R2
+sound.DF.d2	# R2
+sound.E0.d2	# R3
+sound.E1.d2	# R3
+sound.0?.*	# R4
+sound.1?.*	# R4
+sound.2[0-6].*	# R4
+ep4_jack.step: sounds 27579-27579	# S
+sound.78.d2	# R5
+ep8_3p.step: sound.39.d1 44910-44964	# R6
+ep8_hannah.step: sound.39.d1 55951-62675	# R6
+ep8_mess.step: sound.39.d1 51795-51795	# R6

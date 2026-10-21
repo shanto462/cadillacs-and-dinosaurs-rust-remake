@@ -110,7 +110,7 @@ impl Game {
         e.b.hitstop = 0;
         e.b.serial = self.w.attack_serial;
         self.w.attack_serial = self.w.attack_serial.wrapping_add(1);
-        self.sound(SND_CAR_START);
+        self.sound_ex(SND_CAR_START, 0x0007_2000, 0x0400_0000); // 0xA49E: d1 = 0x72000, d2 = 0x4000000
     }
 
     /// Sub 2 (0x42230): drives until the camera X + 0xA0 reaches the car's X. The Episode 2 car (variant 0 in
@@ -121,7 +121,7 @@ impl Game {
         if !ahead {
             e.b.sub = 4;
             if e.b.var26 >> 8 == 0 {
-                self.sound(SND_CAR_BRAKE); // 0xA4BE
+                self.sound_ex(SND_CAR_BRAKE, 0x10, 0); // 0xA4BE: `moveq #$10,d1 ; moveq #0,d2`
                 e.b.ax = -0x60;
                 self.enemy_anim(&mut e.b, 1);
             } else {
