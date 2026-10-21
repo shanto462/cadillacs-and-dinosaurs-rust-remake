@@ -75,7 +75,7 @@ A jump starts the game at a named place: an episode start, an area start, or the
 - `--jump NAME` starts at that point. It takes `--chars` (the heroes, for example `--chars 0,2` for Jack and Hannah). An unknown name prints the list and exits with an error.
 - You can also start with the flags that a jump stands for: `--episode E --area A --camx X --chars 0`. `--episode 1..8`, `--area 0..3` and `--camx` (hex with 0x, or decimal) start that area with the camera at X. `--jump` cannot be combined with these flags.
 
-Jump points. The boss points are the snapshot positions just before each fight. The fight starts when the hero walks on, so a headless run with no input may not show the boss yet.
+Jump points. The boss points are the snapshot positions just before each fight. Known issue (2026-10-21): the `butcher` and `slice` points do not bring the boss (the camera goes back and locks, the boss never comes); use the episode and area points (for example `ep2a2`, `ep4a2`) and walk on. The fight starts when the hero walks on, so a headless run with no input may not show the boss yet.
 Hogg (Episode 3) and Tyrog (Episode 6 area 2) are not listed: a right walk from their camera X never reaches the fight (Hogg's camera stops at 0x300 in the car stage; Tyrog's camera goes back to 0x180 in the first frames).
 
 | Name | Title | Episode | Area | Camera X |
