@@ -1,0 +1,5 @@
+# player 1: coin, start, pick the first hero (Jack, the cursor starts there), then walk right in Episode 1
+600-607:1C
+700-705:1S
+1100-1105:1A
+1900-9000:1R
