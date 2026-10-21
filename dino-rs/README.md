@@ -95,7 +95,7 @@ The keyboard provides dedicated single-key shortcuts for special techniques. Eac
 
 While a special move sequence is playing (up to 24 frames), other Player 1 inputs pause until the move finishes.
 
-With the combo toggle (Q) on, the third attack press of a chain (three presses, each within 40 frames of the one before) plays the command move (A) instead of the third hit. The move waits until the hero can walk again, a few frames after the second hit.
+With the combo toggle (Q) on, the punch that would be the third hit of a chain plays the command move (A) instead. Only hits that land on an enemy count (the game's own hit count, which a miss sets back to 0), so presses in the air never make the move. The move waits until the hero can walk again, a few frames after the second hit, and it is dropped when the enemy died on the second hit or the hero is hurt, grabbed, jumping or holding a weapon.
 
 ### Gamepads (Players 1, 2, and 3)
 

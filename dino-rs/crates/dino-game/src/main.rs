@@ -359,23 +359,55 @@ fn start_game(assets: &'static dino_assets::AssetPack, args: &mut Args, config: 
     game
 }
 
-/// Player 1's hero stands or walks on the floor and can walk: the combo toggle (Q) starts its command move then.
-fn p1_ready(game: &game::Game) -> bool {
-    // in play (mode 0xC) and not in a scripted scene, as the walk to a later area of `--area` waits for (tick_game)
-    game.flow.mode == 0xC
-        && game.w.scripted == 0
-        && game.players.first().is_some_and(|p| {
-            // standing (0x02000000) or walking (0x02000002), as only the walk state (0x192DE) reads the command flag of 0x6AC8;
-            // after a jab the idle state keeps the hero from walking while the chain timer `+$AE` is 0x24 or more and a press
-            // there continues the chain, so the down / up taps of the move would be lost
-            p.b.live == 1
-                && p.b.airborne == 0
-                && matches!(p.b.kind, 0 | 2)
-                && matches!(p.b.state(), 0x0200_0000 | 0x0200_0002)
-                && p.lock == 0
-                && p.combo_t < 0x24
-                && p.atk_buf == 0
-        })
+/// What the combo toggle (Q) reads of player 1's hero, frame by frame (`input::Hero`).
+#[derive(Default)]
+struct HeroWatch {
+    /// The enemy slots (pool A) the hero's last landed hit struck (in hit stop with the hero as their attacker `+$68`).
+    struck: Vec<usize>,
+}
+
+impl HeroWatch {
+    /// Before the frame's tick.
+    fn read(&mut self, game: &game::Game) -> input::Hero {
+        let Some(p) = game.players.first() else { return input::Hero::default() };
+        let me = game::Game::player_handle(0);
+        let enemy = |i: usize| game.enemies.slots.get(i).map(|e| &e.b).filter(|b| b.live != 0 && b.attacker == me);
+        // a hit lands: the hero and its victims are in hit stop together (a dying enemy keeps its hit stop, so the list is taken only then)
+        if p.b.hitstop != 0 {
+            let now: Vec<_> = (0..game.enemies.slots.len()).filter(|&i| enemy(i).is_some_and(|b| b.hitstop != 0)).collect();
+            if !now.is_empty() {
+                self.struck = now;
+            }
+        } else if p.combo == 0 {
+            self.struck.clear();
+        }
+        // in play (mode 0xC), not in a scripted scene, alive (`+$00` 1, or 2 in some attack frames) on the floor in the normal state
+        // (mode 2 sub 0: not hurt, grabbing or grabbed) and without a weapon (a weapon swing keeps another value in the chain count `+$B2`,
+        // the run swing of player_weapon.rs)
+        let normal = game.flow.mode == 0xC
+            && game.w.scripted == 0
+            && p.b.live != 0
+            && p.b.airborne == 0
+            && p.b.mode == 2
+            && p.b.sub == 0
+            && p.item_type == 0;
+        let state = p.b.state();
+        let stand_or_walk = matches!(state, 0x0200_0000 | 0x0200_0002);
+        // the hit confirm 0x19464 counts the hits that land in `+$B2` and a miss sets it back to 0 (0x19416, 0x19552); with 2 the next
+        // press is the third hit (0x194D4 -> 0x1956C). The chain is open in the hit confirm (0x02000006) and, standing or walking, while
+        // the chain timer `+$AE` runs (idle 0x1916E, walk 0x192DE). The second hit (0x0200_0008) with its hit stop set lands in this
+        // tick (0x1953E): the hit confirm takes a press of the same tick into `+$AD` already
+        let chain = (p.combo == 2 && (state == 0x0200_0006 || (stand_or_walk && p.combo_t != 0)))
+            || (p.combo == 1 && state == 0x0200_0008 && p.b.hitstop != 0);
+        // an enemy the chain struck is still alive (when the second hit killed it, the third press stays a plain hit)
+        let alive = self.struck.iter().any(|&i| enemy(i).is_some_and(|b| b.hp != 0));
+        input::Hero {
+            third_next: normal && chain && alive,
+            // standing or walking and free to walk, as only the walk state (0x192DE) reads the command flag of 0x6AC8: the idle state keeps
+            // the hero from walking while `+$B3` is set or the chain timer is 0x24 or more, and a buffered press `+$AD` continues the chain
+            ready: normal && stand_or_walk && p.lock == 0 && p.combo_t < 0x24 && p.atk_buf == 0,
+        }
+    }
 }
 
 fn tick_game(game: &mut game::Game, args: &mut Args, tick: u32, mut f: input::Frame, audio: &mut Option<audio::Audio>) {
@@ -460,6 +492,7 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
 
     let mut viewer = args.viewer.then(|| viewer::Viewer::new(assets, args.view));
     let mut inputs = input::Inputs::new();
+    let mut hero_watch = HeroWatch::default();
     let mut game = start_game(assets, &mut args, config.clone());
     // The test menu (`menu.rs`): open at start with `--test`, F1 opens and closes it with the debug keys on. No menu in viewer runs.
     let mut menu = menu::Menu::new(args.chars[0], args.chars.len() as u8, args.test);
@@ -544,7 +577,7 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
             match &mut viewer {
                 Some(v) => v.update(assets),
                 None => {
-                    let f = if screenshot_run { input::Frame::default() } else { inputs.poll(p1_ready(&game)) };
+                    let f = if screenshot_run { input::Frame::default() } else { inputs.poll(hero_watch.read(&game)) };
                     tick_game(&mut game, &mut args, tick_no, f, &mut audio);
                     tick_no += 1;
                 }
@@ -574,7 +607,7 @@ async fn windowed(mut args: Args, config: game::flow::Config) {
             let dim = measure_text("PAUSED", None, size as u16, 1.0);
             draw_text("PAUSED", (w - dim.width) / 2.0, h / 2.0, size, WHITE);
         }
-        if inputs.combo.on {
+        if inputs.p1.combo.on {
             draw_text("COMBO", 8.0, screen_height() - 8.0, (screen_height() / 30.0).max(14.0), YELLOW);
         }
 
