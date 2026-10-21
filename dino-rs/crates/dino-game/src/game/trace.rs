@@ -2648,6 +2648,49 @@ impl Game {
         self.trace_visit(&mut p);
         Ok(())
     }
+
+    /// The byte the original reads at the 68000 address `addr`, for code that reads a field of an object of any pool through a pointer
+    /// (0x16B18 tests +$82 and +$02 of the attacker +$68: the address can be in any pool, in the next slot or in ROM). Below the work RAM:
+    /// the program image (a `movea.w` of a handle under 0x8000 is not sign extended). The pool tag +$82 of pools A, B and E (0x4C48,
+    /// 0x4C76, 0x4C1A) is in the slot bytes, free slots too. Elsewhere the field the trace models there; 0 where the port has none
+    /// (the RAM clear of the reset; MAME: +$82 of a hero is always 0).
+    pub fn orig_u8(&mut self, addr: u32) -> u8 {
+        let addr = addr & 0xFF_FFFF;
+        if addr < RAM {
+            let t = &self.assets.enemy.t;
+            return if (addr as usize) < t.program.len() { t.u8(addr, 0) } else { 0 };
+        }
+        if let Some(h) = slot_of_ram(addr) {
+            // the fields 0x16B18 reads on every hero hit, read directly (the visit below walks every traced field; the result is the same)
+            match (slot_of(h), (addr - RAM) as u16 - h) {
+                (Some(Slot::Enemy(i)), 0x82) => return self.enemies.slots[i].m.b(0x82),
+                (Some(Slot::Prop(i)), 0x82) => return self.props.slots[i].m.b(0x82),
+                (Some(Slot::Item(i)), 0x82) => return self.items.slots[i].m.b(0x82),
+                // a hero has no field at +$82 (the trace's w80 ends at +$81, b83 starts at +$83): the visit gives 0
+                (Some(Slot::Player(_)), 0x82) => return 0,
+                // +$02 is the body's `who` (the trace's "who" of every pool)
+                (Some(Slot::Player(_) | Slot::Enemy(_) | Slot::Prop(_) | Slot::Item(_)), 0x02) => return self.body(h).who,
+                _ => {}
+            }
+        }
+        let mut p = PeekVisit { addr, value: None };
+        self.trace_visit(&mut p);
+        p.value.unwrap_or(0)
+    }
+}
+
+/// `Game::orig_u8`: the byte at `addr` of the field that covers it.
+struct PeekVisit {
+    addr: u32,
+    value: Option<u8>,
+}
+
+impl Visit for PeekVisit {
+    fn field(&mut self, addr: u32, size: u8, _name: &'static str, v: &mut u32) {
+        if self.addr >= addr && self.addr < addr + size as u32 {
+            self.value = Some((*v >> (8 * (addr + size as u32 - 1 - self.addr))) as u8);
+        }
+    }
 }
 
 /// The object (pool slot) of a RAM address, as its handle.
